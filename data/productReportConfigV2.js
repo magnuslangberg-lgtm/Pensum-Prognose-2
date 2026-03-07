@@ -1,0 +1,85 @@
+export const PRODUCT_REPORT_CONFIG_V2 = {
+  'Global Core Active': {
+    productKey: 'global-core-active',
+    slideCount: 2,
+    chartBlocks: ['historikk', 'regioner', 'sektorer', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['coreExposure', 'globalDiversification', 'managerSelection'],
+    slideTitles: ['Global kjerneeksponering', 'Eksponering og nøkkeltall'],
+  },
+  'Global Edge': {
+    productKey: 'global-edge',
+    slideCount: 2,
+    chartBlocks: ['historikk', 'regioner', 'sektorer', 'style'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['satelliteGrowth', 'activeTilt', 'specialistManagers'],
+    slideTitles: ['Spesialisert global vekst', 'Eksponering og nøkkeltall'],
+  },
+  'Basis': {
+    productKey: 'basis',
+    slideCount: 1,
+    chartBlocks: ['historikk', 'assetMix'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['balancedAllocation', 'simpleImplementation'],
+    slideTitles: ['Balansert grunnløsning'],
+  },
+  'Global Høyrente': {
+    productKey: 'global-hoyrente',
+    slideCount: 2,
+    chartBlocks: ['historikk', 'creditQuality', 'regioner', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'expectedYield', 'riskLevel', 'liquidity'],
+    narrativePriority: ['income', 'defensiveCarry', 'diversifiedCredit'],
+    slideTitles: ['Løpende avkastning og robusthet', 'Kredittkvalitet og eksponering'],
+  },
+  'Nordisk Høyrente': {
+    productKey: 'nordisk-hoyrente',
+    slideCount: 2,
+    chartBlocks: ['historikk', 'sectorer', 'creditQuality', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'expectedYield', 'riskLevel', 'liquidity'],
+    narrativePriority: ['income', 'nordicCredit', 'portfolioStability'],
+    slideTitles: ['Nordisk kreditt og løpende yield', 'Kredittprofil og eksponering'],
+  },
+  'Norge': {
+    productKey: 'norge',
+    slideCount: 2,
+    chartBlocks: ['historikk', 'sektorer', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['domesticEquity', 'selectiveActive', 'complementaryNordicExposure'],
+    slideTitles: ['Norsk aksjeeksponering', 'Sektorer og største posisjoner'],
+  },
+  'Global Energy': {
+    productKey: 'global-energy',
+    slideCount: 1,
+    chartBlocks: ['historikk', 'subSectors', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['themeEnergy', 'inflationSensitivity', 'commodityLinkage'],
+    slideTitles: ['Tematisk energi-eksponering'],
+  },
+  'Nordic Banking Sector': {
+    productKey: 'nordic-banking-sector',
+    slideCount: 1,
+    chartBlocks: ['historikk', 'countries', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['financialsTheme', 'earningsResilience', 'rateSensitivity'],
+    slideTitles: ['Nordisk bank som nisjeeksponering'],
+  },
+  'Financial Opportunities': {
+    productKey: 'financial-opportunities',
+    slideCount: 1,
+    chartBlocks: ['historikk', 'subSectors', 'topHoldings'],
+    kpiBlocks: ['expectedReturn', 'benchmark', 'riskLevel', 'liquidity'],
+    narrativePriority: ['financialsTheme', 'opportunisticMandate', 'specialistManagers'],
+    slideTitles: ['Spesialisert finansmandat'],
+  },
+};
+
+export function getProductReportConfig(name) {
+  return PRODUCT_REPORT_CONFIG_V2[name] || {
+    productKey: String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    slideCount: 1,
+    chartBlocks: ['historikk'],
+    kpiBlocks: ['expectedReturn', 'riskLevel'],
+    narrativePriority: ['genericProduct'],
+    slideTitles: ['Produktoversikt'],
+  };
+}
