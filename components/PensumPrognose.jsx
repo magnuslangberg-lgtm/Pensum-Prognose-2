@@ -61,6 +61,9 @@ export default function PensumPrognoseModell() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
+  const [v2Loading, setV2Loading] = useState(false);
+  const [proposalPreviewLoading, setProposalPreviewLoading] = useState(false);
+  const [proposalPreview, setProposalPreview] = useState(null);
   const [valgtePensumScen, setValgtePensumScen] = useState(['Global Core Active', 'Basis', 'Global Høyrente', 'Norske Aksjer', 'Global Energy']);
   const [valgteIndekserScen, setValgteIndekserScen] = useState([]);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
@@ -1268,6 +1271,99 @@ export default function PensumPrognoseModell() {
     'financial-d': 'Financial Opportunities',
   };
 
+  const buildProposalV2Payload = useCallback(() => {
+    const aktiveAktiva = [
+      { navn: 'Globale Aksjer', andel: allokering.globaleAksjer || 0 },
+      { navn: 'Norske Aksjer', andel: allokering.norskeAksjer || 0 },
+      { navn: 'Private Equity', andel: allokering.privateEquity || 0 },
+      { navn: 'Eiendom', andel: allokering.eiendom || 0 },
+      { navn: 'Likvide Midler', andel: allokering.likvideMidler || 0 },
+      { navn: 'Renter', andel: allokering.renter || 0 },
+    ].filter((item) => Number(item.andel) > 0);
+
+    const valgteProduktIrapport = pdfProduktValg.length > 0
+      ? pdfProduktValg
+      : Object.keys(PRODUKT_NAVN_MAP_PDF);
+
+    const pensumProdukterTilEksport = (Array.isArray(pensumProdukter) ? pensumProdukter : []).map((produkt) => ({
+      ...produkt,
+      eksponering: produktEksponering?.[produkt.id] || null,
+      historikk: produktHistorikk?.[produkt.id] || null
+    }));
+
+    return {
+      kundeNavn: kundeNavn || 'Investor',
+      totalKapital,
+      risikoProfil: risikoprofil,
+      horisont,
+      radgiver: radgiver || '',
+      dato,
+      vektetAvkastning,
+      allokering: aktiveAktiva,
+      produkterIBruk: valgteProduktIrapport,
+      pensumAllokering: (Array.isArray(pensumAllokering) ? pensumAllokering : []).map((item) => ({ id: item.id, vekt: Number(item.vekt || 0) })),
+      pensumProdukter: pensumProdukterTilEksport,
+      eksponering: {
+        sektorer: aggregertPensumEksponering?.sektorer || [],
+        regioner: aggregertPensumEksponering?.regioner || []
+      }
+    };
+  }, [allokering, aggregertPensumEksponering, kundeNavn, dato, horisont, pdfProduktValg, pensumAllokering, pensumProdukter, produktEksponering, produktHistorikk, radgiver, risikoprofil, totalKapital, vektetAvkastning]);
+
+  const handlePreviewProposalV2 = async () => {
+    try {
+      setProposalPreviewLoading(true);
+      const response = await fetch('/api/proposal-v2-debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData: buildProposalV2Payload() })
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.ok) throw new Error(data?.error || 'Kunne ikke bygge proposal model v2.');
+      setProposalPreview(data.proposalModel || null);
+      setActiveTab('rapport');
+    } catch (err) {
+      alert('Feil ved forhåndsvisning av forslag v2: ' + err.message);
+    } finally {
+      setProposalPreviewLoading(false);
+    }
+  };
+
+  const handleGeneratePresentationV2 = async () => {
+    try {
+      setV2Loading(true);
+      const response = await fetch('/api/generate-pptx-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData: buildProposalV2Payload() })
+      });
+      if (!response.ok) {
+        let melding = await response.text();
+        try {
+          const parsed = JSON.parse(melding);
+          if (parsed?.error) melding = parsed.error;
+        } catch (_) {}
+        throw new Error(melding || 'Ukjent feil fra server.');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = response.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/i);
+      a.download = match ? match[1] : `Pensum_Investeringsforslag_V2_${(kundeNavn || 'Kunde').replace(/\s+/g, '_')}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setPdfModal(false);
+    } catch (err) {
+      alert('Feil ved generering av PowerPoint v2: ' + err.message);
+    } finally {
+      setV2Loading(false);
+    }
+  };
+
   const handleGeneratePresentation = async () => {
     setPdfLoading(true);
     try {
@@ -1769,26 +1865,67 @@ export default function PensumPrognoseModell() {
             </div>
 
             {/* Footer med knapper */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
-              <button onClick={() => setPdfModal(false)} disabled={pdfLoading}
-                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+            <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap gap-3">
+              <button onClick={() => setPdfModal(false)} disabled={pdfLoading || v2Loading || proposalPreviewLoading}
+                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 min-w-[120px]">
                 Avbryt
               </button>
-              <button onClick={handleGeneratePresentation} disabled={pdfLoading}
-                className="flex-2 py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
-                style={{ backgroundColor: pdfLoading ? '#6B7280' : '#D4886B' }}>
-                {pdfLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Genererer PowerPoint...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Last ned PowerPoint
-                  </>
-                )}
+              <button onClick={handlePreviewProposalV2} disabled={pdfLoading || v2Loading || proposalPreviewLoading}
+                className="py-2.5 px-4 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-50 min-w-[160px]">
+                {proposalPreviewLoading ? 'Bygger preview...' : 'Forhåndsvis forslag v2'}
               </button>
+              <button onClick={handleGeneratePresentation} disabled={pdfLoading || v2Loading}
+                className="py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
+                style={{ backgroundColor: pdfLoading ? '#6B7280' : '#D4886B' }}>
+                {pdfLoading ? 'Genererer legacy PPT...' : 'Last ned PPT legacy'}
+              </button>
+              <button onClick={handleGeneratePresentationV2} disabled={pdfLoading || v2Loading}
+                className="py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
+                style={{ backgroundColor: v2Loading ? '#6B7280' : '#0D2240' }}>
+                {v2Loading ? 'Genererer PowerPoint v2...' : 'Last ned PowerPoint v2'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {proposalPreview && (
+        <div className="max-w-7xl mx-auto px-6 pt-6 no-print">
+          <div className="bg-white border border-blue-100 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 flex items-center justify-between" style={{ backgroundColor: '#F5F9FF' }}>
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#0D2240' }}>Forslagsmotor v2: forhåndsvisning</h3>
+                <p className="text-sm text-slate-500 mt-1">Sjekk hva generatoren tror porteføljen er, før du laster ned PowerPoint.</p>
+              </div>
+              <button onClick={() => setProposalPreview(null)} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-white">Lukk</button>
+            </div>
+            <div className="p-5 grid md:grid-cols-3 gap-4">
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Meta</div>
+                <div className="space-y-1 text-sm">
+                  <div><strong>Kunde:</strong> {proposalPreview?.meta?.kundeNavn || '—'}</div>
+                  <div><strong>Rapportdato:</strong> {proposalPreview?.meta?.reportDate || '—'}</div>
+                  <div><strong>Risikoprofil:</strong> {proposalPreview?.meta?.risikoProfil || '—'}</div>
+                  <div><strong>Kapital:</strong> {formatCurrency(proposalPreview?.meta?.totalKapital || 0)}</div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Valgte produkter</div>
+                <div className="space-y-2">
+                  {(proposalPreview?.portfolio?.selectedProducts || []).slice(0, 8).map((produkt) => (
+                    <div key={produkt.id} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-700">{produkt.kortnavn || produkt.navn}</span>
+                      <span className="font-semibold" style={{ color: '#0D2240' }}>{formatPercent((produkt.portfolioWeight || 0) / 100, 1)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Hovedpoenger</div>
+                <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
+                  {(proposalPreview?.portfolio?.summaryBullets || []).slice(0, 5).map((punkt, idx) => (<li key={idx}>{punkt}</li>))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
