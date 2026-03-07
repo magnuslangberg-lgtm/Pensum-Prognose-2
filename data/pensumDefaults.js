@@ -147,3 +147,139 @@ export const defaultProduktEksponering = {
       disclaimer: 'Oppstart 05.04.2025. Utvikling før dette er estimert med indeksen Bloomberg Global High Yield, valutasikret til NOK. NB: Allokeringen er foreløpig ikke korrekt.'
     }
   };
+
+
+export const defaultProduktMetadata = {
+  'global-core-active': {
+    kategoriLabel: 'Global aksjeportefølje',
+    rolle: 'Kjerneeksponering i aksjer',
+    beskrivelse: 'Bred global aksjeeksponering satt sammen av utvalgte aktive forvaltere med tydelig diversifisering på regioner, stil og sektorer.',
+    investeringside: 'Skal være den stabile vekstmotoren i porteføljen og gi bred, robust aksjeeksponering over tid.',
+    riskLabel: 'Moderat–høy',
+    expectedReturn: 9.0,
+    expectedYield: 1.8,
+    likviditetLabel: 'Daglig likviditet',
+    hovedpoenger: ['Bred global diversifisering', 'Aktiv managerseleksjon', 'God som kjerne i aksjedelen']
+  },
+  'global-edge': {
+    kategoriLabel: 'Satellitt / global aksje',
+    rolle: 'Ekstra vekst og spesialisering',
+    beskrivelse: 'Mer offensiv global aksjeportefølje med høyere andel nisjeforvaltere, små/mellomstore selskaper og tydeligere aktiv risiko.',
+    investeringside: 'Skal løfte forventet meravkastning og gi porteføljen flere uavhengige avkastningsdrivere.',
+    riskLabel: 'Høy',
+    expectedReturn: 10.0,
+    expectedYield: 1.2,
+    likviditetLabel: 'Daglig likviditet',
+    hovedpoenger: ['Mer offensiv enn kjerneporteføljen', 'Høy andel aktiv risiko', 'God satellitt rundt Global Core Active']
+  },
+  basis: {
+    kategoriLabel: 'Balansert multi-asset',
+    rolle: 'Balansering og totalportefølje',
+    beskrivelse: 'Blandet løsning med både aksjer og renter som gir en mer balansert risiko og kan fungere som fundament i moderate profiler.',
+    investeringside: 'Skal redusere svingningene og bidra til en mer robust helhetlig portefølje.',
+    riskLabel: 'Moderat',
+    expectedReturn: 7.0,
+    expectedYield: 3.0,
+    likviditetLabel: 'Daglig likviditet',
+    hovedpoenger: ['Balansert aksje/rente-miks', 'God i moderate profiler', 'Kan brukes som base i totalporteføljen']
+  },
+  'global-hoyrente': {
+    kategoriLabel: 'Global rente / high yield',
+    rolle: 'Kontantstrøm og stabiliserende rentebein',
+    beskrivelse: 'Renteportefølje med utvalgte globale high yield- og obligasjonsfond som søker attraktiv løpende yield med moderat volatilitet.',
+    investeringside: 'Skal bidra med løpende avkastning og jevne ut risikoen mot aksjedelen.',
+    riskLabel: 'Moderat',
+    expectedReturn: 7.0,
+    expectedYield: 7.5,
+    likviditetLabel: 'Daglig likviditet',
+    hovedpoenger: ['Attraktiv løpende yield', 'Lavere volatilitet enn aksjer', 'God diversifisering mot aksjedelen']
+  },
+  'nordisk-hoyrente': {
+    kategoriLabel: 'Nordisk rente / high yield',
+    rolle: 'Komplementær nordisk renteeksponering',
+    beskrivelse: 'Nordisk high yield-portefølje med fokus på attraktiv kontantstrøm, kortere vei til kreditthistoriene og god regional diversifisering.',
+    investeringside: 'Skal komplettere den globale rentedelen med nordisk kreditt og høy løpende rente.',
+    riskLabel: 'Moderat',
+    expectedReturn: 7.0,
+    expectedYield: 7.0,
+    likviditetLabel: 'Daglig likviditet',
+    hovedpoenger: ['Nordisk kredittmarked', 'Løpende kontantstrøm', 'Komplement til global høyrente']
+  },
+  'norge-a': {
+    kategoriLabel: 'Norske aksjer',
+    rolle: 'Norsk hjemmemarkedseksponering',
+    beskrivelse: 'Norsk aksjeløsning med konsentrert eksponering mot selskaper og sektorer Pensum kjenner godt, inkludert bank, finans, energi og utvalgte industriselskaper.',
+    investeringside: 'Skal gi lokal markedsforståelse og eksponering mot attraktive norske enkelthistorier.',
+    riskLabel: 'Høy',
+    expectedReturn: 9.0,
+    expectedYield: 2.5,
+    likviditetLabel: 'Likvid',
+    hovedpoenger: ['Norsk markedskompetanse', 'Konsentrert og aktiv', 'Relevant for investorer med lokal preferanse']
+  },
+  'energy-a': {
+    kategoriLabel: 'Tematisk aksje / energi',
+    rolle: 'Tematisk og syklisk satellitt',
+    beskrivelse: 'Tematisk mandat med eksponering mot energi, olje, gass og tilknyttede verdikjeder, med potensial for høy meravkastning men også høyere svingninger.',
+    investeringside: 'Skal gi målrettet eksponering mot energikomplekset som en mindre satellitt i totalporteføljen.',
+    riskLabel: 'Høy',
+    expectedReturn: 10.0,
+    expectedYield: 3.0,
+    likviditetLabel: 'Likvid',
+    hovedpoenger: ['Tematisk energi-eksponering', 'Kan gi høy meravkastning', 'Bør normalt være mindre satellittandel']
+  },
+  'banking-d': {
+    kategoriLabel: 'Nordisk bank/finans-aksjer',
+    rolle: 'Sektorspesifikk satellitt',
+    beskrivelse: 'Konsentrert aksjeløsning mot nordisk bank og finans, et område Pensum har særlig kompetanse og tett oppfølging på.',
+    investeringside: 'Skal gi spesialisert eksponering mot en sektor med attraktive inntjenings- og utbytteegenskaper.',
+    riskLabel: 'Høy',
+    expectedReturn: 9.5,
+    expectedYield: 4.0,
+    likviditetLabel: 'Likvid',
+    hovedpoenger: ['Spisset finanssektoreksponering', 'Utbytte- og lønnsomhetscase', 'Best som satellitt']
+  },
+  'financial-d': {
+    kategoriLabel: 'Finans/rente-spesialist',
+    rolle: 'Yield og spesialisert kreditt',
+    beskrivelse: 'Spesialisert løsning med fokus på finansrelatert kreditt og selekterte finansnavn, med mål om høy løpende avkastning.',
+    investeringside: 'Skal gi porteføljen et spesialisert rente-/kredittbein med attraktiv yield.',
+    riskLabel: 'Moderat–høy',
+    expectedReturn: 8.5,
+    expectedYield: 8.0,
+    likviditetLabel: 'Likvid',
+    hovedpoenger: ['Spesialisert finanskreditt', 'Høy løpende yield', 'God som nisjekomponent i rentedelen']
+  },
+  'turnstone-pe': {
+    kategoriLabel: 'Private equity',
+    rolle: 'Illikvid meravkastningsmotor',
+    beskrivelse: 'Illikvid private equity-eksponering for investorer som kan binde kapital over tid og søker høy langsiktig avkastning.',
+    investeringside: 'Skal øke forventet totalavkastning over tid for investorer med lang horisont og høy risikobærende evne.',
+    riskLabel: 'Høy / illikvid',
+    expectedReturn: 12.0,
+    expectedYield: 0.0,
+    likviditetLabel: 'Illikvid',
+    hovedpoenger: ['Lang horisont', 'Illikvid premie', 'Bør tilpasses nøye til kundeprofil']
+  },
+  'amaron-re': {
+    kategoriLabel: 'Eiendom',
+    rolle: 'Realaktiva og diversifisering',
+    beskrivelse: 'Eiendomseksponering som kan gi diversifisering, kontantstrøm og delvis inflasjonsbeskyttelse i totalporteføljen.',
+    investeringside: 'Skal tilføre realaktiva og robusthet i porteføljen for investorer som ønsker bredere aktivaklassemiks.',
+    riskLabel: 'Moderat / delvis illikvid',
+    expectedReturn: 8.0,
+    expectedYield: 5.0,
+    likviditetLabel: 'Delvis illikvid',
+    hovedpoenger: ['Realaktivum', 'Kontantstrøm', 'Diversifisering mot aksjer og renter']
+  },
+  'unoterte-aksjer': {
+    kategoriLabel: 'Unoterte aksjer',
+    rolle: 'Idiosynkratisk oppside',
+    beskrivelse: 'Unoterte investeringer med høyere usikkerhet og lav likviditet, men potensielt betydelig oppside i utvalgte case.',
+    investeringside: 'Skal kun brukes som begrenset andel for investorer som forstår risikoen og tåler illikviditet.',
+    riskLabel: 'Høy / illikvid',
+    expectedReturn: 11.0,
+    expectedYield: 0.0,
+    likviditetLabel: 'Illikvid',
+    hovedpoenger: ['Case-drevet oppside', 'Høy risiko', 'Bør holdes som begrenset andel']
+  }
+};
