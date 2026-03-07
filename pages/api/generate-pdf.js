@@ -462,6 +462,19 @@ function addDataTable(slide, rows, opts = {}) {
   });
 }
 
+function addBarList(slide, items = [], { x = 0.8, y = 2.0, w = 5.5, maxValue = 100, color = COLORS.navy, rowGap = 0.48, labelW = 2.2, valueDigits = 1 } = {}) {
+  const innerW = Math.max(0.8, w - labelW - 0.85);
+  items.forEach((item, idx) => {
+    const yy = y + idx * rowGap;
+    const value = num(item?.vekt, 0);
+    const ratio = Math.max(0, Math.min(1, value / Math.max(1, maxValue)));
+    slide.addText(safeText(item?.navn, 'Ukjent'), { x, y: yy - 0.02, w: labelW, h: 0.18, fontSize: 9.5, color: COLORS.text, bold: idx < 3 });
+    slide.addShape(PptxGenJS.ShapeType.roundRect, { x: x + labelW + 0.1, y: yy + 0.01, w: innerW, h: 0.14, rectRadius: 0.03, fill: { color: COLORS.soft }, line: { color: COLORS.soft, pt: 0 } });
+    slide.addShape(PptxGenJS.ShapeType.roundRect, { x: x + labelW + 0.1, y: yy + 0.01, w: Math.max(0.08, innerW * ratio), h: 0.14, rectRadius: 0.03, fill: { color }, line: { color, pt: 0 } });
+    slide.addText(`${value.toFixed(valueDigits)}%`, { x: x + labelW + innerW + 0.18, y: yy - 0.02, w: 0.65, h: 0.18, fontSize: 9.2, color: COLORS.muted, align: 'right' });
+  });
+}
+
 function buildProfessionalPptx(payload) {
   const pptx = new PptxGenJS();
   const d = buildNormalizedData(payload);
@@ -471,334 +484,244 @@ function buildProfessionalPptx(payload) {
   pptx.subject = `Investeringsforslag - ${d.kundeNavn}`;
   pptx.title = `Pensum investeringsforslag - ${d.kundeNavn}`;
   pptx.lang = 'nb-NO';
-  pptx.theme = {
-    headFontFace: 'Aptos',
-    bodyFontFace: 'Aptos',
-    lang: 'nb-NO'
-  };
+  pptx.theme = { headFontFace: 'Aptos', bodyFontFace: 'Aptos', lang: 'nb-NO' };
 
-  // 1 Cover
+  const topSolutions = d.selectedSolutionRows.slice(0, 6);
+  const sectorRows = d.sectors.slice(0, 7);
+  const regionRows = d.regions.slice(0, 7);
+  const styleRows = d.styles.slice(0, 6);
+  const holdingRows = d.holdings.slice(0, 8);
+  const summaryRows = d.yearlySummary.slice(0, 6);
+
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    s.addShape(PptxGenJS.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 1.1, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
-    s.addText('PENSUM ASSET MANAGEMENT', { x: 0.65, y: 0.28, w: 4.5, h: 0.28, fontSize: 14, bold: true, color: COLORS.navy });
-    s.addText('Illustrativ investeringsskisse', { x: 0.8, y: 1.55, w: 8, h: 0.6, fontSize: 28, bold: true, color: COLORS.navy });
-    s.addText('Eksempel på porteføljesammensetning tilpasset investorens overordnede mål, risikoprofil og ønskede Pensum-løsninger.', { x: 0.8, y: 2.25, w: 6.2, h: 0.8, fontSize: 15, color: COLORS.text });
-    s.addShape(PptxGenJS.ShapeType.roundRect, { x: 0.8, y: 3.25, w: 4.2, h: 1.2, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-    s.addText('Utarbeidet for', { x: 1.05, y: 3.5, w: 1.6, h: 0.18, fontSize: 10, color: COLORS.muted, bold: true });
-    s.addText(d.kundeNavn, { x: 1.05, y: 3.8, w: 3.6, h: 0.26, fontSize: 20, bold: true, color: COLORS.navy });
-    s.addText(`Dato: ${d.reportDate}`, { x: 1.05, y: 4.1, w: 2.6, h: 0.18, fontSize: 10.5, color: COLORS.muted });
-    s.addShape(PptxGenJS.ShapeType.roundRect, { x: 7.05, y: 1.55, w: 5.4, h: 4.4, rectRadius: 0.08, fill: { color: COLORS.navy }, line: { color: COLORS.navy, pt: 0 } });
-    addCard(s, { x: 7.45, y: 2.0, w: 2.15, h: 1.15, title: 'Investerbar kapital', value: formatCompactCurrency(d.total), subtitle: 'Basert på oppgitt kapital', accent: COLORS.salmon, fill: COLORS.white, valueSize: 18 });
-    addCard(s, { x: 9.85, y: 2.0, w: 2.15, h: 1.15, title: 'Risikoprofil', value: d.risikoProfil, subtitle: `${d.years} års horisont`, accent: COLORS.blue, fill: COLORS.white, valueSize: 18 });
-    addCard(s, { x: 7.45, y: 3.4, w: 2.15, h: 1.15, title: 'Forv. avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Årlig estimat', accent: COLORS.green, fill: COLORS.white, valueSize: 18 });
-    addCard(s, { x: 9.85, y: 3.4, w: 2.15, h: 1.15, title: 'Forv. yield', value: pct(d.weightedYield), subtitle: 'Løpende estimat', accent: COLORS.yellow, fill: COLORS.white, valueSize: 18 });
-    s.addText('Pensum-forslaget kombinerer brede kjerneeksponeringer med utvalgte satellitter for å skape en ryddig, forklarbar og investerbar totalportefølje.', { x: 7.45, y: 4.9, w: 4.7, h: 0.65, fontSize: 11, color: COLORS.white, valign: 'mid' });
+    s.addShape(PptxGenJS.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.82, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
+    s.addText('PENSUM ASSET MANAGEMENT', { x: 0.6, y: 0.22, w: 4.0, h: 0.2, fontSize: 12, bold: true, color: COLORS.navy });
+    s.addText('Forslag til investeringsportefølje', { x: 0.75, y: 1.35, w: 6.9, h: 0.45, fontSize: 26, bold: true, color: COLORS.navy });
+    s.addText('Illustrativ modellportefølje basert på valgt risikoprofil, tidshorisont og Pensum-løsninger.', { x: 0.75, y: 1.82, w: 6.8, h: 0.35, fontSize: 12, color: COLORS.muted });
+    s.addShape(PptxGenJS.ShapeType.roundRect, { x: 0.75, y: 2.45, w: 4.9, h: 1.45, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+    s.addText('Utarbeidet for', { x: 1.05, y: 2.72, w: 1.8, h: 0.18, fontSize: 9, color: COLORS.muted, bold: true });
+    s.addText(d.kundeNavn, { x: 1.05, y: 3.0, w: 3.4, h: 0.28, fontSize: 20, bold: true, color: COLORS.navy });
+    s.addText(`Dato: ${d.reportDate}`, { x: 1.05, y: 3.35, w: 2.1, h: 0.18, fontSize: 9.5, color: COLORS.muted });
+    s.addShape(PptxGenJS.ShapeType.roundRect, { x: 7.15, y: 1.4, w: 5.35, h: 4.25, rectRadius: 0.08, fill: { color: COLORS.navy }, line: { color: COLORS.navy, pt: 0 } });
+    addCard(s, { x: 7.55, y: 1.85, w: 2.1, h: 1.05, title: 'Investerbar kapital', value: formatCompactCurrency(d.total), subtitle: 'Oppgitt kapital', accent: COLORS.salmon, valueSize: 16 });
+    addCard(s, { x: 9.9, y: 1.85, w: 2.1, h: 1.05, title: 'Risikoprofil', value: d.risikoProfil, subtitle: `${d.years} års horisont`, accent: COLORS.blue, valueSize: 16 });
+    addCard(s, { x: 7.55, y: 3.15, w: 2.1, h: 1.05, title: 'Forv. avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Årlig estimat', accent: COLORS.green, valueSize: 16 });
+    addCard(s, { x: 9.9, y: 3.15, w: 2.1, h: 1.05, title: 'Forv. yield', value: pct(d.weightedYield), subtitle: 'Løpende estimat', accent: COLORS.yellow, valueSize: 16 });
+    s.addText('Porteføljen er satt sammen for å være forklarbar i møte, robust i oppfølging og enkel å sende som investorvennlig oppsummering i etterkant.', { x: 7.55, y: 4.55, w: 4.5, h: 0.55, fontSize: 10.5, color: COLORS.white });
     addFooter(s, 1);
   }
 
-  // 2 Important info
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Viktig informasjon', 'Dette dokumentet er en illustrativ investeringsskisse i pre-kundefase og ikke personlig investeringsrådgivning.');
-    addSectionLabel(s, 'Rammeverk', 0.7, 1.9);
+    addBrandHeader(s, 'Viktig informasjon', 'Dette dokumentet er en illustrativ investeringsskisse i pre-kundefase.');
+    addSectionLabel(s, 'Formål', 0.8, 1.95);
     addBulletList(s, [
-      'Presentasjonen bygger på overordnede og ikke-verifiserte opplysninger mottatt i dialog med potensiell investor.',
-      'Dokumentet viser en modellportefølje og en mulig sammensetning av Pensum-løsninger, men erstatter ikke egnethetsvurdering eller individuell rådgivning.',
-      'Et eventuelt kundeforhold forutsetter kundeetablering, kundeklassifisering, egnethetsvurdering og gjennomføring av KYC/AML-tiltak.',
-      'Skatt, struktur og eventuelle juridiske forhold må vurderes særskilt opp mot investorens konkrete situasjon.'
-    ], { x: 0.8, y: 2.2, w: 5.8, h: 3.2, fontSize: 12 });
-    addSectionLabel(s, 'Hva denne skissen skal vise', 6.8, 1.9);
+      'Presentasjonen viser en modellportefølje basert på overordnede opplysninger og skal brukes som diskusjonsgrunnlag i tidlig fase.',
+      'Dokumentet er ikke en personlig investeringsanbefaling og erstatter ikke egnethetsvurdering, kundeetablering eller ordinær rådgivningsprosess.',
+      'Skatt, struktur, juridiske forhold og investorens samlede økonomiske situasjon må vurderes særskilt før eventuell implementering.'
+    ], { x: 0.85, y: 2.25, w: 11.6, h: 2.2, fontSize: 12 });
+    addSectionLabel(s, 'Hva denne skissen skal vise', 0.8, 4.95);
     addBulletList(s, [
-      'Hvordan en profesjonelt sammensatt Pensum-portefølje kan se ut gitt valgt risikoprofil og investeringshorisont.',
-      'Hvordan ulike Pensum-løsninger kan fylle ulike roller i totalporteføljen: vekst, kontantstrøm, robusthet og spesialisert eksponering.',
-      'Hvordan porteføljen kan kommuniseres tydelig til investor med konkrete nøkkeltall, eksponeringer og en logisk implementeringsplan.'
-    ], { x: 6.9, y: 2.2, w: 5.6, h: 2.6, fontSize: 12 });
-    addCard(s, { x: 6.9, y: 5.2, w: 5.3, h: 1.05, title: 'Pre-kundefase', value: 'Illustrativ', subtitle: 'Ikke egnethetsvurdert anbefaling', accent: COLORS.salmon, valueSize: 24 });
+      'Hvordan kapitalen kan fordeles mellom aktivaklasser og Pensum-løsninger.',
+      'Hvorfor de valgte løsningene kan fungere sammen i én helhetlig portefølje.',
+      'Hvordan forslaget kan kommuniseres tydelig og profesjonelt til investor.'
+    ], { x: 0.85, y: 5.25, w: 11.6, h: 1.2, fontSize: 11.5 });
     addFooter(s, 2);
   }
 
-  // 3 Executive summary
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Executive summary', 'Anbefalt porteføljelogikk og hvorfor den passer den illustrerte investorprofilen.');
-    addCard(s, { x: 0.75, y: 1.95, w: 2.7, h: 1.15, title: 'Investerbar kapital', value: formatCompactCurrency(d.total), subtitle: 'Til fordeling i modellen', accent: COLORS.navy });
-    addCard(s, { x: 3.6, y: 1.95, w: 2.7, h: 1.15, title: 'Likvid / illikvid', value: `${pct(d.liquiditySplit.likvid, 0)} / ${pct(d.liquiditySplit.illikvid, 0)}`, subtitle: 'Andel av totalporteføljen', accent: COLORS.blue });
-    addCard(s, { x: 6.45, y: 1.95, w: 2.7, h: 1.15, title: 'Forv. avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Samlet årlig forventning', accent: COLORS.green });
-    addCard(s, { x: 9.3, y: 1.95, w: 2.7, h: 1.15, title: 'Scenariobase', value: formatCompactCurrency(d.scenario.base), subtitle: `${d.years} år frem i tid`, accent: COLORS.salmon });
-    addSectionLabel(s, 'Vår vurdering', 0.75, 3.45);
+    addBrandHeader(s, 'Executive summary', 'Kort oppsummering av hovedtrekkene i forslaget.');
+    addCard(s, { x: 0.75, y: 2.0, w: 2.6, h: 1.0, title: 'Kapital', value: formatCompactCurrency(d.total), subtitle: 'Til fordeling', accent: COLORS.navy, valueSize: 16 });
+    addCard(s, { x: 3.55, y: 2.0, w: 2.6, h: 1.0, title: 'Likvid / illikvid', value: `${pct(d.liquiditySplit.likvid,0)} / ${pct(d.liquiditySplit.illikvid,0)}`, subtitle: 'Andel av porteføljen', accent: COLORS.blue, valueSize: 15 });
+    addCard(s, { x: 6.35, y: 2.0, w: 2.6, h: 1.0, title: 'Forv. avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Årlig forventning', accent: COLORS.green, valueSize: 16 });
+    addCard(s, { x: 9.15, y: 2.0, w: 2.6, h: 1.0, title: 'Base case', value: formatCompactCurrency(d.scenario.base), subtitle: `${d.years} år frem`, accent: COLORS.salmon, valueSize: 15 });
+    addSectionLabel(s, 'Vår vurdering', 0.8, 3.45);
     addBulletList(s, [
-      'Porteføljen bør bygges rundt et tydelig kjerne/satellitt-prinsipp, der brede Pensum-løsninger bærer hoveddelen av risikoen og mer spesialiserte løsninger brukes selektivt.',
-      'Rentedelen skal bidra med løpende kontantstrøm og robusthet, mens aksjedelen skal være den viktigste langsiktige avkastningsdriveren.',
-      'Porteføljen fremstår som lett å forklare i møte, enkel å følge opp over tid og godt egnet for løpende rapportering og rebalansering.'
-    ], { x: 0.8, y: 3.75, w: 7.2, h: 2.2, fontSize: 12 });
-    addSectionLabel(s, 'Kjernen i forslaget', 8.4, 3.45);
+      'Forslaget bygger på en tydelig kjerne/satellitt-struktur der brede løsninger danner fundamentet og mer spesialiserte løsninger brukes selektivt.',
+      'Rentedelen skal bidra med robusthet og løpende kontantstrøm, mens aksjedelen skal være viktigste langsiktige avkastningsdriver.',
+      'Porteføljen er satt opp for å være enkel å forklare i møte og enkel å følge opp i løpende rådgivning.'
+    ], { x: 0.85, y: 3.75, w: 7.0, h: 2.1, fontSize: 11.5 });
     addDataTable(s, [
-      [{ text: 'Løsning', options: { bold: true, color: COLORS.navy } }, { text: 'Vekt', options: { bold: true, color: COLORS.navy } }, { text: 'Rolle', options: { bold: true, color: COLORS.navy } }],
-      ...d.selectedSolutionRows.slice(0, 5).map((row) => [row.navn, pct(row.vekt), row.rolle])
-    ], { x: 8.35, y: 3.8, w: 4.3, fontSize: 9.5, rowH: 0.34 });
+      [{ text: 'Kjerne i forslaget', options: { bold: true, color: COLORS.navy } }, { text: 'Vekt', options: { bold: true, color: COLORS.navy } }],
+      ...topSolutions.slice(0,5).map((row) => [row.navn, pct(row.vekt)])
+    ], { x: 8.1, y: 3.7, w: 4.2, fontSize: 9.5, rowH: 0.34 });
     addFooter(s, 3);
   }
 
-  // 4 Asset allocation
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Porteføljesammensetning', 'Allokeringen viser hvordan investorens kapital fordeles på aktivaklasser og Pensum-løsninger.');
-    if (d.assetAlloc.length) {
-      s.addChart(PptxGenJS.ChartType.doughnut, [{
-        name: 'Allokering',
-        labels: d.assetAlloc.map((a) => a.navn),
-        values: d.assetAlloc.map((a) => a.vekt)
-      }], {
-        x: 0.85, y: 2.0, w: 4.0, h: 3.45,
-        showLegend: true,
-        legendPos: 'b',
-        holeSize: 58,
-        chartColors: d.assetAlloc.map((a, idx) => Object.values(PRODUCT_COLORS)[idx % Object.values(PRODUCT_COLORS).length]),
-        showTitle: false,
-        showPercent: true
-      });
-    }
+    addBrandHeader(s, 'Anbefalt porteføljesammensetning', 'Fordeling på aktivaklasser og forventet profil.');
+    addSectionLabel(s, 'Aktivaklasser', 0.8, 1.95);
+    addBarList(s, d.assetAlloc.length ? d.assetAlloc : [{ navn: 'Ingen data', vekt: 0 }], { x: 0.85, y: 2.35, w: 5.4, maxValue: 100, color: COLORS.navy, labelW: 2.1 });
     addDataTable(s, [
       [{ text: 'Aktivaklasse', options: { bold: true, color: COLORS.navy } }, { text: 'Vekt', options: { bold: true, color: COLORS.navy } }, { text: 'Beløp', options: { bold: true, color: COLORS.navy } }, { text: 'Forv. avkastning', options: { bold: true, color: COLORS.navy } }],
       ...d.assetAlloc.map((a) => [a.navn, pct(a.vekt), formatCompactCurrency(a.belop), pct(a.avkastning)])
-    ], { x: 5.25, y: 2.0, w: 7.3, fontSize: 10, rowH: 0.34 });
-    addCard(s, { x: 5.25, y: 5.95, w: 2.3, h: 0.9, title: 'Risikoprofil', value: d.risikoProfil, accent: COLORS.navy, valueSize: 16 });
-    addCard(s, { x: 7.75, y: 5.95, w: 2.3, h: 0.9, title: 'Investeringshorisont', value: `${d.years} år`, accent: COLORS.blue, valueSize: 16 });
-    addCard(s, { x: 10.25, y: 5.95, w: 2.3, h: 0.9, title: 'Forv. sluttverdi', value: formatCompactCurrency(d.scenario.base), accent: COLORS.green, valueSize: 16 });
+    ], { x: 6.55, y: 2.1, w: 5.7, fontSize: 9.8, rowH: 0.35 });
+    addCard(s, { x: 6.55, y: 5.85, w: 1.8, h: 0.9, title: 'Risikoprofil', value: d.risikoProfil, accent: COLORS.navy, valueSize: 15 });
+    addCard(s, { x: 8.45, y: 5.85, w: 1.8, h: 0.9, title: 'Horisont', value: `${d.years} år`, accent: COLORS.blue, valueSize: 15 });
+    addCard(s, { x: 10.35, y: 5.85, w: 1.9, h: 0.9, title: 'Yield', value: pct(d.weightedYield), accent: COLORS.green, valueSize: 15 });
     addFooter(s, 4);
   }
 
-  // 5 Solution overview
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Pensum-løsningene i porteføljen', 'Hver løsning skal ha en tydelig og forklarbar rolle i totalporteføljen.');
-    const rows = [[
-      { text: 'Løsning', options: { bold: true, color: COLORS.navy } },
-      { text: 'Vekt', options: { bold: true, color: COLORS.navy } },
-      { text: 'Rolle', options: { bold: true, color: COLORS.navy } },
-      { text: 'Forv. avk.', options: { bold: true, color: COLORS.navy } },
-      { text: 'Yield', options: { bold: true, color: COLORS.navy } },
-      { text: 'Likviditet', options: { bold: true, color: COLORS.navy } }
-    ]];
-    d.selectedSolutionRows.forEach((row) => {
-      rows.push([row.navn, pct(row.vekt), row.rolle, pct(row.expectedReturn), pct(row.expectedYield), row.likviditetLabel]);
-    });
-    addDataTable(s, rows, { x: 0.75, y: 2.0, w: 12.0, fontSize: 9.6, rowH: 0.34 });
+    addBrandHeader(s, 'Pensum-løsningene i porteføljen', 'Hver løsning skal ha en tydelig rolle i totalporteføljen.');
+    addDataTable(s, [
+      [
+        { text: 'Løsning', options: { bold: true, color: COLORS.navy } },
+        { text: 'Vekt', options: { bold: true, color: COLORS.navy } },
+        { text: 'Rolle', options: { bold: true, color: COLORS.navy } },
+        { text: 'Forv. avk.', options: { bold: true, color: COLORS.navy } },
+        { text: 'Yield', options: { bold: true, color: COLORS.navy } },
+        { text: 'Likviditet', options: { bold: true, color: COLORS.navy } }
+      ],
+      ...d.selectedSolutionRows.map((row) => [row.navn, pct(row.vekt), row.rolle, pct(row.expectedReturn), pct(row.expectedYield), row.likviditetLabel])
+    ], { x: 0.75, y: 2.0, w: 11.8, fontSize: 9.4, rowH: 0.34 });
     addFooter(s, 5);
   }
 
-  // 6 Why this mix
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Hvorfor denne sammensetningen', 'Porteføljen er satt sammen for å balansere vekst, robusthet, kontantstrøm og diversifisering.');
+    addBrandHeader(s, 'Hvorfor denne sammensetningen', 'Logikken bak porteføljen.');
     const cards = [
-      ['Vekstmotor', 'Aksjedelen skal drive langsiktig avkastning gjennom bred global eksponering og utvalgte satellitter.', COLORS.navy],
-      ['Robusthet', 'Rentedelen skal dempe svingninger og gi mer forutsigbarhet i totalporteføljen.', COLORS.blue],
-      ['Kontantstrøm', 'Yield-komponentene skal bidra med løpende avkastning og bedre balanse i porteføljen.', COLORS.green],
-      ['Diversifisering', 'Spesialiserte løsninger brukes for å skape flere uavhengige avkastningsdrivere.', COLORS.salmon]
+      ['Vekst', 'Aksjedelen skal være viktigste langsiktige avkastningsdriver gjennom brede og forklarbare eksponeringer.', COLORS.navy],
+      ['Robusthet', 'Renteeksponering skal dempe svingninger og gi en mer balansert samlet portefølje.', COLORS.blue],
+      ['Kontantstrøm', 'Yield-komponentene bidrar med løpende avkastning og bedre totalprofil for investoren.', COLORS.green],
+      ['Diversifisering', 'Utvalgte satellitter skal skape flere uavhengige avkastningsdrivere i porteføljen.', COLORS.salmon]
     ];
     cards.forEach((card, idx) => {
       const x = 0.8 + (idx % 2) * 6.0;
-      const y = 2.0 + Math.floor(idx / 2) * 1.65;
-      addCard(s, { x, y, w: 5.55, h: 1.25, title: card[0], value: '', subtitle: card[1], accent: card[2], valueSize: 1 });
+      const y = 2.1 + Math.floor(idx / 2) * 1.7;
+      addCard(s, { x, y, w: 5.5, h: 1.25, title: card[0], value: ' ', subtitle: card[1], accent: card[2], valueSize: 8 });
     });
-    addSectionLabel(s, 'Hva rådgiver kan si i møtet', 0.8, 5.55);
+    addSectionLabel(s, 'Budskap i kundemøte', 0.8, 5.65);
     addBulletList(s, [
-      'Dette er ikke en tilfeldig liste fond, men en strukturert portefølje der hver løsning fyller en bestemt rolle.',
-      'Forslaget er laget for å være enkelt å forstå for investor og enkelt å følge opp for rådgiver over tid.',
-      'Porteføljen kan justeres trinnvis dersom investor ønsker gradvis innfasing eller har eksisterende beholdninger som skal vurderes.'
-    ], { x: 0.85, y: 5.8, w: 11.6, h: 1.0, fontSize: 11.5 });
+      'Dette er en helhetlig portefølje, ikke en tilfeldig liste produkter.',
+      'Forslaget er laget for å være enkelt å forstå for investor og enkelt å følge opp for rådgiver.',
+      'Porteføljen kan fases inn trinnvis dersom investor ønsker en mer gradvis implementering.'
+    ], { x: 0.85, y: 5.95, w: 11.3, h: 0.9, fontSize: 11 });
     addFooter(s, 6);
   }
 
-  // 7 Historical and expected development
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Historikk og utviklingsprofil', 'Utvikling, årsavkastning og forventet verdiutvikling for porteføljen og de valgte løsningene.');
-    if (d.portfolioSeries.labels.length > 1) {
-      s.addChart(PptxGenJS.ChartType.line, [{
-        name: 'Pensum-portefølje',
-        labels: d.portfolioSeries.labels,
-        values: d.portfolioSeries.indexValues
-      }], {
-        x: 0.8, y: 2.0, w: 7.0, h: 3.3,
-        chartColors: [COLORS.navy],
-        lineSize: 2,
-        showLegend: false,
-        valAxisTitle: 'Indeksert til 100',
-        catAxisLabelRotate: -45
-      });
-    } else {
-      addCard(s, { x: 0.8, y: 2.2, w: 7.0, h: 2.2, title: 'Historikk', value: 'Begrenset datagrunnlag', subtitle: 'Det er for få datapunkter til å generere en robust tidsserie i denne versjonen.', accent: COLORS.blue, valueSize: 22 });
-    }
+    addBrandHeader(s, 'Historikk og nøkkeltall', 'Oppsummering av tilgjengelig utviklingsdata og risikoindikatorer.');
     addDataTable(s, [
       [{ text: 'Periode', options: { bold: true, color: COLORS.navy } }, { text: 'Modellportefølje', options: { bold: true, color: COLORS.navy } }],
-      ...d.yearlySummary.map((row) => [row.year, row.value === null ? '—' : pct(row.value)])
-    ], { x: 8.15, y: 2.0, w: 4.2, fontSize: 10.5, rowH: 0.38 });
-    addCard(s, { x: 8.15, y: 4.95, w: 2.0, h: 0.95, title: 'Volatilitet', value: pct(d.annualizedVol), subtitle: 'Annualisert', accent: COLORS.blue, valueSize: 16 });
-    addCard(s, { x: 10.35, y: 4.95, w: 2.0, h: 0.95, title: 'Max DD', value: pct(d.maxDrawdown), subtitle: 'Basert på tilgjengelig serie', accent: COLORS.salmon, valueSize: 16 });
+      ...summaryRows.map((row) => [row.year, row.value === null ? '—' : pct(row.value)])
+    ], { x: 0.8, y: 2.05, w: 4.3, fontSize: 10, rowH: 0.38 });
+    addCard(s, { x: 5.45, y: 2.0, w: 2.0, h: 1.0, title: 'Volatilitet', value: pct(d.annualizedVol), subtitle: 'Annualisert', accent: COLORS.blue, valueSize: 16 });
+    addCard(s, { x: 7.65, y: 2.0, w: 2.0, h: 1.0, title: 'Max drawdown', value: pct(d.maxDrawdown), subtitle: 'Tilgjengelig serie', accent: COLORS.salmon, valueSize: 16 });
+    addCard(s, { x: 9.85, y: 2.0, w: 2.0, h: 1.0, title: 'Forv. avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Årlig estimat', accent: COLORS.green, valueSize: 16 });
+    addSectionLabel(s, 'Kommentar', 5.45, 3.45);
+    addBulletList(s, [
+      'Historikk og nøkkeltall må leses som illustrasjoner basert på tilgjengelig datagrunnlag.',
+      'Jo bedre og mer konsistent historikk per Pensum-løsning, jo sterkere blir denne delen av rapporten.',
+      'Neste versjon bør vise faktisk porteføljeserie med benchmark og tydeligere månedsoppdatering.'
+    ], { x: 5.45, y: 3.75, w: 6.5, h: 1.65, fontSize: 11 });
     addFooter(s, 7);
   }
 
-  // 8 Risk and scenario
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Scenario og robusthet', 'Hvordan porteføljen kan utvikle seg over tid under ulike avkastningsforutsetninger.');
-    s.addChart(PptxGenJS.ChartType.bar, [{
-      name: 'Scenarier',
-      labels: ['Konservativ', 'Forventet', 'Optimistisk'],
-      values: [round1(d.scenario.conservative / 1_000_000), round1(d.scenario.base / 1_000_000), round1(d.scenario.optimistic / 1_000_000)]
-    }], {
-      x: 0.85, y: 2.0, w: 6.0, h: 3.6,
-      chartColors: [COLORS.navy, COLORS.green, COLORS.salmon],
-      showLegend: false,
-      valAxisTitle: 'Mill. NOK',
-      catAxisLabelFontSize: 10
-    });
-    addCard(s, { x: 7.3, y: 2.0, w: 2.45, h: 1.1, title: 'Konservativ', value: formatCompactCurrency(d.scenario.conservative), subtitle: `${Math.max(d.weightedExpectedReturn - 2.5, 2).toFixed(1)}% p.a.`, accent: COLORS.blue, valueSize: 16 });
-    addCard(s, { x: 9.95, y: 2.0, w: 2.45, h: 1.1, title: 'Forventet', value: formatCompactCurrency(d.scenario.base), subtitle: `${d.weightedExpectedReturn.toFixed(1)}% p.a.`, accent: COLORS.green, valueSize: 16 });
-    addCard(s, { x: 7.3, y: 3.35, w: 2.45, h: 1.1, title: 'Optimistisk', value: formatCompactCurrency(d.scenario.optimistic), subtitle: `${(d.weightedExpectedReturn + 2.5).toFixed(1)}% p.a.`, accent: COLORS.salmon, valueSize: 16 });
-    addCard(s, { x: 9.95, y: 3.35, w: 2.45, h: 1.1, title: 'Likviditet', value: `${pct(d.liquiditySplit.likvid, 0)} likvid`, subtitle: `${pct(d.liquiditySplit.illikvid, 0)} illikvid`, accent: COLORS.navy, valueSize: 16 });
+    addBrandHeader(s, 'Scenarioanalyse', 'Illustrasjon av mulig verdiutvikling over tid.');
+    addCard(s, { x: 0.85, y: 2.05, w: 3.55, h: 1.2, title: 'Konservativt scenario', value: formatCompactCurrency(d.scenario.conservative), subtitle: `${Math.max(d.weightedExpectedReturn - 2.5, 2).toFixed(1)}% p.a.`, accent: COLORS.blue, valueSize: 18 });
+    addCard(s, { x: 4.9, y: 2.05, w: 3.55, h: 1.2, title: 'Forventet scenario', value: formatCompactCurrency(d.scenario.base), subtitle: `${d.weightedExpectedReturn.toFixed(1)}% p.a.`, accent: COLORS.green, valueSize: 18 });
+    addCard(s, { x: 8.95, y: 2.05, w: 3.55, h: 1.2, title: 'Optimistisk scenario', value: formatCompactCurrency(d.scenario.optimistic), subtitle: `${(d.weightedExpectedReturn + 2.5).toFixed(1)}% p.a.`, accent: COLORS.salmon, valueSize: 18 });
     addBulletList(s, [
-      'Scenarioene er illustrasjoner, ikke prognoser, og viser hvor sensitiv sluttverdien er for endringer i årlig avkastning.',
-      'Porteføljen bør vurderes i lys av investorens likviditetsbehov, evne til å tåle svingninger og tidshorisont.',
-      'Illikvide komponenter bør bare utgjøre den andelen investor faktisk kan binde over tid.'
-    ], { x: 7.3, y: 4.9, w: 5.0, h: 1.25, fontSize: 10.5 });
+      'Scenarioene er ikke prognoser, men en enkel illustrasjon av hvordan sluttverdien påvirkes av ulike avkastningsforutsetninger.',
+      'De største forskjellene i sluttverdi kommer ofte fra tidshorisont, disiplin og hvor mye av porteføljen som faktisk blir investert over tid.',
+      'Illikvide plasseringer bør bare utgjøre den delen av kapitalen som investor kan binde over lengre perioder.'
+    ], { x: 0.9, y: 4.0, w: 11.2, h: 1.7, fontSize: 11.2 });
     addFooter(s, 8);
   }
 
-  // 9 Exposure
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Eksponeringsoversikt', 'Vektet eksponering aggregert fra de valgte Pensum-løsningene.');
-    if (d.sectors.length) {
-      s.addChart(PptxGenJS.ChartType.bar, [{
-        name: 'Sektorer',
-        labels: d.sectors.map((r) => r.navn),
-        values: d.sectors.map((r) => r.vekt)
-      }], {
-        x: 0.8, y: 2.0, w: 5.85, h: 3.8,
-        barDir: 'bar',
-        chartColors: [COLORS.navy],
-        showLegend: false,
-        valAxisTitle: '%'
-      });
-    }
-    if (d.regions.length) {
-      s.addChart(PptxGenJS.ChartType.bar, [{
-        name: 'Regioner',
-        labels: d.regions.map((r) => r.navn),
-        values: d.regions.map((r) => r.vekt)
-      }], {
-        x: 6.75, y: 2.0, w: 5.85, h: 3.8,
-        barDir: 'bar',
-        chartColors: [COLORS.salmon],
-        showLegend: false,
-        valAxisTitle: '%'
-      });
-    }
+    addBrandHeader(s, 'Eksponeringsoversikt', 'Aggregert eksponering basert på de valgte løsningene.');
+    addSectionLabel(s, 'Sektorer', 0.8, 1.95);
+    addBarList(s, sectorRows.length ? sectorRows : [{ navn: 'Ingen data', vekt: 0 }], { x: 0.85, y: 2.35, w: 5.2, maxValue: 100, color: COLORS.navy, labelW: 2.0 });
+    addSectionLabel(s, 'Regioner', 6.65, 1.95);
+    addBarList(s, regionRows.length ? regionRows : [{ navn: 'Ingen data', vekt: 0 }], { x: 6.7, y: 2.35, w: 5.2, maxValue: 100, color: COLORS.salmon, labelW: 2.0 });
     addFooter(s, 9);
   }
 
-  // 10 Underlyings and style
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Underliggende eksponering', 'Eksempler på største underliggende posisjoner og stil-/markedsprofil i porteføljen.');
+    addBrandHeader(s, 'Underliggende eksponering', 'Største underliggende posisjoner og stilprofil.');
     addDataTable(s, [
-      [{ text: 'Største underliggende eksponeringer', options: { bold: true, color: COLORS.navy } }, { text: 'Vektet andel', options: { bold: true, color: COLORS.navy } }],
-      ...(d.holdings.length ? d.holdings : [{ navn: 'Ingen data', vekt: 0 }]).map((row) => [row.navn, pct(row.vekt)])
-    ], { x: 0.8, y: 2.0, w: 6.2, fontSize: 9.5, rowH: 0.32 });
-    addDataTable(s, [
-      [{ text: 'Stil / profil', options: { bold: true, color: COLORS.navy } }, { text: 'Andel', options: { bold: true, color: COLORS.navy } }],
-      ...(d.styles.length ? d.styles : [{ navn: 'Ingen data', vekt: 0 }]).map((row) => [row.navn, pct(row.vekt)])
-    ], { x: 7.25, y: 2.0, w: 5.0, fontSize: 10, rowH: 0.34 });
+      [{ text: 'Største underliggende', options: { bold: true, color: COLORS.navy } }, { text: 'Vektet andel', options: { bold: true, color: COLORS.navy } }],
+      ...(holdingRows.length ? holdingRows : [{ navn: 'Ingen data', vekt: 0 }]).map((row) => [row.navn, pct(row.vekt)])
+    ], { x: 0.8, y: 2.0, w: 6.0, fontSize: 9.6, rowH: 0.34 });
+    addBarList(s, styleRows.length ? styleRows : [{ navn: 'Ingen data', vekt: 0 }], { x: 7.15, y: 2.25, w: 5.0, maxValue: 100, color: COLORS.green, labelW: 2.1 });
     addFooter(s, 10);
   }
 
-  // 11 Product rationale per solution
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Investeringscase per løsning', 'Kort forklart hvorfor hver valgt løsning er med i forslaget.');
-    d.selectedSolutionRows.slice(0, 4).forEach((row, idx) => {
+    addBrandHeader(s, 'Investeringscase per løsning', 'Hvorfor de viktigste løsningene er med i forslaget.');
+    topSolutions.slice(0,4).forEach((row, idx) => {
       const x = 0.8 + (idx % 2) * 6.0;
       const y = 2.0 + Math.floor(idx / 2) * 2.1;
-      s.addShape(PptxGenJS.ShapeType.roundRect, { x, y, w: 5.45, h: 1.65, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-      s.addShape(PptxGenJS.ShapeType.rect, { x: x + 0.16, y: y + 0.16, w: 0.12, h: 1.33, fill: { color: row.color }, line: { color: row.color, pt: 0 } });
-      s.addText(row.navn, { x: x + 0.4, y: y + 0.18, w: 3.4, h: 0.22, fontSize: 13, bold: true, color: COLORS.navy });
-      s.addText(`${pct(row.vekt)} | ${row.rolle}`, { x: x + 0.4, y: y + 0.44, w: 3.8, h: 0.2, fontSize: 9.5, color: COLORS.salmon, bold: true });
-      s.addText(row.investeringside, { x: x + 0.4, y: y + 0.72, w: 4.7, h: 0.45, fontSize: 10, color: COLORS.text, valign: 'mid' });
-      if (row.hovedpoenger?.length) {
-        s.addText(`• ${row.hovedpoenger.slice(0, 2).join('  •  ')}`, { x: x + 0.4, y: y + 1.26, w: 4.7, h: 0.18, fontSize: 8.6, color: COLORS.muted });
-      }
+      s.addShape(PptxGenJS.ShapeType.roundRect, { x, y, w: 5.45, h: 1.7, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+      s.addShape(PptxGenJS.ShapeType.rect, { x: x + 0.16, y: y + 0.16, w: 0.12, h: 1.38, fill: { color: row.color }, line: { color: row.color, pt: 0 } });
+      s.addText(row.navn, { x: x + 0.4, y: y + 0.18, w: 3.8, h: 0.22, fontSize: 13, bold: true, color: COLORS.navy });
+      s.addText(`${pct(row.vekt)} | ${row.rolle}`, { x: x + 0.4, y: y + 0.46, w: 4.0, h: 0.18, fontSize: 9.5, color: COLORS.salmon, bold: true });
+      s.addText(row.investeringside || row.beskrivelse || 'Pensum-løsning', { x: x + 0.4, y: y + 0.74, w: 4.7, h: 0.45, fontSize: 9.8, color: COLORS.text });
+      const bullets = Array.isArray(row.hovedpoenger) && row.hovedpoenger.length ? row.hovedpoenger.slice(0,2).join('  •  ') : 'Tydelig rolle i totalporteføljen og enkel å forklare i investoroppfølging.';
+      s.addText(`• ${bullets}`, { x: x + 0.4, y: y + 1.28, w: 4.6, h: 0.18, fontSize: 8.5, color: COLORS.muted });
     });
     addFooter(s, 11);
   }
 
-  // 12 Implementation plan
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
     addBrandHeader(s, 'Implementering og oppfølging', 'Hvordan forslaget kan settes i arbeid og følges opp videre.');
     const steps = [
-      ['1. Avklaring', 'Bekrefte investorens mål, likviditetsbehov, risikobærende evne og eventuelle eksisterende plasseringer.'],
-      ['2. Egnethet', 'Gjennomføre kundeetablering, egnethetsvurdering og eventuelle strukturvurderinger før implementering.'],
-      ['3. Innfasing', 'Bygge porteføljen samlet eller trinnvis avhengig av markedssyn, likviditet og investorpreferanser.'],
-      ['4. Oppfølging', 'Løpende rapportering, rebalansering og oppdatering ved endrede markedsforhold eller investorbehov.']
+      ['1. Avklaring', 'Bekrefte investorens mål, likviditetsbehov og eventuelle eksisterende plasseringer som skal vurderes.'],
+      ['2. Egnethet', 'Gjennomføre kundeetablering, kundeklassifisering og egnethetsvurdering før implementering.'],
+      ['3. Innfasing', 'Bygge porteføljen samlet eller trinnvis, avhengig av markedssyn og investorpreferanser.'],
+      ['4. Oppfølging', 'Løpende rapportering, rebalansering og oppdatering ved endrede markedsforhold eller behov.']
     ];
     steps.forEach((step, idx) => {
-      const y = 2.0 + idx * 1.1;
-      s.addShape(PptxGenJS.ShapeType.roundRect, { x: 0.9, y, w: 11.8, h: 0.78, rectRadius: 0.06, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-      s.addShape(PptxGenJS.ShapeType.roundRect, { x: 1.05, y: y + 0.12, w: 1.25, h: 0.54, rectRadius: 0.05, fill: { color: COLORS.navy }, line: { color: COLORS.navy, pt: 0 } });
-      s.addText(step[0], { x: 1.15, y: y + 0.25, w: 1.0, h: 0.15, fontSize: 10, color: COLORS.white, bold: true, align: 'center' });
-      s.addText(step[1], { x: 2.55, y: y + 0.2, w: 9.8, h: 0.28, fontSize: 10.5, color: COLORS.text });
+      const y = 2.0 + idx * 1.15;
+      s.addShape(PptxGenJS.ShapeType.roundRect, { x: 0.9, y, w: 11.4, h: 0.82, rectRadius: 0.05, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+      s.addShape(PptxGenJS.ShapeType.roundRect, { x: 1.05, y: y + 0.16, w: 1.15, h: 0.48, rectRadius: 0.05, fill: { color: COLORS.navy }, line: { color: COLORS.navy, pt: 0 } });
+      s.addText(step[0], { x: 1.22, y: y + 0.24, w: 0.9, h: 0.16, fontSize: 9, color: COLORS.white, bold: true, align: 'center' });
+      s.addText(step[1], { x: 2.45, y: y + 0.18, w: 8.9, h: 0.35, fontSize: 10.4, color: COLORS.text });
     });
     addFooter(s, 12);
   }
 
-  // 13 Communication/reporting
   {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Kommunikasjon og rapportering', 'Verdensklasseverktøy handler også om hvordan porteføljen følges opp etter møtet.');
+    addBrandHeader(s, 'Oppsummering og neste steg', 'Forslaget oppsummert i én side.');
+    addCard(s, { x: 0.8, y: 2.0, w: 3.7, h: 1.15, title: 'Anbefalt profil', value: d.risikoProfil, subtitle: `${d.years} års horisont`, accent: COLORS.navy, valueSize: 18 });
+    addCard(s, { x: 4.8, y: 2.0, w: 3.7, h: 1.15, title: 'Forventet avkastning', value: pct(d.weightedExpectedReturn), subtitle: 'Årlig estimat', accent: COLORS.green, valueSize: 18 });
+    addCard(s, { x: 8.8, y: 2.0, w: 3.7, h: 1.15, title: 'Forventet yield', value: pct(d.weightedYield), subtitle: 'Løpende estimat', accent: COLORS.salmon, valueSize: 18 });
     addBulletList(s, [
-      'Rådgiver skal kunne vise portefølje, risikoprofil, forventet utvikling og Pensum-løsninger live i møte.',
-      'Etter møtet skal samme datagrunnlag kunne generere et profesjonelt forslag med identisk logikk, tallgrunnlag og grafisk uttrykk.',
-      'Månedlige dataoppdateringer må derfor skille tydelig mellom produktdata, historikkdata, eksponeringsdata og presentasjonsmetadata.',
-      'Rapporteringen bør over tid kunne utvides med kundespesifikke kommentarer, porteføljeendringer og rebalanseringsanbefalinger.'
-    ], { x: 0.85, y: 2.1, w: 7.1, h: 2.6, fontSize: 12 });
-    addCard(s, { x: 8.35, y: 2.1, w: 3.95, h: 1.0, title: 'Rådgiver', value: d.radgiver, subtitle: 'Primær kontakt i caset', accent: COLORS.salmon, valueSize: 16 });
-    addCard(s, { x: 8.35, y: 3.35, w: 3.95, h: 1.0, title: 'Rapporteringslogikk', value: 'Samme datakilde', subtitle: 'Møteverktøy og investorforslag', accent: COLORS.blue, valueSize: 16 });
-    addCard(s, { x: 8.35, y: 4.6, w: 3.95, h: 1.0, title: 'Neste steg', value: 'Kundeetablering', subtitle: 'Egnethet og implementering', accent: COLORS.green, valueSize: 16 });
+      'Porteføljen er bygget for å være tydelig, balansert og kommersielt forklarbar.',
+      'Forslaget kan brukes som utgangspunkt for videre rådgivning og egnethetsvurdering.',
+      'Neste steg er å validere investorens situasjon og beslutte om porteføljen skal implementeres samlet eller trinnvis.'
+    ], { x: 0.9, y: 3.8, w: 11.1, h: 1.7, fontSize: 11.5 });
+    s.addText('Pensum Asset Management', { x: 0.9, y: 6.05, w: 3.2, h: 0.2, fontSize: 13, bold: true, color: COLORS.navy });
+    s.addText('Profesjonell kapitalforvaltning og rådgivning', { x: 0.9, y: 6.32, w: 4.5, h: 0.18, fontSize: 9.5, color: COLORS.muted });
     addFooter(s, 13);
-  }
-
-  // 14 Important assumptions
-  {
-    const s = pptx.addSlide();
-    s.background = { color: COLORS.bg };
-    addBrandHeader(s, 'Viktige forutsetninger og forbehold', 'Historisk avkastning er ingen garanti for fremtidig avkastning.');
-    addBulletList(s, [
-      'Avkastningstall og eksponeringer bygger på tilgjengelige data i verktøyet per rapportdato og kan endres ved senere oppdateringer.',
-      'For enkelte Pensum-løsninger er deler av historikken estimert eller basert på underliggende porteføljer før formell oppstart.',
-      'Forventet avkastning, yield, volatilitet og scenarioer er modellerte estimater for illustrasjonsformål og må ikke oppfattes som garantier.',
-      'Informasjon om skatt, struktur og juridiske forhold er generell og må vurderes særskilt i hvert enkelt kundeforhold.'
-    ], { x: 0.85, y: 2.1, w: 11.5, h: 2.5, fontSize: 12 });
-    s.addText('Kontaktdetaljer Pensum Asset Management', { x: 0.85, y: 5.3, w: 4.5, h: 0.22, fontSize: 12, bold: true, color: COLORS.navy });
-    s.addText('Oslo: Frøyas gate 15, 0273 Oslo\nFredrikstad: Storgaten 3, 1607 Fredrikstad\nStavanger: Løkkeveien 107, Smedvigkvartalet', { x: 0.85, y: 5.6, w: 4.8, h: 0.8, fontSize: 10.5, color: COLORS.text, breakLine: true });
-    s.addText(`Rådgiver: ${d.radgiver}\nTelefon og e-post oppgis i endelig kundeforslag`, { x: 6.9, y: 5.6, w: 5.0, h: 0.8, fontSize: 10.5, color: COLORS.text, breakLine: true });
-    addFooter(s, 14);
   }
 
   return pptx;
@@ -946,6 +869,7 @@ export default async function handler(req, res) {
       res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
       return res.send(buffer);
     } catch (pptErr) {
+      res.setHeader('X-Pensum-Ppt-Error', encodeURIComponent(pptErr.message || 'pptx-generation-failed'));
       const buffer = buildSimplePdfBuffer(data);
       res.setHeader('X-Pensum-Output-Format', 'pdf-fallback');
       res.setHeader('Content-Type', 'application/pdf');
