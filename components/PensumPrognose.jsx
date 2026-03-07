@@ -1397,7 +1397,13 @@ export default function PensumPrognoseModell() {
       URL.revokeObjectURL(url);
 
       if (outputFormat === 'pdf-fallback') {
-        alert('PowerPoint er midlertidig utilgjengelig i miljøet. Du fikk PDF som fallback.');
+        const warning = decodeURIComponent(response.headers.get('X-Pensum-Template-Warning') || '');
+          const format = response.headers.get('X-Pensum-Output-Format') || '';
+          if (format === 'pptx-template-raw') {
+            alert('Template-merge feilet, så du fikk selve PPTX-malen tilbake uten dynamiske endringer. ' + (warning || ''));
+          } else {
+            alert('PowerPoint er midlertidig utilgjengelig i miljøet. Du fikk PDF som fallback.' + (warning ? `\n\nDetalj: ${warning}` : ''));
+          }
       } else if (templateDroppetPgaStorrelse) {
         alert('Malfilen var for stor for serverless-request. Presentasjonen ble generert uten template-merge. Komprimer malen (bilder) for å bruke full mal.');
       } else if (manglerPlaceholders) {
