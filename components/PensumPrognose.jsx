@@ -1969,7 +1969,7 @@ export default function PensumPrognoseModell() {
                   {(proposalPreview?.portfolio?.selectedProducts || []).filter((produkt) => (produkt.portfolioWeight || 0) > 0).slice(0, 8).map((produkt) => (
                     <div key={produkt.id} className="flex items-center justify-between text-sm">
                       <span className="text-slate-700">{produkt.kortnavn || produkt.navn}</span>
-                      <span className="font-semibold" style={{ color: '#0D2240' }}>{formatPercent((produkt.portfolioWeight || 0), 1)}</span>
+                      <span className="font-semibold" style={{ color: '#0D2240' }}>{Number(produkt.portfolioWeight || 0).toFixed(1)}%</span>
                     </div>
                   ))}
                 </div>
@@ -1979,6 +1979,17 @@ export default function PensumPrognoseModell() {
                 <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
                   {(proposalPreview?.portfolio?.summaryBullets || []).slice(0, 5).map((punkt, idx) => (<li key={idx}>{punkt}</li>))}
                 </ul>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Planlagte hovedslides</div>
+                  <div className="space-y-1.5 text-sm text-slate-700">
+                    {(proposalPreview?.portfolio?.slidePlan || []).slice(0, 10).map((slide) => (
+                      <div key={`${slide.slideNo}-${slide.type}`} className="flex items-center justify-between gap-3">
+                        <span className="truncate">{slide.slideNo}. {slide.title}</span>
+                        <span className="text-xs text-slate-400 uppercase">{slide.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
