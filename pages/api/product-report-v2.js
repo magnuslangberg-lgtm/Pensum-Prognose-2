@@ -1,32 +1,10 @@
-import { buildProductAdminModel, mergeProductReportData, validateProductAdminModel } from '../../lib/productReportEngineV2';
+import { buildProductReportNode } from '../../lib/productReportEngineV2.js';
 
 export default function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  try {
-    const { product = {}, adminOverride = {}, exposure = {}, monthly = {}, allocationWeight = 0 } = req.body || {};
-    const adminModel = buildProductAdminModel({ ...product, ...adminOverride });
-    const validation = validateProductAdminModel(adminModel);
-    const merged = mergeProductReportData({
-      product,
-      adminOverride,
-      exposure,
-      monthly,
-      allocationWeight
-    });
-
-    return res.status(200).json({
-      ok: true,
-      validation,
-      adminModel,
-      reportNode: merged
-    });
-  } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      error: error?.message || 'Unknown error'
-    });
-  }
+  const { product = {}, override = {}, exposureData = null, weight = 0 } = req.body || {};
+  const node = buildProductReportNode({ product, override, exposureData, weight });
+  return res.status(200).json({ ok: true, node });
 }
