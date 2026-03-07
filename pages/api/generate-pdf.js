@@ -138,8 +138,7 @@ function aggregateWeightedExposure(selectedProducts = [], exposureById = {}, fie
 }
 
 function bulletText(items = []) {
-  return items.filter(Boolean).map((item) => `• ${item}`).join('
-');
+  return items.filter(Boolean).map((item) => `• ${item}`).join('\n');
 }
 
 function normalizeData(data) {
@@ -527,9 +526,9 @@ export default async function handler(req, res) {
     const templateData = uploadedTemplateData || repoTemplateData;
 
     if (templateData && /presentationml|ms-powerpoint/.test(templateData.mime)) {
-      const filnavn = `Pensum_Investeringsforslag_${(data.kundeNavn || 'Kunde').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pptx`;
       try {
         const { buffer, replacements } = await applyTemplatePptx(templateData.buffer, data);
+        const filnavn = `Pensum_Investeringsforslag_${(data.kundeNavn || 'Kunde').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pptx`;
         res.setHeader('X-Pensum-Output-Format', 'pptx-template');
         res.setHeader('X-Pensum-Template-Source', templateData.source || 'upload');
         res.setHeader('X-Pensum-Template-Applied', `${data?.malConfig?.fasteSider || '1-5,14+'}|${data?.malConfig?.dynamiskeSider || '6-13'}`);
@@ -541,13 +540,8 @@ export default async function handler(req, res) {
         res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
         return res.send(buffer);
       } catch (templateErr) {
-        console.warn('Template merge feilet, returnerer rå mal i stedet:', templateErr.message);
-        res.setHeader('X-Pensum-Output-Format', 'pptx-template-raw');
-        res.setHeader('X-Pensum-Template-Source', templateData.source || 'upload');
-        res.setHeader('X-Pensum-Template-Warning', encodeURIComponent(`Template-merge feilet: ${templateErr.message}. Returnerer rå mal.`));
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-        res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
-        return res.send(templateData.buffer);
+        console.warn('Template merge feilet, faller tilbake til kodegenerert PPTX:', templateErr.message);
+        res.setHeader('X-Pensum-Template-Warning', encodeURIComponent(templateErr.message));
       }
     }
 
@@ -574,6 +568,5 @@ export default async function handler(req, res) {
 }
 
 export const config = {
-  runtime: 'nodejs',
   api: { bodyParser: { sizeLimit: '20mb' }, responseLimit: '20mb' }
 };
