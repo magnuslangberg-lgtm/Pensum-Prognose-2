@@ -295,7 +295,6 @@ function normalizeData(data) {
   };
 }
 
-}
 
 function calcRiskRows(monthlyRows = []) {
   return monthlyRows.map((r) => {
