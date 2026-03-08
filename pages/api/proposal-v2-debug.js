@@ -1,35 +1,34 @@
-import * as monthlyDataImport from '../../lib/monthlyDataImport.js';
 import { buildProposalModelV2 } from '../../lib/proposalModelV2.js';
+import loadLatestPensumCsvFromUploads from '../../lib/monthlyDataImport.js';
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '12mb'
-    }
-  }
-};
-
-function getMonthlyDataset(csvBase64) {
-  const parseFn = monthlyDataImport.parsePensumCsvBuffer;
-  const loadFn = monthlyDataImport.loadLatestPensumCsvFromUploads;
-  if (csvBase64 && typeof parseFn === 'function') {
-    return parseFn(Buffer.from(String(csvBase64), 'base64'));
-  }
-  if (typeof loadFn === 'function') {
-    return loadFn();
-  }
-  return null;
-}
+export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const { formData = null, csvBase64 = null } = req.body || {};
-    const monthlyDataset = getMonthlyDataset(csvBase64);
-    const proposalModel = buildProposalModelV2({ formData: formData || {}, monthlyDataset });
-    return res.status(200).json({ ok: true, proposalModel, monthlyDatasetFound: Boolean(monthlyDataset) });
+    const monthlyDataset = loadLatestPensumCsvFromUploads();
+    const proposal = buildProposalModelV2({
+      formData: req.body || {},
+      monthlyDataset,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      monthlyDataset: {
+        reportDate: monthlyDataset?.reportDate || null,
+        fileName: monthlyDataset?.fileName || null,
+        productCount: Array.isArray(monthlyDataset?.products) ? monthlyDataset.products.length : 0,
+      },
+      proposal,
+    });
   } catch (error) {
-    return res.status(500).json({ ok: false, error: error?.message || 'Unknown error' });
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || 'Preview failed',
+    });
   }
 }
