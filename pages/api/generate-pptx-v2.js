@@ -1,33 +1,26 @@
-import loadLatestPensumCsvFromUploads from '../../lib/monthlyDataImport.js';
-import { buildProposalModelV2 } from '../../lib/proposalModelV2.js';
-import { createProposalPresentationV2 } from '../../lib/pptxGeneratorV2.js';
+import loadLatestPensumCsvFromUploads from '../../lib/monthlyDataImport';
+import { buildProposalWorldClassV2 } from '../../lib/proposalWorldClassV2';
+import { generateProposalPptxV2 } from '../../lib/pptxGeneratorV2';
 
-export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
+export const runtime = 'nodejs';
+export const config = { api: { bodyParser: { sizeLimit: '2mb' } } };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    const monthlyDataset = loadLatestPensumCsvFromUploads();
-    const proposal = buildProposalModelV2({
-      formData: req.body || {},
-      monthlyDataset,
+    const dataset = loadLatestPensumCsvFromUploads();
+    const body = req.body || {};
+    const model = buildProposalWorldClassV2({
+      dataset,
+      portfolioWeights: body.portfolioWeights || body.pensumAllokering || {},
+      customer: body.customer || {},
     });
-
-    const pptx = await createProposalPresentationV2(proposal);
-    const buffer = await pptx.write({ outputType: 'nodebuffer' });
-
-    const fileName = `Pensum_Investeringsforslag_v2_${new Date().toISOString().slice(0,10)}.pptx`;
+    const buffer = await generateProposalPptxV2(model);
+    const safeName = (model?.meta?.customerName || 'Kunde').replace(/[^a-zA-Z0-9_-]+/g, '_');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    return res.status(200).send(Buffer.from(buffer));
+    res.setHeader('Content-Disposition', `attachment; filename="Pensum_Investeringsforslag_V2_${safeName}.pptx"`);
+    return res.status(200).send(buffer);
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      error: error?.message || 'PPTX generation failed',
-    });
+    return res.status(500).json({ ok: false, error: error?.message || 'Unknown error' });
   }
 }
