@@ -235,10 +235,10 @@ function normalizePayload(payload = {}) {
 
 function addChrome(slide, pageNo, rightText = '') {
   slide.background = { color: COLORS.light };
-  slide.addShape(PptxGenJS.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.55, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
+  slide.addShape('rect', { x: 0, y: 0, w: 13.33, h: 0.55, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
   slide.addText('PENSUM ASSET MANAGEMENT', { x: 0.65, y: 0.14, w: 5.5, h: 0.2, fontSize: 10, color: COLORS.navy, bold: true });
   if (rightText) slide.addText(rightText, { x: 8.5, y: 0.14, w: 4.1, h: 0.2, fontSize: 10, color: COLORS.muted, align: 'right' });
-  slide.addShape(PptxGenJS.ShapeType.line, { x: 0.65, y: 7.1, w: 12.05, h: 0, line: { color: COLORS.line, pt: 1 } });
+  slide.addShape('line', { x: 0.65, y: 7.1, w: 12.05, h: 0, line: { color: COLORS.line, pt: 1 } });
   slide.addText(`Side ${pageNo}`, { x: 0.65, y: 7.12, w: 2, h: 0.2, fontSize: 9, color: COLORS.muted });
 }
 
@@ -248,7 +248,7 @@ function addTitle(slide, title, subtitle = '') {
 }
 
 function addKpiCard(slide, x, y, w, title, value, accent = COLORS.navy, sub = '') {
-  slide.addShape(PptxGenJS.ShapeType.roundRect, { x, y, w, h: 1.0, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+  slide.addShape('roundRect', { x, y, w, h: 1.0, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
   slide.addText(title, { x: x + 0.18, y: y + 0.12, w: w - 0.3, h: 0.15, fontSize: 9, color: COLORS.muted, bold: true });
   slide.addText(String(value), { x: x + 0.18, y: y + 0.35, w: w - 0.3, h: 0.28, fontSize: 20, color: accent, bold: true });
   if (sub) slide.addText(sub, { x: x + 0.18, y: y + 0.72, w: w - 0.3, h: 0.12, fontSize: 8, color: COLORS.muted });
@@ -272,7 +272,6 @@ function buildGeneratedDeck(payload = {}) {
   pptx.title = `Investeringsforslag ${d.kundeNavn}`;
   let page = 1;
 
-  // 1 Forside
   {
     const s = pptx.addSlide();
     addChrome(s, page++, formatDateLabel(d.dato));
@@ -285,7 +284,6 @@ function buildGeneratedDeck(payload = {}) {
     addKpiCard(s, 8.55, 4.2, 3.1, 'Forv. sluttverdi', `${currency(d.expValue)} kr`, COLORS.navy, `${d.horisont} år`);
   }
 
-  // 2 Summary
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Executive summary');
@@ -302,17 +300,16 @@ function buildGeneratedDeck(payload = {}) {
     ];
     s.addText(bullets.map((b) => ({ text: `• ${b}`, options: { bullet: { indent: 18 } } })), { x: 0.95, y: 3.3, w: 7.3, h: 1.8, fontSize: 16, color: COLORS.text, breakLine: true });
     if (d.alloc.length) {
-      s.addChart(PptxGenJS.ChartType.pie, [{ name: 'Allokering', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 8.6, y: 3.05, w: 3.3, h: 2.5, showLegend: false, showValue: true, dataLabelPosition: 'bestFit' });
+      s.addChart('pie', [{ name: 'Allokering', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 8.6, y: 3.05, w: 3.3, h: 2.5, showLegend: false, showValue: true, dataLabelPosition: 'bestFit' });
     }
   }
 
-  // 3 Allocation
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Aktivaklasseallokering');
     addTitle(s, 'Aktivaklasseallokering', 'Fordeling mellom aksjer, renter og alternative komponenter');
     if (d.alloc.length) {
-      s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Vekt', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 0.9, y: 1.95, w: 6.0, h: 3.6, showLegend: false, catAxisLabelFontSize: 11, valAxisLabelFontSize: 10 });
+      s.addChart('bar', [{ name: 'Vekt', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 0.9, y: 1.95, w: 6.0, h: 3.6, showLegend: false, catAxisLabelFontSize: 11, valAxisLabelFontSize: 10 });
       s.addTable([
         [{ text: 'Aktivaklasse', options: { bold: true } }, { text: 'Vekt', options: { bold: true } }, { text: 'Beløp', options: { bold: true } }],
         ...d.alloc.map((a) => [a.navn, pct(a.vekt), `${currency((a.vekt / 100) * d.total)} kr`])
@@ -320,7 +317,6 @@ function buildGeneratedDeck(payload = {}) {
     }
   }
 
-  // 4 Products overview
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Pensum-løsninger');
@@ -331,18 +327,16 @@ function buildGeneratedDeck(payload = {}) {
     ], { x: 0.85, y: 1.9, w: 11.8, fontSize: 10, rowH: 0.28, border: { pt: 1, color: COLORS.line } });
   }
 
-  // 5 Aggregated exposures summary
   if ((d.eksponering?.sektorer || []).length || (d.eksponering?.regioner || []).length) {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Porteføljeeksponering');
     addTitle(s, 'Aggregert porteføljeeksponering', 'Sekundær oppsummering av vektet eksponering på tvers av valgte produkter');
     const sekt = topRows(d.eksponering?.sektorer, 8);
     const reg = topRows(d.eksponering?.regioner, 8);
-    if (sekt.length) s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Sektorer', labels: sekt.map((r) => r.navn), values: sekt.map((r) => r.vekt) }], { x: 0.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
-    if (reg.length) s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Regioner', labels: reg.map((r) => r.navn), values: reg.map((r) => r.vekt) }], { x: 6.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+    if (sekt.length) s.addChart('bar', [{ name: 'Sektorer', labels: sekt.map((r) => r.navn), values: sekt.map((r) => r.vekt) }], { x: 0.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+    if (reg.length) s.addChart('bar', [{ name: 'Regioner', labels: reg.map((r) => r.navn), values: reg.map((r) => r.vekt) }], { x: 6.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
   }
 
-  // Product slides
   d.products.forEach((p) => {
     const sectors = topRows(p.exposure?.sektorer, 8);
     const regions = topRows(p.exposure?.regioner, 8);
@@ -375,10 +369,10 @@ function buildGeneratedDeck(payload = {}) {
       addChrome(s, page++, `${p.navn} – eksponering`);
       addTitle(s, `${p.navn} – innhold og eksponering`, 'Underliggende eksponering vises produkt for produkt');
       if (sectors.length) {
-        s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Sektorer', labels: sectors.map((r) => r.navn), values: sectors.map((r) => r.vekt) }], { x: 0.85, y: 1.9, w: 5.9, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+        s.addChart('bar', [{ name: 'Sektorer', labels: sectors.map((r) => r.navn), values: sectors.map((r) => r.vekt) }], { x: 0.85, y: 1.9, w: 5.9, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
       }
       if (regions.length) {
-        s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Regioner', labels: regions.map((r) => r.navn), values: regions.map((r) => r.vekt) }], { x: 6.85, y: 1.9, w: 5.6, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+        s.addChart('bar', [{ name: 'Regioner', labels: regions.map((r) => r.navn), values: regions.map((r) => r.vekt) }], { x: 6.85, y: 1.9, w: 5.6, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
       }
       const leftRows = holdings.length
         ? holdings.map((r) => [r.navn, pct(r.vekt)])
