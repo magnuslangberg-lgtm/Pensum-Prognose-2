@@ -2474,9 +2474,9 @@ export default function PensumPrognoseModell() {
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                   {/* Venstre: Allokering */}
-                  <div className="xl:col-span-2">
+                  <div className="xl:col-span-8">
                     <h4 className="font-semibold mb-4 flex items-center justify-between" style={{ color: PENSUM_COLORS.darkBlue }}>
                       <span>Din portefølje</span>
                       <div className="flex items-center gap-3">
@@ -2604,62 +2604,62 @@ export default function PensumPrognoseModell() {
                     </div>
                   </div>
 
-                  {/* Høyre: Kakediagrammer */}
-                  <div className="space-y-6">
-                    {/* Porteføljefordeling */}
-                    <div>
-                      <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                      <ResponsiveContainer width="100%" height={160}>
-                        <PieChart>
-                          <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" outerRadius={55} dataKey="vekt">
-                            {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
-                              <Cell key={entry.id} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v) => v + '%'} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="space-y-1">
-                        {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
-                          <div key={p.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
-                            <span className="flex-1 truncate">{p.navn}</span>
-                            <span className="font-medium">{p.vekt}%</span>
-                          </div>
-                        ))}
+
+                  {/* Høyre: Sammendrag og produktpanel */}
+                  <div className="xl:col-span-4 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                        <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
+                        <ResponsiveContainer width="100%" height={152}>
+                          <PieChart>
+                            <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" outerRadius={52} dataKey="vekt">
+                              {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
+                                <Cell key={entry.id} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(v) => v + '%'} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="space-y-1">
+                          {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
+                            <div key={p.id} className="flex items-center gap-2 text-xs">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
+                              <span className="flex-1 truncate">{p.navn}</span>
+                              <span className="font-medium">{p.vekt}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                        <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                        <ResponsiveContainer width="100%" height={118}>
+                          <PieChart>
+                            <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" outerRadius={42} dataKey="value">
+                              {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
+                                <Cell key={entry.name} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(v) => v + '%'} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                          {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                            <div key={a.name} className="flex items-center gap-2 text-xs">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
+                              <span className="text-gray-600">{a.name}</span>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Aktivafordeling */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
-                      <ResponsiveContainer width="100%" height={120}>
-                        <PieChart>
-                          <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" outerRadius={45} dataKey="value">
-                            {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
-                              <Cell key={entry.name} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v) => v + '%'} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex flex-wrap justify-center gap-4 mt-2">
-                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                          <div key={a.name} className="flex items-center gap-2 text-sm">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>
-                            <span className="text-gray-600">{a.name}</span>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Produktspesifikk eksponering */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-start justify-between gap-3 mb-2">
                         <div>
                           <h4 className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produktspesifikk eksponering</h4>
-                          <p className="text-xs text-gray-500 mt-1">Vis hvert produkt for seg. Den genererte presentasjonen bygger på denne logikken, mens aggregert eksponering brukes som sekundær oppsummering.</p>
+                          <p className="text-xs text-gray-500 mt-1">Hvert produkt vises for seg. Dette er primærkilden for produktslidene i investeringsforslaget.</p>
                         </div>
                         {aktivtEksponeringsProdukt && (
                           <button
@@ -2671,133 +2671,139 @@ export default function PensumPrognoseModell() {
                           </button>
                         )}
                       </div>
-
-                      {valgtePensumProdukterMedEksponering.length > 0 ? (
-                        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 overflow-hidden">
-                          <div className="grid grid-cols-12 min-h-[520px]">
-                            <div className="col-span-12 lg:col-span-4 border-r border-slate-200 bg-white">
-                              <div className="p-4 border-b border-slate-100">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgte produkter</p>
-                                <p className="text-sm text-slate-600 mt-1">Velg et produkt for å se innhold, rolle og rapportgrunnlag.</p>
-                              </div>
-                              <div className="p-3 space-y-2">
-                                {valgtePensumProdukterMedEksponering.map((produkt) => (
-                                  <button
-                                    key={produkt.id}
-                                    onClick={() => setAktivEksponeringProduktId(produkt.id)}
-                                    className={`w-full text-left rounded-xl border px-3 py-3 transition ${aktivEksponeringProduktId === produkt.id ? 'shadow-sm' : 'hover:bg-slate-50'}`}
-                                    style={{
-                                      borderColor: aktivEksponeringProduktId === produkt.id ? PENSUM_COLORS.lightBlue : '#E2E8F0',
-                                      backgroundColor: aktivEksponeringProduktId === produkt.id ? '#EFF6FF' : '#FFFFFF'
-                                    }}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="min-w-0">
-                                        <p className="text-sm font-semibold truncate" style={{ color: PENSUM_COLORS.darkBlue }}>{produkt.navn}</p>
-                                        <p className="text-xs text-slate-500 mt-1 truncate">{produkt.rapport?.role || produkt.aktivatype || 'Pensum-løsning'}</p>
-                                      </div>
-                                      <div className="text-right shrink-0">
-                                        <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(produkt.vekt)}</p>
-                                        <p className="text-[11px] text-slate-400">vekt</p>
-                                      </div>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="col-span-12 lg:col-span-8 p-4 lg:p-5">
-                              {aktivtEksponeringsProdukt ? (
-                                <div className="space-y-4">
-                                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgt produkt</p>
-                                      <h4 className="text-2xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{aktivtEksponeringsProdukt.rapport?.slideTitle || aktivtEksponeringsProdukt.navn}</h4>
-                                      <p className="text-sm text-slate-600 mt-1">{aktivtEksponeringsProdukt.rapport?.slideSubtitle || aktivtEksponeringsProdukt.navn}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 shrink-0">
-                                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
-                                        <p className="text-[11px] uppercase tracking-wide text-slate-500">Porteføljevekt</p>
-                                        <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(aktivtEksponeringsProdukt.vekt)}</p>
-                                      </div>
-                                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
-                                        <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. avkastning</p>
-                                        <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${aktivtEksponeringsProdukt.rapport.expectedReturn}%` : '—'}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                      { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
-                                      { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
-                                      { key: 'underliggende', title: 'Underliggende', color: PENSUM_COLORS.salmon },
-                                      { key: 'stil', title: 'Stil / øvrig', color: PENSUM_COLORS.gold }
-                                    ].map((block) => {
-                                      const rows = (aktivtEksponeringsProdukt.eksponering?.[block.key] || []).slice(0, 8);
-                                      return (
-                                        <div key={block.key} className="rounded-xl border border-slate-200 bg-white p-4">
-                                          <div className="flex items-center justify-between mb-3">
-                                            <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
-                                            <span className="text-[11px] text-slate-400">{rows.length ? `${rows.length} linjer` : 'Ingen data'}</span>
-                                          </div>
-                                          {rows.length ? (
-                                            <div className="space-y-2">
-                                              {rows.map((row, idx) => (
-                                                <div key={`${block.key}-${idx}`} className="flex items-center gap-2">
-                                                  <div className="flex-grow bg-slate-100 rounded-full h-4 overflow-hidden">
-                                                    <div className="h-full rounded-full" style={{ width: `${Math.min(Number(row.vekt) || 0, 100)}%`, backgroundColor: block.color }}></div>
-                                                  </div>
-                                                  <span className="text-xs w-24 truncate">{row.navn}</span>
-                                                  <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <div className="h-[172px] flex items-center justify-center text-sm text-slate-400">Ingen data registrert</div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                      <div>
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Rolle i porteføljen</p>
-                                        <p className="mt-1 text-slate-700">{aktivtEksponeringsProdukt.rapport?.role || '—'}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Benchmark</p>
-                                        <p className="mt-1 text-slate-700">{aktivtEksponeringsProdukt.rapport?.benchmark || '—'}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Investeringscase</p>
-                                        <p className="mt-1 text-slate-700">{aktivtEksponeringsProdukt.rapport?.caseText || aktivtEksponeringsProdukt.rapport?.pitch || '—'}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Nøkkelrisiko</p>
-                                        <p className="mt-1 text-slate-700">{aktivtEksponeringsProdukt.rapport?.riskText || '—'}</p>
-                                      </div>
-                                    </div>
-                                    {aktivtEksponeringsProdukt.eksponering?.disclaimer && (
-                                      <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-                                        {aktivtEksponeringsProdukt.eksponering.disclaimer}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="h-full flex items-center justify-center text-slate-400">Ingen produkter med vekt valgt.</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">Legg til produkter og tilordne vekt for å se produktspesifikk eksponering her.</div>
-                      )}
                     </div>
                   </div>
+                </div>
+
+                {/* Full bredde: Produktspesifikk eksponering */}
+                <div className="mt-6">
+                  {valgtePensumProdukterMedEksponering.length > 0 ? (
+                    <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 overflow-hidden">
+                      <div className="grid grid-cols-12 min-h-[440px]">
+                        <div className="col-span-12 lg:col-span-3 xl:col-span-3 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white">
+                          <div className="p-4 border-b border-slate-100">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgte produkter</p>
+                            <p className="text-sm text-slate-600 mt-1">Velg et produkt for å se innhold, rolle og rapportgrunnlag.</p>
+                          </div>
+                          <div className="p-3 grid grid-cols-2 lg:grid-cols-1 gap-2">
+                            {valgtePensumProdukterMedEksponering.map((produkt) => (
+                              <button
+                                key={produkt.id}
+                                onClick={() => setAktivEksponeringProduktId(produkt.id)}
+                                className={`w-full text-left rounded-xl border px-3 py-3 transition ${aktivEksponeringProduktId === produkt.id ? 'shadow-sm' : 'hover:bg-slate-50'}`}
+                                style={{
+                                  borderColor: aktivEksponeringProduktId === produkt.id ? PENSUM_COLORS.lightBlue : '#E2E8F0',
+                                  backgroundColor: aktivEksponeringProduktId === produkt.id ? '#EFF6FF' : '#FFFFFF'
+                                }}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold truncate" style={{ color: PENSUM_COLORS.darkBlue }}>{produkt.navn}</p>
+                                    <p className="text-xs text-slate-500 mt-1 truncate">{produkt.rapport?.role || produkt.aktivatype || 'Pensum-løsning'}</p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(produkt.vekt)}</p>
+                                    <p className="text-[11px] text-slate-400">vekt</p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="col-span-12 lg:col-span-9 xl:col-span-9 p-4 lg:p-5">
+                          {aktivtEksponeringsProdukt ? (
+                            <div className="space-y-4">
+                              <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgt produkt</p>
+                                  <h4 className="text-2xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{aktivtEksponeringsProdukt.rapport?.slideTitle || aktivtEksponeringsProdukt.navn}</h4>
+                                  <p className="text-sm text-slate-600 mt-1">{aktivtEksponeringsProdukt.rapport?.slideSubtitle || aktivtEksponeringsProdukt.navn}</p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3 xl:min-w-[360px]">
+                                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Porteføljevekt</p>
+                                    <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(aktivtEksponeringsProdukt.vekt)}</p>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. avkastning</p>
+                                    <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${aktivtEksponeringsProdukt.rapport.expectedReturn}%` : '—'}</p>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. yield</p>
+                                    <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${aktivtEksponeringsProdukt.rapport.expectedYield}%` : '—'}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                {[
+                                  { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
+                                  { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
+                                  { key: 'underliggende', title: 'Underliggende', color: PENSUM_COLORS.salmon },
+                                  { key: 'stil', title: 'Stil / øvrig', color: PENSUM_COLORS.gold }
+                                ].map((block) => {
+                                  const rows = (aktivtEksponeringsProdukt.eksponering?.[block.key] || []).slice(0, 8);
+                                  return (
+                                    <div key={block.key} className="rounded-xl border border-slate-200 bg-white p-4 min-h-[220px]">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
+                                        <span className="text-[11px] text-slate-400">{rows.length ? `${rows.length} linjer` : 'Ingen data'}</span>
+                                      </div>
+                                      {rows.length ? (
+                                        <div className="space-y-2">
+                                          {rows.map((row, idx) => (
+                                            <div key={`${block.key}-${idx}`} className="flex items-center gap-2">
+                                              <span className="text-xs w-28 xl:w-32 truncate">{row.navn}</span>
+                                              <div className="flex-grow bg-slate-100 rounded-full h-4 overflow-hidden">
+                                                <div className="h-full rounded-full" style={{ width: `${Math.min(Number(row.vekt) || 0, 100)}%`, backgroundColor: block.color }}></div>
+                                              </div>
+                                              <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="h-[152px] flex items-center justify-center text-sm text-slate-400">Ingen data registrert</div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Rolle i porteføljen</p>
+                                  <p className="mt-2 text-sm text-slate-700 leading-6">{aktivtEksponeringsProdukt.rapport?.role || '—'}</p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Benchmark</p>
+                                  <p className="mt-2 text-sm text-slate-700 leading-6">{aktivtEksponeringsProdukt.rapport?.benchmark || '—'}</p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white p-4 xl:col-span-1">
+                                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Investeringscase</p>
+                                  <p className="mt-2 text-sm text-slate-700 leading-6">{aktivtEksponeringsProdukt.rapport?.caseText || aktivtEksponeringsProdukt.rapport?.pitch || '—'}</p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white p-4 xl:col-span-1">
+                                  <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Nøkkelrisiko</p>
+                                  <p className="mt-2 text-sm text-slate-700 leading-6">{aktivtEksponeringsProdukt.rapport?.riskText || '—'}</p>
+                                </div>
+                              </div>
+
+                              {aktivtEksponeringsProdukt.eksponering?.disclaimer && (
+                                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                                  {aktivtEksponeringsProdukt.eksponering.disclaimer}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-slate-400">Ingen produkter med vekt valgt.</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">Legg til produkter og tilordne vekt for å se produktspesifikk eksponering her.</div>
+                  )}
                 </div>
               </div>
             </div>
