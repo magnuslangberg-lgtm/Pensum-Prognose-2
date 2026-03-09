@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK } from '../data/pensumDatafeedHistorikk';
-import { defaultPensumProdukter, defaultProduktEksponering } from '../data/pensumDefaults';
-import { ASSET_COLORS, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { defaultPensumProdukterMedRapport, defaultProduktEksponering } from '../data/pensumDefaults';
+import { ASSET_COLORS, CATEGORY_COLORS, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 
 const PENSUM_LOGO = 'data:image/webp;base64,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';
@@ -94,8 +94,24 @@ export default function PensumPrognoseModell() {
   
   // Valgt produkt for detaljvisning
   const [valgtProduktDetalj, setValgtProduktDetalj] = useState(null);
+
+  const hentRapportfelt = (produkt = {}) => ({
+    slideTittel: produkt.slideTittel || produkt.navn || '',
+    slideUndertittel: produkt.slideUndertittel || '',
+    rollePortefolje: produkt.rollePortefolje || '',
+    benchmark: produkt.benchmark || '',
+    risikoNivaa: produkt.risikoNivaa || '',
+    forventetAvkastning: produkt.forventetAvkastning ?? '',
+    forventetYield: produkt.forventetYield ?? '',
+    pitchKort: produkt.pitchKort || '',
+    investeringscase: produkt.investeringscase || '',
+    hvorforInkludert: produkt.hvorforInkludert || '',
+    nokkelRisiko: produkt.nokkelRisiko || '',
+    diagramType: produkt.diagramType || '',
+    antallProduktslides: produkt.antallProduktslides ?? 1,
+  });
   
-  const [pensumProdukter, setPensumProdukter] = useState(() => JSON.parse(JSON.stringify(defaultPensumProdukter)));
+  const [pensumProdukter, setPensumProdukter] = useState(() => JSON.parse(JSON.stringify(defaultPensumProdukterMedRapport)));
   
   // Admin-innstillinger
   const [adminPassord, setAdminPassord] = useState('');
@@ -1294,7 +1310,20 @@ export default function PensumPrognoseModell() {
           aar2025: p.aar2025,
           aar2024: p.aar2024,
           aar2023: p.aar2023,
-          aar2022: p.aar2022
+          aar2022: p.aar2022,
+          benchmark: p.benchmark,
+          risikoNivaa: p.risikoNivaa,
+          forventetAvkastning: p.forventetAvkastning,
+          forventetYield: p.forventetYield,
+          slideTittel: p.slideTittel,
+          slideUndertittel: p.slideUndertittel,
+          rollePortefolje: p.rollePortefolje,
+          pitchKort: p.pitchKort,
+          investeringscase: p.investeringscase,
+          hvorforInkludert: p.hvorforInkludert,
+          nokkelRisiko: p.nokkelRisiko,
+          diagramType: p.diagramType,
+          antallProduktslides: p.antallProduktslides
         }));
 
       const payload = {
@@ -1306,7 +1335,9 @@ export default function PensumPrognoseModell() {
         allokering: aktiveAktiva,
         produkterIBruk: valgteProduktIrapport,
         pensumProdukter: pensumProdukterTilEksport,
+        pensumAllokering: pensumAllokering.filter((p) => valgteProduktIrapport.includes(p.id)),
         produktHistorikk: historikkTilEksport,
+        produktEksponering: valgteProduktIrapport.reduce((acc, id) => { if (produktEksponering[id]) acc[id] = produktEksponering[id]; return acc; }, {}),
         malConfig: {
           navn: pdfMalConfig.navn,
           filnavn: erPptTemplateFilnavn(pdfMalConfig.filnavn) ? pdfMalConfig.filnavn : DEFAULT_TEMPLATE_FILENAME,
@@ -1593,6 +1624,27 @@ export default function PensumPrognoseModell() {
                 }
                 return (
                   <div className="space-y-6">
+                    {(() => { const rapport = hentRapportfelt(valgtProduktDetalj); return (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportgrunnlag</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div><span className="text-gray-500">Slide-tittel:</span> <span className="font-medium">{rapport.slideTittel || '—'}</span></div>
+                          <div><span className="text-gray-500">Undertittel:</span> <span className="font-medium">{rapport.slideUndertittel || '—'}</span></div>
+                          <div><span className="text-gray-500">Rolle:</span> <span className="font-medium">{rapport.rollePortefolje || '—'}</span></div>
+                          <div><span className="text-gray-500">Benchmark:</span> <span className="font-medium">{rapport.benchmark || '—'}</span></div>
+                          <div><span className="text-gray-500">Risikonivå:</span> <span className="font-medium">{rapport.risikoNivaa || '—'}</span></div>
+                          <div><span className="text-gray-500">Diagramtype:</span> <span className="font-medium">{rapport.diagramType || '—'}</span></div>
+                          <div><span className="text-gray-500">Forv. avkastning:</span> <span className="font-medium">{rapport.forventetAvkastning !== '' ? `${rapport.forventetAvkastning}%` : '—'}</span></div>
+                          <div><span className="text-gray-500">Forv. yield:</span> <span className="font-medium">{rapport.forventetYield !== '' ? `${rapport.forventetYield}%` : '—'}</span></div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
+                          <div><span className="text-gray-500">Kort pitch:</span> <div className="font-medium text-gray-800">{rapport.pitchKort || '—'}</div></div>
+                          <div><span className="text-gray-500">Investeringscase:</span> <div className="font-medium text-gray-800">{rapport.investeringscase || '—'}</div></div>
+                          <div><span className="text-gray-500">Hvorfor inkludert:</span> <div className="font-medium text-gray-800">{rapport.hvorforInkludert || '—'}</div></div>
+                          <div><span className="text-gray-500">Nøkkelrisiko:</span> <div className="font-medium text-gray-800">{rapport.nokkelRisiko || '—'}</div></div>
+                        </div>
+                      </div>
+                    ); })()}
                     {/* Disclaimer */}
                     {eksponering.disclaimer && (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -4074,6 +4126,95 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
+
+                {/* Rapportinnhold per produkt */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+                    <h3 className="text-lg font-semibold text-white">Rapportinnhold per produkt</h3>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    <p className="text-sm text-gray-600">Disse feltene brukes direkte i investeringsforslaget og produktslidene i PowerPoint. Oppdater her for å styre budskap, KPI-er og visuell vinkling per produkt.</p>
+                    {['enkeltfond', 'fondsportefoljer', 'alternative'].map((kategori) => (
+                      <div key={kategori} className="space-y-4">
+                        <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500">{kategori === 'enkeltfond' ? 'Enkeltfond' : kategori === 'fondsportefoljer' ? 'Fondsporteføljer' : 'Alternative investeringer'}</h4>
+                        {pensumProdukter[kategori].map((produkt, idx) => (
+                          <div key={produkt.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{produkt.navn}</div>
+                                <div className="text-xs text-gray-500">ID: {produkt.id}</div>
+                              </div>
+                              <div className="text-xs text-gray-500">Produktslides: {produkt.antallProduktslides || 1}</div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {[
+                                ['slideTittel', 'Slide-tittel'], ['slideUndertittel', 'Undertittel'], ['rollePortefolje', 'Rolle i porteføljen'], ['benchmark', 'Benchmark'], ['risikoNivaa', 'Risikonivå'], ['diagramType', 'Diagramtype'],
+                                ['forventetAvkastning', 'Forventet avkastning (%)'], ['forventetYield', 'Forventet yield (%)'], ['antallProduktslides', 'Antall produktslides']
+                              ].map(([felt, label]) => (
+                                <div key={felt}>
+                                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{label}</label>
+                                  <input
+                                    type={[ 'forventetAvkastning', 'forventetYield', 'antallProduktslides' ].includes(felt) ? 'number' : 'text'}
+                                    step={felt === 'antallProduktslides' ? '1' : '0.1'}
+                                    value={produkt[felt] ?? ''}
+                                    onChange={(e) => {
+                                      const raw = e.target.value;
+                                      const nyVerdi = ['forventetAvkastning', 'forventetYield', 'antallProduktslides'].includes(felt)
+                                        ? (raw === '' ? null : Number(raw))
+                                        : raw;
+                                      setPensumProdukter(prev => {
+                                        const oppdatert = { ...prev };
+                                        oppdatert[kategori][idx] = { ...oppdatert[kategori][idx], [felt]: nyVerdi };
+                                        return oppdatert;
+                                      });
+                                    }}
+                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3 mt-3">
+                              {[
+                                ['pitchKort', 'Kort pitch'], ['hvorforInkludert', 'Hvorfor inkludert'], ['nokkelRisiko', 'Nøkkelrisiko'], ['investeringscase', 'Investeringscase']
+                              ].map(([felt, label]) => (
+                                <div key={felt} className={felt === 'investeringscase' ? 'md:col-span-2' : ''}>
+                                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{label}</label>
+                                  <textarea
+                                    value={produkt[felt] ?? ''}
+                                    onChange={(e) => {
+                                      const nyVerdi = e.target.value;
+                                      setPensumProdukter(prev => {
+                                        const oppdatert = { ...prev };
+                                        oppdatert[kategori][idx] = { ...oppdatert[kategori][idx], [felt]: nyVerdi };
+                                        return oppdatert;
+                                      });
+                                    }}
+                                    rows={felt === 'investeringscase' ? 3 : 2}
+                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await storageSet('pensum_admin_produkter', JSON.stringify(pensumProdukter));
+                          setAdminMelding('Rapportinnhold lagret!');
+                        } catch (err) {
+                          setAdminMelding('Feil ved lagring av rapportinnhold: ' + err.message);
+                        }
+                      }}
+                      className="px-6 py-2 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.salmon }}
+                    >
+                      Lagre rapportinnhold
+                    </button>
+                  </div>
+                </div>
+
                 {/* PDF-mal for investeringsforslag */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
@@ -4245,7 +4386,7 @@ export default function PensumPrognoseModell() {
                     <button 
                       onClick={async () => {
                         if (!confirm('Er du sikker på at du vil tilbakestille alle data til standardverdier?')) return;
-                        setPensumProdukter(JSON.parse(JSON.stringify(defaultPensumProdukter)));
+                        setPensumProdukter(JSON.parse(JSON.stringify(defaultPensumProdukterMedRapport)));
                         setAvkastningsrater({
                           globaleAksjer: 9, norskeAksjer: 10, hoyrente: 8,
                           investmentGrade: 5, privateEquity: 15, eiendom: 8
