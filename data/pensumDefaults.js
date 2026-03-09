@@ -1,4 +1,4 @@
-const defaultPensumProdukterRaw = {
+export const defaultPensumProdukter = {
     enkeltfond: [
       { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', aar2024: 21.5, aar2023: 17.7, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
       { id: 'energy-a', navn: 'Pensum Global Energy A', aktivatype: 'aksje', likviditet: 'likvid', aar2024: 7.3, aar2023: -1.1, aar2022: 11.0, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
@@ -18,230 +18,6 @@ const defaultPensumProdukterRaw = {
       { id: 'unoterte-aksjer', navn: 'Unoterte aksjer', aktivatype: 'alternativ', likviditet: 'illikvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null }
     ]
   };
-
-
-const REPORT_DEFAULTS = {
-  'global-core-active': {
-    produktkategori: 'kjerne',
-    slideTittel: 'Pensum Global Core Active',
-    slideUndertittel: 'Global kjerneeksponering med bred diversifisering',
-    rollePortefolje: 'Kjernebyggestein',
-    benchmark: 'MSCI World NR',
-    risikonivaa: 'Middels/Høy',
-    forventetAvkastning: 8.5,
-    forventetYield: 2.0,
-    kortPitch: 'Porteføljens globale aksjemotor med bred eksponering på tvers av regioner, sektorer og stil.',
-    investeringscase: 'Gir robust global aksjeeksponering gjennom utvalgte underfond og kan fungere som hovedmotor i en langsiktig vekstportefølje.',
-    hvorforInkludert: 'Bygger den globale aksjedelen i porteføljen og gir bred diversifisering.',
-    nokkelrisiko: 'Aksjemarkedsrisiko og perioder med høy markedsvolatilitet.',
-    foretrukketDiagram: 'regioner',
-    antallProduktslides: 2
-  },
-  'global-edge': {
-    produktkategori: 'satellitt',
-    slideTittel: 'Pensum Global Edge',
-    slideUndertittel: 'Mer opportunistisk global aksjeeksponering',
-    rollePortefolje: 'Satellitt/meravkastning',
-    benchmark: 'MSCI ACWI',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 9.5,
-    forventetYield: 1.5,
-    kortPitch: 'Satellittmandat med større frihetsgrader og høyere aktiv andel enn kjerneporteføljene.',
-    investeringscase: 'Kan øke langsiktig meravkastningspotensial gjennom mer konsentrerte og tematiske posisjoner.',
-    hvorforInkludert: 'Brukes når porteføljen skal ha noe mer offensiv aksjeeksponering.',
-    nokkelrisiko: 'Høyere aktiv risiko og større svingninger enn globale kjerneprodukter.',
-    foretrukketDiagram: 'stil',
-    antallProduktslides: 2
-  },
-  'basis': {
-    produktkategori: 'blandet',
-    slideTittel: 'Pensum Basis',
-    slideUndertittel: 'Balansert løsning på tvers av aksjer og renter',
-    rollePortefolje: 'Helhetlig basisløsning',
-    benchmark: 'Sammensatt referanseindeks',
-    risikonivaa: 'Middels',
-    forventetAvkastning: 6.5,
-    forventetYield: 3.0,
-    kortPitch: 'Balansert multi-asset løsning som kombinerer vekst, kontantstrøm og risikodemping.',
-    investeringscase: 'Egner seg som kjerne i en moderat profil eller som supplement til andre Pensum-løsninger.',
-    hvorforInkludert: 'Effektiv byggekloss for investorer som ønsker både aksjer og renter i én løsning.',
-    nokkelrisiko: 'Avkastningen vil være lavere enn rene aksjeprodukter i sterke aksjemarkeder.',
-    foretrukketDiagram: 'allokering',
-    antallProduktslides: 2
-  },
-  'global-hoyrente': {
-    produktkategori: 'rente',
-    slideTittel: 'Pensum Global Høyrente',
-    slideUndertittel: 'Løpende renteavkastning med global spredning',
-    rollePortefolje: 'Kontantstrøm og stabilisering',
-    benchmark: 'Global High Yield hedged to NOK',
-    risikonivaa: 'Lav/Middels',
-    forventetAvkastning: 7.0,
-    forventetYield: 7.0,
-    kortPitch: 'Renteportefølje med fokus på løpende yield og moderat volatilitet sammenlignet med aksjer.',
-    investeringscase: 'Gir porteføljen løpende kontantstrøm og kan redusere samlet svingningsnivå.',
-    hvorforInkludert: 'Brukes som bærende rentekomponent i mange rådgiverporteføljer.',
-    nokkelrisiko: 'Kredittpåslag og svakere likviditet i perioder med markedsuro.',
-    foretrukketDiagram: 'kreditt',
-    antallProduktslides: 2
-  },
-  'nordisk-hoyrente': {
-    produktkategori: 'rente',
-    slideTittel: 'Pensum Nordisk Høyrente',
-    slideUndertittel: 'Nordisk renteeksponering med fokus på yield',
-    rollePortefolje: 'Nordisk rentesatellitt',
-    benchmark: 'Nordic High Yield',
-    risikonivaa: 'Lav/Middels',
-    forventetAvkastning: 6.5,
-    forventetYield: 6.5,
-    kortPitch: 'Komplementær nordisk renteløsning med attraktiv løpende avkastning.',
-    investeringscase: 'Kan brukes for investorer som ønsker mer nordisk eksponering i rentedelen.',
-    hvorforInkludert: 'Gir regional spiss i rentedelen og styrker diversifiseringen.',
-    nokkelrisiko: 'Konsentrasjon mot nordisk kredittmarked.',
-    foretrukketDiagram: 'kreditt',
-    antallProduktslides: 1
-  },
-  'norge-a': {
-    produktkategori: 'norden',
-    slideTittel: 'Pensum Norge A',
-    slideUndertittel: 'Aktivt norsk aksjefond med høy conviction',
-    rollePortefolje: 'Norsk aksjesatellitt',
-    benchmark: 'Oslo Børs Fondsindeks',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 8.0,
-    forventetYield: 3.0,
-    kortPitch: 'Aktiv norsk aksjeforvaltning med eksponering mot kvalitets- og verdiaksjer på Oslo Børs.',
-    investeringscase: 'Gir hjemmemarkedseksponering og potensial for meravkastning gjennom aktivt aksjevalg.',
-    hvorforInkludert: 'Relevant for investorer som ønsker norsk aksjeeksponering i porteføljen.',
-    nokkelrisiko: 'Høy konsentrasjon mot norsk marked og enkeltsektorer.',
-    foretrukketDiagram: 'sektorer',
-    antallProduktslides: 2
-  },
-  'energy-a': {
-    produktkategori: 'tema',
-    slideTittel: 'Pensum Global Energy A',
-    slideUndertittel: 'Tematisk eksponering mot energi og råvarer',
-    rollePortefolje: 'Tematisk satellitt',
-    benchmark: 'MSCI World Energy',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 9.0,
-    forventetYield: 3.5,
-    kortPitch: 'Tematisk aksjeeksponering mot globale energi- og råvareverdikjeder.',
-    investeringscase: 'Kan gi diversifisering og oppside i perioder med sterk energisyklus og inflasjonspress.',
-    hvorforInkludert: 'Brukes som satellitt når investor ønsker målrettet energi-eksponering.',
-    nokkelrisiko: 'Høy syklikalitet og råvareprisfølsomhet.',
-    foretrukketDiagram: 'holdings',
-    antallProduktslides: 1
-  },
-  'banking-d': {
-    produktkategori: 'sektor',
-    slideTittel: 'Pensum Nordic Banking Sector D',
-    slideUndertittel: 'Konsentrert nordisk bankeksponering',
-    rollePortefolje: 'Sektorspesialist',
-    benchmark: 'Nordic Banks Index',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 8.5,
-    forventetYield: 4.0,
-    kortPitch: 'Spisset bankmandat med fokus på solide nordiske finansinstitusjoner.',
-    investeringscase: 'Kan gi attraktiv lønnsomhets- og utbytteeksponering mot en sektor Pensum kjenner godt.',
-    hvorforInkludert: 'Brukes som sektorbet for investorer med positivt syn på nordiske banker.',
-    nokkelrisiko: 'Sektorkonsentrasjon og sensitivitet mot makro/renter.',
-    foretrukketDiagram: 'holdings',
-    antallProduktslides: 1
-  },
-  'financial-d': {
-    produktkategori: 'kreditt',
-    slideTittel: 'Pensum Financial Opportunity Fund D',
-    slideUndertittel: 'Spesialisert kreditt- og finansmandat',
-    rollePortefolje: 'Spesialistkreditt',
-    benchmark: 'Bloomberg Global High Yield hedged to NOK',
-    risikonivaa: 'Middels',
-    forventetAvkastning: 8.0,
-    forventetYield: 8.0,
-    kortPitch: 'Spesialistmandat innen kreditt og finans med høy løpende yield.',
-    investeringscase: 'Kan gi attraktiv risikokorrigert avkastning som komplement til tradisjonelle rentefond.',
-    hvorforInkludert: 'Brukes når porteføljen skal ha mer spisset kreditt- og finansinnretning.',
-    nokkelrisiko: 'Kreditt- og likviditetsrisiko i underliggende posisjoner.',
-    foretrukketDiagram: 'holdings',
-    antallProduktslides: 1
-  },
-  'turnstone-pe': {
-    produktkategori: 'alternativ',
-    slideTittel: 'Turnstone Private Equity',
-    slideUndertittel: 'Illikvid alternativ eksponering',
-    rollePortefolje: 'Alternativ vekst',
-    benchmark: 'Ingen direkte benchmark',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 12.0,
-    forventetYield: 0.0,
-    kortPitch: 'Private equity-løsning for investorer med lang horisont og evne til å binde kapital.',
-    investeringscase: 'Gir tilgang til unoterte verdiskapingsløp utenfor børs.',
-    hvorforInkludert: 'Brukes for å øke andelen alternativer og langsiktig avkastningspotensial.',
-    nokkelrisiko: 'Illikviditet, lang kapitalbinding og verdsettelsesusikkerhet.',
-    foretrukketDiagram: 'ingen',
-    antallProduktslides: 1
-  },
-  'amaron-re': {
-    produktkategori: 'alternativ',
-    slideTittel: 'Amaron Real Estate',
-    slideUndertittel: 'Eiendomseksponering i alternativdelen',
-    rollePortefolje: 'Alternativ diversifisering',
-    benchmark: 'Ingen direkte benchmark',
-    risikonivaa: 'Middels',
-    forventetAvkastning: 9.0,
-    forventetYield: 5.0,
-    kortPitch: 'Eiendomseksponering med fokus på løpende yield og diversifisering.',
-    investeringscase: 'Kan gi jevn kontantstrøm og lavere korrelasjon mot børsnoterte aksjer.',
-    hvorforInkludert: 'Brukes som diversifiserende alternativandel.',
-    nokkelrisiko: 'Illikviditet og rente-/verdivurderingsrisiko.',
-    foretrukketDiagram: 'ingen',
-    antallProduktslides: 1
-  },
-  'unoterte-aksjer': {
-    produktkategori: 'alternativ',
-    slideTittel: 'Unoterte aksjer',
-    slideUndertittel: 'Skreddersydd alternativ aksjeandel',
-    rollePortefolje: 'Spesialsituasjoner',
-    benchmark: 'Ingen direkte benchmark',
-    risikonivaa: 'Høy',
-    forventetAvkastning: 10.0,
-    forventetYield: 0.0,
-    kortPitch: 'Eksponering mot unoterte case med høy potensiell oppside og høy risiko.',
-    investeringscase: 'Kan brukes for erfarne investorer som ønsker unoterte muligheter i porteføljen.',
-    hvorforInkludert: 'Aktuelt ved særskilte case eller familieoffice-lignende porteføljer.',
-    nokkelrisiko: 'Lav likviditet, usikker verdsettelse og idiosynkratisk risiko.',
-    foretrukketDiagram: 'ingen',
-    antallProduktslides: 1
-  }
-};
-
-function enrichProduct(product) {
-  const meta = REPORT_DEFAULTS[product.id] || {};
-  return {
-    ...product,
-    produktkategori: product.produktkategori || meta.produktkategori || '',
-    slideTittel: product.slideTittel || meta.slideTittel || product.navn,
-    slideUndertittel: product.slideUndertittel || meta.slideUndertittel || '',
-    rollePortefolje: product.rollePortefolje || meta.rollePortefolje || '',
-    benchmark: product.benchmark || meta.benchmark || '',
-    risikonivaa: product.risikonivaa || meta.risikonivaa || '',
-    forventetAvkastning: product.forventetAvkastning ?? meta.forventetAvkastning ?? null,
-    forventetYield: product.forventetYield ?? meta.forventetYield ?? null,
-    kortPitch: product.kortPitch || meta.kortPitch || '',
-    investeringscase: product.investeringscase || meta.investeringscase || '',
-    hvorforInkludert: product.hvorforInkludert || meta.hvorforInkludert || '',
-    nokkelrisiko: product.nokkelrisiko || meta.nokkelrisiko || '',
-    foretrukketDiagram: product.foretrukketDiagram || meta.foretrukketDiagram || 'regioner',
-    antallProduktslides: product.antallProduktslides ?? meta.antallProduktslides ?? 1
-  };
-}
-
-export const defaultPensumProdukter = Object.fromEntries(
-  Object.entries(defaultPensumProdukterRaw).map(([kategori, produkter]) => [
-    kategori,
-    produkter.map(enrichProduct)
-  ])
-);
 
 export const defaultProduktEksponering = {
     'global-core-active': {
@@ -371,3 +147,153 @@ export const defaultProduktEksponering = {
       disclaimer: 'Oppstart 05.04.2025. Utvikling før dette er estimert med indeksen Bloomberg Global High Yield, valutasikret til NOK. NB: Allokeringen er foreløpig ikke korrekt.'
     }
   };
+
+
+const defaultProduktRapportinnhold = {
+  'global-core-active': {
+    slideTittel: 'Pensum Global Core Active',
+    slideUndertittel: 'Global kjerneeksponering',
+    rollePortefolje: 'Kjernebyggestein i aksjedelen',
+    benchmark: 'MSCI World',
+    risikoNivaa: 'Moderat til høy',
+    forventetAvkastning: 9.0,
+    forventetYield: 2.0,
+    pitchKort: 'Global kjerneportefølje med bred diversifisering på tvers av regioner og forvalterstiler.',
+    investeringscase: 'Løsningen er bygget for å være hovedmotoren i aksjeeksponeringen og gi robust, langsiktig avkastning med bred global spredning.',
+    hvorforInkludert: 'Gir global eksponering og forankrer porteføljen i en bred, disiplinert aksjestrategi.',
+    nokkelRisiko: 'Generell markedsrisiko og perioder med svak global aksjeutvikling.',
+    diagramType: 'regioner',
+    antallProduktslides: 2
+  },
+  'global-edge': {
+    slideTittel: 'Pensum Global Edge',
+    slideUndertittel: 'Global satellitt og spesialistforvaltning',
+    rollePortefolje: 'Satellitt i aksjedelen',
+    benchmark: 'MSCI ACWI',
+    risikoNivaa: 'Høy',
+    forventetAvkastning: 10.0,
+    forventetYield: 1.5,
+    pitchKort: 'Mer opportunistisk global aksjeløsning med større innslag av spesialister, småselskaper og tematiske ideer.',
+    investeringscase: 'Målet er å løfte forventet meravkastning gjennom spesialiserte forvaltere og mindre konsensuspreget eksponering.',
+    hvorforInkludert: 'Bidrar med meravkastningspotensial og bredere stilspredning enn en ren global kjerneportefølje.',
+    nokkelRisiko: 'Større svingninger, høyere aktiv risiko og større følsomhet for små-/mellomstore selskaper.',
+    diagramType: 'stil',
+    antallProduktslides: 1
+  },
+  'basis': {
+    slideTittel: 'Pensum Basis',
+    slideUndertittel: 'Balansert totalportefølje',
+    rollePortefolje: 'Balansert multi-asset-byggestein',
+    benchmark: 'Sammensatt referanseindeks',
+    risikoNivaa: 'Moderat',
+    forventetAvkastning: 7.0,
+    forventetYield: 3.5,
+    pitchKort: 'Kombinerer aksjer, renter og selekterte enkeltcase i én helhetlig løsning.',
+    investeringscase: 'Gir en ferdig diversifisert løsning med god balanse mellom avkastningsmuligheter og robusthet.',
+    hvorforInkludert: 'Passer når man ønsker en effektiv og balansert kjerne i porteføljen.',
+    nokkelRisiko: 'Både aksje- og renterisiko, men lavere svingninger enn rene aksjeporteføljer.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'global-hoyrente': {
+    slideTittel: 'Pensum Global Høyrente',
+    slideUndertittel: 'Global rente- og kontantstrømmotor',
+    rollePortefolje: 'Hovedbyggestein i rentedelen',
+    benchmark: 'Global High Yield hedget NOK',
+    risikoNivaa: 'Moderat',
+    forventetAvkastning: 7.5,
+    forventetYield: 7.0,
+    pitchKort: 'Diversifisert høyrenteportefølje med mål om attraktiv løpende yield og moderat volatilitet.',
+    investeringscase: 'Løsningen skal gi løpende kontantstrøm og bedre robusthet enn aksjer i perioder med markedsuro.',
+    hvorforInkludert: 'Styrker porteføljens løpende avkastning og demper total volatilitet.',
+    nokkelRisiko: 'Kredittrisiko og perioder med svakhet i globale kredittmarkeder.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'nordisk-hoyrente': {
+    slideTittel: 'Pensum Nordisk Høyrente',
+    slideUndertittel: 'Nordisk kredittspesialist',
+    rollePortefolje: 'Supplerende rentedel',
+    benchmark: 'Nordic HY',
+    risikoNivaa: 'Moderat',
+    forventetAvkastning: 7.0,
+    forventetYield: 6.5,
+    pitchKort: 'Konsentrert nordisk kredittløsning med fokus på løpende avkastning og lokal markedsforståelse.',
+    investeringscase: 'Gir spesialisert nordisk kreditt-eksponering og øker diversifiseringen innen rentedelen.',
+    hvorforInkludert: 'Kan gi attraktiv løpende yield med annen sammensetning enn global kreditt.',
+    nokkelRisiko: 'Kredittrisiko og relativt konsentrert nordisk marked.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'norge-a': {
+    slideTittel: 'Pensum Norge A',
+    slideUndertittel: 'Aktiv norsk aksjeforvaltning',
+    rollePortefolje: 'Hjemmemarkeds-eksponering',
+    benchmark: 'OSEFX',
+    risikoNivaa: 'Høy',
+    forventetAvkastning: 10.0,
+    forventetYield: 3.0,
+    pitchKort: 'Aktiv norsk aksjeløsning med fokus på de mest attraktive idéene i hjemmemarkedet.',
+    investeringscase: 'Gir målrettet eksponering mot norske kvalitets- og verdicaser, inkludert finans og energi.',
+    hvorforInkludert: 'Bidrar med lokalkunnskap og eksponering mot det norske markedet.',
+    nokkelRisiko: 'Selskaps- og sektor-konsentrasjon i et relativt smalt marked.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'energy-a': {
+    slideTittel: 'Pensum Global Energy A',
+    slideUndertittel: 'Tematisk energi-eksponering',
+    rollePortefolje: 'Tematisk satellitt',
+    benchmark: 'MSCI World Energy',
+    risikoNivaa: 'Høy',
+    forventetAvkastning: 11.0,
+    forventetYield: 4.0,
+    pitchKort: 'Tematisk mandat med eksponering mot energisektoren globalt og i Norge.',
+    investeringscase: 'Løsningen brukes for å hente ut meravkastning i en sektor med sterk kontantstrøm og betydelig syklikalitet.',
+    hvorforInkludert: 'Gir tematisk diversifisering og eksponering mot en sektor med attraktiv kontantstrøm.',
+    nokkelRisiko: 'Høy sektor- og råvaresensitivitet.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'banking-d': {
+    slideTittel: 'Pensum Nordic Banking Sector D',
+    slideUndertittel: 'Nordisk bankspesialist',
+    rollePortefolje: 'Sektorspesialist i aksjedelen',
+    benchmark: 'Nordic Banks Index',
+    risikoNivaa: 'Høy',
+    forventetAvkastning: 10.5,
+    forventetYield: 5.0,
+    pitchKort: 'Sektorstrategi med fokus på nordiske banker og finansinstitusjoner.',
+    investeringscase: 'Nordiske banker kombinerer sterke balanser, attraktiv utbyttekapasitet og ofte moderate multipler.',
+    hvorforInkludert: 'Gir målrettet eksponering mot en attraktiv nordisk sektor med god lønnsomhet.',
+    nokkelRisiko: 'Sektor- og regulatorisk risiko, samt følsomhet for rente- og kredittsyklus.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  },
+  'financial-d': {
+    slideTittel: 'Pensum Financial Opportunities',
+    slideUndertittel: 'Spesialisert finans- og kredittløsning',
+    rollePortefolje: 'Alternativ rente-/kredittmotor',
+    benchmark: 'Bloomberg Global HY hedged NOK',
+    risikoNivaa: 'Moderat til høy',
+    forventetAvkastning: 8.5,
+    forventetYield: 8.0,
+    pitchKort: 'Spesialisert strategi med eksponering mot finansrelatert kreditt og opportunistiske case.',
+    investeringscase: 'Gir tilgang til nisjer i finans- og kredittmarkedet som kan gi attraktiv risikojustert avkastning.',
+    hvorforInkludert: 'Supplerer tradisjonell rentedel med annen kilde til løpende avkastning.',
+    nokkelRisiko: 'Kredittrisiko, likviditetsrisiko og case-spesifikk risiko.',
+    diagramType: 'underliggende',
+    antallProduktslides: 1
+  }
+};
+
+const withReportDefaults = (produkt) => ({
+  ...defaultProduktRapportinnhold[produkt.id],
+  ...produkt,
+});
+
+export const defaultPensumProdukterMedRapport = {
+  enkeltfond: defaultPensumProdukter.enkeltfond.map(withReportDefaults),
+  fondsportefoljer: defaultPensumProdukter.fondsportefoljer.map(withReportDefaults),
+  alternative: defaultPensumProdukter.alternative.map(withReportDefaults)
+};
