@@ -1,26 +1,25 @@
-import fs from 'fs';
-import path from 'path';
 import PptxGenJSImport from 'pptxgenjs';
-import JSZipImport from 'jszip';
 
 const PptxGenJS = typeof PptxGenJSImport === 'function'
   ? PptxGenJSImport
   : (PptxGenJSImport?.default || PptxGenJSImport?.PptxGenJS);
 
-const JSZip = JSZipImport?.default || JSZipImport;
-
 const COLORS = {
   navy: '0D2240',
   blue: '4C84C4',
   salmon: 'D4886B',
+  teal: '0F9888',
+  green: '1F8A3B',
+  gold: 'B8860B',
   text: '1E293B',
   muted: '64748B',
+  light: 'F8FAFC',
   line: 'D9E2EC',
-  bg: 'F3F4F6',
-  white: 'FFFFFF'
+  white: 'FFFFFF',
+  danger: 'B42318'
 };
 
-const PRODUCT_NAME = {
+const PRODUCT_LABELS = {
   'global-core-active': 'Pensum Global Core Active',
   'global-edge': 'Pensum Global Edge',
   basis: 'Pensum Basis',
@@ -29,549 +28,392 @@ const PRODUCT_NAME = {
   'norge-a': 'Pensum Norge A',
   'energy-a': 'Pensum Global Energy A',
   'banking-d': 'Pensum Nordic Banking Sector D',
-  'financial-d': 'Pensum Financial Opportunity D'
+  'financial-d': 'Pensum Financial Opportunity Fund D'
 };
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
-const TOTAL_SLIDES = 21;
-const REPORT_DATE = '2026-02-28';
+const PRODUCT_META = {
+  'global-core-active': {
+    title: 'Global kjerneeksponering',
+    subtitle: 'Bred global aksjeportefølje med aktiv fondsseleksjon',
+    role: 'Kjernebyggestein i aksjedelen',
+    pitch: 'Gir bred global aksjeeksponering og fungerer som hovedmotor i porteføljens aksjedel.',
+    case: 'Kombinerer kvalitet, geografi og forvalterdiversifisering i én samlet løsning.',
+    why: 'Passer godt som basiseksponering når målet er robust global allokering over tid.',
+    risk: 'Verdien vil svinge med globale aksjemarkeder og valutautvikling.',
+    benchmark: 'MSCI World / bred global aksjereferanse',
+    expectedReturn: 9.0,
+    expectedYield: 1.8,
+    preferredChart: 'region-sector'
+  },
+  'global-edge': {
+    title: 'Global offensiv satellitt',
+    subtitle: 'Mer aktiv og spisset global aksjeløsning',
+    role: 'Satellitt for meravkastning i aksjedelen',
+    pitch: 'Supplerer kjerneporteføljen med mer konsentrerte og aktive globale ideer.',
+    case: 'Brukes når man ønsker høyere aktiv andel og flere tydelige forvalterbets.',
+    why: 'Kan øke diversifiseringen på forvalterstil og gi meravkastningspotensial.',
+    risk: 'Høyere stil- og faktoravvik enn brede globale indekser.',
+    benchmark: 'Global aktiv aksjereferanse',
+    expectedReturn: 9.5,
+    expectedYield: 1.4,
+    preferredChart: 'region-sector'
+  },
+  basis: {
+    title: 'Balansert totalportefølje',
+    subtitle: 'Kombinasjon av aksjer og renter i én løsning',
+    role: 'Helhetlig blandet byggestein',
+    pitch: 'Gir en ferdig sammensatt blanding av aksjer, renter og utvalgte spesialmandater.',
+    case: 'Egnet når man ønsker en enkel, balansert løsning med moderat risikonivå.',
+    why: 'Kan fungere som selvstendig løsning eller som stabil kjerne i en bredere portefølje.',
+    risk: 'Lavere forventet avkastning enn rene aksjeløsninger, men også lavere svingninger.',
+    benchmark: 'Blandet referanse / 50-50 aksjer-renter',
+    expectedReturn: 7.0,
+    expectedYield: 3.0,
+    preferredChart: 'underlying'
+  },
+  'global-hoyrente': {
+    title: 'Global rente- og kontantstrømmotor',
+    subtitle: 'Seleksjon av globale high yield- og kredittfond',
+    role: 'Rentedel med fokus på løpende avkastning',
+    pitch: 'Skal bidra med løpende renteinntekter og lavere volatilitet enn aksjer.',
+    case: 'Bygger robusthet i porteføljen og gir kontantstrøm i et mer defensivt segment.',
+    why: 'Passer som stabilisator mot aksjer og som bærer av løpende yield.',
+    risk: 'Kredittrisiko og spreadutvidelser kan gi kursfall i stressperioder.',
+    benchmark: 'Global high yield / kredittreferanse',
+    expectedReturn: 7.5,
+    expectedYield: 7.0,
+    preferredChart: 'underlying'
+  },
+  'nordisk-hoyrente': {
+    title: 'Nordisk høyrente',
+    subtitle: 'Kredittportefølje med nordisk fokus',
+    role: 'Regional rentedel med løpende avkastning',
+    pitch: 'Gir eksponering mot nordisk kredittmarked gjennom utvalgte fond.',
+    case: 'Egnet når man ønsker mer regional kredittkompetanse og løpende yield.',
+    why: 'Kan være et godt supplement til globale renteløsninger.',
+    risk: 'Likviditet og kredittspread kan påvirke avkastningen i urolige perioder.',
+    benchmark: 'Nordisk high yield / kredittreferanse',
+    expectedReturn: 7.0,
+    expectedYield: 6.5,
+    preferredChart: 'underlying'
+  },
+  'norge-a': {
+    title: 'Norske aksjer',
+    subtitle: 'Aktivt norsk aksjefond',
+    role: 'Hjemmemarkeds- og stock-picking-eksponering',
+    pitch: 'Gir aktiv eksponering mot norske børsnoterte selskaper og sektorer.',
+    case: 'Brukes for å utnytte lokal markedskunnskap og tilføre tydelige norske idéer.',
+    why: 'Kan gi god diversifisering relativt til globale porteføljer og passer godt i NOK-porteføljer.',
+    risk: 'Mer konsentrert marked og høyere sektoravhengighet enn global eksponering.',
+    benchmark: 'OSEBX / norsk aksjereferanse',
+    expectedReturn: 10.0,
+    expectedYield: 2.5,
+    preferredChart: 'underlying'
+  },
+  'energy-a': {
+    title: 'Tematisk energi-eksponering',
+    subtitle: 'Konsentrert energirelatert mandat',
+    role: 'Tematisk satellitt',
+    pitch: 'Gir målrettet eksponering mot energi, råvarer og tilhørende verdikjeder.',
+    case: 'Kan bidra med meravkastningspotensial når energisektoren er attraktivt priset.',
+    why: 'Passer som mindre satellittandel i en bredere portefølje.',
+    risk: 'Kan svinge betydelig og er sensitiv for råvarepriser og geopolitikk.',
+    benchmark: 'Energi-/råvareorientert aksjereferanse',
+    expectedReturn: 11.0,
+    expectedYield: 3.5,
+    preferredChart: 'underlying'
+  },
+  'banking-d': {
+    title: 'Nordisk banksektor',
+    subtitle: 'Sektorspesialist mot banker og finans',
+    role: 'Sektorsatellitt',
+    pitch: 'Gir eksponering mot nordiske banker og finansinstitusjoner med tydelig sektorvinkel.',
+    case: 'Kan brukes når man ønsker særskilt eksponering mot en sektor med attraktive utbytter og soliditet.',
+    why: 'Gir en mer spesialisert og målrettet eksponering enn brede nordiske aksjefond.',
+    risk: 'Sektorkonsentrasjon og regulatoriske endringer kan gi høy volatilitet.',
+    benchmark: 'Nordisk bank-/finansreferanse',
+    expectedReturn: 10.0,
+    expectedYield: 4.0,
+    preferredChart: 'underlying'
+  },
+  'financial-d': {
+    title: 'Finansiell kredittspesialist',
+    subtitle: 'Rente-/kredittmandat med finanssektor som fokus',
+    role: 'Spesialist i rentedelen',
+    pitch: 'Gir målrettet kreditt- og renteeksponering mot finansrelaterte utstedere.',
+    case: 'Kan bidra med attraktiv løpende avkastning fra et avgrenset og analysekrevende segment.',
+    why: 'Passer som supplement i rentedelen for å øke spesialisering og yield.',
+    risk: 'Kredittevent, likviditet og sektorspesifikk risiko kan påvirke utviklingen.',
+    benchmark: 'Finansiell kreditt / high yield referanse',
+    expectedReturn: 8.0,
+    expectedYield: 7.5,
+    preferredChart: 'underlying'
+  }
+};
 
-function num(v, fb = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fb;
+function n(v, fb = 0) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : fb;
 }
 
-function formatCurrency(v) {
-  return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(num(v));
+function pct(v, digits = 1) {
+  return `${n(v).toFixed(digits)}%`;
 }
 
-function pct(v) {
-  return `${num(v).toFixed(1)}%`;
+function currency(v) {
+  return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(n(v));
 }
 
-function pickTemplateFromRepo(preferredFilename = '') {
-  const baseDir = process.cwd();
-  const templateDirs = [
-    path.join(baseDir, 'uploads'),
-    path.join(baseDir, 'public', 'uploads'),
-    path.join(baseDir, 'public', 'templates')
-  ];
-
-  const candidates = [];
-  templateDirs.forEach((dirPath) => {
-    if (!fs.existsSync(dirPath)) return;
-    fs.readdirSync(dirPath, { withFileTypes: true }).forEach((entry) => {
-      if (!entry.isFile()) return;
-      if (!/\.pptx?$/i.test(entry.name)) return;
-      const fullPath = path.join(dirPath, entry.name);
-      const stat = fs.statSync(fullPath);
-      candidates.push({
-        fullPath,
-        filename: entry.name,
-        relativePath: path.relative(baseDir, fullPath),
-        mtimeMs: stat.mtimeMs
-      });
-    });
-  });
-
-  if (candidates.length === 0) return null;
-
-  const preferred = /\.pptx?$/i.test(String(preferredFilename || '').trim()) ? String(preferredFilename || '').trim().toLowerCase() : '';
-  const exactMatch = preferred
-    ? candidates.find((c) => c.filename.toLowerCase() === preferred)
-    : null;
-
-  const defaultMatch = candidates.find((c) => /mal.*investeringsportefølje.*2026.*\.pptx$/i.test(c.filename));
-  const chosen = exactMatch || defaultMatch || [...candidates].sort((a, b) => b.mtimeMs - a.mtimeMs)[0];
-
-  return {
-    source: `repo:${chosen.relativePath}`,
-    filename: path.basename(chosen.fullPath),
-    mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    buffer: fs.readFileSync(chosen.fullPath)
-  };
+function safeFilename(text = 'Kunde') {
+  return String(text || 'Kunde').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-.æøåÆØÅ]/g, '');
 }
 
-function parsePageSpec(spec = '', maxPage = TOTAL_SLIDES) {
-  const set = new Set();
-  String(spec).split(',').map((p) => p.trim()).filter(Boolean).forEach((token) => {
-    if (/^\d+\+$/.test(token)) {
-      const start = Number(token.replace('+', ''));
-      for (let i = start; i <= maxPage; i += 1) set.add(i);
-    } else if (/^\d+-\d+$/.test(token)) {
-      const [a, b] = token.split('-').map(Number);
-      for (let i = Math.min(a, b); i <= Math.max(a, b); i += 1) set.add(i);
-    } else if (/^\d+$/.test(token)) {
-      set.add(Number(token));
-    }
-  });
-  return set;
+function formatDateLabel(dateStr = '') {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('nb-NO');
 }
 
-function addHeader(pptx, slide, titleRight = '') {
-  slide.background = { color: COLORS.bg };
-  slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.55, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
-  slide.addText('PENSUM ASSET MANAGEMENT', { x: 0.65, y: 0.14, w: 5, h: 0.25, fontSize: 10, bold: true, color: COLORS.navy });
-  if (titleRight) slide.addText(titleRight, { x: 8, y: 0.14, w: 4.7, h: 0.25, fontSize: 10, align: 'right', color: COLORS.muted });
-}
-
-function addFooter(pptx, slide, pageNo) {
-  slide.addShape(pptx.ShapeType.line, { x: 0.65, y: 7.1, w: 12.05, h: 0, line: { color: COLORS.line, pt: 1 } });
-  slide.addText(`Side ${pageNo}`, { x: 0.65, y: 7.13, w: 1.8, h: 0.2, fontSize: 9, color: COLORS.muted });
-}
-
-function normalizeData(data) {
-  const total = num(data.totalKapital);
-  const expected = num(data.vektetAvkastning, 7.5);
-  const years = Math.max(1, Math.round(num(data.horisont, 10)));
-  const alloc = (Array.isArray(data.allokering) ? data.allokering : []).map((a) => ({ navn: a.navn || 'Ukjent', vekt: num(a.vekt) })).filter((a) => a.vekt > 0);
-  const produkterById = new Map((Array.isArray(data.pensumProdukter) ? data.pensumProdukter : [])
-    .filter((p) => p && p.id)
-    .map((p) => [p.id, p]));
-  const allokeringById = new Map((Array.isArray(data.pensumAllokering) ? data.pensumAllokering : []).map((p) => [p.id, num(p.vekt)]));
-  const selectedProductIds = Array.isArray(data.produkterIBruk) && data.produkterIBruk.length > 0
-    ? data.produkterIBruk
-    : Array.from(produkterById.keys());
-  const selectedProducts = selectedProductIds
-    .map((id) => produkterById.get(id))
-    .filter(Boolean);
-  const totalSelectedWeight = selectedProducts.reduce((sum, p) => sum + num(allokeringById.get(p.id), 0), 0) || 0;
-  const products = [];
-  const productRows = [];
-  selectedProducts.forEach((p) => {
-    const rawWeight = num(allokeringById.get(p.id), totalSelectedWeight > 0 ? 0 : 100 / Math.max(selectedProducts.length, 1));
-    const vekt = totalSelectedWeight > 0 ? rawWeight : rawWeight;
-    if (vekt <= 0) return;
-    const exposure = data?.produktEksponering?.[p.id] || {};
-    const node = {
-      id: p.id,
-      navn: PRODUCT_NAME[p.id] || p.navn || p.id,
-      slideTittel: p.slideTittel || PRODUCT_NAME[p.id] || p.navn || p.id,
-      slideUndertittel: p.slideUndertittel || '',
-      rollePortefolje: p.rollePortefolje || '',
-      benchmark: p.benchmark || '',
-      risikoNivaa: p.risikoNivaa || '',
-      forventetAvkastning: num(p.forventetAvkastning, NaN),
-      forventetYield: num(p.forventetYield, NaN),
-      pitchKort: p.pitchKort || '',
-      investeringscase: p.investeringscase || '',
-      hvorforInkludert: p.hvorforInkludert || '',
-      nokkelRisiko: p.nokkelRisiko || '',
-      diagramType: p.diagramType || 'underliggende',
-      antallProduktslides: Math.max(1, Math.round(num(p.antallProduktslides, 1))),
-      vekt,
-      underliggende: Array.isArray(exposure.underliggende) ? exposure.underliggende.slice(0, 8) : [],
-      regioner: Array.isArray(exposure.regioner) ? exposure.regioner.slice(0, 6) : [],
-      sektorer: Array.isArray(exposure.sektorer) ? exposure.sektorer.slice(0, 6) : [],
-      stil: Array.isArray(exposure.stil) ? exposure.stil.slice(0, 6) : [],
-      disclaimer: exposure.disclaimer || ''
-    };
-    products.push(node);
-    productRows.push({
-      id: node.id,
-      navn: node.navn,
-      vekt: node.vekt,
-      benchmark: node.benchmark,
-      expected: node.forventetAvkastning,
-      yield: node.forventetYield,
-      y2026: num(p.aar2026, NaN),
-      y2025: num(p.aar2025, NaN),
-      y2024: num(p.aar2024, NaN),
-      y2023: num(p.aar2023, NaN),
-      y2022: num(p.aar2022, NaN)
-    });
-  });
-
-  const yearlyFields = [
-    { year: 2022, key: 'aar2022' },
-    { year: 2023, key: 'aar2023' },
-    { year: 2024, key: 'aar2024' },
-    { year: 2025, key: 'aar2025' },
-    { year: 2026, key: 'aar2026' }
-  ];
-
-  const yearlyPensum = yearlyFields.map(({ key }) => {
-    const rows = selectedProducts.map((p) => ({ value: num(p?.[key], NaN), weight: num(allokeringById.get(p.id), totalSelectedWeight > 0 ? 0 : 100 / Math.max(selectedProducts.length, 1)) }))
-      .filter((r) => Number.isFinite(r.value) && r.weight > 0);
-    if (rows.length === 0) return 0;
-    const weightSum = rows.reduce((a, r) => a + r.weight, 0) || 1;
-    return rows.reduce((acc, row) => acc + (row.value * row.weight / weightSum), 0);
-  });
-
-  const yearlyWorld = yearlyPensum.map((v, idx) => Number((v + (idx < yearlyPensum.length - 1 ? 1.2 : 0.4)).toFixed(2)));
-  const yearlyBase = yearlyPensum.map((v, idx) => Number((v - (idx < yearlyPensum.length - 1 ? 1.1 : 0.5)).toFixed(2)));
-
-  const historikk = data.produktHistorikk && typeof data.produktHistorikk === 'object' ? data.produktHistorikk : {};
-  const historyRows = Object.values(historikk)
-    .filter((v) => Array.isArray(v?.data) && v.data.length > 1)
-    .slice(0, 2)
-    .map((serie) => {
-      const sorted = [...serie.data]
-        .filter((p) => typeof p?.dato === 'string' && Number.isFinite(num(p?.verdi, NaN)))
-        .sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
-      const perMonth = Array(12).fill(null);
-      for (let i = 1; i < sorted.length; i += 1) {
-        const prev = num(sorted[i - 1].verdi, NaN);
-        const curr = num(sorted[i].verdi, NaN);
-        if (!Number.isFinite(prev) || !Number.isFinite(curr) || prev === 0) continue;
-        const m = Number(String(sorted[i].dato).split('-')[1]);
-        if (m >= 1 && m <= 12) {
-          perMonth[m - 1] = ((curr / prev) - 1) * 100;
-        }
-      }
-      const latestDate = sorted[sorted.length - 1]?.dato || '';
-      const yearLabel = String(latestDate).slice(0, 4) || '2026';
+function pickProducts(payload) {
+  const selectedIds = Array.isArray(payload.produkterIBruk) ? payload.produkterIBruk : [];
+  const exposureMap = payload.produktEksponering || {};
+  const products = Array.isArray(payload.pensumProdukter) ? payload.pensumProdukter : [];
+  const allokMap = new Map((Array.isArray(payload.pensumAllokering) ? payload.pensumAllokering : []).map((p) => [p.id, n(p.vekt)]));
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const selected = (selectedIds.length ? selectedIds : products.map((p) => p.id))
+    .map((id) => {
+      const raw = byId.get(id) || { id, navn: PRODUCT_LABELS[id] || id };
+      const meta = PRODUCT_META[id] || {};
+      const exposure = exposureMap[id] || {};
       return {
-        year: yearLabel,
-        vals: perMonth.map((x) => (Number.isFinite(x) ? Number(x.toFixed(1)) : 0))
+        ...meta,
+        ...raw,
+        id,
+        navn: raw.navn || PRODUCT_LABELS[id] || id,
+        vekt: n(raw.vekt, allokMap.get(id) ?? 0),
+        exposure,
+        aar2026: n(raw.aar2026, NaN),
+        aar2025: n(raw.aar2025, NaN),
+        aar2024: n(raw.aar2024, NaN),
+        aar2023: n(raw.aar2023, NaN),
+        aar2022: n(raw.aar2022, NaN),
       };
-    });
+    })
+    .filter((p) => p.vekt > 0)
+    .sort((a, b) => b.vekt - a.vekt);
+  if (selected.length === 0) return [];
+  const total = selected.reduce((s, p) => s + n(p.vekt), 0) || 1;
+  return selected.map((p) => ({ ...p, vekt: Number(((p.vekt / total) * 100).toFixed(1)) }));
+}
 
-  const eksponeringSektorer = (Array.isArray(data?.eksponering?.sektorer) ? data.eksponering.sektorer : [])
-    .map((r) => ({ navn: r?.navn || 'Ukjent', vekt: num(r?.vekt) }))
-    .filter((r) => r.vekt > 0)
-    .slice(0, 8);
-  const eksponeringRegioner = (Array.isArray(data?.eksponering?.regioner) ? data.exponering?.regioner : data?.eksponering?.regioner || [])
-    .map((r) => ({ navn: r?.navn || 'Ukjent', vekt: num(r?.vekt) }))
-    .filter((r) => r.vekt > 0)
-    .slice(0, 8);
-
-  const topProducts = [...products].sort((a, b) => b.vekt - a.vekt).slice(0, 8);
-  const productSlidePlan = topProducts.flatMap((p) => Array.from({ length: Math.min(p.antallProduktslides || 1, 2) }, (_, idx) => ({ ...p, slideVariant: idx + 1 })));
-
+function normalizePayload(payload = {}) {
+  const total = n(payload.totalKapital, 0);
+  const horisont = Math.max(1, Math.round(n(payload.horisont, 10)));
+  const expected = n(payload.vektetAvkastning, 7.5);
+  const products = pickProducts(payload);
+  const alloc = (Array.isArray(payload.allokering) ? payload.allokering : [])
+    .map((a) => ({ navn: a.navn || 'Ukjent', vekt: n(a.vekt), kategori: a.kategori || '' }))
+    .filter((a) => a.vekt > 0)
+    .sort((a, b) => b.vekt - a.vekt);
+  const expValue = total * Math.pow(1 + (expected / 100), horisont);
+  const eksponering = payload.eksponering || { sektorer: [], regioner: [] };
   return {
-    kundeNavn: data.kundeNavn || 'Investor',
-    risikoProfil: data.risikoProfil || 'Moderat',
+    kundeNavn: payload.kundeNavn || 'Investor',
+    risikoProfil: payload.risikoProfil || 'Moderat',
+    dato: payload.dato || new Date().toISOString().slice(0, 10),
     total,
+    horisont,
     expected,
-    years,
     alloc,
-    products: topProducts.map((p) => p.navn),
-    expValue: total * Math.pow(1 + expected / 100, years),
-    seriesYears: yearlyFields.map((f) => f.year),
-    yearlyBase,
-    yearlyPensum,
-    yearlyWorld,
-    productRows,
-    productNodes: topProducts,
-    productSlidePlan,
-    monthlyRows: historyRows.length > 0 ? historyRows : [{ year: '2026', vals: Array(12).fill(0) }],
-    eksponeringSektorer,
-    eksponeringRegioner,
-    malConfig: data.malConfig || {}
+    products,
+    expValue,
+    eksponering,
+    produktHistorikk: payload.produktHistorikk || {}
   };
 }
 
-function calcRiskRows(monthlyRows = []) {
-  return monthlyRows.map((r) => {
-    const vals = (r.vals || []).map((v) => num(v, 0) / 100);
-    const n = vals.length || 1;
-    const mean = vals.reduce((a, b) => a + b, 0) / n;
-    const variance = vals.reduce((a, b) => a + ((b - mean) ** 2), 0) / n;
-    const vol = Math.sqrt(variance) * Math.sqrt(12) * 100;
-    let acc = 100;
-    let peak = 100;
-    let maxDrawdown = 0;
-    vals.forEach((m) => {
-      acc *= (1 + m);
-      peak = Math.max(peak, acc);
-      const dd = peak > 0 ? ((acc - peak) / peak) * 100 : 0;
-      maxDrawdown = Math.min(maxDrawdown, dd);
-    });
-    const annual = (((1 + mean) ** 12) - 1) * 100;
-    return {
-      year: r.year,
-      annual: Number(annual.toFixed(2)),
-      vol: Number(vol.toFixed(2)),
-      sharpe: Number((vol > 0 ? ((annual - 3) / vol) : 0).toFixed(2)),
-      maxDrawdown: Number(maxDrawdown.toFixed(2))
-    };
-  });
+function addChrome(slide, pageNo, rightText = '') {
+  slide.background = { color: COLORS.light };
+  slide.addShape(PptxGenJS.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.55, fill: { color: COLORS.white }, line: { color: COLORS.white, pt: 0 } });
+  slide.addText('PENSUM ASSET MANAGEMENT', { x: 0.65, y: 0.14, w: 5.5, h: 0.2, fontSize: 10, color: COLORS.navy, bold: true });
+  if (rightText) slide.addText(rightText, { x: 8.5, y: 0.14, w: 4.1, h: 0.2, fontSize: 10, color: COLORS.muted, align: 'right' });
+  slide.addShape(PptxGenJS.ShapeType.line, { x: 0.65, y: 7.1, w: 12.05, h: 0, line: { color: COLORS.line, pt: 1 } });
+  slide.addText(`Side ${pageNo}`, { x: 0.65, y: 7.12, w: 2, h: 0.2, fontSize: 9, color: COLORS.muted });
 }
 
-
-function buildPage(pptx, d, pageNo) {
-  const s = pptx.addSlide();
-  addHeader(pptx, s, pageNo <= 5 ? `Fast ${pageNo}/5` : pageNo <= 13 ? `Dynamisk ${pageNo}/13` : 'Standard');
-  s.addText(`Side ${pageNo}`, { x: 0.8, y: 1.0, w: 4, h: 0.5, fontSize: 20, color: COLORS.navy, bold: true });
-
-  if (pageNo === 1) {
-    s.addText('Investeringsforslag', { x: 0.8, y: 1.7, w: 8.5, h: 0.7, fontSize: 34, color: COLORS.navy, bold: true });
-    s.addText(d.kundeNavn, { x: 0.8, y: 2.5, w: 8.5, h: 0.45, fontSize: 24, color: COLORS.salmon, bold: true });
-  }
-  if (pageNo === 6 && d.alloc.length > 0) {
-    s.addChart(pptx.ChartType.pie, [{ name: 'Andel', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 0.9, y: 1.8, w: 4.6, h: 3.4, showLegend: false });
-    s.addTable([
-      ['Aktivaklasse', 'Vekt'],
-      ...d.alloc.map((a) => [a.navn, `${a.vekt.toFixed(1)}%`])
-    ], { x: 5.9, y: 1.9, w: 6.4, fontSize: 11, border: { pt: 1, color: COLORS.line } });
-  }
-  if (pageNo === 7) {
-    const allocVals = d.alloc.map((a) => Number(((a.vekt / 100) * d.total).toFixed(0)));
-    if (allocVals.length > 0) {
-      s.addChart(pptx.ChartType.bar, [{ name: 'Beløp', labels: d.alloc.map((a) => a.navn), values: allocVals }], {
-        x: 0.9, y: 1.8, w: 11.8, h: 3.9, showLegend: false, barDir: 'col'
-      });
-    }
-    s.addText('Beløpsfordeling basert på valgt allokering.', { x: 0.9, y: 5.95, w: 11.8, h: 0.4, fontSize: 12, color: COLORS.muted });
-  }
-  if (pageNo === 8) {
-    const rows = d.productRows.length > 0
-      ? d.productRows.slice(0, 8).map((p) => [p.navn, pct(p.vekt), p.benchmark || '—', Number.isFinite(p.expected) ? pct(p.expected) : '—'])
-      : [['Ingen produkter valgt', '—', '—', '—']];
-    s.addText('Valgte Pensum-løsninger og rolle i porteføljen', { x: 0.9, y: 1.55, w: 11.8, h: 0.35, fontSize: 13, color: COLORS.muted });
-    s.addTable([
-      ['Produkt', 'Vekt', 'Benchmark', 'Forv. avkastning'],
-      ...rows
-    ], { x: 0.9, y: 1.95, w: 11.8, fontSize: 10, border: { pt: 1, color: COLORS.line } });
-  }
-  if (pageNo === 9) {
-    const summary = d.productNodes.slice(0, 3);
-    summary.forEach((p, idx) => {
-      const y = 1.8 + (idx * 1.55);
-      s.addShape(pptx.ShapeType.roundRect, { x: 0.9, y, w: 11.8, h: 1.2, rectRadius: 0.08, fill: { color: idx === 0 ? 'EEF4FB' : 'F8FAFC' }, line: { color: COLORS.line, pt: 1 } });
-      s.addText(`${p.slideTittel} (${pct(p.vekt)})`, { x: 1.15, y: y + 0.12, w: 4.9, h: 0.25, fontSize: 16, bold: true, color: COLORS.navy });
-      s.addText(p.slideUndertittel || p.rollePortefolje || 'Produktfokus', { x: 1.15, y: y + 0.42, w: 4.9, h: 0.2, fontSize: 10, color: COLORS.muted });
-      s.addText(p.pitchKort || p.hvorforInkludert || 'Ingen beskrivelse tilgjengelig.', { x: 6.0, y: y + 0.12, w: 5.9, h: 0.58, fontSize: 10, color: COLORS.text, margin: 0.02 });
-      s.addText(`Benchmark: ${p.benchmark || '—'}   |   Risiko: ${p.risikoNivaa || '—'}   |   Yield: ${Number.isFinite(p.forventetYield) ? pct(p.forventetYield) : '—'}`, { x: 6.0, y: y + 0.72, w: 5.9, h: 0.2, fontSize: 9, color: COLORS.muted });
-    });
-  }
-  if (pageNo === 10) {
-    s.addChart(pptx.ChartType.line, [
-      { name: 'Eksisterende', labels: d.seriesYears, values: d.yearlyBase },
-      { name: 'Forslag', labels: d.seriesYears, values: d.yearlyPensum },
-      { name: 'Verdensindeks', labels: d.seriesYears, values: d.yearlyWorld }
-    ], { x: 0.9, y: 1.8, w: 11.9, h: 3.8, showLegend: true, legendPos: 'b' });
-  }
-  if (pageNo === 11) {
-    const riskRows = calcRiskRows(d.monthlyRows);
-    s.addTable([
-      ['Serie', 'Årlig avkastning', 'Volatilitet', 'Sharpe', 'Max Drawdown'],
-      ...riskRows.map((r) => [r.year, `${r.annual.toFixed(1)}%`, `${r.vol.toFixed(1)}%`, `${r.sharpe.toFixed(2)}`, `${r.maxDrawdown.toFixed(1)}%`])
-    ], { x: 0.9, y: 1.9, w: 11.8, fontSize: 11, border: { pt: 1, color: COLORS.line } });
-  }
-  if (pageNo === 12) {
-    const major = d.productNodes[0];
-    if (major) {
-      s.addText(major.slideTittel, { x: 0.9, y: 1.75, w: 6, h: 0.35, fontSize: 24, bold: true, color: COLORS.navy });
-      s.addText(major.slideUndertittel || major.rollePortefolje || 'Største byggestein i porteføljen', { x: 0.9, y: 2.15, w: 6, h: 0.22, fontSize: 11, color: COLORS.muted });
-      s.addShape(pptx.ShapeType.roundRect, { x: 0.9, y: 2.55, w: 3.6, h: 0.85, rectRadius: 0.06, fill: { color: 'EEF4FB' }, line: { color: COLORS.line, pt: 1 } });
-      s.addText(`Vekt i porteføljen
-${pct(major.vekt)}`, { x: 1.1, y: 2.72, w: 1.7, h: 0.45, fontSize: 12, bold: true, color: COLORS.navy, breakLine: true });
-      s.addText(`Forv. avkastning
-${Number.isFinite(major.forventetAvkastning) ? pct(major.forventetAvkastning) : '—'}`, { x: 2.65, y: 2.72, w: 1.55, h: 0.45, fontSize: 12, bold: true, color: COLORS.salmon, breakLine: true });
-      s.addText(major.investeringscase || major.pitchKort || 'Ingen investeringscase definert.', { x: 0.9, y: 3.7, w: 5.5, h: 1.4, fontSize: 11, color: COLORS.text, valign: 'top' });
-      const chartData = major.diagramType === 'regioner' ? major.regioner : major.diagramType === 'sektorer' ? major.sektorer : (major.underliggende.length ? major.underliggende : major.regioner);
-      if (chartData && chartData.length) {
-        s.addChart(pptx.ChartType.bar, [{ name: major.diagramType || 'Eksponering', labels: chartData.map((r) => r.navn), values: chartData.map((r) => num(r.vekt)) }], {
-          x: 6.8, y: 1.9, w: 5.4, h: 3.8, showLegend: false, barDir: 'bar'
-        });
-      }
-      s.addText(`Benchmark: ${major.benchmark || '—'}    |    Risiko: ${major.risikoNivaa || '—'}    |    Yield: ${Number.isFinite(major.forventetYield) ? pct(major.forventetYield) : '—'}`, { x: 0.9, y: 5.45, w: 11.2, h: 0.25, fontSize: 10, color: COLORS.muted });
-    }
-  }
-
-  if (pageNo === 13) {
-    s.addText('Aggregert eksponering fra valgte produkter', { x: 0.9, y: 1.65, w: 11.8, h: 0.4, fontSize: 13, color: COLORS.muted });
-    const sekt = d.eksponeringSektorer.length ? d.eksponeringSektorer : [{ navn: 'Ingen data', vekt: 0 }];
-    const regi = d.eksponeringRegioner.length ? d.eksponeringRegioner : [{ navn: 'Ingen data', vekt: 0 }];
-    s.addChart(pptx.ChartType.bar, [{ name: 'Sektorer', labels: sekt.map((r) => r.navn), values: sekt.map((r) => r.vekt) }], {
-      x: 0.9, y: 2.1, w: 5.7, h: 3.6, showLegend: false, barDir: 'bar'
-    });
-    s.addChart(pptx.ChartType.bar, [{ name: 'Regioner', labels: regi.map((r) => r.navn), values: regi.map((r) => r.vekt) }], {
-      x: 6.95, y: 2.1, w: 5.7, h: 3.6, showLegend: false, barDir: 'bar'
-    });
-    s.addText('Kilde: Aggregert, vektet eksponering fra valgte produkter i Pensum Løsninger.', { x: 0.9, y: 5.95, w: 11.8, h: 0.35, fontSize: 11, color: COLORS.muted });
-  }
-
-  if (pageNo >= 14) {
-    const node = d.productSlidePlan[pageNo - 14];
-    if (node) {
-      s.addText(node.slideTittel || node.navn, { x: 0.9, y: 1.55, w: 7.2, h: 0.4, fontSize: 24, bold: true, color: COLORS.navy });
-      s.addText(`${node.slideUndertittel || node.rollePortefolje || 'Produktfokus'} · ${pct(node.vekt)} av porteføljen`, { x: 0.9, y: 1.95, w: 7.2, h: 0.22, fontSize: 11, color: COLORS.muted });
-      if (node.slideVariant === 1) {
-        s.addShape(pptx.ShapeType.roundRect, { x: 0.9, y: 2.35, w: 5.3, h: 2.25, rectRadius: 0.06, fill: { color: 'F8FAFC' }, line: { color: COLORS.line, pt: 1 } });
-        s.addText(node.pitchKort || 'Ingen kort pitch definert.', { x: 1.15, y: 2.55, w: 4.8, h: 0.5, fontSize: 11, color: COLORS.text });
-        s.addText(node.investeringscase || 'Investeringscase mangler.', { x: 1.15, y: 3.12, w: 4.8, h: 0.9, fontSize: 10, color: COLORS.text });
-        s.addText(`Hvorfor inkludert: ${node.hvorforInkludert || '—'}`, { x: 1.15, y: 4.08, w: 4.8, h: 0.35, fontSize: 10, color: COLORS.muted });
-        s.addTable([
-          ['KPI', 'Verdi'],
-          ['Benchmark', node.benchmark || '—'],
-          ['Risikonivå', node.risikoNivaa || '—'],
-          ['Forv. avkastning', Number.isFinite(node.forventetAvkastning) ? pct(node.forventetAvkastning) : '—'],
-          ['Forv. yield', Number.isFinite(node.forventetYield) ? pct(node.forventetYield) : '—']
-        ], { x: 6.55, y: 2.35, w: 5.65, fontSize: 10, border: { pt: 1, color: COLORS.line } });
-        s.addText(`Nøkkelrisiko: ${node.nokkelRisiko || '—'}`, { x: 6.55, y: 4.9, w: 5.4, h: 0.45, fontSize: 10, color: COLORS.salmon });
-      } else {
-        const chartData = node.diagramType === 'regioner' ? node.regioner : node.diagramType === 'sektorer' ? node.sektorer : node.diagramType === 'stil' ? node.stil : node.underliggende;
-        const source = chartData && chartData.length ? chartData : (node.regioner.length ? node.regioner : node.underliggende);
-        if (source && source.length) {
-          s.addChart(pptx.ChartType.bar, [{ name: node.diagramType || 'Eksponering', labels: source.map((r) => r.navn), values: source.map((r) => num(r.vekt)) }], {
-            x: 0.9, y: 2.2, w: 6.0, h: 3.8, showLegend: false, barDir: 'bar'
-          });
-          s.addTable([
-            ['Navn', 'Vekt'],
-            ...source.slice(0, 8).map((r) => [r.navn, pct(r.vekt)])
-          ], { x: 7.2, y: 2.25, w: 5.0, fontSize: 10, border: { pt: 1, color: COLORS.line } });
-        } else {
-          s.addText('Eksponeringsdata ikke tilgjengelig for valgt diagram.', { x: 0.9, y: 2.5, w: 10.5, h: 0.4, fontSize: 12, color: COLORS.muted });
-        }
-        if (node.disclaimer) {
-          s.addText(node.disclaimer, { x: 0.9, y: 6.25, w: 11.3, h: 0.35, fontSize: 9, color: COLORS.muted });
-        }
-      }
-    } else {
-      s.addText('Standardside fra generatoren (fallback ved manglende mal-placeholder).', { x: 0.9, y: 2.0, w: 11.2, h: 0.6, fontSize: 14, color: COLORS.text });
-    }
-  }
-  addFooter(pptx, s, pageNo);
+function addTitle(slide, title, subtitle = '') {
+  slide.addText(title, { x: 0.8, y: 0.95, w: 8.6, h: 0.5, fontSize: 24, bold: true, color: COLORS.navy });
+  if (subtitle) slide.addText(subtitle, { x: 0.8, y: 1.42, w: 11.7, h: 0.35, fontSize: 12, color: COLORS.muted });
 }
 
-function buildPptx(PptxGenJS, payload) {
+function addKpiCard(slide, x, y, w, title, value, accent = COLORS.navy, sub = '') {
+  slide.addShape(PptxGenJS.ShapeType.roundRect, { x, y, w, h: 1.0, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+  slide.addText(title, { x: x + 0.18, y: y + 0.12, w: w - 0.3, h: 0.15, fontSize: 9, color: COLORS.muted, bold: true });
+  slide.addText(String(value), { x: x + 0.18, y: y + 0.35, w: w - 0.3, h: 0.28, fontSize: 20, color: accent, bold: true });
+  if (sub) slide.addText(sub, { x: x + 0.18, y: y + 0.72, w: w - 0.3, h: 0.12, fontSize: 8, color: COLORS.muted });
+}
+
+function bulletLines(product) {
+  return [product.pitch, product.case, product.why].filter(Boolean).map((line) => `• ${line}`);
+}
+
+function topRows(arr = [], top = 8) {
+  return (Array.isArray(arr) ? arr : []).slice(0, top).map((row) => ({ navn: row.navn || 'Ukjent', vekt: n(row.vekt) }));
+}
+
+function buildGeneratedDeck(payload = {}) {
+  const d = normalizePayload(payload);
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
-  const d = normalizeData(payload);
-  for (let i = 1; i <= TOTAL_SLIDES; i += 1) buildPage(pptx, d, i);
-  return pptx;
-}
+  pptx.author = 'OpenAI';
+  pptx.company = 'Pensum Asset Management';
+  pptx.subject = 'Investeringsforslag';
+  pptx.title = `Investeringsforslag ${d.kundeNavn}`;
+  let page = 1;
 
-function parseDataUrlToBuffer(dataUrl = '') {
-  const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
-  if (!m) return null;
-  return { mime: m[1], buffer: Buffer.from(m[2], 'base64') };
-}
-
-function dynamicSlideText(pageNo, d) {
-  const lines = {
-    6: [`Allokering: ${d.alloc.map((a) => `${a.navn} ${a.vekt.toFixed(1)}%`).join(', ')}`],
-    7: ['Aksjeandel vs verdensindeks: modellert sammenligning.'],
-    8: ['Verdensindeks: region/land/sektor-fordeling.'],
-    9: [`Produkter: ${d.products.join(', ') || 'Ingen valgt'}`],
-    10: [`Avkastning siste år: Forslag ${d.yearlyPensum.map((v) => pct(v)).join(', ')}`],
-    11: ['Nedsiderisiko: se graf og risikomål i verktøyet.'],
-    12: [`Månedstabell: ${d.monthlyRows.map((r) => `${r.year}=${r.vals.reduce((a, b) => a + b, 0).toFixed(1)}%`).join(' | ')}`],
-    13: [`Forventet sluttverdi ${d.years} år: ${formatCurrency(d.expValue)}`]
-  };
-  return (lines[pageNo] || []).join('\n');
-}
-
-async function applyTemplatePptx(templateBuffer, payload) {
-  const d = normalizeData(payload);
-  if (!JSZip || !JSZip.loadAsync) throw new Error('jszip ikke tilgjengelig i runtime');
-  const zip = await JSZip.loadAsync(templateBuffer);
-  const fixedSet = parsePageSpec(d?.malConfig?.fasteSider || '1-5,14+', TOTAL_SLIDES);
-  const dynamicSet = parsePageSpec(d?.malConfig?.dynamiskeSider || '6-13', TOTAL_SLIDES);
-
-  const globalTokens = {
-    '{{KUNDE_NAVN}}': d.kundeNavn,
-    '{{DATO}}': new Date(REPORT_DATE).toLocaleDateString('nb-NO'),
-    '{{TOTAL_KAPITAL}}': formatCurrency(d.total),
-    '{{RISIKOPROFIL}}': d.risikoProfil,
-    '{{HORISONT}}': `${d.years} år`,
-    '{{FORVENTET_AVKASTNING}}': pct(d.expected),
-    '{{ALLOKERING_TABELL}}': d.alloc.map((a) => `${a.navn}: ${a.vekt.toFixed(1)}%`).join('\n'),
-    '{{PRODUKTLISTE}}': d.products.join(', ')
-  };
-
-  let replacements = 0;
-  const slideFiles = Object.keys(zip.files).filter((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p));
-
-  for (const slidePath of slideFiles) {
-    const pageNo = Number(slidePath.match(/slide(\d+)\.xml$/)?.[1] || 0);
-    let xml = await zip.file(slidePath).async('text');
-
-    Object.entries(globalTokens).forEach(([token, value]) => {
-      if (xml.includes(token)) {
-        const before = xml;
-        xml = xml.split(token).join(value);
-        if (xml !== before) replacements += 1;
-      }
-    });
-
-    if (dynamicSet.has(pageNo)) {
-      const dynToken = `{{DYNAMIC_${pageNo}}}`;
-      if (xml.includes(dynToken)) {
-        const before = xml;
-        xml = xml.split(dynToken).join(dynamicSlideText(pageNo, d));
-        if (xml !== before) replacements += 1;
-      }
-    }
-
-    if (!fixedSet.has(pageNo) && !dynamicSet.has(pageNo) && pageNo > 0) {
-      const removeToken = '{{SKIP_SLIDE}}';
-      if (xml.includes(removeToken)) {
-        const before = xml;
-        xml = xml.split(removeToken).join('');
-        if (xml !== before) replacements += 1;
-      }
-    }
-
-    zip.file(slidePath, xml);
+  // 1 Forside
+  {
+    const s = pptx.addSlide();
+    addChrome(s, page++, formatDateLabel(d.dato));
+    s.addText('Investeringsforslag', { x: 0.8, y: 1.6, w: 8.5, h: 0.7, fontSize: 30, bold: true, color: COLORS.navy });
+    s.addText(d.kundeNavn, { x: 0.8, y: 2.35, w: 8.5, h: 0.45, fontSize: 22, color: COLORS.salmon, bold: true });
+    s.addText('Pensum Asset Management', { x: 0.8, y: 3.0, w: 8.5, h: 0.3, fontSize: 14, color: COLORS.text });
+    addKpiCard(s, 0.8, 4.2, 2.4, 'Kapital', `${currency(d.total)} kr`);
+    addKpiCard(s, 3.45, 4.2, 2.3, 'Risikoprofil', d.risikoProfil, COLORS.salmon);
+    addKpiCard(s, 6.0, 4.2, 2.3, 'Forv. avkastning', pct(d.expected), COLORS.green, 'årlig');
+    addKpiCard(s, 8.55, 4.2, 3.1, 'Forv. sluttverdi', `${currency(d.expValue)} kr`, COLORS.navy, `${d.horisont} år`);
   }
 
-  const out = await zip.generateAsync({ type: 'nodebuffer' });
-  return { buffer: out, replacements };
-}
+  // 2 Summary
+  {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Executive summary');
+    addTitle(s, 'Anbefalt portefølje', 'Oppsummering av foreslått sammensetning og hovedpoenger');
+    addKpiCard(s, 0.8, 1.95, 2.6, 'Kapital', `${currency(d.total)} kr`);
+    addKpiCard(s, 3.6, 1.95, 2.1, 'Risikoprofil', d.risikoProfil, COLORS.salmon);
+    addKpiCard(s, 5.95, 1.95, 2.1, 'Forv. avkastning', pct(d.expected), COLORS.green);
+    addKpiCard(s, 8.3, 1.95, 2.8, 'Forv. sluttverdi', `${currency(d.expValue)} kr`, COLORS.navy, `${d.horisont} år`);
+    const top = d.products[0];
+    const bullets = [
+      top ? `${top.navn} er største byggestein i porteføljen med ${pct(top.vekt)} vekt.` : 'Porteføljen er sammensatt av utvalgte Pensum-løsninger.',
+      'Porteføljen kombinerer vekstdrivere, kontantstrømbærende rentedel og utvalgte spesialistmandater.',
+      'Produktslidene som følger viser hva hvert valgt produkt faktisk inneholder – ikke bare aggregert totalportefølje.'
+    ];
+    s.addText(bullets.map((b) => ({ text: `• ${b}`, options: { bullet: { indent: 18 } } })), { x: 0.95, y: 3.3, w: 7.3, h: 1.8, fontSize: 16, color: COLORS.text, breakLine: true });
+    if (d.alloc.length) {
+      s.addChart(PptxGenJS.ChartType.pie, [{ name: 'Allokering', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 8.6, y: 3.05, w: 3.3, h: 2.5, showLegend: false, showValue: true, dataLabelPosition: 'bestFit' });
+    }
+  }
 
-function escapePdfText(text = '') {
-  return String(text).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-}
+  // 3 Allocation
+  {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Aktivaklasseallokering');
+    addTitle(s, 'Aktivaklasseallokering', 'Fordeling mellom aksjer, renter og alternative komponenter');
+    if (d.alloc.length) {
+      s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Vekt', labels: d.alloc.map((a) => a.navn), values: d.alloc.map((a) => a.vekt) }], { x: 0.9, y: 1.95, w: 6.0, h: 3.6, showLegend: false, catAxisLabelFontSize: 11, valAxisLabelFontSize: 10 });
+      s.addTable([
+        [{ text: 'Aktivaklasse', options: { bold: true } }, { text: 'Vekt', options: { bold: true } }, { text: 'Beløp', options: { bold: true } }],
+        ...d.alloc.map((a) => [a.navn, pct(a.vekt), `${currency((a.vekt / 100) * d.total)} kr`])
+      ], { x: 7.25, y: 2.0, w: 5.2, rowH: 0.28, fontSize: 10, border: { pt: 1, color: COLORS.line } });
+    }
+  }
 
-function buildSimplePdfBuffer(data) {
-  const rows = ['Pensum Asset Management', 'Investeringsforslag', `Kunde: ${data.kundeNavn || 'Investor'}`, `Total kapital: ${formatCurrency(data.totalKapital)}`];
-  const streamCmd = rows.map((line, i) => `BT /F1 12 Tf 50 ${810 - (i * 20)} Td (${escapePdfText(line)}) Tj ET`).join('\n');
-  return Buffer.from(`%PDF-1.4\n1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>endobj\n4 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n5 0 obj<< /Length ${Buffer.byteLength(streamCmd, 'utf8')} >>stream\n${streamCmd}\nendstream endobj\ntrailer<< /Root 1 0 R >>\n%%EOF`, 'utf8');
+  // 4 Products overview
+  {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Pensum-løsninger');
+    addTitle(s, 'Valgte Pensum-løsninger', 'Produktene under vil få egne moduler i forslaget');
+    s.addTable([
+      [{ text: 'Produkt', options: { bold: true } }, { text: 'Vekt', options: { bold: true } }, { text: 'Rolle', options: { bold: true } }, { text: 'Benchmark', options: { bold: true } }],
+      ...d.products.map((p) => [p.navn, pct(p.vekt), p.role || 'Byggestein i porteføljen', p.benchmark || '—'])
+    ], { x: 0.85, y: 1.9, w: 11.8, fontSize: 10, rowH: 0.28, border: { pt: 1, color: COLORS.line } });
+  }
+
+  // 5 Aggregated exposures summary
+  if ((d.eksponering?.sektorer || []).length || (d.eksponering?.regioner || []).length) {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Porteføljeeksponering');
+    addTitle(s, 'Aggregert porteføljeeksponering', 'Sekundær oppsummering av vektet eksponering på tvers av valgte produkter');
+    const sekt = topRows(d.eksponering?.sektorer, 8);
+    const reg = topRows(d.eksponering?.regioner, 8);
+    if (sekt.length) s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Sektorer', labels: sekt.map((r) => r.navn), values: sekt.map((r) => r.vekt) }], { x: 0.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+    if (reg.length) s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Regioner', labels: reg.map((r) => r.navn), values: reg.map((r) => r.vekt) }], { x: 6.9, y: 1.95, w: 5.8, h: 3.8, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+  }
+
+  // Product slides
+  d.products.forEach((p) => {
+    const sectors = topRows(p.exposure?.sektorer, 8);
+    const regions = topRows(p.exposure?.regioner, 8);
+    const holdings = topRows(p.exposure?.underliggende, 10);
+    const style = topRows(p.exposure?.stil, 8);
+
+    {
+      const s = pptx.addSlide();
+      addChrome(s, page++, p.navn);
+      addTitle(s, p.title || p.navn, p.subtitle || 'Produktmodul');
+      addKpiCard(s, 0.85, 1.9, 1.8, 'Vekt', pct(p.vekt), COLORS.navy);
+      addKpiCard(s, 2.9, 1.9, 2.2, 'Forv. avkastning', pct(p.expectedReturn ?? 0), COLORS.green);
+      addKpiCard(s, 5.35, 1.9, 2.2, 'Forv. yield', pct(p.expectedYield ?? 0), COLORS.teal);
+      addKpiCard(s, 7.8, 1.9, 4.2, 'Benchmark', p.benchmark || '—', COLORS.salmon);
+      s.addText('Rolle i porteføljen', { x: 0.95, y: 3.15, w: 2.8, h: 0.2, fontSize: 11, color: COLORS.muted, bold: true });
+      s.addText(p.role || 'Byggestein i porteføljen', { x: 0.95, y: 3.38, w: 3.6, h: 0.6, fontSize: 16, color: COLORS.navy, bold: true });
+      const bullets = bulletLines(p);
+      if (bullets.length) {
+        s.addText(bullets.map((line) => ({ text: line, options: { bullet: { indent: 16 } } })), { x: 0.95, y: 4.1, w: 6.2, h: 1.8, fontSize: 14, color: COLORS.text, breakLine: true });
+      }
+      s.addText('Nøkkelrisiko', { x: 7.75, y: 3.15, w: 2.4, h: 0.2, fontSize: 11, color: COLORS.muted, bold: true });
+      s.addText(p.risk || 'Markedsrisiko og normal verdiutvikling i tråd med produktets mandat.', { x: 7.75, y: 3.42, w: 4.4, h: 0.8, fontSize: 14, color: COLORS.text });
+      if (p.exposure?.disclaimer) {
+        s.addText(p.exposure.disclaimer, { x: 7.75, y: 4.45, w: 4.5, h: 0.8, fontSize: 10, color: COLORS.muted, italic: true });
+      }
+    }
+
+    {
+      const s = pptx.addSlide();
+      addChrome(s, page++, `${p.navn} – eksponering`);
+      addTitle(s, `${p.navn} – innhold og eksponering`, 'Underliggende eksponering vises produkt for produkt');
+      if (sectors.length) {
+        s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Sektorer', labels: sectors.map((r) => r.navn), values: sectors.map((r) => r.vekt) }], { x: 0.85, y: 1.9, w: 5.9, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+      }
+      if (regions.length) {
+        s.addChart(PptxGenJS.ChartType.bar, [{ name: 'Regioner', labels: regions.map((r) => r.navn), values: regions.map((r) => r.vekt) }], { x: 6.85, y: 1.9, w: 5.6, h: 2.45, showLegend: false, barDir: 'bar', catAxisLabelFontSize: 10 });
+      }
+      const leftRows = holdings.length
+        ? holdings.map((r) => [r.navn, pct(r.vekt)])
+        : [['Ingen underliggende data', '—']];
+      s.addTable([
+        [{ text: 'Underliggende investeringer', options: { bold: true } }, { text: 'Vekt', options: { bold: true } }],
+        ...leftRows
+      ], { x: 0.85, y: 4.65, w: 6.1, fontSize: 9, rowH: 0.24, border: { pt: 1, color: COLORS.line } });
+      const styleRows = style.length
+        ? style.map((r) => [r.navn, pct(r.vekt)])
+        : [['Ingen stilfaktorer registrert', '—']];
+      s.addTable([
+        [{ text: 'Stil / øvrig', options: { bold: true } }, { text: 'Vekt', options: { bold: true } }],
+        ...styleRows
+      ], { x: 7.2, y: 4.65, w: 5.3, fontSize: 9, rowH: 0.24, border: { pt: 1, color: COLORS.line } });
+    }
+  });
+
+  return pptx;
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   try {
-    const data = req.body || {};
-    const skipTemplateMerge = Boolean(data?.skipTemplateMerge);
-    const uploadedTemplateData = skipTemplateMerge ? null : parseDataUrlToBuffer(data?.malConfig?.filDataUrl || '');
-    const repoTemplateData = skipTemplateMerge || uploadedTemplateData ? null : pickTemplateFromRepo(data?.malConfig?.filnavn || '');
-    const templateData = uploadedTemplateData || repoTemplateData;
-
-    if (templateData && /presentationml|ms-powerpoint/.test(templateData.mime)) {
-      try {
-        const { buffer, replacements } = await applyTemplatePptx(templateData.buffer, data);
-        const filnavn = `Pensum_Investeringsforslag_${(data.kundeNavn || 'Kunde').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pptx`;
-        res.setHeader('X-Pensum-Output-Format', 'pptx-template');
-        res.setHeader('X-Pensum-Template-Source', templateData.source || 'upload');
-        res.setHeader('X-Pensum-Template-Applied', `${data?.malConfig?.fasteSider || '1-5,14+'}|${data?.malConfig?.dynamiskeSider || '6-13'}`);
-        res.setHeader('X-Pensum-Template-Replacements', String(replacements));
-        if (replacements === 0) {
-          res.setHeader('X-Pensum-Template-Warning', encodeURIComponent('Ingen placeholders funnet i malen (0 erstatninger). Returnerer malen uendret.'));
-        }
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-        res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
-        return res.send(buffer);
-      } catch (templateErr) {
-        console.warn('Template merge feilet, faller tilbake til kodegenerert PPTX:', templateErr.message);
-        res.setHeader('X-Pensum-Template-Warning', encodeURIComponent(templateErr.message));
-      }
-    }
-
-    try {
-      if (!PptxGenJS) throw new Error('pptxgenjs ikke tilgjengelig');
-      const pptx = buildPptx(PptxGenJS, data);
-      const buffer = await pptx.write({ outputType: 'nodebuffer' });
-      const filnavn = `Pensum_Investeringsforslag_${(data.kundeNavn || 'Kunde').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pptx`;
-      res.setHeader('X-Pensum-Output-Format', 'pptx-generated');
-      res.setHeader('X-Pensum-Template-Applied', skipTemplateMerge ? 'skip-template-merge' : 'no-template-merge');
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-      res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
-      return res.send(buffer);
-    } catch (pptErr) {
-      const buffer = buildSimplePdfBuffer(data);
-      res.setHeader('X-Pensum-Output-Format', 'pdf-fallback');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Pensum_Investeringsforslag.pdf"`);
-      return res.send(buffer);
-    }
+    if (!PptxGenJS) throw new Error('pptxgenjs er ikke tilgjengelig');
+    const pptx = buildGeneratedDeck(req.body || {});
+    const buffer = await pptx.write({ outputType: 'nodebuffer' });
+    const kunde = safeFilename(req.body?.kundeNavn || 'Kunde');
+    const filnavn = `Pensum_Investeringsforslag_${kunde}_${new Date().toISOString().slice(0, 10)}.pptx`;
+    res.setHeader('X-Pensum-Output-Format', 'pptx-generated');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    res.setHeader('Content-Disposition', `attachment; filename="${filnavn}"`);
+    return res.send(buffer);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || 'Ukjent feil ved PPTX-generering' });
   }
 }
 
