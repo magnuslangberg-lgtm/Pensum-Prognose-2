@@ -11,14 +11,14 @@ const COLORS = {
   teal: '0F9888',
   green: '1F8A3B',
   gold: 'B8860B',
+  danger: 'B42318',
   text: '1E293B',
   muted: '64748B',
   light: 'F8FAFC',
   line: 'D9E2EC',
   white: 'FFFFFF',
   softBlue: 'EFF6FF',
-  softAmber: 'FFF7ED',
-  softGreen: 'ECFDF3'
+  softAmber: 'FFF7ED'
 };
 
 const PRODUCT_LABELS = {
@@ -184,6 +184,70 @@ function topRows(arr = [], top = 8) {
     .slice(0, top);
 }
 
+function parseHistDate(dateStr = '') {
+  if (!dateStr) return null;
+  const trimmed = String(dateStr).trim();
+  const monthly = trimmed.match(/^(\d{4})-(\d{2})$/);
+  if (monthly) {
+    const [, y, m] = monthly;
+    return new Date(Number(y), Number(m) - 1, 1);
+  }
+  const daily = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (daily) {
+    const [, y, m, d] = daily;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function computeProductStats(productId, historikkMap = {}) {
+  const hist = historikkMap?.[productId];
+  const raw = Array.isArray(hist?.data) ? hist.data : [];
+  const data = raw
+    .map((row) => ({ dato: row?.dato, verdi: n(row?.verdi, NaN), parsed: parseHistDate(row?.dato) }))
+    .filter((row) => row.parsed && Number.isFinite(row.verdi))
+    .sort((a, b) => a.parsed - b.parsed);
+  if (data.length < 3) return null;
+
+  const monthMap = new Map();
+  data.forEach((row) => {
+    const key = `${row.parsed.getFullYear()}-${String(row.parsed.getMonth() + 1).padStart(2, '0')}`;
+    monthMap.set(key, { dato: key, verdi: row.verdi, parsed: row.parsed });
+  });
+  const monthly = Array.from(monthMap.values()).sort((a, b) => a.parsed - b.parsed);
+  if (monthly.length < 3) return null;
+
+  const returns = [];
+  for (let i = 1; i < monthly.length; i += 1) {
+    const prev = monthly[i - 1].verdi;
+    const curr = monthly[i].verdi;
+    if (Number.isFinite(prev) && prev !== 0 && Number.isFinite(curr)) returns.push((curr - prev) / prev);
+  }
+  if (!returns.length) return null;
+
+  const mean = returns.reduce((sum, v) => sum + v, 0) / returns.length;
+  const variance = returns.reduce((sum, v) => sum + ((v - mean) ** 2), 0) / returns.length;
+  const volatility = Math.sqrt(variance) * Math.sqrt(12) * 100;
+  const annualized = ((monthly[monthly.length - 1].verdi / monthly[0].verdi) ** (12 / returns.length) - 1) * 100;
+  const totalReturn = ((monthly[monthly.length - 1].verdi / monthly[0].verdi) - 1) * 100;
+  let peak = monthly[0].verdi;
+  let maxDrawdown = 0;
+  monthly.forEach((point) => {
+    if (point.verdi > peak) peak = point.verdi;
+    const dd = peak > 0 ? ((point.verdi - peak) / peak) * 100 : 0;
+    if (dd < maxDrawdown) maxDrawdown = dd;
+  });
+  const sharpe = volatility > 0 ? (annualized - 3) / volatility : 0;
+  return {
+    annualized: parseFloat(annualized.toFixed(1)),
+    totalReturn: parseFloat(totalReturn.toFixed(1)),
+    volatility: parseFloat(volatility.toFixed(1)),
+    maxDrawdown: parseFloat(maxDrawdown.toFixed(1)),
+    sharpe: parseFloat(sharpe.toFixed(2))
+  };
+}
+
 function normalizeProducts(payload = {}) {
   const exposureMap = payload.produktEksponering || {};
   const allokMap = new Map((Array.isArray(payload.pensumAllokering) ? payload.pensumAllokering : []).map((p) => [p.id, n(p.vekt)]));
@@ -335,49 +399,6 @@ function addKeyValueTable(slide, title, rows, x, y, w, rowH = 0.27) {
   );
 }
 
-function addMetricStrip(slide, items, x, y, w) {
-  if (!Array.isArray(items) || !items.length) return;
-  const gap = 0.16;
-  const cardW = (w - (gap * (items.length - 1))) / items.length;
-  items.forEach((item, idx) => {
-    const xx = x + idx * (cardW + gap);
-    slide.addShape('roundRect', { x: xx, y, w: cardW, h: 0.88, rectRadius: 0.05, fill: { color: item.bg || COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-    slide.addText(item.label, { x: xx + 0.12, y: y + 0.11, w: cardW - 0.24, h: 0.12, fontSize: 8, bold: true, color: COLORS.muted, align: 'center' });
-    slide.addText(String(item.value), { x: xx + 0.12, y: y + 0.36, w: cardW - 0.24, h: 0.2, fontSize: 14, bold: true, color: item.color || COLORS.navy, align: 'center' });
-  });
-}
-
-function addProductTiles(slide, title, products, x, y, w) {
-  slide.addText(title, { x, y, w, h: 0.16, fontSize: 11, color: COLORS.muted, bold: true });
-  const list = (Array.isArray(products) ? products : []).slice(0, 4);
-  if (!list.length) {
-    addBodyParagraph(slide, 'Ingen produkter valgt i denne delen.', x, y + 0.26, w, 0.4, 11, COLORS.muted);
-    return;
-  }
-  const gap = 0.18;
-  const cardW = (w - gap) / 2;
-  list.forEach((product, idx) => {
-    const row = Math.floor(idx / 2);
-    const col = idx % 2;
-    const xx = x + col * (cardW + gap);
-    const yy = y + 0.28 + row * 1.05;
-    slide.addShape('roundRect', { x: xx, y: yy, w: cardW, h: 0.92, rectRadius: 0.05, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-    slide.addText(product.navn, { x: xx + 0.14, y: yy + 0.11, w: cardW - 0.28, h: 0.14, fontSize: 10, bold: true, color: COLORS.navy });
-    slide.addText(product.report?.role || 'Byggestein', { x: xx + 0.14, y: yy + 0.32, w: cardW - 0.28, h: 0.18, fontSize: 8.5, color: COLORS.muted });
-    slide.addText(pct(product.vekt), { x: xx + 0.14, y: yy + 0.56, w: cardW - 0.28, h: 0.16, fontSize: 12, bold: true, color: COLORS.salmon, align: 'right' });
-  });
-}
-
-function buildRecommendedActions(products = []) {
-  const top = products.slice(0, 3).map((p) => p.navn);
-  if (!top.length) return ['Verifiser investerbar kapital og risikoramme.', 'Gjennomfør egnethetsvurdering før eventuelle anbefalinger.', 'Fastsett endelig implementeringsplan og rebalanseringsprinsipper.'];
-  return [
-    `Bekreft investerbar kapital og porteføljens rolle i samlet formuesbilde før implementering av ${top.join(', ')}.`,
-    'Gjennomfør egnethetsvurdering og avklar ønsket risikonivå, likviditetsbehov og tidshorisont.',
-    'Implementer porteføljen trinnvis og bruk de produktspesifikke sidene som grunnlag for videre diskusjon med kunden.'
-  ];
-}
-
 function buildAllocationNarrative(d) {
   const allocMap = new Map(d.alloc.map((a) => [a.navn, a.vekt]));
   const aksjer = (allocMap.get('Globale Aksjer') || 0) + (allocMap.get('Norske Aksjer') || 0);
@@ -505,17 +526,12 @@ function buildDeck(payload = {}) {
     addChrome(s, page++, 'Porteføljelogikk');
     addTitle(s, 'Hvordan porteføljen er bygget opp', 'Fra overordnet allokering til konkrete byggesteiner');
     const bullets = buildAllocationNarrative(d);
-    addBulletSection(s, 'Hovedpoenger', bullets, 0.95, 1.95, 5.55, 2.1);
-    addProductTiles(s, 'Produktmiks og roller', d.products, 6.8, 1.95, 5.45);
-    addMetricStrip(s, [
-      { label: 'Valgte produkter', value: String(d.products.length), bg: COLORS.white },
-      { label: 'Største byggestein', value: d.products[0] ? pct(d.products[0].vekt) : '—', bg: COLORS.white, color: COLORS.salmon },
-      { label: 'Forv. porteføljeavkastning', value: pct(d.expected), bg: COLORS.softGreen, color: COLORS.green }
-    ], 0.95, 4.55, 7.55);
+    addBulletSection(s, 'Hovedpoenger', bullets, 0.95, 1.95, 6.1, 2.1);
+    addKeyValueTable(s, 'Valgte byggesteiner', productSummaryRows(d.products), 7.25, 1.95, 5.1);
     addBodyParagraph(
       s,
       'Modellen er bevisst bygget slik at hver løsning skal ha en tydelig rolle. Kjerneprodukter bærer hovedvekten, mens mer spissede løsninger brukes for å forbedre diversifisering og forventet avkastningsprofil.',
-      0.95, 5.72, 11.2, 0.7, 13
+      0.95, 4.55, 11.2, 0.9, 14
     );
   }
 
@@ -524,13 +540,12 @@ function buildDeck(payload = {}) {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Porteføljesammensetning');
     addTitle(s, 'Eksempel på illustrativ porteføljesammensetning', 'Fordeling av investerbar kapital mellom aktivaklasser');
-    addKeyValueTable(s, 'Aktivaklasse og kapital', d.alloc.map((a) => [a.navn, `${pct(a.vekt)} / ${currency(a.belop)} kr`]), 0.95, 1.95, 5.15);
-    addBarRows(s, 'Vekter per aktivaklasse', d.alloc, 6.35, 1.95, 5.95, 2.25, COLORS.blue);
-    addMetricStrip(s, d.products.slice(0, 3).map((p) => ({ label: p.navn, value: pct(p.vekt), bg: COLORS.white, color: COLORS.navy })), 0.95, 4.5, 8.2);
+    addKeyValueTable(s, 'Aktivaklasse', d.alloc.map((a) => [a.navn, `${pct(a.vekt)} / ${currency(a.belop)} kr`]), 0.95, 1.95, 5.2);
+    addBarRows(s, 'Vekter per aktivaklasse', d.alloc, 6.45, 1.95, 5.9, 2.2, COLORS.blue);
     addBodyParagraph(
       s,
       'Porteføljen som presenteres videre er en modellportefølje og er ment som et eksempel på sammensetning og risikospredning. Den er ikke vurdert opp mot en fullstendig egnethetsanalyse av kundens samlede finansielle situasjon.',
-      0.95, 5.55, 11.2, 0.7, 12.5, COLORS.muted
+      0.95, 4.65, 11.2, 0.9, 13, COLORS.muted
     );
   }
 
@@ -549,7 +564,7 @@ function buildDeck(payload = {}) {
       'Nordiske og tematiske tilleggsmandater brukes selektivt for å øke potensialet for meravkastning.',
       'Produktene er valgt for å gi komplementære egenskaper snarere enn overlapp.'
     ], 0.95, 3.2, 5.95, 2.0);
-    addProductTiles(s, 'Valgte aksjeprodukter', d.products.filter((p) => String(p.report.category || '').includes('equity')), 7.05, 1.95, 5.25);
+    addKeyValueTable(s, 'Valgte aksjeprodukter', equityRows.length ? equityRows : [['Ingen aksjeprodukter valgt', '—', '—']], 7.15, 1.95, 5.1);
   }
 
   // 7 Rentedelen
@@ -567,7 +582,7 @@ function buildDeck(payload = {}) {
       'Kredittseleksjon og geografisk spredning brukes for å bygge robust kontantstrøm.',
       'Rentedelen skal fungere som en stabiliserende buffer i totalporteføljen.'
     ], 0.95, 3.2, 5.95, 2.0);
-    addProductTiles(s, 'Valgte renteprodukter', d.products.filter((p) => String(p.report.category || '').includes('fixed')), 7.05, 1.95, 5.25);
+    addKeyValueTable(s, 'Valgte renteprodukter', fixedRows.length ? fixedRows : [['Ingen renteprodukter valgt', '—', '—']], 7.15, 1.95, 5.1);
   }
 
   // 8 Hvorfor denne sammensetningen
@@ -579,10 +594,9 @@ function buildDeck(payload = {}) {
       'Porteføljen er satt sammen for å kombinere robust kjerneeksponering med utvalgte satellitter.',
       'Løsningene er valgt for å utfylle hverandre på tvers av geografi, aktivaklasse og investeringsstil.',
       'Produktene som følger er ment å illustrere hvordan hver byggestein skal bidra i totalporteføljen.'
-    ], 0.95, 1.95, 5.8, 2.0);
-    addBarRows(s, 'Aggregert regioneksponering', d.eksponering.regioner, 6.95, 1.95, 5.35, 2.0, COLORS.teal);
-    addBarRows(s, 'Aggregert sektoreksponering', d.eksponering.sektorer, 6.95, 4.1, 5.35, 2.0, COLORS.salmon);
-    addBodyParagraph(s, buildRecommendedActions(d.products).join(' '), 0.95, 4.55, 5.8, 1.1, 12.5, COLORS.muted);
+    ], 0.95, 1.95, 6.2, 2.0);
+    addBarRows(s, 'Aggregert regioneksponering', d.eksponering.regioner, 7.35, 1.95, 5.0, 2.1, COLORS.teal);
+    addBarRows(s, 'Aggregert sektoreksponering', d.eksponering.sektorer, 7.35, 4.25, 5.0, 2.1, COLORS.salmon);
   }
 
   // Product modules
@@ -594,36 +608,46 @@ function buildDeck(payload = {}) {
     const style = topRows(exposure.stil, 8);
 
     {
+      const stats = computeProductStats(product.id, d.produktHistorikk);
       const s = pptx.addSlide();
       addChrome(s, page++, product.navn);
       addTitle(s, product.report.slideTitle || product.navn, product.report.slideSubtitle || '');
       addKpiCard(s, 0.95, 1.85, 1.7, 'Vekt', pct(product.vekt), COLORS.navy);
-      addKpiCard(s, 2.85, 1.85, 2.2, 'Forv. avkastning', Number.isFinite(n(product.report.expectedReturn, NaN)) ? pct(product.report.expectedReturn) : '—', COLORS.green);
-      addKpiCard(s, 5.25, 1.85, 2.0, 'Forv. yield', Number.isFinite(n(product.report.expectedYield, NaN)) ? pct(product.report.expectedYield) : '—', COLORS.teal);
-      addKpiCard(s, 7.45, 1.85, 4.6, 'Benchmark', product.report.benchmark || '—', COLORS.salmon);
+      addKpiCard(s, 2.85, 1.85, 2.1, 'Forv. avkastning', Number.isFinite(n(product.report.expectedReturn, NaN)) ? pct(product.report.expectedReturn) : '—', COLORS.green);
+      addKpiCard(s, 5.15, 1.85, 1.9, 'Forv. yield', Number.isFinite(n(product.report.expectedYield, NaN)) ? pct(product.report.expectedYield) : '—', COLORS.teal);
+      addKpiCard(s, 7.25, 1.85, 1.8, 'Volatilitet', stats ? pct(stats.volatility) : '—', COLORS.navy);
+      addKpiCard(s, 9.25, 1.85, 1.9, 'Maks DD', stats ? pct(stats.maxDrawdown) : '—', stats && stats.maxDrawdown < 0 ? COLORS.danger || 'B42318' : COLORS.salmon);
       addBulletSection(s, 'Rolle og investeringscase', [
         product.report.pitch || '',
         product.report.caseText || '',
         product.report.whyIncluded || ''
-      ], 0.95, 3.05, 5.7, 2.0);
-      addInfoCallout(s, 7.0, 3.05, 5.35, 'Rolle i porteføljen', product.report.role || '—');
-      addInfoCallout(s, 7.0, 3.98, 5.35, 'Benchmark', product.report.benchmark || '—');
-      s.addShape('roundRect', { x: 7.0, y: 4.92, w: 5.35, h: 1.05, rectRadius: 0.05, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
-      s.addText('Nøkkelrisiko', { x: 7.18, y: 5.05, w: 4.9, h: 0.12, fontSize: 9, color: COLORS.muted, bold: true });
-      s.addText(product.report.riskText || '—', { x: 7.18, y: 5.28, w: 4.85, h: 0.42, fontSize: 11.5, color: COLORS.text, breakLine: true });
+      ], 0.95, 3.05, 6.0, 2.05);
+      addKeyValueTable(s, 'Rapportgrunnlag', [
+        ['Rolle i porteføljen', product.report.role || '—'],
+        ['Benchmark', product.report.benchmark || '—'],
+        ['Sharpe ratio', stats ? String(stats.sharpe) : '—'],
+        ['Nøkkelrisiko', product.report.riskText || '—']
+      ], 7.2, 3.05, 5.2);
       if (exposure.disclaimer) {
-        addBodyParagraph(s, exposure.disclaimer, 0.95, 6.05, 11.2, 0.36, 9.5, COLORS.muted);
+        addBodyParagraph(s, exposure.disclaimer, 0.95, 5.55, 11.2, 0.55, 10, COLORS.muted);
       }
     }
 
     {
+      const stats = computeProductStats(product.id, d.produktHistorikk);
       const s = pptx.addSlide();
       addChrome(s, page++, `${product.navn} – eksponering`);
-      addTitle(s, `${product.navn} – innhold og eksponering`, 'Eksponering, underliggende og øvrig rapportgrunnlag');
+      addTitle(s, `${product.navn} – innhold og eksponering`, 'Produkt for produkt – ikke bare aggregert portefølje');
       addBarRows(s, 'Sektorer', sectors, 0.95, 1.95, 5.6, 2.2, COLORS.blue);
       addBarRows(s, 'Regioner', regions, 6.8, 1.95, 5.55, 2.2, COLORS.teal);
       addKeyValueTable(s, 'Underliggende investeringer', underlying.length ? underlying.map((r) => [r.navn, pct(r.vekt)]) : [['Ingen underliggende data', '—']], 0.95, 4.45, 5.7, 0.23);
-      addKeyValueTable(s, 'Stil / øvrig', style.length ? style.map((r) => [r.navn, pct(r.vekt)]) : [['Ingen stilfaktorer registrert', '—']], 6.85, 4.45, 5.45, 0.23);
+      addKeyValueTable(s, 'Stil / øvrig', style.length ? style.map((r) => [r.navn, pct(r.vekt)]) : [['Ingen stilfaktorer registrert', '—']], 6.85, 4.45, 3.65, 0.23);
+      addKeyValueTable(s, 'Historiske nøkkeltall', [
+        ['Årlig avkastning', stats ? pct(stats.annualized) : '—'],
+        ['Total avkastning', stats ? pct(stats.totalReturn) : '—'],
+        ['Volatilitet', stats ? pct(stats.volatility) : '—'],
+        ['Maks DD', stats ? pct(stats.maxDrawdown) : '—']
+      ], 10.7, 4.45, 1.6, 0.23);
     }
   });
 
