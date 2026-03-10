@@ -1,21 +1,21 @@
 export const defaultPensumProdukter = {
     enkeltfond: [
-      { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', aar2024: 21.5, aar2023: 17.7, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', aktivatype: 'aksje', likviditet: 'likvid', aar2024: 7.3, aar2023: -1.1, aar2022: 11.0, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'banking-d', navn: 'Pensum Nordic Banking Sector D', aktivatype: 'aksje', likviditet: 'likvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'financial-d', navn: 'Pensum Financial Opportunity Fund D', aktivatype: 'rente', likviditet: 'likvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null }
+      { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 21.5, aar2024: 12.5, aar2023: 13.2, aar2022: 5.0, forventetAvkastning: 11.0, forventetYield: 3.0, aarlig3ar: 15.6, risiko3ar: 4.5 },
+      { id: 'energy-a', navn: 'Pensum Global Energy A', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 7.3, aar2024: -1.0, aar2023: 11.0, aar2022: 55.5, forventetAvkastning: 11.0, forventetYield: 3.5, aarlig3ar: 5.6, risiko3ar: 5.0 },
+      { id: 'banking-d', navn: 'Pensum Nordic Banking Sector D', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 26.6, aar2024: 24.9, aar2023: 17.5, aar2022: -8.4, forventetAvkastning: 12.0, forventetYield: 5.0, aarlig3ar: 22.9, risiko3ar: 3.9 },
+      { id: 'financial-d', navn: 'Pensum Financial Opportunity Fund D', aktivatype: 'rente', likviditet: 'likvid', aar2026: null, aar2025: 9.4, aar2024: 9.8, aar2023: 11.3, aar2022: -12.6, forventetAvkastning: 9.0, forventetYield: 8.0, aarlig3ar: 10.2, risiko3ar: 0.8 }
     ],
     fondsportefoljer: [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'basis', navn: 'Pensum Basis', aktivatype: 'blandet', likviditet: 'likvid', aar2024: 6.2, aar2023: 13.1, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, aar2021: 5.3, aar2020: 3.0, aarlig3ar: 6.9, risiko3ar: 2.3 },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2024: 6.5, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null }
+      { id: 'global-core-active', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 10.0, forventetYield: 1.8, aarlig3ar: 21.3, risiko3ar: 10.4 },
+      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 10.0, aar2024: 9.8, aar2023: 11.3, aar2022: -12.6, forventetAvkastning: 10.5, forventetYield: 1.2, aarlig3ar: 10.4, risiko3ar: 0.6 },
+      { id: 'basis', navn: 'Pensum Basis', aktivatype: 'blandet', likviditet: 'likvid', aar2026: null, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 8.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.7 },
+      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2026: null, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.5, forventetYield: 7.0, aarlig3ar: 6.9, risiko3ar: 0.7 },
+      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2026: null, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 7.5, forventetYield: 7.2, aarlig3ar: 8.9, risiko3ar: 2.0 }
     ],
     alternative: [
-      { id: 'turnstone-pe', navn: 'Turnstone Private Equity', aktivatype: 'alternativ', likviditet: 'illikvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'amaron-re', navn: 'Amaron Real Estate', aktivatype: 'alternativ', likviditet: 'illikvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null },
-      { id: 'unoterte-aksjer', navn: 'Unoterte aksjer', aktivatype: 'alternativ', likviditet: 'illikvid', aar2024: null, aar2023: null, aar2022: null, aar2021: null, aar2020: null, aarlig3ar: null, risiko3ar: null }
+      { id: 'turnstone-pe', navn: 'Turnstone Private Equity', aktivatype: 'alternativ', likviditet: 'illikvid', aar2026: null, aar2025: null, aar2024: null, aar2023: null, aar2022: null, forventetAvkastning: 15.0, forventetYield: 0, aarlig3ar: null, risiko3ar: null },
+      { id: 'amaron-re', navn: 'Amaron Real Estate', aktivatype: 'alternativ', likviditet: 'illikvid', aar2026: null, aar2025: null, aar2024: null, aar2023: null, aar2022: null, forventetAvkastning: 8.0, forventetYield: 4.0, aarlig3ar: null, risiko3ar: null },
+      { id: 'unoterte-aksjer', navn: 'Unoterte aksjer', aktivatype: 'alternativ', likviditet: 'illikvid', aar2026: null, aar2025: null, aar2024: null, aar2023: null, aar2022: null, forventetAvkastning: 12.0, forventetYield: 0, aarlig3ar: null, risiko3ar: null }
     ]
   };
 
@@ -156,7 +156,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Bred global aksjeportefølje med aktiv fondsseleksjon',
     role: 'Kjernebyggestein i aksjedelen',
     benchmark: 'MSCI World / bred global aksjereferanse',
-    expectedReturn: 9.0,
+    expectedReturn: 10.0,
     expectedYield: 1.8,
     pitch: 'Gir bred global aksjeeksponering og fungerer som hovedmotor i porteføljens aksjedel.',
     caseText: 'Kombinerer kvalitet, geografi og forvalterdiversifisering i én samlet løsning.',
@@ -171,8 +171,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Mer aktiv og spisset global aksjeløsning',
     role: 'Satellitt for meravkastning i aksjedelen',
     benchmark: 'Global aktiv aksjereferanse',
-    expectedReturn: 9.5,
-    expectedYield: 1.4,
+    expectedReturn: 10.5,
+    expectedYield: 1.2,
     pitch: 'Supplerer kjerneporteføljen med mer konsentrerte og aktive globale idéer.',
     caseText: 'Brukes når man ønsker høyere aktiv andel og flere tydelige forvalterbets.',
     whyIncluded: 'Kan øke diversifiseringen på forvalterstil og gi meravkastningspotensial.',
@@ -186,8 +186,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Kombinasjon av aksjer og renter i én løsning',
     role: 'Helhetlig blandet byggestein',
     benchmark: 'Blandet referanse / 50-50 aksjer-renter',
-    expectedReturn: 7.0,
-    expectedYield: 3.0,
+    expectedReturn: 8.0,
+    expectedYield: 3.4,
     pitch: 'Gir en ferdig sammensatt blanding av aksjer, renter og utvalgte spesialmandater.',
     caseText: 'Egnet når man ønsker en enkel, balansert løsning med moderat risikonivå.',
     whyIncluded: 'Kan fungere som selvstendig løsning eller som stabil kjerne i en bredere portefølje.',
@@ -216,8 +216,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Kredittportefølje med nordisk fokus',
     role: 'Regional rentedel med løpende avkastning',
     benchmark: 'Nordisk high yield / kredittreferanse',
-    expectedReturn: 7.0,
-    expectedYield: 6.5,
+    expectedReturn: 7.5,
+    expectedYield: 7.2,
     pitch: 'Gir eksponering mot nordisk kredittmarked gjennom utvalgte fond.',
     caseText: 'Egnet når man ønsker mer regional kredittkompetanse og løpende yield.',
     whyIncluded: 'Kan være et godt supplement til globale renteløsninger.',
@@ -231,8 +231,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Aktivt norsk aksjefond',
     role: 'Hjemmemarkeds- og stock-picking-eksponering',
     benchmark: 'OSEBX / norsk aksjereferanse',
-    expectedReturn: 10.0,
-    expectedYield: 2.5,
+    expectedReturn: 11.0,
+    expectedYield: 3.0,
     pitch: 'Gir aktiv eksponering mot norske børsnoterte selskaper og sektorer.',
     caseText: 'Brukes for å utnytte lokal markedskunnskap og tilføre tydelige norske idéer.',
     whyIncluded: 'Kan gi god diversifisering relativt til globale porteføljer og passer godt i NOK-porteføljer.',
@@ -261,8 +261,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Sektorspesialist mot banker og finans',
     role: 'Sektorsatellitt',
     benchmark: 'Nordisk bank-/finansreferanse',
-    expectedReturn: 10.0,
-    expectedYield: 4.0,
+    expectedReturn: 12.0,
+    expectedYield: 5.0,
     pitch: 'Gir eksponering mot nordiske banker og finansinstitusjoner med tydelig sektorvinkel.',
     caseText: 'Kan brukes når man ønsker særskilt eksponering mot en sektor med attraktive utbytter og soliditet.',
     whyIncluded: 'Gir en mer spesialisert og målrettet eksponering enn brede nordiske aksjefond.',
@@ -276,8 +276,8 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Rente-/kredittmandat med finanssektor som fokus',
     role: 'Spesialist i rentedelen',
     benchmark: 'Finansiell kreditt / high yield referanse',
-    expectedReturn: 8.0,
-    expectedYield: 7.5,
+    expectedReturn: 9.0,
+    expectedYield: 8.0,
     pitch: 'Gir målrettet kreditt- og renteeksponering mot finansrelaterte utstedere.',
     caseText: 'Kan bidra med attraktiv løpende avkastning fra et avgrenset og analysekrevende segment.',
     whyIncluded: 'Passer som supplement i rentedelen for å øke spesialisering og yield.',

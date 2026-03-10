@@ -56,7 +56,7 @@ export default function PensumPrognoseModell() {
   
   const [scenarioParams, setScenarioParams] = useState({ pessimistisk: -2, optimistisk: 12 });
   const [dashboardPeriode, setDashboardPeriode] = useState('5y');
-  const [dashboardProdukter, setDashboardProdukter] = useState(['basis', 'global-core-active', 'global-edge', 'global-hoyrente', 'nordisk-hoyrente', 'norge-a', 'energy-a']);
+  const [dashboardProdukter, setDashboardProdukter] = useState(['basis', 'global-core-active', 'global-edge', 'global-hoyrente', 'nordisk-hoyrente', 'norge-a', 'energy-a', 'banking-d', 'financial-d']);
   const [sammenligningPeriodeScen, setSammenligningPeriodeScen] = useState('max');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
@@ -167,9 +167,9 @@ export default function PensumPrognoseModell() {
   
   // Standard avkastningsrater (kan endres av admin)
   const [avkastningsrater, setAvkastningsrater] = useState({
-    globaleAksjer: 9,
-    norskeAksjer: 10,
-    hoyrente: 8,
+    globaleAksjer: 10,
+    norskeAksjer: 11,
+    hoyrente: 7.5,
     investmentGrade: 5,
     privateEquity: 15,
     eiendom: 8
@@ -525,20 +525,20 @@ export default function PensumPrognoseModell() {
     const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
     let vektetSum = 0;
     let totalVekt = 0;
-    
+
     pensumAllokering.forEach(allok => {
       const produkt = alleProdukt.find(p => p.id === allok.id);
       if (produkt && allok.vekt > 0) {
-        // Bruk 3-års annualisert eller forventet avkastning
-        const nokkeltall = beregnProduktNokkeltall(produkt);
-        const avkastning = nokkeltall.aarlig3ar || produkt.forventetAvkastning || produkt.aar2024 || 0;
+        // Bruk forventet avkastning fremover (fra produktdata eller rapportmeta)
+        const fAvk = produkt.forventetAvkastning ?? produktRapportMeta?.[allok.id]?.expectedReturn;
+        const avkastning = erGyldigTall(fAvk) ? fAvk : 0;
         vektetSum += avkastning * allok.vekt;
         totalVekt += allok.vekt;
       }
     });
-    
+
     return totalVekt > 0 ? vektetSum / totalVekt : 0;
-  }, [pensumAllokering, pensumProdukter]);
+  }, [pensumAllokering, pensumProdukter, produktRapportMeta]);
 
   
   const valgtLosning = null; // Fjernet gammel state
@@ -1928,7 +1928,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'allokering', 'losninger', 'scenario', 'dashboard', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Allokering & Prognose' : tab === 'losninger' ? 'Pensum Løsninger' : tab === 'scenario' ? 'Scenarioanalyse' : tab === 'dashboard' ? '📊 Analyse Dashboard' : 'Kunderapport'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Allokering & Prognose' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Scenarioanalyse' : tab === 'dashboard' ? 'Analyse Dashboard' : 'Kunderapport'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -2808,12 +2808,25 @@ export default function PensumPrognoseModell() {
             </div>
 
             {/* Prognose */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <StatCard label="Startkapital" value={formatCurrency(totalKapital)} />
-              <StatCard label="Forventet avkastning" value={formatPercent(pensumForventetAvkastning)} subtext="årlig" color={PENSUM_COLORS.green} />
-              <StatCard label="Sluttverdi" value={formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)} subtext={"etter " + horisont + " år"} />
-              <StatCard label="Total avkastning" value={formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) - totalKapital)} color={PENSUM_COLORS.green} />
-            </div>
+            {(() => {
+              const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+              let yieldSum = 0; let yieldTotal = 0;
+              pensumAllokering.forEach(a => {
+                const p = alleProdukt.find(pp => pp.id === a.id);
+                const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+                if (erGyldigTall(y) && a.vekt > 0) { yieldSum += y * a.vekt; yieldTotal += a.vekt; }
+              });
+              const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <StatCard label="Startkapital" value={formatCurrency(totalKapital)} />
+                  <StatCard label="Forventet avkastning" value={formatPercent(pensumForventetAvkastning)} subtext="årlig" color={PENSUM_COLORS.green} />
+                  <StatCard label="Forventet yield" value={formatPercent(vektetYield)} subtext="løpende" color={PENSUM_COLORS.teal} />
+                  <StatCard label="Sluttverdi" value={formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)} subtext={"etter " + horisont + " år"} />
+                  <StatCard label="Total avkastning" value={formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) - totalKapital)} color={PENSUM_COLORS.green} />
+                </div>
+              );
+            })()}
 
             {/* Prognosegraf */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -2889,7 +2902,9 @@ export default function PensumPrognoseModell() {
                           'global-hoyrente': '#16A34A',
                           'nordisk-hoyrente': '#7C3AED',
                           'norge-a': '#DC2626',
-                          'energy-a': '#F59E0B'
+                          'energy-a': '#F59E0B',
+                          'banking-d': '#0D9488',
+                          'financial-d': '#B8860B'
                         };
                         return (
                           <button
@@ -2967,7 +2982,9 @@ export default function PensumPrognoseModell() {
                           'global-hoyrente': '#16A34A',
                           'nordisk-hoyrente': '#7C3AED',
                           'norge-a': '#DC2626',
-                          'energy-a': '#F59E0B'
+                          'energy-a': '#F59E0B',
+                          'banking-d': '#0D9488',
+                          'financial-d': '#B8860B'
                         };
                         
                         if (chartData.length === 0 || valgteProdukterHistorikk.length === 0) {
@@ -3095,6 +3112,7 @@ export default function PensumPrognoseModell() {
                     <thead>
                       <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                         <th className="py-3 px-4 text-left text-white">Navn</th>
+                        <th className="py-3 px-3 text-right text-white">Vekt</th>
                         <th className="py-3 px-3 text-right text-white">2026 YTD</th>
                         <th className="py-3 px-3 text-right text-white">2025</th>
                         <th className="py-3 px-3 text-right text-white">2024</th>
@@ -3102,11 +3120,41 @@ export default function PensumPrognoseModell() {
                         <th className="py-3 px-3 text-right text-white">2022</th>
                         <th className="py-3 px-3 text-right text-white">Årlig 3 år</th>
                         <th className="py-3 px-3 text-right text-white">Risiko 3 år</th>
+                        <th className="py-3 px-3 text-right text-white" style={{ borderLeft: '2px solid rgba(255,255,255,0.3)' }}>Forv. avk.</th>
+                        <th className="py-3 px-3 text-right text-white">Yield</th>
                       </tr>
                     </thead>
                     <tbody>
+                      {/* Vektet totalrad */}
+                      {pensumAllokering.length > 0 && (() => {
+                        const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                        const vektetYield = (() => {
+                          let sum = 0; let totalV = 0;
+                          pensumAllokering.forEach(a => {
+                            const p = alleProdukt.find(pp => pp.id === a.id);
+                            const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+                            if (erGyldigTall(y) && a.vekt > 0) { sum += y * a.vekt; totalV += a.vekt; }
+                          });
+                          return totalV > 0 ? sum / totalV : null;
+                        })();
+                        return (
+                          <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                            <td className="py-3 px-4 font-bold text-white">Vektet portefølje</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">{pensumTotalVekt.toFixed(0)}%</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2026) ? (beregnPensumHistorikk.aar2026 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2026) ? beregnPensumHistorikk.aar2026.toFixed(1) + '%' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2025) ? (beregnPensumHistorikk.aar2025 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2025) ? beregnPensumHistorikk.aar2025.toFixed(1) + '%' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2024) ? (beregnPensumHistorikk.aar2024 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2024) ? beregnPensumHistorikk.aar2024.toFixed(1) + '%' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2023) ? (beregnPensumHistorikk.aar2023 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2023) ? beregnPensumHistorikk.aar2023.toFixed(1) + '%' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2022) ? (beregnPensumHistorikk.aar2022 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2022) ? beregnPensumHistorikk.aar2022.toFixed(1) + '%' : '—'}</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">—</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">—</td>
+                            <td className="py-3 px-3 text-right font-bold text-white" style={{ borderLeft: '2px solid rgba(255,255,255,0.3)' }}>{formatPercent(pensumForventetAvkastning)}</td>
+                            <td className="py-3 px-3 text-right font-bold text-white">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</td>
+                          </tr>
+                        );
+                      })()}
                       <tr className="bg-gray-100">
-                        <td colSpan="8" className="py-2 px-4 font-semibold text-xs" style={{ color: PENSUM_COLORS.salmon }}>ENKELTFOND</td>
+                        <td colSpan="11" className="py-2 px-4 font-semibold text-xs" style={{ color: PENSUM_COLORS.salmon }}>ENKELTFOND</td>
                       </tr>
                       {pensumProdukter.enkeltfond.map((p, idx) => {
                         const aar2026 = hentAarsverdiForProdukt(p, 'aar2026', 2026);
@@ -3114,20 +3162,26 @@ export default function PensumPrognoseModell() {
                         const aar2024 = hentAarsverdiForProdukt(p, 'aar2024', 2024);
                         const aar2023 = hentAarsverdiForProdukt(p, 'aar2023', 2023);
                         const aar2022 = hentAarsverdiForProdukt(p, 'aar2022', 2022);
+                        const allok = pensumAllokering.find(a => a.id === p.id);
+                        const fAvk = p.forventetAvkastning ?? produktRapportMeta?.[p.id]?.expectedReturn;
+                        const fYield = p.forventetYield ?? produktRapportMeta?.[p.id]?.expectedYield;
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1) + '%' : '—'}</td>
                           {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1) + '%' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1) + '%' : '—'}</td></>; })()}
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—'}</td>
                         </tr>
                         );
                       })}
                       <tr className="bg-gray-100">
-                        <td colSpan="8" className="py-2 px-4 font-semibold text-xs" style={{ color: PENSUM_COLORS.salmon }}>FONDSPORTEFØLJER</td>
+                        <td colSpan="11" className="py-2 px-4 font-semibold text-xs" style={{ color: PENSUM_COLORS.salmon }}>FONDSPORTEFØLJER</td>
                       </tr>
                       {pensumProdukter.fondsportefoljer.map((p, idx) => {
                         const aar2026 = hentAarsverdiForProdukt(p, 'aar2026', 2026);
@@ -3135,26 +3189,37 @@ export default function PensumPrognoseModell() {
                         const aar2024 = hentAarsverdiForProdukt(p, 'aar2024', 2024);
                         const aar2023 = hentAarsverdiForProdukt(p, 'aar2023', 2023);
                         const aar2022 = hentAarsverdiForProdukt(p, 'aar2022', 2022);
+                        const allok = pensumAllokering.find(a => a.id === p.id);
+                        const fAvk = p.forventetAvkastning ?? produktRapportMeta?.[p.id]?.expectedReturn;
+                        const fYield = p.forventetYield ?? produktRapportMeta?.[p.id]?.expectedYield;
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1) + '%' : '—'}</td>
                           {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1) + '%' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1) + '%' : '—'}</td></>; })()}
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—'}</td>
                         </tr>
                         );
                       })}
                       {visAlternative && (
                         <>
                           <tr className="bg-amber-100">
-                            <td colSpan="8" className="py-2 px-4 font-semibold text-xs text-amber-700">ALTERNATIVE INVESTERINGER (ILLIKVIDE)</td>
+                            <td colSpan="11" className="py-2 px-4 font-semibold text-xs text-amber-700">ALTERNATIVE INVESTERINGER (ILLIKVIDE)</td>
                           </tr>
-                          {pensumProdukter.alternative.map((p, idx) => (
+                          {pensumProdukter.alternative.map((p, idx) => {
+                            const allok = pensumAllokering.find(a => a.id === p.id);
+                            const fAvk = p.forventetAvkastning;
+                            const fYield = p.forventetYield;
+                            return (
                             <tr key={p.id} className={idx % 2 === 0 ? 'bg-amber-50' : 'bg-white'}>
                               <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                              <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
@@ -3162,8 +3227,11 @@ export default function PensumPrognoseModell() {
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
+                              <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—'}</td>
+                              <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—'}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </>
                       )}
                     </tbody>
