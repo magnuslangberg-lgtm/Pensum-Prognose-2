@@ -436,13 +436,14 @@ function textRows(title, rows) {
   ];
 }
 
-function addSimpleTable(slide, rows, x, y, w) {
+function addSimpleTable(slide, rows, x, y, w, opts = {}) {
+  const { rowH = 0.24, fontSize = 9 } = opts;
   slide.addTable(rows, {
     x,
     y,
     w,
-    fontSize: 9,
-    rowH: 0.24,
+    fontSize,
+    rowH,
     border: { pt: 1, color: COLORS.line }
   });
 }
@@ -933,7 +934,7 @@ function buildGeneratedDeck(payload = {}) {
     {
       const s = pptx.addSlide();
       addChrome(s, page++, `${p.navn} – eksponering`);
-      addTitle(s, `${p.navn} – innhold og eksponering`, 'Produktspesifikk visning av underliggende innhold');
+      addTitle(s, `${p.navn} – innhold og eksponering`, 'Produkt for produkt: hva fondet faktisk eier og hvordan det er satt sammen');
 
       if (sectors.length) {
         addBarChart(
@@ -971,7 +972,15 @@ function buildGeneratedDeck(payload = {}) {
         ...(holdings.length
           ? holdings.map((r) => [r.navn, pct(r.vekt)])
           : [['Ingen underliggende data', '—']])
-      ], 0.85, 4.65, 6.0);
+      ], 0.85, 4.65, 6.5, { rowH: 0.23 });
+
+      const historicalRows = [
+        ['Årlig avkastning', m.annualReturn != null ? pct(m.annualReturn) : '—'],
+        ['Totalavkastning', m.totalReturn != null ? pct(m.totalReturn) : '—'],
+        ['Volatilitet', m.volatility != null ? pct(m.volatility) : '—'],
+        ['Maks DD', m.maxDrawdown != null ? pct(m.maxDrawdown) : '—'],
+        ['Sharpe', m.sharpe != null ? n(m.sharpe).toFixed(2) : '—']
+      ];
 
       addSimpleTable(s, [
         [
@@ -981,7 +990,15 @@ function buildGeneratedDeck(payload = {}) {
         ...(style.length
           ? style.map((r) => [r.navn, pct(r.vekt)])
           : [['Ingen stilfaktorer registrert', '—']])
-      ], 7.05, 4.65, 5.2);
+      ], 7.55, 4.65, 3.9, { rowH: 0.23 });
+
+      addSimpleTable(s, [
+        [
+          { text: 'Historiske nøkkeltall', options: { bold: true } },
+          { text: 'Verdi', options: { bold: true } }
+        ],
+        ...historicalRows
+      ], 11.55, 4.65, 1.7, { rowH: 0.23, fontSize: 8 });
     }
   });
 
