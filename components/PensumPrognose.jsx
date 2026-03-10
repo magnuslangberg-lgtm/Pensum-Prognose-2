@@ -1171,14 +1171,37 @@ export default function PensumPrognoseModell() {
     const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
     const forventetSluttverdi = scenarioData[scenarioData.length - 1]?.forventet || 0;
     const optimistiskSluttverdi = scenarioData[scenarioData.length - 1]?.optimistisk || 0;
-    
-    const allokeringRows = aktiveAktiva.map(a => 
-      '<tr><td style="padding:12px;border-bottom:1px solid #E2E8F0"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + '</td><td style="padding:12px;border-bottom:1px solid #E2E8F0;text-align:center">' + formatPercent(a.vekt) + '</td><td style="padding:12px;border-bottom:1px solid #E2E8F0;text-align:right">' + formatCurrency((a.vekt/100)*totalKapital) + '</td></tr>'
+
+    const alleProduktHTML = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const produktFargerHTML = ['#0D2240','#5B9BD5','#D4886B','#0D9488','#B8860B','#7C3AED','#2E7D32','#BE185D','#EA580C'];
+    const produktNavnRapport = {
+      'global-core-active': 'Global Core Active', 'global-edge': 'Global Edge', 'basis': 'Basis',
+      'global-hoyrente': 'Global Høyrente', 'nordisk-hoyrente': 'Nordisk Høyrente',
+      'norge-a': 'Norge A', 'energy-a': 'Global Energy A', 'banking-d': 'Nordic Banking', 'financial-d': 'Financial Opp.'
+    };
+    const start1y = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+    const start3y = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+    const start5y = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+
+    // Vektet yield
+    let yieldSumHTML = 0, yieldTotalHTML = 0;
+    pensumAllokering.forEach(a => {
+      const p = alleProduktHTML.find(pp => pp.id === a.id);
+      const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+      if (erGyldigTall(y) && a.vekt > 0) { yieldSumHTML += y * a.vekt; yieldTotalHTML += a.vekt; }
+    });
+    const vektetYieldHTML = yieldTotalHTML > 0 ? yieldSumHTML / yieldTotalHTML : 0;
+
+    const aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
+    const renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
+
+    // Allokering table
+    const allokeringRows = aktiveAktiva.map(a =>
+      '<tr><td style="padding:10px;border-bottom:1px solid #E2E8F0;font-size:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:center;font-size:12px">' + formatPercent(a.vekt) + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:right;font-size:12px">' + formatCurrency((a.vekt/100)*totalKapital) + '</td></tr>'
     ).join('');
-    
-    // Create SVG pie chart
-    let pieSlices = '';
-    let cumulative = 0;
+
+    // SVG pie chart
+    let pieSlices = '', cumulative = 0;
     const pieColors = aktiveAktiva.map(a => ASSET_COLORS[a.navn] || '#888');
     aktiveAktiva.forEach((a, i) => {
       const pct = a.vekt / 100;
@@ -1186,124 +1209,90 @@ export default function PensumPrognoseModell() {
       cumulative += pct;
       const endAngle = cumulative * 2 * Math.PI - Math.PI/2;
       const largeArc = pct > 0.5 ? 1 : 0;
-      const x1 = 80 + 60 * Math.cos(startAngle);
-      const y1 = 80 + 60 * Math.sin(startAngle);
-      const x2 = 80 + 60 * Math.cos(endAngle);
-      const y2 = 80 + 60 * Math.sin(endAngle);
-      if (pct > 0.001) {
-        pieSlices += '<path d="M80,80 L' + x1 + ',' + y1 + ' A60,60 0 ' + largeArc + ',1 ' + x2 + ',' + y2 + ' Z" fill="' + pieColors[i] + '"/>';
-      }
+      const x1 = 80 + 60 * Math.cos(startAngle), y1 = 80 + 60 * Math.sin(startAngle);
+      const x2 = 80 + 60 * Math.cos(endAngle), y2 = 80 + 60 * Math.sin(endAngle);
+      if (pct > 0.001) pieSlices += '<path d="M80,80 L' + x1 + ',' + y1 + ' A60,60 0 ' + largeArc + ',1 ' + x2 + ',' + y2 + ' Z" fill="' + pieColors[i] + '"/>';
     });
     const pieSvg = '<svg width="160" height="160" viewBox="0 0 160 160">' + pieSlices + '<circle cx="80" cy="80" r="35" fill="white"/></svg>';
-    
-    // Create legend
-    const legend = aktiveAktiva.map(a => 
-      '<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:4px 0"><span style="width:10px;height:10px;border-radius:50%;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + ' (' + a.vekt.toFixed(1) + '%)</div>'
+    const legend = aktiveAktiva.map(a =>
+      '<div style="display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0"><span style="width:8px;height:8px;border-radius:50%;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + ' (' + a.vekt.toFixed(1) + '%)</div>'
     ).join('');
-    
-    // Create stacked bar chart for value development
+
+    // Porteføljesammensetning
+    const portefoljeRows = pensumAllokering.filter(a => a.vekt > 0).sort((a,b) => b.vekt - a.vekt).map((a, idx) => {
+      const produkt = alleProduktHTML.find(p => p.id === a.id);
+      const fAvk = produkt?.forventetAvkastning ?? produktRapportMeta?.[a.id]?.expectedReturn;
+      const fYield = produkt?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+      const typeLbl = produkt?.aktivatype === 'aksje' ? 'Aksje' : produkt?.aktivatype === 'rente' ? 'Rente' : produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.';
+      const typeCol = produkt?.aktivatype === 'aksje' ? '#DBEAFE;color:#1D4ED8' : produkt?.aktivatype === 'rente' ? '#FED7AA;color:#C2410C' : '#F3F4F6;color:#4B5563';
+      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:8px;font-size:12px;font-weight:500"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:' + produktFargerHTML[idx % produktFargerHTML.length] + '"></span>' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:8px;text-align:center;font-size:12px;font-weight:600">' + a.vekt.toFixed(1) + '%</td><td style="padding:8px;text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:' + typeCol + '">' + typeLbl + '</span></td><td style="padding:8px;text-align:right;font-size:12px;color:#16A34A;font-weight:500">' + (erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—') + '</td><td style="padding:8px;text-align:right;font-size:12px;color:#0D9488;font-weight:500">' + (erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—') + '</td></tr>';
+    }).join('');
+
+    // Historisk avkastning tabell
+    const histRows = pensumAllokering.filter(a => a.vekt > 0 && produktHistorikk[a.id]).sort((a,b) => b.vekt - a.vekt).map((a, idx) => {
+      const s1 = beregnProduktStatistikk(produktHistorikk[a.id], start1y);
+      const s3 = beregnProduktStatistikk(produktHistorikk[a.id], start3y);
+      const s5 = beregnProduktStatistikk(produktHistorikk[a.id], start5y);
+      const fmtA = (v) => erGyldigTall(v) ? '<span style="color:' + (v >= 0 ? '#16A34A' : '#DC2626') + ';font-weight:600">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : '—';
+      const sharpeBg = s5 ? (s5.sharpe >= 1 ? '#DCFCE7;color:#16A34A' : s5.sharpe >= 0.5 ? '#FEF3C7;color:#D97706' : '#FEE2E2;color:#DC2626') : '#F3F4F6;color:#9CA3AF';
+      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:7px 8px;font-size:11px;font-weight:500">' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:7px 4px;text-align:center;font-size:11px;color:#6B7280">' + a.vekt.toFixed(1) + '%</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB">' + fmtA(s1?.totalAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s3?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s5?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB;color:#4B5563">' + (s5 ? s5.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:7px 4px;text-align:right;font-size:11px"><span style="padding:1px 5px;border-radius:3px;font-weight:600;font-size:10px;background:' + sharpeBg + '">' + (s5 ? s5.sharpe.toFixed(2) : '—') + '</span></td><td style="padding:7px 4px;text-align:right;font-size:11px;color:#DC2626;font-weight:500">' + (s5 ? s5.maxDrawdown.toFixed(1) + '%' : '—') + '</td></tr>';
+    }).join('');
+
+    // Historisk porteføljeavkastning
+    const histYears = [
+      { aar: '2026 YTD', key: 'aar2026' },
+      { aar: '2025', key: 'aar2025' },
+      { aar: '2024', key: 'aar2024' },
+      { aar: '2023', key: 'aar2023' },
+      { aar: '2022', key: 'aar2022' }
+    ];
+    const histPortCards = histYears.map(({ aar, key }) => {
+      const v = beregnPensumHistorikk[key];
+      const col = erGyldigTall(v) ? (v >= 0 ? '#16A34A' : '#DC2626') : '#9CA3AF';
+      const txt = erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
+      return '<div style="background:white;border-radius:8px;padding:12px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,0.05)"><div style="font-size:9px;color:#6B7280;margin-bottom:4px;font-weight:500">' + aar + '</div><div style="font-size:18px;font-weight:700;color:' + col + '">' + txt + '</div></div>';
+    }).join('');
+
+    // Stacked bar chart
     const maxVal = Math.max(...verdiutvikling.map(r => r.total));
     const barWidth = Math.min(50, 540 / verdiutvikling.length - 6);
     const chartWidth = verdiutvikling.length * (barWidth + 6) + 100;
-    let bars = '';
-    
-    // Y-axis labels - smart stepping based on max value
     let stepSize, yAxisMax;
-    if (maxVal < 10) {
-      // Very small values (like 100kr portfolio shown as percentages)
-      stepSize = maxVal <= 50 ? 10 : 20;
-      yAxisMax = Math.ceil(maxVal / stepSize) * stepSize;
-    } else if (maxVal < 1000) {
-      stepSize = maxVal <= 200 ? 50 : maxVal <= 500 ? 100 : 200;
-      yAxisMax = Math.ceil(maxVal / stepSize) * stepSize;
-    } else {
-      const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)));
-      const normalized = maxVal / magnitude;
-      if (normalized <= 2) stepSize = magnitude * 0.5;
-      else if (normalized <= 5) stepSize = magnitude;
-      else stepSize = magnitude * 2;
-      
-      // Ensure we have 4-6 labels
-      while (maxVal / stepSize > 6) stepSize *= 2;
-      while (maxVal / stepSize < 3) stepSize /= 2;
-      
-      yAxisMax = Math.ceil(maxVal / stepSize) * stepSize;
-    }
-    
-    const yAxisLabels = [];
-    for (let v = 0; v <= yAxisMax; v += stepSize) {
-      yAxisLabels.push(v);
-    }
-    
-    // Format numbers nicely based on size
-    const formatYLabel = (v) => {
-      if (v === 0) return '0';
-      if (v >= 1000000000) return 'kr ' + (v / 1000000000).toFixed(v % 1000000000 === 0 ? 0 : 1) + ' mrd';
-      if (v >= 1000000) return 'kr ' + (v / 1000000).toFixed(0) + ' mill';
-      if (v >= 1000) return 'kr ' + (v / 1000).toFixed(0) + ' k';
-      return 'kr ' + v.toFixed(0);
-    };
-    
-    let yAxis = '';
-    yAxisLabels.forEach(v => {
-      const y = 190 - (v / yAxisMax) * 180;
-      yAxis += '<text x="75" y="' + (y + 4) + '" text-anchor="end" font-size="9" fill="#64748B">' + formatYLabel(v) + '</text>';
-      yAxis += '<line x1="78" y1="' + y + '" x2="' + (chartWidth - 10) + '" y2="' + y + '" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="' + (v === 0 ? '0' : '3,3') + '"/>';
-    });
-    
-    verdiutvikling.forEach((row, i) => {
-      const x = 85 + i * (barWidth + 6);
-      let yOffset = 0;
-      
-      // Stack each asset class
-      aktiveAktiva.forEach(asset => {
-        const val = row[asset.navn] || 0;
-        const barHeight = (val / yAxisMax) * 180;
-        const y = 190 - yOffset - barHeight;
-        bars += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barHeight + '" fill="' + (ASSET_COLORS[asset.navn] || '#888') + '"/>';
-        yOffset += barHeight;
-      });
-      
-      // Year label
-      if (verdiutvikling.length <= 11 || i % 2 === 0) {
-        bars += '<text x="' + (x + barWidth/2) + '" y="205" text-anchor="middle" font-size="10" fill="#64748B">' + row.year + '</text>';
-      }
-    });
-    
-    // Bar chart legend
-    const barLegend = aktiveAktiva.map(a => 
-      '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:10px"><span style="width:10px;height:10px;border-radius:2px;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + '</span>'
-    ).join('');
-    
+    if (maxVal < 1000) { stepSize = maxVal <= 200 ? 50 : 200; yAxisMax = Math.ceil(maxVal / stepSize) * stepSize; }
+    else { const mag = Math.pow(10, Math.floor(Math.log10(maxVal))); const norm = maxVal / mag; stepSize = norm <= 2 ? mag * 0.5 : norm <= 5 ? mag : mag * 2; while (maxVal / stepSize > 6) stepSize *= 2; while (maxVal / stepSize < 3) stepSize /= 2; yAxisMax = Math.ceil(maxVal / stepSize) * stepSize; }
+    const formatYLabel = (v) => { if (v === 0) return '0'; if (v >= 1e9) return 'kr ' + (v/1e9).toFixed(v%1e9===0?0:1) + ' mrd'; if (v >= 1e6) return 'kr ' + (v/1e6).toFixed(0) + ' mill'; if (v >= 1e3) return 'kr ' + (v/1e3).toFixed(0) + ' k'; return 'kr ' + v.toFixed(0); };
+    let yAxis = '', bars = '';
+    for (let v = 0; v <= yAxisMax; v += stepSize) { const y = 190 - (v/yAxisMax)*180; yAxis += '<text x="75" y="' + (y+4) + '" text-anchor="end" font-size="9" fill="#64748B">' + formatYLabel(v) + '</text><line x1="78" y1="' + y + '" x2="' + (chartWidth-10) + '" y2="' + y + '" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3,3"/>'; }
+    verdiutvikling.forEach((row, i) => { const x = 85+i*(barWidth+6); let yOff = 0; aktiveAktiva.forEach(asset => { const val = row[asset.navn]||0; const bh = (val/yAxisMax)*180; bars += '<rect x="'+x+'" y="'+(190-yOff-bh)+'" width="'+barWidth+'" height="'+bh+'" fill="'+(ASSET_COLORS[asset.navn]||'#888')+'"/>'; yOff += bh; }); if (verdiutvikling.length<=11||i%2===0) bars += '<text x="'+(x+barWidth/2)+'" y="205" text-anchor="middle" font-size="10" fill="#64748B">' + row.year + '</text>'; });
+    const barLegend = aktiveAktiva.map(a => '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:10px"><span style="width:10px;height:10px;border-radius:2px;background:' + (ASSET_COLORS[a.navn]||'#888') + '"></span>' + a.navn + '</span>').join('');
     const barSvg = '<svg width="100%" height="220" viewBox="0 0 ' + chartWidth + ' 220" preserveAspectRatio="xMidYMid meet">' + yAxis + bars + '</svg>';
-    
-    // Create detailed value development table
+
+    // Detail table
     const verdiTableHeader = '<tr style="background:#F8FAFC"><th style="padding:8px 6px;text-align:left;font-size:11px;font-weight:600">År</th>' + aktiveAktiva.map(a => '<th style="padding:8px 6px;text-align:right;font-size:11px;font-weight:600">' + a.navn + '</th>').join('') + '<th style="padding:8px 6px;text-align:right;font-size:11px;font-weight:600">Total</th></tr>';
-    const verdiTableRows = verdiutvikling.map((row, idx) =>
-      '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:6px;font-weight:500;font-size:11px">' + row.year + '</td>' + aktiveAktiva.map(a => '<td style="padding:6px;text-align:right;font-size:10px;color:#64748B">' + formatCurrency(row[a.navn] || 0) + '</td>').join('') + '<td style="padding:6px;text-align:right;font-size:11px;font-weight:600">' + formatCurrency(row.total) + '</td></tr>'
-    ).join('');
+    const verdiTableRows = verdiutvikling.map((row, idx) => '<tr style="background:' + (idx%2===0?'#fff':'#F8FAFC') + '"><td style="padding:6px;font-weight:500;font-size:11px">' + row.year + '</td>' + aktiveAktiva.map(a => '<td style="padding:6px;text-align:right;font-size:10px;color:#64748B">' + formatCurrency(row[a.navn]||0) + '</td>').join('') + '<td style="padding:6px;text-align:right;font-size:11px;font-weight:600">' + formatCurrency(row.total) + '</td></tr>').join('');
 
-    // Pensum portefølje nøkkeltall for rapport
-    const produktNavnRapport = {
-      'global-core-active': 'Global Core Active', 'global-edge': 'Global Edge', 'basis': 'Basis',
-      'global-hoyrente': 'Global Høyrente', 'nordisk-hoyrente': 'Nordisk Høyrente',
-      'norge-a': 'Norge A', 'energy-a': 'Global Energy A', 'banking-d': 'Nordic Banking', 'financial-d': 'Financial Opp.'
-    };
-    const pensumStatRows = (() => {
-      const start5y = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
-      const valgteProdukter = pensumAllokering.filter(a => a.vekt > 0 && produktHistorikk[a.id]);
-      if (valgteProdukter.length === 0) return '';
-      const rows = valgteProdukter.map((a, idx) => {
-        const stat = beregnProduktStatistikk(produktHistorikk[a.id], start5y);
-        if (!stat) return '';
-        const fAvk = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === a.id)?.forventetAvkastning;
-        return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:8px;font-weight:500;font-size:11px">' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:8px;text-align:center;font-size:11px">' + a.vekt.toFixed(1) + '%</td><td style="padding:8px;text-align:right;font-size:11px;color:' + (stat.aarligAvkastning >= 0 ? '#16A34A' : '#DC2626') + '">' + (stat.aarligAvkastning >= 0 ? '+' : '') + stat.aarligAvkastning.toFixed(1) + '%</td><td style="padding:8px;text-align:right;font-size:11px">' + stat.standardavvik.toFixed(1) + '%</td><td style="padding:8px;text-align:right;font-size:11px"><span style="padding:2px 6px;border-radius:4px;font-weight:600;background:' + (stat.sharpe >= 1 ? '#DCFCE7;color:#16A34A' : stat.sharpe >= 0.5 ? '#FEF3C7;color:#D97706' : '#FEE2E2;color:#DC2626') + '">' + stat.sharpe.toFixed(2) + '</span></td><td style="padding:8px;text-align:right;font-size:11px;color:#DC2626">' + stat.maxDrawdown.toFixed(1) + '%</td><td style="padding:8px;text-align:right;font-size:11px;color:#16A34A;font-weight:600">' + (erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—') + '</td></tr>';
-      }).join('');
-      return '<div class="section"><h2>Pensum Portefølje — Risiko og avkastning (5 år)</h2><table class="detail-table"><thead><tr style="background:#F8FAFC"><th style="padding:8px;text-align:left;font-size:11px">Produkt</th><th style="padding:8px;text-align:center;font-size:11px">Vekt</th><th style="padding:8px;text-align:right;font-size:11px">Avk. p.a.</th><th style="padding:8px;text-align:right;font-size:11px">Volatilitet</th><th style="padding:8px;text-align:right;font-size:11px">Sharpe</th><th style="padding:8px;text-align:right;font-size:11px">Maks DD</th><th style="padding:8px;text-align:right;font-size:11px">Forv. avk.</th></tr></thead><tbody>' + rows + '</tbody></table><p style="font-size:9px;color:#64748B;margin-top:8px">Sharpe beregnet med risikofri rente 3%. Volatilitet = annualisert standardavvik. Maks DD = størst kursfall fra topp til bunn.</p></div>';
-    })();
+    const css = '*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:#1B3A5F;line-height:1.5;background:#fff}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:12mm}}.page{max-width:800px;margin:0 auto}.header{background:#fff;padding:25px 40px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between}.header-right{text-align:right}.header-right h1{font-size:18px;color:#1B3A5F;margin-bottom:2px}.header-right p{color:#64748B;font-size:12px}.content{padding:25px 40px}.info{display:flex;flex-wrap:wrap;gap:6px 30px;margin-bottom:20px;font-size:13px}.info div{flex:1 1 45%}.info span{color:#64748B}.info strong{color:#1B3A5F}.section{margin-bottom:22px}.section h2{font-size:14px;font-weight:700;color:#1B3A5F;border-bottom:2px solid #1B3A5F;padding-bottom:5px;margin-bottom:12px}.kpi-stripe{background:#0D2240;border-radius:10px;padding:18px 20px;margin-bottom:22px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px;text-align:center}.kpi-label{font-size:9px;color:#93C5FD;text-transform:uppercase;letter-spacing:0.5px}.kpi-value{font-size:15px;font-weight:700;color:white;margin-top:3px}.kpi-value.green{color:#86EFAC}.kpi-value.teal{color:#5EEAD4}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#F8FAFC;padding:8px;text-align:left;font-weight:600;font-size:11px}td{padding:8px}.alloc-grid{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}.pie-section{display:flex;flex-direction:column;align-items:center}.scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.box{padding:16px;border-radius:10px;text-align:center}.box-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}.box-value{font-size:18px;font-weight:700}.box-sub{font-size:9px;margin-top:3px}.chart-section{margin-top:8px;padding:12px;background:#FAFAFA;border-radius:8px}.chart-legend{text-align:center;margin-bottom:8px;padding:6px;background:#fff;border-radius:6px}.hist-port{background:#F8FAFC;border:2px solid #0D2240;border-radius:10px;padding:16px;margin-bottom:22px}.hist-port h3{font-size:12px;font-weight:700;color:#0D2240;margin-bottom:10px}.hist-port-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.disclaimer{font-size:8px;color:#64748B;background:#F8FAFC;padding:12px;border-radius:6px;margin-top:20px;line-height:1.6}.footer{background:#F8FAFC;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#64748B;margin-top:12px}.footer-logo{height:40px}.detail-table{font-size:11px;margin-top:8px}';
 
-    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Investeringsprognose - ' + (kundeNavn || 'Kunde') + '</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:#1B3A5F;line-height:1.5;background:#fff}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:15mm}}.page{max-width:800px;margin:0 auto}.header{background:#fff;padding:25px 40px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between}.header-right{text-align:right}.header-right h1{font-size:18px;color:#1B3A5F;margin-bottom:2px}.header-right p{color:#64748B;font-size:12px}.content{padding:30px 40px}.info{display:flex;flex-wrap:wrap;gap:6px 30px;margin-bottom:25px;font-size:13px}.info div{flex:1 1 45%}.info span{color:#64748B}.info strong{color:#1B3A5F}.section{margin-bottom:25px}.section h2{font-size:15px;font-weight:700;color:#1B3A5F;border-bottom:2px solid #1B3A5F;padding-bottom:6px;margin-bottom:14px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.card{background:#F8FAFC;border-radius:8px;padding:14px 10px;text-align:center}.card-label{font-size:10px;color:#64748B;margin-bottom:3px}.card-value{font-size:16px;font-weight:700;color:#1B3A5F}.card-value.green{color:#16A34A}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#F8FAFC;padding:10px;text-align:left;font-weight:600}td{padding:10px}.alloc-grid{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}.pie-section{display:flex;flex-direction:column;align-items:center}.scenarios{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{padding:18px;border-radius:10px;text-align:center}.box-label{font-size:12px;font-weight:600;margin-bottom:4px}.box-value{font-size:20px;font-weight:700}.chart-section{margin-top:10px;padding:15px;background:#FAFAFA;border-radius:8px}.chart-legend{text-align:center;margin-bottom:10px;padding:8px;background:#fff;border-radius:6px}.disclaimer{font-size:9px;color:#64748B;background:#F8FAFC;padding:14px;border-radius:6px;margin-top:25px}.footer{background:#F8FAFC;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#64748B;margin-top:15px}.footer-logo{height:45px}.detail-table{font-size:11px;margin-top:10px}</style></head><body><div class="page"><div class="header"><img src="' + PENSUM_LOGO + '" alt="Pensum" style="height:70px"><div class="header-right"><h1>Investeringsprognose</h1><p>' + formatDateEuro(dato) + '</p></div></div><div class="content"><div class="info"><div><span>Kunde:</span> <strong>' + (kundeNavn || '—') + '</strong></div><div><span>Rådgiver:</span> <strong>' + (radgiver || '—') + '</strong></div><div><span>Risikoprofil:</span> <strong>' + risikoprofil + '</strong></div><div><span>Horisont:</span> <strong>' + horisont + ' år</strong></div></div><div class="section"><h2>Nøkkeltall</h2><div class="grid4"><div class="card"><div class="card-label">Startkapital</div><div class="card-value">' + formatCurrency(totalKapital) + '</div></div><div class="card"><div class="card-label">Horisont</div><div class="card-value">' + horisont + ' år</div></div><div class="card"><div class="card-label">Forv. avkastning</div><div class="card-value">' + formatPercent(vektetAvkastning) + '</div></div><div class="card"><div class="card-label">Sluttverdi</div><div class="card-value green">' + formatCurrency(sluttverdi) + '</div></div></div></div><div class="section"><h2>Anbefalt allokering</h2><div class="alloc-grid"><table><thead><tr><th>Aktivaklasse</th><th style="text-align:center">Andel</th><th style="text-align:right">Beløp</th></tr></thead><tbody>' + allokeringRows + '</tbody></table><div class="pie-section">' + pieSvg + '<div style="margin-top:10px">' + legend + '</div></div></div></div><div class="section"><h2>Forventet verdiutvikling</h2><div class="chart-section"><div class="chart-legend">' + barLegend + '</div>' + barSvg + '<div style="text-align:center;margin-top:8px;font-size:11px;color:#64748B">Sluttverdi: <strong style="color:#1B3A5F">' + formatCurrency(sluttverdi) + '</strong></div></div></div><div class="section"><h2>Scenarioanalyse etter ' + horisont + ' år</h2><div class="scenarios"><div class="box" style="background:#F8FAFC;border:2px solid #1B3A5F"><div class="box-label" style="color:#1B3A5F">Forventet</div><div class="box-value" style="color:#1B3A5F">' + formatCurrency(forventetSluttverdi) + '</div></div><div class="box" style="background:#DCFCE7"><div class="box-label" style="color:#16A34A">Optimistisk</div><div class="box-value" style="color:#16A34A">' + formatCurrency(optimistiskSluttverdi) + '</div></div></div></div>' + pensumStatRows + '<div class="section"><h2>Detaljert verdiutvikling</h2><table class="detail-table"><thead>' + verdiTableHeader + '</thead><tbody>' + verdiTableRows + '</tbody></table></div><div class="disclaimer"><strong>Viktig informasjon:</strong> Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke.</div></div><div class="footer"><img src="' + PENSUM_LOGO + '" alt="Pensum" class="footer-logo"><div>Frøyas gate 15, 0273 Oslo · +47 23 89 68 44 · pensumgroup.no</div></div></div></body></html>';
-    
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Investeringsforslag - ' + (kundeNavn || 'Kunde') + '</title><style>' + css + '</style></head><body><div class="page"><div class="header"><img src="' + PENSUM_LOGO + '" alt="Pensum" style="height:70px"><div class="header-right"><h1>Investeringsforslag</h1><p>' + formatDateEuro(dato) + '</p></div></div><div class="content"><div class="info"><div><span>Kunde:</span> <strong>' + (kundeNavn || '—') + '</strong></div><div><span>Rådgiver:</span> <strong>' + (radgiver || '—') + '</strong></div><div><span>Risikoprofil:</span> <strong>' + risikoprofil + '</strong></div><div><span>Horisont:</span> <strong>' + horisont + ' år</strong></div></div>' +
+
+    '<div class="kpi-stripe"><div><div class="kpi-label">Investert beløp</div><div class="kpi-value">' + formatCurrency(totalKapital) + '</div></div><div><div class="kpi-label">Forv. avkastning</div><div class="kpi-value green">' + formatPercent(pensumForventetAvkastning) + '</div></div><div><div class="kpi-label">Forv. yield</div><div class="kpi-value teal">' + (erGyldigTall(vektetYieldHTML) ? vektetYieldHTML.toFixed(1) + '%' : '—') + '</div></div><div><div class="kpi-label">Aksje / Rente</div><div class="kpi-value">' + aksjeAndel.toFixed(0) + '% / ' + renteAndel.toFixed(0) + '%</div></div><div><div class="kpi-label">Likviditet</div><div class="kpi-value">' + pensumLikviditet.likvid.toFixed(0) + '% likvid</div></div><div><div class="kpi-label">Sluttverdi</div><div class="kpi-value green">' + formatCurrency(pensumPrognose[pensumPrognose.length-1]?.verdi || 0) + '</div></div></div>' +
+
+    '<div class="section"><h2>Anbefalt aktivaallokering</h2><div class="alloc-grid"><table><thead><tr><th>Aktivaklasse</th><th style="text-align:center">Andel</th><th style="text-align:right">Beløp</th></tr></thead><tbody>' + allokeringRows + '</tbody></table><div class="pie-section">' + pieSvg + '<div style="margin-top:8px">' + legend + '</div></div></div></div>' +
+
+    '<div class="section"><h2>Pensum Porteføljesammensetning</h2><table><thead><tr style="background:#F8FAFC"><th style="padding:8px">Produkt</th><th style="padding:8px;text-align:center">Vekt</th><th style="padding:8px;text-align:center">Type</th><th style="padding:8px;text-align:right">Forv. avk.</th><th style="padding:8px;text-align:right">Yield</th></tr></thead><tbody>' + portefoljeRows + '</tbody></table></div>' +
+
+    '<div class="section"><h2>Historisk avkastning</h2><table><thead><tr style="background:#0D2240"><th style="padding:7px 8px;color:white;font-size:10px;text-align:left">Produkt</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:center">Vekt</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right;border-left:1px solid rgba(255,255,255,0.2)">1 år</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right">3 år p.a.</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right">5 år p.a.</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right;border-left:1px solid rgba(255,255,255,0.2)">Volatilitet</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right">Sharpe</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right">Maks DD</th></tr></thead><tbody>' + histRows + '</tbody></table><p style="font-size:8px;color:#9CA3AF;margin-top:6px">Avkastning beregnet fra månedlige indeksverdier per ' + RAPPORT_DATO + '. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</p></div>' +
+
+    '<div class="hist-port"><h3>Din porteføljes historiske avkastning (vektet)</h3><div class="hist-port-grid">' + histPortCards + '</div></div>' +
+
+    '<div class="section"><h2>Scenarioanalyse — ' + horisont + ' års horisont</h2><div class="scenarios"><div class="box" style="background:#0D2240;border:2px solid #0D2240"><div class="box-label" style="color:#93C5FD">Forventet</div><div class="box-value" style="color:white">' + formatCurrency(forventetSluttverdi) + '</div><div class="box-sub" style="color:#93C5FD">CAGR ' + formatPercent(vektetAvkastning) + '</div></div><div class="box" style="background:#DCFCE7;border:1px solid #BBF7D0"><div class="box-label" style="color:#16A34A">Optimistisk</div><div class="box-value" style="color:#15803D">' + formatCurrency(optimistiskSluttverdi) + '</div><div class="box-sub" style="color:#16A34A">CAGR ' + formatPercent(scenarioParams.optimistisk) + '</div></div><div class="box" style="background:#F8FAFC;border:1px solid #E2E8F0"><div class="box-label" style="color:#6B7280">Sluttverdi</div><div class="box-value" style="color:#1B3A5F">' + formatCurrency(sluttverdi) + '</div><div class="box-sub" style="color:#6B7280">Aktivaallokering</div></div></div></div>' +
+
+    '<div class="section"><h2>Forventet verdiutvikling per aktivaklasse</h2><div class="chart-section"><div class="chart-legend">' + barLegend + '</div>' + barSvg + '</div></div>' +
+
+    '<div class="section"><h2>Detaljert verdiutvikling</h2><table class="detail-table"><thead>' + verdiTableHeader + '</thead><tbody>' + verdiTableRows + '</tbody></table></div>' +
+
+    '<div class="disclaimer"><strong>Viktig informasjon:</strong> Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med ' + RAPPORT_DATO + '.</div></div><div class="footer"><img src="' + PENSUM_LOGO + '" alt="Pensum" class="footer-logo"><div>Frøyas gate 15, 0273 Oslo · +47 23 89 68 44 · pensumgroup.no</div></div></div></body></html>';
+
     return html;
   };
 
@@ -4012,33 +4001,231 @@ export default function PensumPrognoseModell() {
           );
         })()}
 
-        {activeTab === 'rapport' && (
+        {activeTab === 'rapport' && (() => {
+          // Beregn alle data for rapporten
+          const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+          const valgteProdukterRapport = pensumAllokering.filter(a => a.vekt > 0).map(a => {
+            const produkt = alleProdukt.find(p => p.id === a.id);
+            const stat1y = beregnProduktStatistikk(produktHistorikk[a.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+            const stat3y = beregnProduktStatistikk(produktHistorikk[a.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+            const stat5y = beregnProduktStatistikk(produktHistorikk[a.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+            const fAvk = produkt?.forventetAvkastning ?? produktRapportMeta?.[a.id]?.expectedReturn;
+            const fYield = produkt?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+            return { ...a, produkt, stat1y, stat3y, stat5y, fAvk, fYield };
+          }).sort((a, b) => b.vekt - a.vekt);
+
+          // Vektede porteføljenøkkeltall
+          let yieldSum = 0, yieldTotal = 0;
+          pensumAllokering.forEach(a => {
+            const p = alleProdukt.find(pp => pp.id === a.id);
+            const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+            if (erGyldigTall(y) && a.vekt > 0) { yieldSum += y * a.vekt; yieldTotal += a.vekt; }
+          });
+          const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
+
+          const produktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, '#BE185D', '#EA580C'];
+
+          const formatAvk = (v) => erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
+          const avkFarge = (v) => erGyldigTall(v) ? (v >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400';
+
+          return (
           <div className="space-y-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              {/* === HEADER === */}
               <div className="p-6 flex items-center justify-between border-b border-gray-200">
                 <img src={PENSUM_LOGO} alt="Pensum" className="h-20" />
                 <div className="text-right">
-                  <div className="text-base font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsprognose</div>
+                  <div className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsforslag</div>
                   <div className="text-xs text-gray-500">{formatDateEuro(dato)}</div>
                 </div>
               </div>
+
               <div className="p-8 space-y-8">
+                {/* === KUNDEINFORMASJON === */}
                 <div className="grid grid-cols-2 gap-4 text-sm border-b border-gray-100 pb-6">
                   <div><span className="text-gray-500">Utarbeidet for:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{kundeNavn || '—'}</strong></div>
                   <div className="text-right"><span className="text-gray-500">Rådgiver:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || '—'}</strong></div>
                   <div><span className="text-gray-500">Risikoprofil:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</strong></div>
-                  <div className="text-right"><span className="text-gray-500">Horisont:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{horisont} år</strong></div>
+                  <div className="text-right"><span className="text-gray-500">Investeringshorisont:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{horisont} år</strong></div>
                 </div>
-                <div><h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Nøkkeltall</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><StatCard label="Startkapital" value={formatCurrency(totalKapital)} /><StatCard label="Horisont" value={horisont + " år"} /><StatCard label="Forv. avkastning" value={formatPercent(vektetAvkastning)} /><StatCard label="Sluttverdi" value={formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)} color={PENSUM_COLORS.green} /></div>
+
+                {/* === NØKKELTALL-STRIPE (utvidet) === */}
+                <div className="rounded-xl p-5" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Investert beløp</div><div className="text-lg font-bold text-white mt-1">{formatCurrency(totalKapital)}</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Forv. avkastning</div><div className="text-lg font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Forv. yield</div><div className="text-lg font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Aksje / Rente</div><div className="text-lg font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Likviditet</div><div className="text-lg font-bold text-white mt-1">{pensumLikviditet.likvid.toFixed(0)}% likvid</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Sluttverdi</div><div className="text-lg font-bold text-green-300 mt-1">{formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)}</div></div>
+                  </div>
                 </div>
-                <div><h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Anbefalt allokering</h2>
+
+                {/* === ANBEFALT ALLOKERING === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Anbefalt aktivaallokering</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{aktiveAktiva.map(a => <tr key={a.navn} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[a.navn] }}></div>{a.navn}</td><td className="py-3 px-4 text-center">{formatPercent(a.vekt)}</td><td className="py-3 px-4 text-right">{formatCurrency((a.vekt/100)*totalKapital)}</td></tr>)}</tbody></table>
                     <div className="flex justify-center items-center"><ResponsiveContainer width={200} height={200}><PieChart><Pie data={aktiveAktiva.map(a => ({ name: a.navn, value: a.vekt }))} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value">{aktiveAktiva.map(a => <Cell key={a.navn} fill={ASSET_COLORS[a.navn]} stroke="white" strokeWidth={2} />)}</Pie></PieChart></ResponsiveContainer></div>
                   </div>
                 </div>
-                <div><h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling</h2>
+
+                {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                            <th className="py-2.5 px-3 text-left text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produkt</th>
+                            <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekt</th>
+                            <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Type</th>
+                            <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Forv. avk.</th>
+                            <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Yield</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {valgteProdukterRapport.map((p, idx) => (
+                            <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="py-2.5 px-3 font-medium text-sm flex items-center gap-2">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                                {p.navn}
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-semibold text-sm">{p.vekt.toFixed(1)}%</td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className={"text-[10px] px-2 py-0.5 rounded-full font-medium " + (p.produkt?.aktivatype === 'aksje' ? 'bg-blue-100 text-blue-700' : p.produkt?.aktivatype === 'rente' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600')}>
+                                  {p.produkt?.aktivatype === 'aksje' ? 'Aksje' : p.produkt?.aktivatype === 'rente' ? 'Rente' : p.produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—'}</td>
+                              <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <ResponsiveContainer width={160} height={160}>
+                        <PieChart>
+                          <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="vekt">
+                            {valgteProdukterRapport.map((p, idx) => <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />)}
+                          </Pie>
+                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                          <div key={a.name} className="flex items-center gap-1.5 text-xs">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
+                            <span className="font-medium">{a.name} {a.value.toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* === HISTORISK AVKASTNING PER PRODUKT (1, 3, 5 ÅR) === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Historisk avkastning</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                          <th className="py-3 px-3 text-left text-white text-xs">Produkt</th>
+                          <th className="py-3 px-2 text-center text-white text-xs">Vekt</th>
+                          <th className="py-3 px-2 text-right text-blue-200 text-xs" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>1 år</th>
+                          <th className="py-3 px-2 text-right text-blue-200 text-xs">3 år p.a.</th>
+                          <th className="py-3 px-2 text-right text-blue-200 text-xs">5 år p.a.</th>
+                          <th className="py-3 px-2 text-right text-white text-xs" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>Volatilitet</th>
+                          <th className="py-3 px-2 text-right text-white text-xs">Sharpe</th>
+                          <th className="py-3 px-2 text-right text-white text-xs">Maks DD</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {valgteProdukterRapport.map((p, idx) => (
+                          <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="py-2.5 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                                {p.navn}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-2 text-center text-xs text-gray-500">{p.vekt.toFixed(1)}%</td>
+                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat1y?.totalAvkastning)} style={{ borderLeft: '1px solid #E5E7EB' }}>{formatAvk(p.stat1y?.totalAvkastning)}</td>
+                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat3y?.aarligAvkastning)}>{formatAvk(p.stat3y?.aarligAvkastning)}</td>
+                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat5y?.aarligAvkastning)}>{formatAvk(p.stat5y?.aarligAvkastning)}</td>
+                            <td className="py-2.5 px-2 text-right text-xs text-gray-600" style={{ borderLeft: '1px solid #E5E7EB' }}>{p.stat5y ? p.stat5y.standardavvik.toFixed(1) + '%' : '—'}</td>
+                            <td className="py-2.5 px-2 text-right">{p.stat5y ? <span className={"text-[10px] font-bold px-1.5 py-0.5 rounded " + (p.stat5y.sharpe >= 1 ? "bg-green-100 text-green-700" : p.stat5y.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{p.stat5y.sharpe.toFixed(2)}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
+                            <td className="py-2.5 px-2 text-right text-xs text-red-600 font-medium">{p.stat5y ? p.stat5y.maxDrawdown.toFixed(1) + '%' : '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-2 text-[10px] text-gray-400">Avkastning beregnet fra månedlige indeksverdier per {RAPPORT_DATO}. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</div>
+                </div>
+
+                {/* === PORTEFØLJENS HISTORISKE AVKASTNING (vektet) === */}
+                <div className="rounded-xl p-5 border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' }}>
+                  <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Din porteføljes historiske avkastning (vektet)</h3>
+                  <div className="grid grid-cols-5 gap-4 text-center">
+                    {[
+                      { aar: '2026 YTD', key: 'aar2026' },
+                      { aar: '2025', key: 'aar2025' },
+                      { aar: '2024', key: 'aar2024' },
+                      { aar: '2023', key: 'aar2023' },
+                      { aar: '2022', key: 'aar2022' }
+                    ].map(({ aar, key }) => (
+                      <div key={aar} className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-[10px] text-gray-500 mb-1 font-medium">{aar}</p>
+                        <p className={"text-xl font-bold " + (erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>
+                          {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1) + '%' : '—'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* === SCENARIOANALYSE MED GRAF === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Scenarioanalyse — {horisont} års horisont</h2>
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {showPessimistic && (
+                      <div className="text-center p-5 bg-red-50 rounded-xl border border-red-200">
+                        <div className="text-xs font-semibold text-red-500 uppercase">Pessimistisk</div>
+                        <div className="text-2xl font-bold text-red-700 mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.pessimistisk || 0)}</div>
+                        <div className="text-xs text-red-400 mt-1">CAGR {formatPercent(scenarioParams.pessimistisk)}</div>
+                      </div>
+                    )}
+                    <div className={"text-center p-5 rounded-xl border-2 " + (showPessimistic ? '' : 'col-span-1')} style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: PENSUM_COLORS.darkBlue }}>
+                      <div className="text-xs font-semibold text-blue-300 uppercase">Forventet</div>
+                      <div className="text-2xl font-bold text-white mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.forventet || 0)}</div>
+                      <div className="text-xs text-blue-300 mt-1">CAGR {formatPercent(vektetAvkastning)}</div>
+                    </div>
+                    <div className="text-center p-5 bg-green-50 rounded-xl border border-green-200">
+                      <div className="text-xs font-semibold text-green-500 uppercase">Optimistisk</div>
+                      <div className="text-2xl font-bold text-green-700 mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.optimistisk || 0)}</div>
+                      <div className="text-xs text-green-400 mt-1">CAGR {formatPercent(scenarioParams.optimistisk)}</div>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={scenarioData} margin={{ top: 15, right: 30, left: 15, bottom: 15 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} />
+                      <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 10 }} width={90} />
+                      <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'forventet' ? 'Forventet' : n === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
+                      {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
+                      <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#16A34A" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* === VERDIUTVIKLING (STACKED BAR) === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling per aktivaklasse</h2>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={verdiutvikling} barCategoryGap="40%">
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
@@ -4050,13 +4237,10 @@ export default function PensumPrognoseModell() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div><h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Scenarioanalyse etter {horisont} år</h2>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center p-6 rounded-xl" style={{ backgroundColor: PENSUM_COLORS.lightGray }}><div className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet</div><div className="text-2xl font-bold mt-2" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(scenarioData[scenarioData.length - 1]?.forventet || 0)}</div></div>
-                    <div className="text-center p-6 bg-green-50 rounded-xl"><div className="text-sm font-medium text-green-600">Optimistisk</div><div className="text-2xl font-bold text-green-700 mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.optimistisk || 0)}</div></div>
-                  </div>
-                </div>
-                <div><h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Detaljert verdiutvikling</h2>
+
+                {/* === DETALJERT VERDIUTVIKLING === */}
+                <div>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Detaljert verdiutvikling</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
@@ -4078,10 +4262,23 @@ export default function PensumPrognoseModell() {
                     </table>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 border-t border-gray-200 pt-6"><p className="font-semibold mb-2">Viktig informasjon</p><p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke.</p></div>
+
+                {/* === DISCLAIMER === */}
+                <div className="text-xs text-gray-500 border-t border-gray-200 pt-6">
+                  <p className="font-semibold mb-2">Viktig informasjon</p>
+                  <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
+                </div>
               </div>
-              <div className="px-10 py-5 text-center text-sm border-t border-gray-100" style={{ backgroundColor: PENSUM_COLORS.lightGray }}><span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum Asset Management</span><span className="mx-3 text-gray-300">|</span><span className="text-gray-500">pensumgroup.no</span><span className="mx-3 text-gray-300">|</span><span className="text-gray-500">+47 23 89 68 44</span></div>
+
+              {/* === FOOTER === */}
+              <div className="px-10 py-5 text-center text-sm border-t border-gray-100" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                <span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum Asset Management</span>
+                <span className="mx-3 text-gray-300">|</span><span className="text-gray-500">pensumgroup.no</span>
+                <span className="mx-3 text-gray-300">|</span><span className="text-gray-500">+47 23 89 68 44</span>
+              </div>
             </div>
+
+            {/* === NEDLASTING === */}
             <div className="flex flex-col items-center gap-4 no-print">
               <button onClick={handleDownloadHTML} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -4095,7 +4292,8 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ADMIN-FANE */}
         {activeTab === 'admin' && (
