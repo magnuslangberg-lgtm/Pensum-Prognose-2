@@ -3078,34 +3078,37 @@ export default function PensumPrognoseModell() {
                         };
                         const startDato = periodeFilter[historikkPeriode];
                         
-                        // Bygg data for grafen
+                        // Bygg data for grafen med daglige datapunkter
                         const chartData = [];
                         const alleDatoer = new Set();
-                        
+                        const produktDataMap = {};
+
                         valgteProdukterHistorikk.forEach(produktId => {
                           const hist = produktHistorikk[produktId];
                           if (hist && hist.data) {
+                            const dataMap = new Map();
                             hist.data.forEach(d => {
                               const dato = parseHistorikkDato(d.dato);
                               if (dato && dato >= startDato) {
                                 alleDatoer.add(d.dato);
+                                dataMap.set(d.dato, d.verdi);
                               }
                             });
+                            const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                            produktDataMap[produktId] = { dataMap, startVerdi };
                           }
                         });
-                        
+
                         const sorterteDatoer = Array.from(alleDatoer).sort();
-                        
+
                         sorterteDatoer.forEach(dato => {
                           const punkt = { dato };
                           valgteProdukterHistorikk.forEach(produktId => {
-                            const hist = produktHistorikk[produktId];
-                            if (hist && hist.data) {
-                              const match = hist.data.find(d => d.dato === dato);
-                              if (match) {
-                                // Reindekserer til 100 ved start av valgt periode
-                                const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                                punkt[produktId] = (match.verdi / startVerdi) * 100;
+                            const pm = produktDataMap[produktId];
+                            if (pm) {
+                              const verdi = pm.dataMap.get(dato);
+                              if (verdi !== undefined) {
+                                punkt[produktId] = (verdi / pm.startVerdi) * 100;
                               }
                             }
                           });
@@ -3136,16 +3139,18 @@ export default function PensumPrognoseModell() {
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis 
-                                dataKey="dato" 
+                              <XAxis
+                                dataKey="dato"
                                 tick={{ fontSize: 10, fill: '#6B7280' }}
                                 tickFormatter={(dato) => {
                                   const parsed = parseHistorikkDato(dato);
                                   if (!parsed) return '';
                                   const m = parsed.getMonth() + 1;
-                                  return m === 1 || m === 7 ? `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}` : '';
+                                  const d = parsed.getDate();
+                                  if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}`;
+                                  return '';
                                 }}
-                                interval="preserveStartEnd"
+                                interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))}
                               />
                               <YAxis 
                                 tick={{ fontSize: 10, fill: '#6B7280' }}
@@ -3236,8 +3241,8 @@ export default function PensumPrognoseModell() {
                     
                     {/* Disclaimer */}
                     <div className="mt-4 text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-                      <strong>Viktig informasjon om avkastning:</strong> Historikk er indeksert til 100 ved start av valgt periode. 
-                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes månedlig ut fra kursendringer mellom månedssluttpunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon. 
+                      <strong>Viktig informasjon om avkastning:</strong> Historikk er indeksert til 100 ved start av valgt periode.
+                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes daglig ut fra kursendringer mellom daglige datapunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon.
                       Historisk avkastning er ingen garanti for fremtidig avkastning.
                     </div>
                   </div>
@@ -3418,9 +3423,14 @@ export default function PensumPrognoseModell() {
                 const buildSnapshotData = (periodYears) => {
                   const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
                   const alleDatoer = new Set();
+                  const produktMaps = {};
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
-                    if (hist?.data) hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) alleDatoer.add(d.dato); });
+                    if (hist?.data) {
+                      const dMap = new Map();
+                      hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                      produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
+                    }
                   });
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
@@ -3428,12 +3438,11 @@ export default function PensumPrognoseModell() {
                     let vektetVerdi = 0;
                     let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
-                      const hist = produktHistorikk[id];
-                      if (hist?.data) {
-                        const match = hist.data.find(d => d.dato === dato);
-                        const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                        if (match && startVerdi) {
-                          const indeksert = (match.verdi / startVerdi) * 100;
+                      const pm = produktMaps[id];
+                      if (pm) {
+                        const verdi = pm.dMap.get(dato);
+                        if (verdi !== undefined && pm.startVerdi) {
+                          const indeksert = (verdi / pm.startVerdi) * 100;
                           punkt[id] = indeksert;
                           const allok = pensumAllokering.find(a => a.id === id);
                           if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
@@ -3486,8 +3495,8 @@ export default function PensumPrognoseModell() {
                               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                                 <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; return m===1||m===7 ? `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}` : ''; }}
-                                  interval="preserveStartEnd" />
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                  interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))} />
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
@@ -3865,19 +3874,23 @@ export default function PensumPrognoseModell() {
                   return punkt;
                 });
                 const dashChartDatoer = new Set();
+                const dashProdMaps = {};
                 dashboardProdukter.forEach(id => {
                   const hist = alleHistorikk2[id];
-                  if (hist && hist.data) hist.data.forEach(d => { const parsed = parseHistorikkDato(d.dato); if (parsed && parsed >= dashStartDato) dashChartDatoer.add(d.dato); });
+                  if (hist && hist.data) {
+                    const dMap = new Map();
+                    hist.data.forEach(d => { const parsed = parseHistorikkDato(d.dato); if (parsed && parsed >= dashStartDato) { dashChartDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                    dashProdMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, dashStartDato) };
+                  }
                 });
                 const dashChartData = Array.from(dashChartDatoer).sort().map(dato => {
                   const punkt = { dato };
                   dashboardProdukter.forEach(id => {
-                    const hist = alleHistorikk2[id];
-                    if (hist && hist.data) {
-                      const match = hist.data.find(d => d.dato === dato);
-                      if (match) {
-                        const startVerdi = finnStartVerdiVedPeriode(hist.data, dashStartDato);
-                        punkt[id] = parseFloat(((match.verdi / startVerdi) * 100).toFixed(2));
+                    const pm = dashProdMaps[id];
+                    if (pm) {
+                      const verdi = pm.dMap.get(dato);
+                      if (verdi !== undefined) {
+                        punkt[id] = parseFloat(((verdi / pm.startVerdi) * 100).toFixed(2));
                       }
                     }
                   });
@@ -3954,8 +3967,8 @@ export default function PensumPrognoseModell() {
                             <LineChart data={dashChartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
-                                tickFormatter={(d) => { const parts = d.split("-"); return (parts[1] === "01" || parts[1] === "07") ? parts[1] + "/" + parts[0].slice(2) : ""; }}
-                                interval="preserveStartEnd" />
+                                tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                interval={20} />
                               <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0)} domain={["dataMin - 5", "dataMax + 5"]} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 labelFormatter={(d) => formatHistorikkEtikett(d)}
@@ -4035,8 +4048,8 @@ export default function PensumPrognoseModell() {
                             <LineChart data={ddData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
-                                tickFormatter={(d) => { const parts = d.split("-"); return (parts[1] === "01" || parts[1] === "07") ? parts[1] + "/" + parts[0].slice(2) : ""; }}
-                                interval="preserveStartEnd" />
+                                tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                interval={20} />
                               <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0) + "%"} domain={["dataMin - 2", 0]} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 formatter={(v, name) => [v.toFixed(1) + "%", produktNavn2[name] || name]} />
