@@ -3505,7 +3505,7 @@ export default function PensumPrognoseModell() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                                 <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
                                   tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
-                                  interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))} />
+                                  interval={Math.max(1, Math.floor(chartData.length / 12))} />
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
