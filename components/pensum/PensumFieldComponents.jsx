@@ -110,10 +110,10 @@ export function KategoriHeaderRow({ kategori, isExpanded, onToggle }) {
         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[kategori.kategori] }}></div>
         <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{kategori.navn}</span>
       </div>
-      <div className="flex items-center gap-6 text-sm">
-        <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.vekt)}</span>
-        <span className="text-gray-500">{formatCurrency(kategori.belop)}</span>
-        <span style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.avkastning)}</span>
+      <div className="flex items-center gap-3 text-sm">
+        <span className="font-semibold text-right" style={{ color: PENSUM_COLORS.darkBlue, width: '60px' }}>{formatPercent(kategori.vekt)}</span>
+        <span className="text-gray-500 text-right text-xs" style={{ width: '90px' }}>{formatCurrency(kategori.belop)}</span>
+        <span className="text-right" style={{ color: PENSUM_COLORS.darkBlue, width: '60px' }}>{formatPercent(kategori.avkastning)}</span>
       </div>
     </div>
   );

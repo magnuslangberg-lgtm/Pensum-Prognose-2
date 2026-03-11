@@ -2265,11 +2265,14 @@ export default function PensumPrognoseModell() {
                   )}
                   <div className="p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                      <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center text-xs flex-1">
                         <span className="text-gray-500">Aktivaklasse</span>
-                        <span className="text-gray-400 ml-20">Vekting</span>
-                        <span className="text-gray-400 ml-48">Beløp</span>
-                        <span className="text-gray-400 ml-4">Forv. avk.</span>
+                        <span className="text-gray-400 flex-1 text-center">Vekting</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Vekting</span>
+                          <span className="text-gray-400 text-right" style={{ width: '90px' }}>Beløp</span>
+                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Forv. avk.</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
