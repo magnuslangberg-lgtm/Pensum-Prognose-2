@@ -2231,47 +2231,39 @@ export default function PensumPrognoseModell() {
                       </span>
                     </div>
                   )}
-                  <div className="p-6 overflow-x-auto">
-                    <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
-                      <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                        <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5" />
-                        Auto-balanser til 100%
-                      </label>
-                      <button onClick={normaliserAllokeringTil100} className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50">
-                        Juster til 100%
-                      </button>
+                  <div className="p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-gray-500">Aktivaklasse</span>
+                        <span className="text-gray-400 ml-20">Vekting</span>
+                        <span className="text-gray-400 ml-48">Beløp</span>
+                        <span className="text-gray-400 ml-4">Forv. avk.</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+                          <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5" />
+                          Auto 100%
+                        </label>
+                        <button onClick={normaliserAllokeringTil100} className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50">
+                          Juster til 100%
+                        </button>
+                        <span className={"text-sm px-3 py-1 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                          Total: {formatPercent(totalVekt)}
+                        </span>
+                      </div>
                     </div>
-                    <table className="w-full">
-                      <thead>
-                        <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                          <th className="text-left py-3 px-4 font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivaklasse</th>
-                          <th className="text-center py-3 px-2 font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekting</th>
-                          <th className="text-center py-3 px-2 font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Beløp</th>
-                          <th className="text-center py-3 px-2 font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Forv. avk.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
-                        {expandedCategories.aksjer && allokering.filter(a => a.kategori === 'aksjer').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />)}
-                        <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
-                        {expandedCategories.renter && allokering.filter(a => a.kategori === 'renter').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />)}
-                        {/* Alternative investeringer - vises kun når checkbox er på */}
-                        {effektivVisAlternative && (
-                          <>
-                            {allokering.find(a => a.navn === 'Private Equity') && <AllokeringRow item={allokering.find(a => a.navn === 'Private Equity')} index={allokering.findIndex(a => a.navn === 'Private Equity')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />}
-                            {allokering.find(a => a.navn === 'Eiendom') && <AllokeringRow item={allokering.find(a => a.navn === 'Eiendom')} index={allokering.findIndex(a => a.navn === 'Eiendom')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />}
-                          </>
-                        )}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                          <td className="py-4 px-4 font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Sum</td>
-                          <td className={"py-4 px-2 text-center font-bold " + (Math.abs(totalVekt - 100) < 0.5 ? "text-green-600" : "text-red-600")}>{formatPercent(totalVekt)}</td>
-                          <td className="py-4 px-2 text-center font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(investertBelop !== null ? investertBelop : totalKapital)}</td>
-                          <td className="py-4 px-2 text-center font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(vektetAvkastning)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                    <div className="space-y-2">
+                      <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
+                      {expandedCategories.aksjer && allokering.filter(a => a.kategori === 'aksjer').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />)}
+                      <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
+                      {expandedCategories.renter && allokering.filter(a => a.kategori === 'renter').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />)}
+                      {effektivVisAlternative && (
+                        <>
+                          {allokering.find(a => a.navn === 'Private Equity') && <AllokeringRow item={allokering.find(a => a.navn === 'Private Equity')} index={allokering.findIndex(a => a.navn === 'Private Equity')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />}
+                          {allokering.find(a => a.navn === 'Eiendom') && <AllokeringRow item={allokering.find(a => a.navn === 'Eiendom')} index={allokering.findIndex(a => a.navn === 'Eiendom')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} />}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
