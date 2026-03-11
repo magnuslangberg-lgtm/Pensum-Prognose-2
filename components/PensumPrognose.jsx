@@ -617,13 +617,18 @@ export default function PensumPrognoseModell() {
   useEffect(() => {
     const lastBruker = async () => {
       try {
+        let brukerJson = null;
         if (window.storage && window.storage.get) {
           const result = await window.storage.get('pensum_aktiv_bruker');
-          if (result && result.value) {
-            const brukerData = JSON.parse(result.value);
-            setBruker(brukerData);
-            if (brukerData.navn) setRadgiver(brukerData.navn);
-          }
+          if (result && result.value) brukerJson = result.value;
+        }
+        if (!brukerJson && typeof localStorage !== 'undefined') {
+          brukerJson = localStorage.getItem('pensum_aktiv_bruker');
+        }
+        if (brukerJson) {
+          const brukerData = JSON.parse(brukerJson);
+          setBruker(brukerData);
+          if (brukerData.navn) setRadgiver(brukerData.navn);
         }
       } catch (e) {
         console.log('Kunne ikke laste bruker:', e);
@@ -653,12 +658,14 @@ export default function PensumPrognoseModell() {
       // Sjekk om e-post allerede er registrert
       const brukereKey = 'pensum_brukere';
       let brukere = {};
-      
+
       if (window.storage && window.storage.get) {
         const result = await window.storage.get(brukereKey);
-        if (result && result.value) {
-          brukere = JSON.parse(result.value);
-        }
+        if (result && result.value) brukere = JSON.parse(result.value);
+      }
+      if (Object.keys(brukere).length === 0 && typeof localStorage !== 'undefined') {
+        const lsVal = localStorage.getItem(brukereKey);
+        if (lsVal) brukere = JSON.parse(lsVal);
       }
 
       const epostNormalisert = registrerEpost.toLowerCase().trim();
@@ -677,9 +684,15 @@ export default function PensumPrognoseModell() {
       
       brukere[epostNormalisert] = nyBruker;
       
+      const brukereStr = JSON.stringify(brukere);
+      const nyBrukerStr = JSON.stringify(nyBruker);
       if (window.storage && window.storage.set) {
-        await window.storage.set(brukereKey, JSON.stringify(brukere));
-        await window.storage.set('pensum_aktiv_bruker', JSON.stringify(nyBruker));
+        await window.storage.set(brukereKey, brukereStr);
+        await window.storage.set('pensum_aktiv_bruker', nyBrukerStr);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(brukereKey, brukereStr);
+        localStorage.setItem('pensum_aktiv_bruker', nyBrukerStr);
       }
 
       setBruker(nyBruker);
@@ -712,12 +725,14 @@ export default function PensumPrognoseModell() {
     try {
       const brukereKey = 'pensum_brukere';
       let brukere = {};
-      
+
       if (window.storage && window.storage.get) {
         const result = await window.storage.get(brukereKey);
-        if (result && result.value) {
-          brukere = JSON.parse(result.value);
-        }
+        if (result && result.value) brukere = JSON.parse(result.value);
+      }
+      if (Object.keys(brukere).length === 0 && typeof localStorage !== 'undefined') {
+        const lsVal = localStorage.getItem(brukereKey);
+        if (lsVal) brukere = JSON.parse(lsVal);
       }
 
       const epostNormalisert = loginEpost.toLowerCase().trim();
@@ -734,8 +749,12 @@ export default function PensumPrognoseModell() {
       }
 
       // Lagre aktiv bruker
+      const brukerStr = JSON.stringify(brukerData);
       if (window.storage && window.storage.set) {
-        await window.storage.set('pensum_aktiv_bruker', JSON.stringify(brukerData));
+        await window.storage.set('pensum_aktiv_bruker', brukerStr);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('pensum_aktiv_bruker', brukerStr);
       }
 
       setBruker(brukerData);
@@ -760,6 +779,9 @@ export default function PensumPrognoseModell() {
     try {
       if (window.storage && window.storage.delete) {
         await window.storage.delete('pensum_aktiv_bruker');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('pensum_aktiv_bruker');
       }
     } catch (e) {
       console.log('Kunne ikke slette bruker fra storage:', e);
