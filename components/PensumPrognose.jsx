@@ -920,9 +920,10 @@ export default function PensumPrognoseModell() {
       return { id: a.id, navn: a.navn, vektPct: a.vekt / totalVekt, avkastning: (erGyldigTall(fAvk) ? fAvk : 0) / 100 };
     });
 
+    const kapital = investertBelop !== null ? investertBelop : totalKapital;
     const prognose = [];
     const verdier = {};
-    produkterMedAvk.forEach(p => { verdier[p.id] = p.vektPct * totalKapital; });
+    produkterMedAvk.forEach(p => { verdier[p.id] = p.vektPct * kapital; });
 
     for (let i = 0; i <= horisont; i++) {
       const row = { year: new Date().getFullYear() + i };
@@ -936,7 +937,7 @@ export default function PensumPrognoseModell() {
       prognose.push(row);
     }
     return prognose;
-  }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, horisont, erGyldigTall]);
+  }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, erGyldigTall]);
 
   const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, '#7C3AED', '#2E7D32', '#BE185D', '#EA580C'];
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
@@ -1214,7 +1215,7 @@ export default function PensumPrognoseModell() {
     const rapportTotalVektHTML = rapportAktivaHTML.reduce((s, a) => s + a.value, 0) || 1;
     const allokeringRows = rapportAktivaHTML.map(a => {
       const normVekt = (a.value / rapportTotalVektHTML) * 100;
-      return '<tr><td style="padding:10px;border-bottom:1px solid #E2E8F0;font-size:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + (a.color || '#888') + '"></span>' + a.name + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:center;font-size:12px">' + normVekt.toFixed(1) + '%</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:right;font-size:12px">' + formatCurrency((normVekt/100)*totalKapital) + '</td></tr>';
+      return '<tr><td style="padding:10px;border-bottom:1px solid #E2E8F0;font-size:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + (a.color || '#888') + '"></span>' + a.name + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:center;font-size:12px">' + normVekt.toFixed(1) + '%</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:right;font-size:12px">' + formatCurrency((normVekt/100)*effektivtInvestertBelop) + '</td></tr>';
     }).join('');
 
     // SVG pie chart
@@ -2513,6 +2514,22 @@ export default function PensumPrognoseModell() {
                     <h4 className="font-semibold mb-4 flex items-center justify-between" style={{ color: PENSUM_COLORS.darkBlue }}>
                       <span>Din portefølje</span>
                       <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-gray-500">Beløp:</span>
+                          <input
+                            type="text"
+                            value={investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital)}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
+                              setInvestertBelop(value);
+                            }}
+                            className="border border-gray-200 rounded py-1 px-2 w-28 text-right text-xs"
+                          />
+                          <span className="text-gray-400">kr</span>
+                          {investertBelop !== null && (
+                            <button onClick={() => setInvestertBelop(null)} className="text-blue-600 hover:text-blue-800 underline" title="Tilbakestill til kundeinformasjon">↺</button>
+                          )}
+                        </div>
                         <label className="text-xs px-2 py-1 rounded-full border border-blue-200 text-blue-700 flex items-center gap-1.5">
                           <input type="checkbox" checked={autoRebalanserPensum} onChange={(e) => setAutoRebalanserPensum(e.target.checked)} className="w-3.5 h-3.5" />
                           Auto 100%
@@ -2852,11 +2869,11 @@ export default function PensumPrognoseModell() {
               const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
               return (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                  <StatCard label="Startkapital" value={formatCurrency(totalKapital)} />
+                  <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
                   <StatCard label="Forventet avkastning" value={formatPercent(pensumForventetAvkastning)} subtext="årlig" color={PENSUM_COLORS.green} />
                   <StatCard label="Forventet yield" value={formatPercent(vektetYield)} subtext="løpende" color={PENSUM_COLORS.teal} />
                   <StatCard label="Sluttverdi" value={formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)} subtext={"etter " + horisont + " år"} />
-                  <StatCard label="Total avkastning" value={formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) - totalKapital)} color={PENSUM_COLORS.green} />
+                  <StatCard label="Total avkastning" value={formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) - effektivtInvestertBelop)} color={PENSUM_COLORS.green} />
                 </div>
               );
             })()}
@@ -4078,7 +4095,7 @@ export default function PensumPrognoseModell() {
                 {/* === NØKKELTALL-STRIPE (utvidet) === */}
                 <div className="rounded-xl p-5" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
-                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Investert beløp</div><div className="text-lg font-bold text-white mt-1">{formatCurrency(totalKapital)}</div></div>
+                    <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Investert beløp</div><div className="text-lg font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
                     <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Forv. avkastning</div><div className="text-lg font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
                     <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Forv. yield</div><div className="text-lg font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
                     <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Aksje / Rente</div><div className="text-lg font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
@@ -4095,7 +4112,7 @@ export default function PensumPrognoseModell() {
                     const rapportTotalVekt = rapportAktiva.reduce((s, a) => s + a.value, 0) || 1;
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{rapportAktiva.map(a => <tr key={a.name} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>{a.name}</td><td className="py-3 px-4 text-center">{(a.value / rapportTotalVekt * 100).toFixed(1)}%</td><td className="py-3 px-4 text-right">{formatCurrency((a.value / rapportTotalVekt) * totalKapital)}</td></tr>)}</tbody></table>
+                        <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{rapportAktiva.map(a => <tr key={a.name} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>{a.name}</td><td className="py-3 px-4 text-center">{(a.value / rapportTotalVekt * 100).toFixed(1)}%</td><td className="py-3 px-4 text-right">{formatCurrency((a.value / rapportTotalVekt) * effektivtInvestertBelop)}</td></tr>)}</tbody></table>
                         <div className="flex justify-center items-center"><ResponsiveContainer width={200} height={200}><PieChart><Pie data={rapportAktiva.map(a => ({ name: a.name, value: a.value }))} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value">{rapportAktiva.map(a => <Cell key={a.name} fill={a.color} stroke="white" strokeWidth={2} />)}</Pie></PieChart></ResponsiveContainer></div>
                       </div>
                     );

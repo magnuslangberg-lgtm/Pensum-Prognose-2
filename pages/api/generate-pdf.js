@@ -486,12 +486,14 @@ function addKeyValueTable(slide, title, rows, x, y, w, rowH = 0.27) {
 }
 
 function buildAllocationNarrative(d) {
-  const allocMap = new Map(d.alloc.map((a) => [a.navn, a.vekt]));
-  const aksjer = (allocMap.get('Globale Aksjer') || 0) + (allocMap.get('Norske Aksjer') || 0);
-  const renter = (allocMap.get('Høyrente') || 0) + (allocMap.get('Investment Grade') || 0);
-  const alternatives = (allocMap.get('Private Equity') || 0) + (allocMap.get('Eiendom') || 0);
+  // Use aktivafordeling (from Pensum products) instead of index-based alloc
+  const fordeling = Array.isArray(d.aktivafordeling) ? d.aktivafordeling : [];
+  const aksjer = n(fordeling.find(a => a.name === 'Aksjer')?.value, 0);
+  const renter = n(fordeling.find(a => a.name === 'Renter')?.value, 0);
+  const alternatives = n(fordeling.find(a => a.name === 'Alternativer')?.value, 0);
+  const blandet = n(fordeling.find(a => a.name === 'Blandet')?.value, 0);
   return [
-    `Porteføljen tar utgangspunkt i ${pct(aksjer)} aksjeeksponering, ${pct(renter)} rentedel` + (alternatives > 0 ? ` og ${pct(alternatives)} alternative komponenter.` : '.'),
+    `Porteføljen tar utgangspunkt i ${pct(aksjer)} aksjeeksponering${renter > 0 ? ', ' + pct(renter) + ' rentedel' : ''}${blandet > 0 ? ', ' + pct(blandet) + ' blandet' : ''}` + (alternatives > 0 ? ` og ${pct(alternatives)} alternative komponenter.` : '.'),
     aksjer > renter
       ? 'Hovedvekten ligger i aksjedelen, der brede globale byggesteiner kombineres med mer selektiv nordisk og tematisk eksponering.'
       : 'Rentedelen er tillagt betydelig vekt for å gi porteføljen løpende avkastning og en mer stabil utviklingsbane.',
@@ -647,24 +649,30 @@ function buildDeck(payload = {}) {
     );
   }
 
-  // 5 Porteføljesammensetning — aktivaklasser + produkter side-by-side
+  // 5 Porteføljesammensetning — aktivafordeling + produkter side-by-side
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Porteføljesammensetning');
-    addTitle(s, 'Anbefalt porteføljesammensetning', 'Aktivaklasser og Pensum-produkter som implementerer allokeringen');
+    addTitle(s, 'Anbefalt porteføljesammensetning', 'Aktivafordeling og Pensum-produkter');
 
-    // Left: Aktivaallokering
+    // Left: Aktivafordeling (basert på valgte Pensum-produkter)
+    const rapportAktiva = d.aktivafordeling.filter(a => n(a.value, 0) > 0);
+    const rapportTotalVekt = rapportAktiva.reduce((s, a) => s + n(a.value, 0), 0) || 1;
+    const AKTIVA_COLORS = { 'Aksjer': COLORS.navy, 'Renter': COLORS.salmon, 'Alternativer': COLORS.teal, 'Blandet': COLORS.gold };
     const allocHeaders = [[
       { text: 'Aktivaklasse', options: { bold: true, color: COLORS.navy, fontSize: 9 } },
       { text: 'Andel', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'center' } },
       { text: 'Beløp', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'right' } }
     ]];
-    const allocRows = d.alloc.map((a) => [
-      { text: a.navn, options: { fontSize: 9 } },
-      { text: pct(a.vekt), options: { fontSize: 9, align: 'center' } },
-      { text: `${currency(a.belop)} kr`, options: { fontSize: 9, align: 'right' } }
-    ]);
-    s.addText('Aktivaallokering', { x: 0.95, y: 1.85, w: 5.5, h: 0.18, fontSize: 11, color: COLORS.navy, bold: true });
+    const allocRows = rapportAktiva.map((a) => {
+      const normVekt = (n(a.value, 0) / rapportTotalVekt) * 100;
+      return [
+        { text: a.name, options: { fontSize: 9 } },
+        { text: pct(normVekt), options: { fontSize: 9, align: 'center' } },
+        { text: `${currency((normVekt / 100) * d.investerbarKapital)} kr`, options: { fontSize: 9, align: 'right' } }
+      ];
+    });
+    s.addText('Aktivafordeling', { x: 0.95, y: 1.85, w: 5.5, h: 0.18, fontSize: 11, color: COLORS.navy, bold: true });
     s.addTable([...allocHeaders, ...allocRows], {
       x: 0.95, y: 2.08, w: 5.5, rowH: 0.26, fontSize: 9, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.04
     });
@@ -693,10 +701,11 @@ function buildDeck(payload = {}) {
       x: 6.7, y: 2.08, w: 5.7, rowH: 0.25, fontSize: 9, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.04
     });
 
-    // Allocation bar visualization at bottom
+    // Allocation bar visualization at bottom — per aktivaklasse fra produkter
     const barY = Math.max(2.08 + (allocRows.length + 1) * 0.26 + 0.2, 2.08 + (prodRows.length + 1) * 0.25 + 0.2);
     if (barY < 5.8) {
-      addBarRows(s, 'Vekter per aktivaklasse', d.alloc, 0.95, barY, 5.5, Math.min(2.2, 6.8 - barY), COLORS.blue);
+      const barRows = rapportAktiva.map(a => ({ navn: a.name, vekt: (n(a.value, 0) / rapportTotalVekt) * 100 }));
+      addBarRows(s, 'Vekter per aktivaklasse', barRows, 0.95, barY, 5.5, Math.min(2.2, 6.8 - barY), COLORS.blue);
     }
   }
 
