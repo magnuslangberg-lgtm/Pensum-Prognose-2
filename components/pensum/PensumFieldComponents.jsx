@@ -49,23 +49,43 @@ export function CollapsibleSection({ title, isOpen, onToggle, sum, children }) {
 }
 
 export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning }) {
-  const [localVekt, setLocalVekt] = useState(item.vekt.toString());
-  const [localBelop, setLocalBelop] = useState(formatNumber((item.vekt / 100) * effektivtInvestertBelop));
   const [dragVekt, setDragVekt] = useState(item.vekt);
-  useEffect(() => { setLocalVekt(item.vekt.toFixed(1)); setLocalBelop(formatNumber((item.vekt / 100) * effektivtInvestertBelop)); setDragVekt(item.vekt); }, [item.vekt, effektivtInvestertBelop]);
+  useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
   return (
-    <tr className={`border-b border-gray-100 hover:bg-gray-50 ${isSubItem ? 'bg-gray-50' : ''}`}>
-      <td className={`py-3 pr-4 ${isSubItem ? 'pl-10' : 'pl-4'}`}>
-        <div className="flex items-center gap-2">
-          <div className={isSubItem ? 'w-2.5 h-2.5 rounded-full' : 'w-3 h-3 rounded-full'} style={{ backgroundColor: ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] }}></div>
-          <span className={isSubItem ? 'text-sm' : 'font-medium'} style={{ color: PENSUM_COLORS.darkBlue }}>{item.navn}</span>
-        </div>
-      </td>
-      <td className="py-3 px-2"><div className="space-y-1"><div className="flex items-center justify-center gap-1.5"><button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button><input type="text" value={localVekt} onChange={(e) => setLocalVekt(e.target.value)} onBlur={() => { const v = parseFloat(localVekt) || 0; setDragVekt(v); updateAllokeringVekt(index, v); }} className="w-16 text-center text-sm border border-gray-200 rounded py-1.5 px-2" /><span className="text-gray-400 text-xs">%</span><button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">+</button></div><input type="range" min="0" max="100" step="0.5" value={dragVekt} onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)} onMouseUp={commitDragVekt} onTouchEnd={commitDragVekt} className="w-full accent-blue-700" /></div></td>
-      <td className="py-3 px-2"><div className="flex items-center justify-center"><input type="text" value={localBelop} onChange={(e) => setLocalBelop(e.target.value)} onBlur={() => { const v = parseInt(localBelop.replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringVekt(index, parseFloat(((v / effektivtInvestertBelop) * 100).toFixed(1))); }} className="w-28 text-center text-sm border border-gray-200 rounded py-1.5 px-2" /><span className="ml-1 text-gray-400 text-xs">kr</span></div></td>
-      <td className="py-3 px-2"><div className="flex items-center justify-center"><input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} className="w-16 text-center text-sm border border-gray-200 rounded py-1.5 px-2" /><span className="ml-1 text-gray-400 text-xs">%</span></div></td>
-    </tr>
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+      <div className="flex items-center gap-2 min-w-0" style={{ width: '160px' }}>
+        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] }}></div>
+        <span className="font-medium text-sm truncate" style={{ color: PENSUM_COLORS.darkBlue }}>{item.navn}</span>
+      </div>
+      <div className="flex items-center gap-2 flex-1">
+        <button onClick={() => updateAllokeringVekt(index, Math.max(0, (item.vekt || 0) - 0.5))} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100 flex-shrink-0 text-sm">−</button>
+        <input
+          type="range" min="0" max="100" step="0.5"
+          value={dragVekt}
+          onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
+          onMouseUp={commitDragVekt}
+          onTouchEnd={commitDragVekt}
+          className="w-36 accent-blue-700 flex-shrink-0"
+        />
+        <input
+          type="number" min="0" max="100" step="0.5"
+          value={dragVekt}
+          onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
+          onBlur={commitDragVekt}
+          className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right flex-shrink-0"
+        />
+        <span className="text-sm text-gray-500 flex-shrink-0">%</span>
+        <button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100 flex-shrink-0 text-sm">+</button>
+      </div>
+      <div className="text-xs text-gray-500 text-right flex-shrink-0" style={{ width: '90px' }}>
+        {formatCurrency((item.vekt / 100) * effektivtInvestertBelop)}
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} className="w-16 text-center text-sm border border-gray-200 rounded py-1 px-1" />
+        <span className="text-xs text-gray-400">%</span>
+      </div>
+    </div>
   );
 }
 
@@ -84,12 +104,18 @@ export function SammenligningRow({ item, index, updateSammenligningVekt, updateS
 export function KategoriHeaderRow({ kategori, isExpanded, onToggle }) {
   if (!kategori || kategori.items.length <= 1) return null;
   return (
-    <tr className="border-b border-gray-100 bg-gray-50 cursor-pointer hover:bg-gray-100" onClick={onToggle}>
-      <td className="py-3 px-4"><div className="flex items-center gap-2"><svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg><div className="w-3 h-3 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[kategori.kategori] }}></div><span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kategori.navn}</span></div></td>
-      <td className="py-3 px-2 text-center font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.vekt)}</td>
-      <td className="py-3 px-2 text-center font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(kategori.belop)}</td>
-      <td className="py-3 px-2 text-center font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.avkastning)}</td>
-    </tr>
+    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors" onClick={onToggle}>
+      <div className="flex items-center gap-2">
+        <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[kategori.kategori] }}></div>
+        <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{kategori.navn}</span>
+      </div>
+      <div className="flex items-center gap-6 text-sm">
+        <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.vekt)}</span>
+        <span className="text-gray-500">{formatCurrency(kategori.belop)}</span>
+        <span style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(kategori.avkastning)}</span>
+      </div>
+    </div>
   );
 }
 
