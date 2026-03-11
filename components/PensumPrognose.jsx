@@ -92,6 +92,7 @@ export default function PensumPrognoseModell() {
   // State for historikkdata og visning
   const [produktHistorikk, setProduktHistorikk] = useState(() => oppdaterHistorikkTilRapportDato(DATAFEED_PRODUKT_HISTORIKK));
   const [historikkPeriode, setHistorikkPeriode] = useState('5y'); // 1y, 3y, 5y, max
+  const [visPortefoljSnapshots, setVisPortefoljSnapshots] = useState(false);
   const [valgteProdukterHistorikk, setValgteProdukterHistorikk] = useState(['global-core-active', 'global-edge', 'basis']);
   
   // Valgt produkt for detaljvisning
@@ -1962,7 +1963,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'allokering', 'losninger', 'scenario', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Allokering & Prognose' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Scenarioanalyse' : 'Kunderapport'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Allokering & Prognose' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Kunderapport'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -2462,6 +2463,77 @@ export default function PensumPrognoseModell() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* ====== SCENARIO-PARAMETERE ====== */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Scenario-parametere</h3>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={showPessimistic} onChange={(e) => setShowPessimistic(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
+                  <span className="text-sm text-blue-200">Vis pessimistisk scenario</span>
+                </label>
+              </div>
+              <div className="p-6">
+                <div className={"grid gap-4 " + (showPessimistic ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
+                  {showPessimistic && (
+                    <div className="p-5 bg-red-50 rounded-xl border border-red-200">
+                      <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Pessimistisk</div>
+                      <div className="text-4xl font-bold text-red-700 mb-1">{formatPercent(scenarioParams.pessimistisk)}</div>
+                      <input type="range" min="-10" max={vektetAvkastning} step="0.5" value={scenarioParams.pessimistisk}
+                        onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
+                        className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
+                      <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-red-100">
+                        <div><div className="text-xs text-red-400">Gevinst</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - totalKapital)}</div></div>
+                        <div><div className="text-xs text-red-400">CAGR</div><div className="font-semibold text-red-700 text-sm">{formatPercent(scenarioParams.pessimistisk)}</div></div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-5 rounded-xl border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
+                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-3">Forventet</div>
+                    <div className="text-4xl font-bold text-white mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
+                    <div className="text-blue-300 text-sm mb-3">etter {horisont} år</div>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
+                      <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - totalKapital)}</div></div>
+                      <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-green-50 rounded-xl border border-green-200">
+                    <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-3">Optimistisk</div>
+                    <div className="text-4xl font-bold text-green-700 mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
+                    <div className="text-green-500 text-sm mb-3">etter {horisont} år</div>
+                    <input type="range" min={vektetAvkastning} max="25" step="0.5" value={scenarioParams.optimistisk}
+                      onChange={(e) => setScenarioParams(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
+                      className="w-full h-2 rounded-lg cursor-pointer bg-green-200" />
+                    <div className="mt-2 text-center font-bold text-green-600">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
+                    <div className="mt-2 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
+                      <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - totalKapital)}</div></div>
+                      <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Scenariograf */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Scenarioanalyse — Verdiutvikling</h3>
+              </div>
+              <div className="p-6">
+                <ResponsiveContainer width="100%" height={380}>
+                  <LineChart data={scenarioData} margin={{ top: 20, right: 40, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} width={100} />
+                    <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'forventet' ? 'Forventet' : name === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
+                    <Legend iconType="circle" />
+                    {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
+                    <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#16A34A" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
@@ -3295,6 +3367,153 @@ export default function PensumPrognoseModell() {
 
               </div>
             </div>
+
+            {/* Portefølje-snapshots: 1, 3, 5 år */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <button
+                onClick={() => setVisPortefoljSnapshots(!visPortefoljSnapshots)}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                style={{ backgroundColor: visPortefoljSnapshots ? PENSUM_COLORS.darkBlue : undefined }}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className={"w-5 h-5 transition-transform " + (visPortefoljSnapshots ? "rotate-180 text-white" : "text-gray-500")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  <h3 className={"text-lg font-semibold " + (visPortefoljSnapshots ? "text-white" : "")} style={{ color: visPortefoljSnapshots ? undefined : PENSUM_COLORS.darkBlue }}>Portefølje-avkastning — standardbilder</h3>
+                </div>
+                <span className={"text-sm " + (visPortefoljSnapshots ? "text-blue-200" : "text-gray-400")}>
+                  {visPortefoljSnapshots ? 'Skjul' : 'Vis 1, 3 og 5 års historikk for din portefølje'}
+                </span>
+              </button>
+              {visPortefoljSnapshots && (() => {
+                const SNAPSHOT_FARGER = {
+                  'global-core-active': '#0D2240', 'global-edge': '#5B9BD5', 'basis': '#D4886B',
+                  'global-hoyrente': '#16A34A', 'nordisk-hoyrente': '#7C3AED', 'norge-a': '#DC2626',
+                  'energy-a': '#F59E0B', 'banking-d': '#0D9488', 'financial-d': '#B8860B',
+                  'turnstone-pe': '#0F766E', 'amaron-re': '#B45309', 'unoterte-aksjer': '#6D28D9'
+                };
+                const valgteProdukterIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                const totalVektSnap = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+
+                const buildSnapshotData = (periodYears) => {
+                  const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+                  const alleDatoer = new Set();
+                  valgteProdukterIds.forEach(id => {
+                    const hist = produktHistorikk[id];
+                    if (hist?.data) hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) alleDatoer.add(d.dato); });
+                  });
+                  const sorterteDatoer = Array.from(alleDatoer).sort();
+                  const chartData = sorterteDatoer.map(dato => {
+                    const punkt = { dato };
+                    let vektetVerdi = 0;
+                    let totalProdVekt = 0;
+                    valgteProdukterIds.forEach(id => {
+                      const hist = produktHistorikk[id];
+                      if (hist?.data) {
+                        const match = hist.data.find(d => d.dato === dato);
+                        const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                        if (match && startVerdi) {
+                          const indeksert = (match.verdi / startVerdi) * 100;
+                          punkt[id] = indeksert;
+                          const allok = pensumAllokering.find(a => a.id === id);
+                          if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
+                        }
+                      }
+                    });
+                    if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                    return punkt;
+                  });
+                  // Beregn totalavkastning per produkt
+                  const avkastninger = {};
+                  valgteProdukterIds.forEach(id => {
+                    const hist = produktHistorikk[id];
+                    if (hist?.data && hist.data.length >= 2) {
+                      const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                      const sluttVerdi = hist.data[hist.data.length - 1].verdi;
+                      if (startVerdi) avkastninger[id] = ((sluttVerdi / startVerdi) - 1) * 100;
+                    }
+                  });
+                  // Vektet porteføljeavkastning
+                  let vektetAvk = 0;
+                  valgteProdukterIds.forEach(id => {
+                    if (erGyldigTall(avkastninger[id])) {
+                      const allok = pensumAllokering.find(a => a.id === id);
+                      if (allok) vektetAvk += avkastninger[id] * (allok.vekt / totalVektSnap);
+                    }
+                  });
+                  avkastninger['portefolje'] = vektetAvk;
+                  return { chartData, avkastninger };
+                };
+
+                const perioder = [
+                  { label: '1 år', years: 1 },
+                  { label: '3 år', years: 3 },
+                  { label: '5 år', years: 5 }
+                ];
+
+                return (
+                  <div className="p-6 space-y-8">
+                    {perioder.map(({ label, years }) => {
+                      const { chartData, avkastninger } = buildSnapshotData(years);
+                      if (chartData.length < 2) return null;
+                      return (
+                        <div key={years} className="border border-gray-200 rounded-xl overflow-hidden">
+                          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                            <h4 className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                          </div>
+                          <div className="p-4">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; return m===1||m===7 ? `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}` : ''; }}
+                                  interval="preserveStartEnd" />
+                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
+                                  labelFormatter={formatHistorikkEtikett}
+                                  formatter={(v, name) => {
+                                    if (name === 'portefolje') return [v.toFixed(1), 'Din portefølje'];
+                                    const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === name);
+                                    return [v.toFixed(1), pi?.navn?.replace('Pensum ', '') || name];
+                                  }} />
+                                <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                {valgteProdukterIds.map(id => (
+                                  <Line key={id} type="monotone" dataKey={id} stroke={SNAPSHOT_FARGER[id] || '#999'} strokeWidth={1.5} dot={false} opacity={0.6} />
+                                ))}
+                                <Line type="monotone" dataKey="portefolje" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} name="portefolje" />
+                              </LineChart>
+                            </ResponsiveContainer>
+                            <div className="mt-3 flex flex-wrap gap-3 justify-center">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>
+                                <div className="w-4 h-0.5 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                                Din portefølje: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                  {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
+                                </span>
+                              </div>
+                              {valgteProdukterIds.map(id => {
+                                const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
+                                const avk = avkastninger[id];
+                                return (
+                                  <div key={id} className="flex items-center gap-1.5 text-xs">
+                                    <div className="w-3 h-0.5 rounded" style={{ backgroundColor: SNAPSHOT_FARGER[id] || '#999' }}></div>
+                                    <span className="text-gray-600">{pi?.navn?.replace('Pensum ', '') || id}:</span>
+                                    <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                      {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+                      <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
           </div>
         )}
 
@@ -3411,83 +3630,6 @@ export default function PensumPrognoseModell() {
 
           return (
             <div className="space-y-6 no-print">
-              {/* ====== SCENARIO-PARAMETERE (redesigned) ====== */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <h3 className="text-lg font-semibold text-white">Scenario-parametere</h3>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={showPessimistic} onChange={(e) => setShowPessimistic(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
-                    <span className="text-sm text-blue-200">Vis pessimistisk scenario</span>
-                  </label>
-                </div>
-                <div className="p-6">
-                  <div className={"grid gap-4 " + (showPessimistic ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
-                    {showPessimistic && (
-                      <div className="p-5 bg-red-50 rounded-xl border border-red-200">
-                        <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Pessimistisk</div>
-                        <div className="text-4xl font-bold text-red-700 mb-1">{formatPercent(scenarioParams.pessimistisk)}</div>
-                        <input type="range" min="-10" max={vektetAvkastning} step="0.5" value={scenarioParams.pessimistisk}
-                          onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
-                          className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
-                        <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-red-100">
-                          <div><div className="text-xs text-red-400">Gevinst</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - totalKapital)}</div></div>
-                          <div><div className="text-xs text-red-400">CAGR</div><div className="font-semibold text-red-700 text-sm">{formatPercent(scenarioParams.pessimistisk)}</div></div>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-5 rounded-xl border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
-                      <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-3">Forventet</div>
-                      <div className="text-4xl font-bold text-white mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
-                      <div className="text-blue-300 text-sm mb-3">etter {horisont} år</div>
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
-                        <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - totalKapital)}</div></div>
-                        <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
-                      </div>
-                    </div>
-                    <div className="p-5 bg-green-50 rounded-xl border border-green-200">
-                      <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-3">Optimistisk</div>
-                      <div className="text-4xl font-bold text-green-700 mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
-                      <div className="text-green-500 text-sm mb-3">etter {horisont} år</div>
-                      <input type="range" min={vektetAvkastning} max="25" step="0.5" value={scenarioParams.optimistisk}
-                        onChange={(e) => setScenarioParams(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
-                        className="w-full h-2 rounded-lg cursor-pointer bg-green-200" />
-                      <div className="mt-2 text-center font-bold text-green-600">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
-                      <div className="mt-2 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
-                        <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - totalKapital)}</div></div>
-                        <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scenariograf */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <h3 className="text-lg font-semibold text-white">Scenarioanalyse — Verdiutvikling</h3>
-                </div>
-                <div className="p-6">
-                  <ResponsiveContainer width="100%" height={380}>
-                    <LineChart data={scenarioData} margin={{ top: 20, right: 40, left: 20, bottom: 20 }}>
-                      <defs>
-                        <linearGradient id="gradForventet" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={PENSUM_COLORS.darkBlue} stopOpacity={0.15}/>
-                          <stop offset="95%" stopColor={PENSUM_COLORS.darkBlue} stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
-                      <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} width={100} />
-                      <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'forventet' ? 'Forventet' : n === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
-                      <Legend iconType="circle" />
-                      {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
-                      <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#16A34A" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
               {/* ====== SAMMENLIGN FOND OG INDEKSER (bilde 3-style) ====== */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5">
