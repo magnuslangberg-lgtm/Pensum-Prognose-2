@@ -1322,7 +1322,7 @@ export default function PensumPrognoseModell() {
         return acc;
       }, {});
 
-      const produktMap = [...(pensumProdukter?.enkeltfond || []), ...(pensumProdukter?.fondsportefoljer || [])]
+      const produktMap = [...(pensumProdukter?.enkeltfond || []), ...(pensumProdukter?.fondsportefoljer || []), ...(pensumProdukter?.alternative || [])]
         .reduce((acc, p) => { if (p?.id) acc[p.id] = p; return acc; }, {});
       const pensumProdukterTilEksport = valgteProduktIrapport
         .map((id) => produktMap[id])
@@ -1385,7 +1385,14 @@ export default function PensumPrognoseModell() {
         eksponering: {
           sektorer: aggregertPensumEksponering?.sektorer || [],
           regioner: aggregertPensumEksponering?.regioner || []
-        }
+        },
+        historiskPortefolje: beregnPensumHistorikk,
+        pensumForventetAvkastning,
+        pensumLikviditet,
+        aktivafordeling: pensumAktivafordeling,
+        scenarioParams,
+        scenarioData,
+        verdiutvikling
       };
       let payloadTilSending = payload;
       let templateDroppetPgaStorrelse = false;
@@ -2836,19 +2843,20 @@ export default function PensumPrognoseModell() {
               );
             })()}
 
-            {/* Prognosegraf */}
+            {/* Prognosegraf — stacked per aktivaklasse */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                 <h3 className="text-lg font-semibold text-white">Utvikling i formuesverdi</h3>
               </div>
               <div className="p-6">
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={pensumPrognose} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap="30%">
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={verdiutvikling} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
                     <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} />
-                    <Tooltip formatter={(v) => [formatCurrency(v), 'Verdi']} />
-                    <Bar dataKey="verdi" fill={PENSUM_COLORS.darkBlue} radius={[4, 4, 0, 0]} />
+                    <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
+                    <Legend iconType="circle" iconSize={8} />
+                    {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                   </BarChart>
                 </ResponsiveContainer>
               </div>

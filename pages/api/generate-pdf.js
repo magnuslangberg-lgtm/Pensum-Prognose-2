@@ -18,7 +18,18 @@ const COLORS = {
   line: 'D9E2EC',
   white: 'FFFFFF',
   softBlue: 'EFF6FF',
-  softAmber: 'FFF7ED'
+  softAmber: 'FFF7ED',
+  softGreen: 'F0FDF4',
+  softRed: 'FEF2F2'
+};
+
+const ALLOC_COLORS = {
+  'Globale Aksjer': '5B9BD5',
+  'Norske Aksjer': '0D2240',
+  'Høyrente': 'D4886B',
+  'Investment Grade': 'E8A690',
+  'Private Equity': '0D9488',
+  'Eiendom': 'B8860B'
 };
 
 const PRODUCT_LABELS = {
@@ -30,7 +41,10 @@ const PRODUCT_LABELS = {
   'norge-a': 'Pensum Norge A',
   'energy-a': 'Pensum Global Energy A',
   'banking-d': 'Pensum Nordic Banking Sector D',
-  'financial-d': 'Pensum Financial Opportunity Fund D'
+  'financial-d': 'Pensum Financial Opportunity Fund D',
+  'turnstone-pe': 'Turnstone Private Equity',
+  'amaron-re': 'Amaron Real Estate',
+  'unoterte-aksjer': 'Unoterte aksjer'
 };
 
 const PRODUCT_META = {
@@ -150,6 +164,45 @@ const PRODUCT_META = {
     whyIncluded: 'Passer som supplement i rentedelen for å øke spesialisering og yield.',
     riskText: 'Kredittevent, likviditet og sektorspesifikk risiko kan påvirke utviklingen.',
     category: 'fixed-income'
+  },
+  'turnstone-pe': {
+    slideTitle: 'Private Equity',
+    slideSubtitle: 'Illikvid alternativ investering med høyt avkastningspotensial',
+    role: 'Alternativ komponent – Private Equity',
+    benchmark: 'PE-indeks / illikvid referanse',
+    expectedReturn: 15.0,
+    expectedYield: 0,
+    pitch: 'Gir tilgang til private equity-investeringer med potensial for høyere avkastning enn likvide markeder.',
+    caseText: 'Egnet for investorer med lang horisont som tåler illikviditet og J-kurve-effekt.',
+    whyIncluded: 'Tilfører diversifisering og avkastningspotensial utover likvide markeder.',
+    riskText: 'Illikvid, lang bindingsperiode, J-kurve i tidlig fase.',
+    category: 'alternative'
+  },
+  'amaron-re': {
+    slideTitle: 'Eiendom',
+    slideSubtitle: 'Illikvid eiendomsinvestering med løpende avkastning',
+    role: 'Alternativ komponent – Eiendom',
+    benchmark: 'Eiendomsindeks / illikvid referanse',
+    expectedReturn: 8.0,
+    expectedYield: 4.0,
+    pitch: 'Gir eksponering mot eiendomsmarkedet med potensial for stabil løpende avkastning.',
+    caseText: 'Passer for investorer som ønsker kontantstrøm og inflasjonsbeskyttelse.',
+    whyIncluded: 'Bidrar med diversifisering og stabil yield i totalporteføljen.',
+    riskText: 'Illikvid, sensitiv for renteendringer og eiendomsmarkedet.',
+    category: 'alternative'
+  },
+  'unoterte-aksjer': {
+    slideTitle: 'Unoterte aksjer',
+    slideSubtitle: 'Direkte eierskap i unoterte selskaper',
+    role: 'Alternativ komponent – Unoterte aksjer',
+    benchmark: 'Unotert aksjereferanse',
+    expectedReturn: 12.0,
+    expectedYield: 0,
+    pitch: 'Gir eksponering mot unoterte selskaper med vekstpotensial.',
+    caseText: 'Egnet for investorer med lang horisont og kompetanse på direkte investeringer.',
+    whyIncluded: 'Tilfører avkastningspotensial og diversifisering utover børsnoterte markeder.',
+    riskText: 'Illikvid, høy konsentrasjonsrisiko, begrenset transparens.',
+    category: 'alternative'
   }
 };
 
@@ -201,7 +254,7 @@ function parseHistDate(dateStr = '') {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function computeProductStats(productId, historikkMap = {}) {
+function getMonthlyData(productId, historikkMap = {}) {
   const hist = historikkMap?.[productId];
   const raw = Array.isArray(hist?.data) ? hist.data : [];
   const data = raw
@@ -216,8 +269,11 @@ function computeProductStats(productId, historikkMap = {}) {
     monthMap.set(key, { dato: key, verdi: row.verdi, parsed: row.parsed });
   });
   const monthly = Array.from(monthMap.values()).sort((a, b) => a.parsed - b.parsed);
-  if (monthly.length < 3) return null;
+  return monthly.length >= 3 ? monthly : null;
+}
 
+function computeStatsFromMonthly(monthly) {
+  if (!monthly || monthly.length < 3) return null;
   const returns = [];
   for (let i = 1; i < monthly.length; i += 1) {
     const prev = monthly[i - 1].verdi;
@@ -246,6 +302,20 @@ function computeProductStats(productId, historikkMap = {}) {
     maxDrawdown: parseFloat(maxDrawdown.toFixed(1)),
     sharpe: parseFloat(sharpe.toFixed(2))
   };
+}
+
+function computeProductStats(productId, historikkMap = {}) {
+  const monthly = getMonthlyData(productId, historikkMap);
+  return computeStatsFromMonthly(monthly);
+}
+
+function computeProductStatsPeriod(productId, historikkMap, yearsBack) {
+  const monthly = getMonthlyData(productId, historikkMap);
+  if (!monthly) return null;
+  const lastDate = monthly[monthly.length - 1].parsed;
+  const cutoff = new Date(lastDate.getFullYear() - yearsBack, lastDate.getMonth(), 1);
+  const filtered = monthly.filter((m) => m.parsed >= cutoff);
+  return computeStatsFromMonthly(filtered);
 }
 
 function normalizeProducts(payload = {}) {
@@ -307,6 +377,14 @@ function normalizePayload(payload = {}) {
   const products = normalizeProducts(payload);
   const eksponering = payload.eksponering || { sektorer: [], regioner: [] };
   const kundeinfo = payload.kundeinfo || {};
+  const historiskPortefolje = payload.historiskPortefolje || {};
+  const aktivafordeling = Array.isArray(payload.aktivafordeling) ? payload.aktivafordeling : [];
+  const scenarioData = Array.isArray(payload.scenarioData) ? payload.scenarioData : [];
+  const scenarioParams = payload.scenarioParams || {};
+  const verdiutvikling = Array.isArray(payload.verdiutvikling) ? payload.verdiutvikling : [];
+  const pensumForventetAvkastning = n(payload.pensumForventetAvkastning, expected);
+  const pensumLikviditet = payload.pensumLikviditet || { likvid: 100, illikvid: 0 };
+
   return {
     kundeNavn: payload.kundeNavn || 'Investor',
     risikoProfil: payload.risikoProfil || 'Moderat',
@@ -322,7 +400,15 @@ function normalizePayload(payload = {}) {
       sektorer: topRows(eksponering.sektorer, 8),
       regioner: topRows(eksponering.regioner, 8)
     },
-    kundeinfo
+    kundeinfo,
+    produktHistorikk: payload.produktHistorikk || {},
+    historiskPortefolje,
+    aktivafordeling,
+    scenarioData,
+    scenarioParams,
+    verdiutvikling,
+    pensumForventetAvkastning,
+    pensumLikviditet
   };
 }
 
@@ -405,7 +491,7 @@ function buildAllocationNarrative(d) {
   const renter = (allocMap.get('Høyrente') || 0) + (allocMap.get('Investment Grade') || 0);
   const alternatives = (allocMap.get('Private Equity') || 0) + (allocMap.get('Eiendom') || 0);
   return [
-    `Porteføljen tar utgangspunkt i ${pct(aksjer)} aksjeeksponering, ${pct(renter)} rentedel og ${pct(alternatives)} alternative komponenter.`,
+    `Porteføljen tar utgangspunkt i ${pct(aksjer)} aksjeeksponering, ${pct(renter)} rentedel` + (alternatives > 0 ? ` og ${pct(alternatives)} alternative komponenter.` : '.'),
     aksjer > renter
       ? 'Hovedvekten ligger i aksjedelen, der brede globale byggesteiner kombineres med mer selektiv nordisk og tematisk eksponering.'
       : 'Rentedelen er tillagt betydelig vekt for å gi porteføljen løpende avkastning og en mer stabil utviklingsbane.',
@@ -429,23 +515,26 @@ function buildSectionNarratives(products, type) {
     const role = String(p.report?.role || '').toLowerCase();
     const cat = String(p.report?.category || '').toLowerCase();
     if (type === 'equity') return role.includes('aksje') || cat.includes('equity');
+    if (type === 'alternative') return cat.includes('alternativ') || cat === 'alternative';
     return role.includes('rente') || cat.includes('fixed');
   });
   if (!filtered.length) {
+    const labels = { equity: 'Aksjedelen', 'fixed-income': 'Rentedelen', alternative: 'Alternative investeringer' };
     return {
-      heading: type === 'equity' ? 'Aksjedelen' : 'Rentedelen',
-      body: type === 'equity'
-        ? 'Det er ikke valgt egne aksjeprodukter i denne illustrasjonen.'
-        : 'Det er ikke valgt egne renteprodukter i denne illustrasjonen.'
+      heading: labels[type] || type,
+      body: `Det er ikke valgt egne ${type === 'equity' ? 'aksje' : type === 'alternative' ? 'alternative' : 'rente'}produkter i denne illustrasjonen.`
     };
   }
   const topNames = filtered.slice(0, 3).map((p) => p.navn).join(', ');
-  const body = type === 'equity'
-    ? `Aksjedelen er bygget rundt ${topNames}. Hensikten er å kombinere bred global eksponering med utvalgte satellitter og nordiske idéer, slik at porteføljen får både robusthet og potensial for meravkastning.`
-    : `Rentedelen er bygget rundt ${topNames}. Hensikten er å kombinere løpende kontantstrøm med kredittseleksjon og en stabiliserende effekt mot aksjedelen.`;
+  const bodies = {
+    equity: `Aksjedelen er bygget rundt ${topNames}. Hensikten er å kombinere bred global eksponering med utvalgte satellitter og nordiske idéer, slik at porteføljen får både robusthet og potensial for meravkastning.`,
+    'fixed-income': `Rentedelen er bygget rundt ${topNames}. Hensikten er å kombinere løpende kontantstrøm med kredittseleksjon og en stabiliserende effekt mot aksjedelen.`,
+    alternative: `Den alternative delen består av ${topNames}. Disse komponentene er ment å tilføre diversifisering, illikviditetspremie og eksponering mot aktivaklasser som ikke korrelerer fullt ut med likvide markeder.`
+  };
+  const headings = { equity: 'Aksjedelen', 'fixed-income': 'Rentedelen', alternative: 'Alternative investeringer' };
   return {
-    heading: type === 'equity' ? 'Aksjedelen' : 'Rentedelen',
-    body
+    heading: headings[type] || type,
+    body: bodies[type] || ''
   };
 }
 
@@ -453,25 +542,48 @@ function buildDeck(payload = {}) {
   const d = normalizePayload(payload);
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
-  pptx.author = 'OpenAI';
+  pptx.author = 'Pensum Asset Management';
   pptx.company = 'Pensum Asset Management';
   pptx.subject = 'Investeringsforslag';
   pptx.title = `Investeringsforslag ${d.kundeNavn}`;
   let page = 1;
 
+  const hasAlternatives = d.products.some((p) => {
+    const cat = String(p.report?.category || '').toLowerCase();
+    return cat.includes('alternativ') || cat === 'alternative';
+  });
+
+  // Compute weighted yield
+  let yieldSum = 0, yieldTotal = 0;
+  d.products.forEach((p) => {
+    const y = n(p.report.expectedYield, NaN);
+    if (Number.isFinite(y) && p.vekt > 0) { yieldSum += y * (p.vekt / 100); yieldTotal += p.vekt / 100; }
+  });
+  const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
+
+  // Aksje/rente split from aktivafordeling
+  const aksjeAndel = d.aktivafordeling.find((a) => a.name === 'Aksjer')?.value || 0;
+  const renteAndel = d.aktivafordeling.find((a) => a.name === 'Renter')?.value || 0;
+
   // 1 Forside
   {
     const s = pptx.addSlide();
     addChrome(s, page++, formatDateLabel(d.dato));
-    s.addText('Illustrativ investeringsskisse', { x: 0.8, y: 1.55, w: 8.8, h: 0.55, fontSize: 28, bold: true, color: COLORS.navy });
+    s.addText('Investeringsforslag', { x: 0.8, y: 1.55, w: 8.8, h: 0.55, fontSize: 28, bold: true, color: COLORS.navy });
     s.addText(d.kundeNavn, { x: 0.8, y: 2.18, w: 8.8, h: 0.45, fontSize: 22, bold: true, color: COLORS.salmon });
     addBodyParagraph(s, 'Utarbeidet av Pensum Asset Management med utgangspunkt i kundeinformasjon, investerbar kapital og valgte Pensum-løsninger.', 0.8, 2.78, 8.6, 0.5, 12, COLORS.text);
-    addKpiCard(s, 0.8, 4.1, 2.55, 'Investerbar kapital', `${currency(d.investerbarKapital)} kr`);
-    addKpiCard(s, 3.55, 4.1, 2.35, 'Risikoprofil', d.risikoProfil, COLORS.salmon);
-    addKpiCard(s, 6.1, 4.1, 2.2, 'Forv. avkastning', pct(d.expected), COLORS.green, 'årlig');
-    addKpiCard(s, 8.5, 4.1, 3.0, 'Forv. sluttverdi', `${currency(d.expValue)} kr`, COLORS.navy, `${d.horisont} år`);
+
+    // 6 KPI cards on front page
+    const kpiY = 3.85;
+    addKpiCard(s, 0.8, kpiY, 2.0, 'Investert beløp', `${currency(d.investerbarKapital)} kr`);
+    addKpiCard(s, 3.0, kpiY, 1.85, 'Forv. avkastning', pct(d.pensumForventetAvkastning), COLORS.green, 'årlig');
+    addKpiCard(s, 5.05, kpiY, 1.65, 'Forv. yield', Number.isFinite(vektetYield) ? pct(vektetYield) : '—', COLORS.teal, 'årlig');
+    addKpiCard(s, 6.9, kpiY, 1.65, 'Aksje / Rente', `${aksjeAndel.toFixed(0)} / ${renteAndel.toFixed(0)}%`);
+    addKpiCard(s, 8.75, kpiY, 1.65, 'Likviditet', `${d.pensumLikviditet.likvid.toFixed(0)}% likvid`);
+    addKpiCard(s, 10.6, kpiY, 1.9, 'Forv. sluttverdi', `${currency(d.expValue)} kr`, COLORS.navy, `${d.horisont} år`);
+
     if (d.totalFormue > d.investerbarKapital) {
-      addBodyParagraph(s, `Merk: kundens oppgitte samlede aktiva er ${currency(d.totalFormue)} kr, mens denne illustrasjonen tar utgangspunkt i ${currency(d.investerbarKapital)} kr investerbar kapital.`, 0.8, 5.55, 11.4, 0.45, 11, COLORS.muted);
+      addBodyParagraph(s, `Merk: kundens oppgitte samlede aktiva er ${currency(d.totalFormue)} kr, mens denne illustrasjonen tar utgangspunkt i ${currency(d.investerbarKapital)} kr investerbar kapital.`, 0.8, 5.35, 11.4, 0.45, 11, COLORS.muted);
     }
   }
 
@@ -520,7 +632,7 @@ function buildDeck(payload = {}) {
     ], 0.95, 4.3, 11.2);
   }
 
-  // 4 Hvordan porteføljen er bygget opp
+  // 4 Porteføljelogikk
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Porteføljelogikk');
@@ -535,26 +647,194 @@ function buildDeck(payload = {}) {
     );
   }
 
-  // 5 Eksempel på illustrativ porteføljesammensetning
+  // 5 Porteføljesammensetning — aktivaklasser + produkter side-by-side
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Porteføljesammensetning');
-    addTitle(s, 'Eksempel på illustrativ porteføljesammensetning', 'Fordeling av investerbar kapital mellom aktivaklasser');
-    addKeyValueTable(s, 'Aktivaklasse', d.alloc.map((a) => [a.navn, `${pct(a.vekt)} / ${currency(a.belop)} kr`]), 0.95, 1.95, 5.2);
-    addBarRows(s, 'Vekter per aktivaklasse', d.alloc, 6.45, 1.95, 5.9, 2.2, COLORS.blue);
-    addBodyParagraph(
-      s,
-      'Porteføljen som presenteres videre er en modellportefølje og er ment som et eksempel på sammensetning og risikospredning. Den er ikke vurdert opp mot en fullstendig egnethetsanalyse av kundens samlede finansielle situasjon.',
-      0.95, 4.65, 11.2, 0.9, 13, COLORS.muted
-    );
+    addTitle(s, 'Anbefalt porteføljesammensetning', 'Aktivaklasser og Pensum-produkter som implementerer allokeringen');
+
+    // Left: Aktivaallokering
+    const allocHeaders = [[
+      { text: 'Aktivaklasse', options: { bold: true, color: COLORS.navy, fontSize: 9 } },
+      { text: 'Andel', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'center' } },
+      { text: 'Beløp', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'right' } }
+    ]];
+    const allocRows = d.alloc.map((a) => [
+      { text: a.navn, options: { fontSize: 9 } },
+      { text: pct(a.vekt), options: { fontSize: 9, align: 'center' } },
+      { text: `${currency(a.belop)} kr`, options: { fontSize: 9, align: 'right' } }
+    ]);
+    s.addText('Aktivaallokering', { x: 0.95, y: 1.85, w: 5.5, h: 0.18, fontSize: 11, color: COLORS.navy, bold: true });
+    s.addTable([...allocHeaders, ...allocRows], {
+      x: 0.95, y: 2.08, w: 5.5, rowH: 0.26, fontSize: 9, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.04
+    });
+
+    // Right: Produktsammensetning
+    const prodHeaders = [[
+      { text: 'Produkt', options: { bold: true, color: COLORS.navy, fontSize: 9 } },
+      { text: 'Vekt', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'center' } },
+      { text: 'Type', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'center' } },
+      { text: 'Forv. avk.', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'right' } },
+      { text: 'Yield', options: { bold: true, color: COLORS.navy, fontSize: 9, align: 'right' } }
+    ]];
+    const prodRows = d.products.map((p) => {
+      const cat = String(p.report?.category || '').toLowerCase();
+      const typeLbl = cat.includes('equity') || cat.includes('nordic') || cat.includes('thematic') || cat.includes('sector') ? 'Aksje' : cat.includes('fixed') ? 'Rente' : cat.includes('balanced') || cat.includes('blandet') ? 'Blandet' : cat.includes('alternativ') || cat === 'alternative' ? 'Alt.' : 'Annet';
+      return [
+        { text: p.navn, options: { fontSize: 8.5, bold: true } },
+        { text: pct(p.vekt), options: { fontSize: 8.5, align: 'center' } },
+        { text: typeLbl, options: { fontSize: 8, align: 'center', color: typeLbl === 'Aksje' ? '1D4ED8' : typeLbl === 'Rente' ? 'C2410C' : typeLbl === 'Alt.' ? COLORS.teal : COLORS.muted } },
+        { text: Number.isFinite(n(p.report.expectedReturn, NaN)) ? pct(p.report.expectedReturn) : '—', options: { fontSize: 8.5, align: 'right', color: COLORS.green } },
+        { text: Number.isFinite(n(p.report.expectedYield, NaN)) ? pct(p.report.expectedYield) : '—', options: { fontSize: 8.5, align: 'right', color: COLORS.teal } }
+      ];
+    });
+    s.addText('Pensum Porteføljesammensetning', { x: 6.7, y: 1.85, w: 5.7, h: 0.18, fontSize: 11, color: COLORS.navy, bold: true });
+    s.addTable([...prodHeaders, ...prodRows], {
+      x: 6.7, y: 2.08, w: 5.7, rowH: 0.25, fontSize: 9, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.04
+    });
+
+    // Allocation bar visualization at bottom
+    const barY = Math.max(2.08 + (allocRows.length + 1) * 0.26 + 0.2, 2.08 + (prodRows.length + 1) * 0.25 + 0.2);
+    if (barY < 5.8) {
+      addBarRows(s, 'Vekter per aktivaklasse', d.alloc, 0.95, barY, 5.5, Math.min(2.2, 6.8 - barY), COLORS.blue);
+    }
   }
 
-  // 6 Aksjedelen
+  // 6 Historisk avkastning (1, 3, 5 år)
+  {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Historisk avkastning');
+    addTitle(s, 'Historisk avkastning per produkt', 'Avkastning på 1, 3 og 5 års basis med risikometrikker');
+
+    const headerRow = [
+      { text: 'Produkt', options: { bold: true, color: COLORS.white, fontSize: 8.5, fill: COLORS.navy } },
+      { text: 'Vekt', options: { bold: true, color: COLORS.white, fontSize: 8.5, fill: COLORS.navy, align: 'center' } },
+      { text: '1 år', options: { bold: true, color: 'BAD8FF', fontSize: 8.5, fill: COLORS.navy, align: 'right' } },
+      { text: '3 år p.a.', options: { bold: true, color: 'BAD8FF', fontSize: 8.5, fill: COLORS.navy, align: 'right' } },
+      { text: '5 år p.a.', options: { bold: true, color: 'BAD8FF', fontSize: 8.5, fill: COLORS.navy, align: 'right' } },
+      { text: 'Volatilitet', options: { bold: true, color: COLORS.white, fontSize: 8.5, fill: COLORS.navy, align: 'right' } },
+      { text: 'Sharpe', options: { bold: true, color: COLORS.white, fontSize: 8.5, fill: COLORS.navy, align: 'right' } },
+      { text: 'Maks DD', options: { bold: true, color: COLORS.white, fontSize: 8.5, fill: COLORS.navy, align: 'right' } }
+    ];
+
+    const fmtRet = (v) => Number.isFinite(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
+    const retColor = (v) => Number.isFinite(v) ? (v >= 0 ? COLORS.green : COLORS.danger) : COLORS.muted;
+    const sharpeColor = (v) => !Number.isFinite(v) ? COLORS.muted : v >= 1 ? COLORS.green : v >= 0.5 ? 'D97706' : COLORS.danger;
+
+    const dataRows = d.products.map((p) => {
+      const s1 = computeProductStatsPeriod(p.id, d.produktHistorikk, 1);
+      const s3 = computeProductStatsPeriod(p.id, d.produktHistorikk, 3);
+      const s5 = computeProductStatsPeriod(p.id, d.produktHistorikk, 5);
+      const fullStats = computeProductStats(p.id, d.produktHistorikk);
+      return [
+        { text: p.navn, options: { fontSize: 8.5, bold: true, color: COLORS.navy } },
+        { text: pct(p.vekt), options: { fontSize: 8.5, align: 'center', color: COLORS.muted } },
+        { text: fmtRet(s1?.totalReturn), options: { fontSize: 8.5, align: 'right', bold: true, color: retColor(s1?.totalReturn) } },
+        { text: fmtRet(s3?.annualized), options: { fontSize: 8.5, align: 'right', bold: true, color: retColor(s3?.annualized) } },
+        { text: fmtRet(s5?.annualized), options: { fontSize: 8.5, align: 'right', bold: true, color: retColor(s5?.annualized) } },
+        { text: fullStats ? pct(fullStats.volatility) : '—', options: { fontSize: 8.5, align: 'right', color: COLORS.text } },
+        { text: fullStats ? String(fullStats.sharpe) : '—', options: { fontSize: 8.5, align: 'right', bold: true, color: sharpeColor(fullStats?.sharpe) } },
+        { text: fullStats ? pct(fullStats.maxDrawdown) : '—', options: { fontSize: 8.5, align: 'right', color: COLORS.danger } }
+      ];
+    });
+
+    s.addTable([headerRow, ...dataRows], {
+      x: 0.65, y: 1.85, w: 12.05, rowH: 0.3, fontSize: 9, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.05
+    });
+
+    const footY = 1.85 + (dataRows.length + 1) * 0.3 + 0.15;
+    if (footY < 6.6) {
+      addBodyParagraph(s, 'Avkastning beregnet fra månedlige indeksverdier. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på hele tilgjengelige perioden.', 0.65, footY, 12.0, 0.35, 9, COLORS.muted);
+    }
+
+    // Historical portfolio returns at bottom if data available
+    const histPort = d.historiskPortefolje;
+    const histYears = [
+      { label: '2026 YTD', key: 'aar2026' },
+      { label: '2025', key: 'aar2025' },
+      { label: '2024', key: 'aar2024' },
+      { label: '2023', key: 'aar2023' },
+      { label: '2022', key: 'aar2022' }
+    ];
+    const hasHistPort = histYears.some(({ key }) => Number.isFinite(n(histPort[key], NaN)));
+    if (hasHistPort) {
+      const boxY = footY + 0.45;
+      if (boxY < 5.9) {
+        s.addShape('roundRect', { x: 0.65, y: boxY, w: 12.05, h: 1.15, rectRadius: 0.06, fill: { color: COLORS.softBlue }, line: { color: COLORS.navy, pt: 2 } });
+        s.addText('Din porteføljes historiske avkastning (vektet)', { x: 0.95, y: boxY + 0.1, w: 6, h: 0.16, fontSize: 10, color: COLORS.navy, bold: true });
+        const cardW = 2.2;
+        histYears.forEach(({ label, key }, idx) => {
+          const v = n(histPort[key], NaN);
+          const cx = 0.95 + idx * (cardW + 0.15);
+          s.addShape('roundRect', { x: cx, y: boxY + 0.35, w: cardW, h: 0.65, rectRadius: 0.04, fill: { color: COLORS.white }, line: { color: COLORS.line, pt: 1 } });
+          s.addText(label, { x: cx, y: boxY + 0.38, w: cardW, h: 0.16, fontSize: 8, color: COLORS.muted, align: 'center', bold: true });
+          const valTxt = Number.isFinite(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
+          const valCol = Number.isFinite(v) ? (v >= 0 ? COLORS.green : COLORS.danger) : COLORS.muted;
+          s.addText(valTxt, { x: cx, y: boxY + 0.55, w: cardW, h: 0.3, fontSize: 16, color: valCol, align: 'center', bold: true });
+        });
+      }
+    }
+  }
+
+  // 7 Scenarioanalyse
+  if (d.scenarioData.length > 0) {
+    const s = pptx.addSlide();
+    addChrome(s, page++, 'Scenarioanalyse');
+    addTitle(s, `Scenarioanalyse — ${d.horisont} års horisont`, 'Forventet, optimistisk og pessimistisk utvikling');
+
+    const lastScenario = d.scenarioData[d.scenarioData.length - 1] || {};
+    const forventetV = n(lastScenario.forventet);
+    const optimistiskV = n(lastScenario.optimistisk);
+    const pessimistiskV = n(lastScenario.pessimistisk);
+
+    // Scenario boxes
+    if (pessimistiskV > 0) {
+      s.addShape('roundRect', { x: 0.95, y: 1.95, w: 3.6, h: 1.1, rectRadius: 0.06, fill: { color: COLORS.softRed }, line: { color: 'FCA5A5', pt: 1 } });
+      s.addText('PESSIMISTISK', { x: 0.95, y: 2.05, w: 3.6, h: 0.16, fontSize: 9, color: COLORS.danger, align: 'center', bold: true });
+      s.addText(`${currency(pessimistiskV)} kr`, { x: 0.95, y: 2.28, w: 3.6, h: 0.32, fontSize: 20, color: COLORS.danger, align: 'center', bold: true });
+      s.addText(`CAGR ${pct(n(d.scenarioParams.pessimistisk))}`, { x: 0.95, y: 2.68, w: 3.6, h: 0.16, fontSize: 8, color: COLORS.danger, align: 'center' });
+    }
+
+    const forventetX = pessimistiskV > 0 ? 4.85 : 0.95;
+    s.addShape('roundRect', { x: forventetX, y: 1.95, w: 3.6, h: 1.1, rectRadius: 0.06, fill: { color: COLORS.navy }, line: { color: COLORS.navy, pt: 2 } });
+    s.addText('FORVENTET', { x: forventetX, y: 2.05, w: 3.6, h: 0.16, fontSize: 9, color: '93C5FD', align: 'center', bold: true });
+    s.addText(`${currency(forventetV)} kr`, { x: forventetX, y: 2.28, w: 3.6, h: 0.32, fontSize: 20, color: COLORS.white, align: 'center', bold: true });
+    s.addText(`CAGR ${pct(d.expected)}`, { x: forventetX, y: 2.68, w: 3.6, h: 0.16, fontSize: 8, color: '93C5FD', align: 'center' });
+
+    const optX = pessimistiskV > 0 ? 8.75 : 4.85;
+    s.addShape('roundRect', { x: optX, y: 1.95, w: 3.6, h: 1.1, rectRadius: 0.06, fill: { color: COLORS.softGreen }, line: { color: '86EFAC', pt: 1 } });
+    s.addText('OPTIMISTISK', { x: optX, y: 2.05, w: 3.6, h: 0.16, fontSize: 9, color: COLORS.green, align: 'center', bold: true });
+    s.addText(`${currency(optimistiskV)} kr`, { x: optX, y: 2.28, w: 3.6, h: 0.32, fontSize: 20, color: COLORS.green, align: 'center', bold: true });
+    s.addText(`CAGR ${pct(n(d.scenarioParams.optimistisk))}`, { x: optX, y: 2.68, w: 3.6, h: 0.16, fontSize: 8, color: COLORS.green, align: 'center' });
+
+    // Verdiutvikling table
+    if (d.verdiutvikling.length > 0) {
+      const vHeaders = [[
+        { text: 'År', options: { bold: true, color: COLORS.navy, fontSize: 8.5 } },
+        ...d.alloc.map((a) => ({ text: a.navn, options: { bold: true, color: COLORS.navy, fontSize: 8, align: 'right' } })),
+        { text: 'Total', options: { bold: true, color: COLORS.navy, fontSize: 8.5, align: 'right' } }
+      ]];
+      const vRows = d.verdiutvikling.slice(0, 12).map((row) => [
+        { text: String(row.year || ''), options: { fontSize: 8.5, bold: true, color: COLORS.navy } },
+        ...d.alloc.map((a) => ({ text: `${currency(n(row[a.navn]))} kr`, options: { fontSize: 8, align: 'right', color: COLORS.muted } })),
+        { text: `${currency(n(row.total))} kr`, options: { fontSize: 8.5, align: 'right', bold: true, color: COLORS.navy } }
+      ]);
+      const tableY = 3.35;
+      s.addTable([...vHeaders, ...vRows], {
+        x: 0.65, y: tableY, w: 12.05, rowH: 0.24, fontSize: 8.5, border: { pt: 1, color: COLORS.line }, fill: COLORS.white, color: COLORS.text, margin: 0.04
+      });
+    }
+  }
+
+  // 8 Aksjedelen
   {
     const s = pptx.addSlide();
     const narrative = buildSectionNarratives(d.products, 'equity');
     const equityRows = d.products
-      .filter((p) => String(p.report.category || '').includes('equity'))
+      .filter((p) => {
+        const cat = String(p.report.category || '').toLowerCase();
+        return cat.includes('equity') || cat.includes('nordic') || cat.includes('thematic') || cat.includes('sector') || cat.includes('balanced');
+      })
       .map((p) => [p.navn, pct(p.vekt), p.report.role || 'Aksjeeksponering']);
     addChrome(s, page++, narrative.heading);
     addTitle(s, narrative.heading, 'Hvordan aksjedelen er tenkt å bidra i totalporteføljen');
@@ -567,7 +847,7 @@ function buildDeck(payload = {}) {
     addKeyValueTable(s, 'Valgte aksjeprodukter', equityRows.length ? equityRows : [['Ingen aksjeprodukter valgt', '—', '—']], 7.15, 1.95, 5.1);
   }
 
-  // 7 Rentedelen
+  // 9 Rentedelen
   {
     const s = pptx.addSlide();
     const narrative = buildSectionNarratives(d.products, 'fixed-income');
@@ -585,7 +865,28 @@ function buildDeck(payload = {}) {
     addKeyValueTable(s, 'Valgte renteprodukter', fixedRows.length ? fixedRows : [['Ingen renteprodukter valgt', '—', '—']], 7.15, 1.95, 5.1);
   }
 
-  // 8 Hvorfor denne sammensetningen
+  // 10 Alternative investeringer (only if there are alternatives)
+  if (hasAlternatives) {
+    const s = pptx.addSlide();
+    const narrative = buildSectionNarratives(d.products, 'alternative');
+    const altRows = d.products
+      .filter((p) => {
+        const cat = String(p.report.category || '').toLowerCase();
+        return cat.includes('alternativ') || cat === 'alternative';
+      })
+      .map((p) => [p.navn, pct(p.vekt), p.report.role || 'Alternativ komponent']);
+    addChrome(s, page++, narrative.heading);
+    addTitle(s, narrative.heading, 'Illikvide komponenter for diversifisering og meravkastningspotensial');
+    addBodyParagraph(s, narrative.body, 0.95, 1.95, 5.95, 1.05, 14);
+    addBulletSection(s, 'Hva alternative investeringer bidrar med', [
+      'Tilgang til aktivaklasser som ikke er tilgjengelige i likvide markeder.',
+      'Illikviditetspremie som kan gi høyere langsiktig avkastning.',
+      'Diversifiseringseffekt gjennom lav korrelasjon med børsnoterte markeder.'
+    ], 0.95, 3.2, 5.95, 2.0);
+    addKeyValueTable(s, 'Valgte alternative produkter', altRows.length ? altRows : [['Ingen alternative produkter valgt', '—', '—']], 7.15, 1.95, 5.1);
+  }
+
+  // 11 Hvorfor denne sammensetningen
   {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Hvorfor denne sammensetningen');
@@ -607,33 +908,51 @@ function buildDeck(payload = {}) {
     const underlying = topRows(exposure.underliggende, 10);
     const style = topRows(exposure.stil, 8);
 
+    const isAlternative = String(product.report?.category || '').toLowerCase().includes('alternativ') || String(product.report?.category || '').toLowerCase() === 'alternative';
+
+    // Product overview slide
     {
       const stats = computeProductStats(product.id, d.produktHistorikk);
+      const s1 = computeProductStatsPeriod(product.id, d.produktHistorikk, 1);
+      const s3 = computeProductStatsPeriod(product.id, d.produktHistorikk, 3);
+      const s5 = computeProductStatsPeriod(product.id, d.produktHistorikk, 5);
       const s = pptx.addSlide();
       addChrome(s, page++, product.navn);
       addTitle(s, product.report.slideTitle || product.navn, product.report.slideSubtitle || '');
-      addKpiCard(s, 0.95, 1.85, 1.7, 'Vekt', pct(product.vekt), COLORS.navy);
-      addKpiCard(s, 2.85, 1.85, 2.1, 'Forv. avkastning', Number.isFinite(n(product.report.expectedReturn, NaN)) ? pct(product.report.expectedReturn) : '—', COLORS.green);
-      addKpiCard(s, 5.15, 1.85, 1.9, 'Forv. yield', Number.isFinite(n(product.report.expectedYield, NaN)) ? pct(product.report.expectedYield) : '—', COLORS.teal);
-      addKpiCard(s, 7.25, 1.85, 1.8, 'Volatilitet', stats ? pct(stats.volatility) : '—', COLORS.navy);
-      addKpiCard(s, 9.25, 1.85, 1.9, 'Maks DD', stats ? pct(stats.maxDrawdown) : '—', stats && stats.maxDrawdown < 0 ? COLORS.danger || 'B42318' : COLORS.salmon);
+
+      // KPI cards with more metrics
+      addKpiCard(s, 0.95, 1.85, 1.5, 'Vekt', pct(product.vekt), COLORS.navy);
+      addKpiCard(s, 2.65, 1.85, 1.8, 'Forv. avkastning', Number.isFinite(n(product.report.expectedReturn, NaN)) ? pct(product.report.expectedReturn) : '—', COLORS.green);
+      addKpiCard(s, 4.65, 1.85, 1.6, 'Forv. yield', Number.isFinite(n(product.report.expectedYield, NaN)) ? pct(product.report.expectedYield) : '—', COLORS.teal);
+      addKpiCard(s, 6.45, 1.85, 1.5, 'Volatilitet', stats ? pct(stats.volatility) : '—', COLORS.navy);
+      addKpiCard(s, 8.15, 1.85, 1.5, 'Sharpe', stats ? String(stats.sharpe) : '—', stats && stats.sharpe >= 1 ? COLORS.green : stats && stats.sharpe >= 0.5 ? 'D97706' : COLORS.danger);
+      addKpiCard(s, 9.85, 1.85, 1.5, 'Maks DD', stats ? pct(stats.maxDrawdown) : '—', stats && stats.maxDrawdown < 0 ? COLORS.danger : COLORS.salmon);
+
       addBulletSection(s, 'Rolle og investeringscase', [
         product.report.pitch || '',
         product.report.caseText || '',
         product.report.whyIncluded || ''
-      ], 0.95, 3.05, 6.0, 2.05);
-      addKeyValueTable(s, 'Rapportgrunnlag', [
+      ], 0.95, 3.05, 5.8, 1.8);
+
+      // Enhanced rapportgrunnlag with period returns
+      const reportRows = [
         ['Rolle i porteføljen', product.report.role || '—'],
-        ['Benchmark', product.report.benchmark || '—'],
-        ['Sharpe ratio', stats ? String(stats.sharpe) : '—'],
-        ['Nøkkelrisiko', product.report.riskText || '—']
-      ], 7.2, 3.05, 5.2);
+        ['Benchmark', product.report.benchmark || '—']
+      ];
+      if (s1) reportRows.push(['Avkastning 1 år', (s1.totalReturn >= 0 ? '+' : '') + pct(s1.totalReturn)]);
+      if (s3) reportRows.push(['Avkastning 3 år p.a.', (s3.annualized >= 0 ? '+' : '') + pct(s3.annualized)]);
+      if (s5) reportRows.push(['Avkastning 5 år p.a.', (s5.annualized >= 0 ? '+' : '') + pct(s5.annualized)]);
+      reportRows.push(['Nøkkelrisiko', product.report.riskText || '—']);
+
+      addKeyValueTable(s, 'Nøkkeltall', reportRows, 7.0, 3.05, 5.4, 0.24);
+
       if (exposure.disclaimer) {
         addBodyParagraph(s, exposure.disclaimer, 0.95, 5.55, 11.2, 0.55, 10, COLORS.muted);
       }
     }
 
-    {
+    // Exposure slide (skip for alternative products without exposure data)
+    if (!isAlternative || sectors.length > 0 || regions.length > 0 || underlying.length > 0) {
       const stats = computeProductStats(product.id, d.produktHistorikk);
       const s = pptx.addSlide();
       addChrome(s, page++, `${product.navn} – eksponering`);
