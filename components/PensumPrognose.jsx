@@ -912,20 +912,34 @@ export default function PensumPrognoseModell() {
 
   // Beregn prognose for Pensum-portefølje (må være etter totalKapital er definert)
   const pensumPrognose = useMemo(() => {
-    const avkastning = pensumForventetAvkastning / 100;
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const totalVekt = pensumAllokering.reduce((s, p) => s + (p.vekt || 0), 0) || 1;
+    const produkterMedAvk = pensumAllokering.filter(a => a.vekt > 0).map(a => {
+      const produkt = alleProdukt.find(p => p.id === a.id);
+      const fAvk = produkt?.forventetAvkastning ?? produktRapportMeta?.[a.id]?.expectedReturn ?? 0;
+      return { id: a.id, navn: a.navn, vektPct: a.vekt / totalVekt, avkastning: (erGyldigTall(fAvk) ? fAvk : 0) / 100 };
+    });
+
     const prognose = [];
-    let verdi = totalKapital;
-    
+    const verdier = {};
+    produkterMedAvk.forEach(p => { verdier[p.id] = p.vektPct * totalKapital; });
+
     for (let i = 0; i <= horisont; i++) {
-      prognose.push({
-        year: new Date().getFullYear() + i,
-        verdi: Math.round(verdi)
+      const row = { year: new Date().getFullYear() + i };
+      let total = 0;
+      produkterMedAvk.forEach(p => {
+        if (i > 0) verdier[p.id] = verdier[p.id] * (1 + p.avkastning);
+        row[p.navn] = Math.round(verdier[p.id]);
+        total += verdier[p.id];
       });
-      verdi = verdi * (1 + avkastning);
+      row.verdi = Math.round(total);
+      prognose.push(row);
     }
-    
     return prognose;
-  }, [pensumForventetAvkastning, totalKapital, horisont]);
+  }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, horisont, erGyldigTall]);
+
+  const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, '#7C3AED', '#2E7D32', '#BE185D', '#EA580C'];
+  const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
 
   const oppdaterSammenligningProfil = useCallback((nyProfil) => {
     setSammenligningProfil(nyProfil);
@@ -1195,16 +1209,19 @@ export default function PensumPrognoseModell() {
     const aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
     const renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
 
-    // Allokering table
-    const allokeringRows = aktiveAktiva.map(a =>
-      '<tr><td style="padding:10px;border-bottom:1px solid #E2E8F0;font-size:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:center;font-size:12px">' + formatPercent(a.vekt) + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:right;font-size:12px">' + formatCurrency((a.vekt/100)*totalKapital) + '</td></tr>'
-    ).join('');
+    // Allokering table — basert på Pensum-produkter (pensumAktivafordeling)
+    const rapportAktivaHTML = pensumAktivafordeling.filter(a => a.value > 0);
+    const rapportTotalVektHTML = rapportAktivaHTML.reduce((s, a) => s + a.value, 0) || 1;
+    const allokeringRows = rapportAktivaHTML.map(a => {
+      const normVekt = (a.value / rapportTotalVektHTML) * 100;
+      return '<tr><td style="padding:10px;border-bottom:1px solid #E2E8F0;font-size:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + (a.color || '#888') + '"></span>' + a.name + '</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:center;font-size:12px">' + normVekt.toFixed(1) + '%</td><td style="padding:10px;border-bottom:1px solid #E2E8F0;text-align:right;font-size:12px">' + formatCurrency((normVekt/100)*totalKapital) + '</td></tr>';
+    }).join('');
 
     // SVG pie chart
     let pieSlices = '', cumulative = 0;
-    const pieColors = aktiveAktiva.map(a => ASSET_COLORS[a.navn] || '#888');
-    aktiveAktiva.forEach((a, i) => {
-      const pct = a.vekt / 100;
+    const pieColors = rapportAktivaHTML.map(a => a.color || '#888');
+    rapportAktivaHTML.forEach((a, i) => {
+      const pct = (a.value / rapportTotalVektHTML);
       const startAngle = cumulative * 2 * Math.PI - Math.PI/2;
       cumulative += pct;
       const endAngle = cumulative * 2 * Math.PI - Math.PI/2;
@@ -1214,9 +1231,10 @@ export default function PensumPrognoseModell() {
       if (pct > 0.001) pieSlices += '<path d="M80,80 L' + x1 + ',' + y1 + ' A60,60 0 ' + largeArc + ',1 ' + x2 + ',' + y2 + ' Z" fill="' + pieColors[i] + '"/>';
     });
     const pieSvg = '<svg width="160" height="160" viewBox="0 0 160 160">' + pieSlices + '<circle cx="80" cy="80" r="35" fill="white"/></svg>';
-    const legend = aktiveAktiva.map(a =>
-      '<div style="display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0"><span style="width:8px;height:8px;border-radius:50%;background:' + (ASSET_COLORS[a.navn] || '#888') + '"></span>' + a.navn + ' (' + a.vekt.toFixed(1) + '%)</div>'
-    ).join('');
+    const legend = rapportAktivaHTML.map(a => {
+      const normVekt = (a.value / rapportTotalVektHTML) * 100;
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0"><span style="width:8px;height:8px;border-radius:50%;background:' + (a.color || '#888') + '"></span>' + a.name + ' (' + normVekt.toFixed(1) + '%)</div>';
+    }).join('');
 
     // Porteføljesammensetning
     const portefoljeRows = pensumAllokering.filter(a => a.vekt > 0).sort((a,b) => b.vekt - a.vekt).map((a, idx) => {
@@ -2843,20 +2861,20 @@ export default function PensumPrognoseModell() {
               );
             })()}
 
-            {/* Prognosegraf — stacked per aktivaklasse */}
+            {/* Prognosegraf — stacked per Pensum-produkt */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                 <h3 className="text-lg font-semibold text-white">Utvikling i formuesverdi</h3>
               </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={380}>
-                  <BarChart data={verdiutvikling} barCategoryGap="30%">
+                  <BarChart data={pensumPrognose} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
                     <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} />
                     <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
                     <Legend iconType="circle" iconSize={8} />
-                    {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
+                    {valgteProdukterForChart.map((p, idx) => <Bar key={p.id} dataKey={p.navn} stackId="a" fill={pensumProduktFarger[idx % pensumProduktFarger.length]} />)}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -4069,13 +4087,19 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
-                {/* === ANBEFALT ALLOKERING === */}
+                {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
                 <div>
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Anbefalt aktivaallokering</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{aktiveAktiva.map(a => <tr key={a.navn} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[a.navn] }}></div>{a.navn}</td><td className="py-3 px-4 text-center">{formatPercent(a.vekt)}</td><td className="py-3 px-4 text-right">{formatCurrency((a.vekt/100)*totalKapital)}</td></tr>)}</tbody></table>
-                    <div className="flex justify-center items-center"><ResponsiveContainer width={200} height={200}><PieChart><Pie data={aktiveAktiva.map(a => ({ name: a.navn, value: a.vekt }))} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value">{aktiveAktiva.map(a => <Cell key={a.navn} fill={ASSET_COLORS[a.navn]} stroke="white" strokeWidth={2} />)}</Pie></PieChart></ResponsiveContainer></div>
-                  </div>
+                  {(() => {
+                    const rapportAktiva = pensumAktivafordeling.filter(a => a.value > 0);
+                    const rapportTotalVekt = rapportAktiva.reduce((s, a) => s + a.value, 0) || 1;
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{rapportAktiva.map(a => <tr key={a.name} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>{a.name}</td><td className="py-3 px-4 text-center">{(a.value / rapportTotalVekt * 100).toFixed(1)}%</td><td className="py-3 px-4 text-right">{formatCurrency((a.value / rapportTotalVekt) * totalKapital)}</td></tr>)}</tbody></table>
+                        <div className="flex justify-center items-center"><ResponsiveContainer width={200} height={200}><PieChart><Pie data={rapportAktiva.map(a => ({ name: a.name, value: a.value }))} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value">{rapportAktiva.map(a => <Cell key={a.name} fill={a.color} stroke="white" strokeWidth={2} />)}</Pie></PieChart></ResponsiveContainer></div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
