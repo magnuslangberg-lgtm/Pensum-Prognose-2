@@ -2603,9 +2603,9 @@ export default function PensumPrognoseModell() {
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Venstre: Allokering */}
-                  <div className="xl:col-span-3">
+                  <div>
                     <h4 className="font-semibold mb-4 flex items-center justify-between" style={{ color: PENSUM_COLORS.darkBlue }}>
                       <span>Din portefølje</span>
                       <div className="flex items-center gap-3">
@@ -2651,7 +2651,7 @@ export default function PensumPrognoseModell() {
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
                         return (
-                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-lg " + (erIllikvid ? "bg-amber-50 border border-amber-200" : "bg-gray-50")}>
+                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + (erIllikvid ? "bg-amber-50/80 border border-amber-200" : "bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50")}>
                             <button onClick={() => fjernPensumProdukt(produkt.id)} className="text-red-500 hover:text-red-700">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
@@ -2703,8 +2703,8 @@ export default function PensumPrognoseModell() {
                     </div>
 
                     {/* Legg til produkter */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <h5 className="text-sm font-medium mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Legg til produkt</h5>
+                    <div className="border-t border-gray-200 pt-5 mt-2">
+                      <h5 className="text-xs font-semibold tracking-wide uppercase mb-3" style={{ color: '#94A3B8' }}>Legg til produkt</h5>
                       <div className={"grid gap-4 " + (visAlternative ? "grid-cols-3" : "grid-cols-2")}>
                         <div>
                           <p className="text-xs font-semibold text-gray-500 mb-2">ENKELTFOND</p>
@@ -2750,52 +2750,60 @@ export default function PensumPrognoseModell() {
                   </div>
 
                   {/* Høyre: Kakediagrammer */}
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {/* Porteføljefordeling */}
-                    <div>
-                      <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                      <ResponsiveContainer width="100%" height={160}>
-                        <PieChart>
-                          <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" outerRadius={55} dataKey="vekt">
-                            {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
-                              <Cell key={entry.id} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v) => v + '%'} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="space-y-1">
-                        {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
-                          <div key={p.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
-                            <span className="flex-1 truncate">{p.navn}</span>
-                            <span className="font-medium">{p.vekt}%</span>
-                          </div>
-                        ))}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
+                      <div className="flex items-center gap-6">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={200} height={200}>
+                            <PieChart>
+                              <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                                {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
+                                  <Cell key={entry.id} fill={['#1B3A5F', '#5B9BD5', '#D4886B', '#0D9488', '#B8860B', '#7C3AED', '#2E7D32'][idx % 7]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: ['#1B3A5F', '#5B9BD5', '#D4886B', '#0D9488', '#B8860B', '#7C3AED', '#2E7D32'][idx % 7] }}></div>
+                              <span className="flex-1 truncate text-gray-700">{p.navn}</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt}%</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
                     {/* Aktivafordeling */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
-                      <ResponsiveContainer width="100%" height={120}>
-                        <PieChart>
-                          <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" outerRadius={45} dataKey="value">
-                            {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
-                              <Cell key={entry.name} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(v) => v + '%'} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex flex-wrap justify-center gap-4 mt-2">
-                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                          <div key={a.name} className="flex items-center gap-2 text-sm">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>
-                            <span className="text-gray-600">{a.name}</span>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
-                          </div>
-                        ))}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                      <div className="flex items-center gap-6">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={160} height={160}>
+                            <PieChart>
+                              <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
+                                  <Cell key={entry.name} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2.5 flex-1">
+                          {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                            <div key={a.name} className="flex items-center gap-2.5 text-sm">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
+                              <span className="flex-1 text-gray-700">{a.name}</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -2803,11 +2811,11 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* Produktspesifikk eksponering */}
-                <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 overflow-hidden">
-                  <div className="px-5 py-4 border-b border-slate-200 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                <div className="mt-8 rounded-2xl border border-amber-200/60 overflow-hidden" style={{ background: 'linear-gradient(135deg, #FFFBF0 0%, #FFF7E6 50%, #FEF3D0 100%)' }}>
+                  <div className="px-5 py-4 border-b border-amber-200/50 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3" style={{ backgroundColor: 'rgba(180, 134, 11, 0.06)' }}>
                     <div>
                       <h4 className="font-semibold text-base" style={{ color: PENSUM_COLORS.darkBlue }}>Produktspesifikk eksponering</h4>
-                      <p className="text-sm text-slate-500 mt-1 max-w-3xl">Vis hvert produkt for seg. Dette er arbeidsflaten som brukes som rapportgrunnlag i det genererte investeringsforslaget. Aggregert eksponering brukes bare som sekundær oppsummering.</p>
+                      <p className="text-sm mt-1 max-w-3xl" style={{ color: '#78716C' }}>Vis hvert produkt for seg. Dette er arbeidsflaten som brukes som rapportgrunnlag i det genererte investeringsforslaget. Aggregert eksponering brukes bare som sekundær oppsummering.</p>
                     </div>
                     {aktivtEksponeringsProdukt && (
                       <button
@@ -2822,7 +2830,7 @@ export default function PensumPrognoseModell() {
 
                   {valgtePensumProdukterMedEksponering.length > 0 ? (
                     <div className="grid grid-cols-1 xl:grid-cols-12">
-                      <div className="xl:col-span-3 border-r border-slate-200 bg-white">
+                      <div className="xl:col-span-3 border-r border-amber-200/40 bg-white/80">
                         <div className="p-4 border-b border-slate-100">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgte produkter</p>
                           <p className="text-sm text-slate-600 mt-1">Velg et produkt for å se innhold, rolle og rapportgrunnlag.</p>
@@ -2853,7 +2861,7 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
 
-                      <div className="xl:col-span-9 p-4 lg:p-5 bg-slate-50/50">
+                      <div className="xl:col-span-9 p-4 lg:p-5">
                         {aktivtEksponeringsProdukt ? (
                           <div className="space-y-4">
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
@@ -3189,9 +3197,9 @@ export default function PensumPrognoseModell() {
                                   type="monotone"
                                   dataKey={produktId}
                                   stroke={farger[produktId] || '#999'}
-                                  strokeWidth={2}
+                                  strokeWidth={1.8}
                                   dot={false}
-                                  activeDot={{ r: 4 }}
+                                  activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
                                 />
                               ))}
                             </LineChart>
@@ -3495,12 +3503,12 @@ export default function PensumPrognoseModell() {
                       const { chartData, avkastninger } = buildSnapshotData(years);
                       if (chartData.length < 2) return null;
                       return (
-                        <div key={years} className="border border-gray-200 rounded-xl overflow-hidden">
-                          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                            <h4 className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                        <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
+                          <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
+                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
                           </div>
-                          <div className="p-4">
-                            <ResponsiveContainer width="100%" height={260}>
+                          <div className="p-5">
+                            <ResponsiveContainer width="100%" height={300}>
                               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                                 <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
@@ -3515,15 +3523,21 @@ export default function PensumPrognoseModell() {
                                     return [v.toFixed(1), pi?.navn?.replace('Pensum ', '') || name];
                                   }} />
                                 <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                <defs>
+                                  <filter id="portfolioGlow">
+                                    <feGaussianBlur stdDeviation="2" result="blur" />
+                                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                                  </filter>
+                                </defs>
                                 {valgteProdukterIds.map(id => (
-                                  <Line key={id} type="monotone" dataKey={id} stroke={SNAPSHOT_FARGER[id] || '#999'} strokeWidth={1.5} dot={false} opacity={0.6} />
+                                  <Line key={id} type="monotone" dataKey={id} stroke={SNAPSHOT_FARGER[id] || '#999'} strokeWidth={1.2} dot={false} opacity={0.45} strokeDasharray={id === 'portefolje' ? undefined : '6 3'} />
                                 ))}
-                                <Line type="monotone" dataKey="portefolje" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} name="portefolje" />
+                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={2.5} dot={false} name="portefolje" filter="url(#portfolioGlow)" />
                               </LineChart>
                             </ResponsiveContainer>
-                            <div className="mt-3 flex flex-wrap gap-3 justify-center">
-                              <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>
-                                <div className="w-4 h-0.5 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 justify-center">
+                              <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
+                                <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
                                 Din portefølje: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                   {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
                                 </span>
@@ -3532,9 +3546,9 @@ export default function PensumPrognoseModell() {
                                 const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
                                 const avk = avkastninger[id];
                                 return (
-                                  <div key={id} className="flex items-center gap-1.5 text-xs">
-                                    <div className="w-3 h-0.5 rounded" style={{ backgroundColor: SNAPSHOT_FARGER[id] || '#999' }}></div>
-                                    <span className="text-gray-600">{pi?.navn?.replace('Pensum ', '') || id}:</span>
+                                  <div key={id} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                    <div className="w-4 h-px" style={{ backgroundColor: SNAPSHOT_FARGER[id] || '#999', borderTop: '1px dashed ' + (SNAPSHOT_FARGER[id] || '#999') }}></div>
+                                    <span>{pi?.navn?.replace('Pensum ', '') || id}:</span>
                                     <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                       {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
                                     </span>
@@ -3546,7 +3560,7 @@ export default function PensumPrognoseModell() {
                         </div>
                       );
                     })}
-                    <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-xs text-gray-400 p-4 bg-gray-50/80 rounded-lg border border-gray-100">
                       <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
                     </div>
                   </div>
