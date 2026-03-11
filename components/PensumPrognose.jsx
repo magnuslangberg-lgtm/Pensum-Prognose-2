@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
-import { ASSET_COLORS, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 
 const PENSUM_LOGO = 'data:image/webp;base64,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';
@@ -549,20 +549,19 @@ export default function PensumPrognoseModell() {
     const lastKunder = async () => {
       if (radgiver) {
         const storageKey = 'pensum_kunder_' + radgiver.toLowerCase().replace(/\s+/g, '_');
+        let loaded = null;
         try {
-          // Prøv window.storage først (Claude's persistent storage)
           if (window.storage && window.storage.get) {
             const result = await window.storage.get(storageKey);
-            if (result && result.value) {
-              setLagredeKunder(JSON.parse(result.value));
-              return;
-            }
+            if (result && result.value) loaded = result.value;
           }
         } catch (e) {
-          console.log('Storage not available:', e);
+          console.log('window.storage not available:', e);
         }
-        // Fallback: ingen lagrede kunder
-        setLagredeKunder([]);
+        if (!loaded && typeof localStorage !== 'undefined') {
+          try { loaded = localStorage.getItem(storageKey); } catch (e) { /* ignore */ }
+        }
+        setLagredeKunder(loaded ? JSON.parse(loaded) : []);
       }
     };
     lastKunder();
@@ -812,19 +811,25 @@ export default function PensumPrognoseModell() {
       oppdatertListe = [...lagredeKunder, kundeData];
     }
     
+    const jsonStr = JSON.stringify(oppdatertListe);
+    let saved = false;
     try {
       if (window.storage && window.storage.set) {
-        await window.storage.set(storageKey, JSON.stringify(oppdatertListe));
-        setLagredeKunder(oppdatertListe);
-        setAktivKundeId(kundeData.id);
-        setLagringsStatus('Lagret!');
-        setTimeout(() => setLagringsStatus(''), 2000);
-      } else {
-        throw new Error('Storage not available');
+        await window.storage.set(storageKey, jsonStr);
+        saved = true;
       }
     } catch (e) {
-      setLagredeKunder(oppdatertListe);
-      setAktivKundeId(kundeData.id);
+      console.log('window.storage save failed:', e);
+    }
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(storageKey, jsonStr); saved = true; } catch (e) { /* ignore */ }
+    }
+    setLagredeKunder(oppdatertListe);
+    setAktivKundeId(kundeData.id);
+    if (saved) {
+      setLagringsStatus('Lagret!');
+      setTimeout(() => setLagringsStatus(''), 2000);
+    } else {
       alert('Automatisk lagring er ikke tilgjengelig. Bruk "Eksporter" for å lagre kunden som fil.');
     }
   }, [bruker, radgiver, kundeNavn, getKundeData, lagredeKunder]);
@@ -853,14 +858,18 @@ export default function PensumPrognoseModell() {
     const storageKey = 'pensum_kunder_' + radgiver.toLowerCase().replace(/\s+/g, '_');
     const oppdatertListe = lagredeKunder.filter(k => k.id !== id);
     
+    const jsonStr = JSON.stringify(oppdatertListe);
     try {
       if (window.storage && window.storage.set) {
-        await window.storage.set(storageKey, JSON.stringify(oppdatertListe));
+        await window.storage.set(storageKey, jsonStr);
       }
     } catch (e) {
-      console.log('Could not save to storage:', e);
+      console.log('Could not save to window.storage:', e);
     }
-    
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(storageKey, jsonStr); } catch (e) { /* ignore */ }
+    }
+
     setLagredeKunder(oppdatertListe);
     if (aktivKundeId === id) setAktivKundeId(null);
   }, [radgiver, lagredeKunder, aktivKundeId]);
@@ -3078,34 +3087,37 @@ export default function PensumPrognoseModell() {
                         };
                         const startDato = periodeFilter[historikkPeriode];
                         
-                        // Bygg data for grafen
+                        // Bygg data for grafen med daglige datapunkter
                         const chartData = [];
                         const alleDatoer = new Set();
-                        
+                        const produktDataMap = {};
+
                         valgteProdukterHistorikk.forEach(produktId => {
                           const hist = produktHistorikk[produktId];
                           if (hist && hist.data) {
+                            const dataMap = new Map();
                             hist.data.forEach(d => {
                               const dato = parseHistorikkDato(d.dato);
                               if (dato && dato >= startDato) {
                                 alleDatoer.add(d.dato);
+                                dataMap.set(d.dato, d.verdi);
                               }
                             });
+                            const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                            produktDataMap[produktId] = { dataMap, startVerdi };
                           }
                         });
-                        
+
                         const sorterteDatoer = Array.from(alleDatoer).sort();
-                        
+
                         sorterteDatoer.forEach(dato => {
                           const punkt = { dato };
                           valgteProdukterHistorikk.forEach(produktId => {
-                            const hist = produktHistorikk[produktId];
-                            if (hist && hist.data) {
-                              const match = hist.data.find(d => d.dato === dato);
-                              if (match) {
-                                // Reindekserer til 100 ved start av valgt periode
-                                const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                                punkt[produktId] = (match.verdi / startVerdi) * 100;
+                            const pm = produktDataMap[produktId];
+                            if (pm) {
+                              const verdi = pm.dataMap.get(dato);
+                              if (verdi !== undefined) {
+                                punkt[produktId] = (verdi / pm.startVerdi) * 100;
                               }
                             }
                           });
@@ -3136,16 +3148,18 @@ export default function PensumPrognoseModell() {
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis 
-                                dataKey="dato" 
+                              <XAxis
+                                dataKey="dato"
                                 tick={{ fontSize: 10, fill: '#6B7280' }}
                                 tickFormatter={(dato) => {
                                   const parsed = parseHistorikkDato(dato);
                                   if (!parsed) return '';
                                   const m = parsed.getMonth() + 1;
-                                  return m === 1 || m === 7 ? `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}` : '';
+                                  const d = parsed.getDate();
+                                  if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}`;
+                                  return '';
                                 }}
-                                interval="preserveStartEnd"
+                                interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))}
                               />
                               <YAxis 
                                 tick={{ fontSize: 10, fill: '#6B7280' }}
@@ -3236,8 +3250,8 @@ export default function PensumPrognoseModell() {
                     
                     {/* Disclaimer */}
                     <div className="mt-4 text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-                      <strong>Viktig informasjon om avkastning:</strong> Historikk er indeksert til 100 ved start av valgt periode. 
-                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes månedlig ut fra kursendringer mellom månedssluttpunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon. 
+                      <strong>Viktig informasjon om avkastning:</strong> Historikk er indeksert til 100 ved start av valgt periode.
+                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes daglig ut fra kursendringer mellom daglige datapunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon.
                       Historisk avkastning er ingen garanti for fremtidig avkastning.
                     </div>
                   </div>
@@ -3418,9 +3432,14 @@ export default function PensumPrognoseModell() {
                 const buildSnapshotData = (periodYears) => {
                   const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
                   const alleDatoer = new Set();
+                  const produktMaps = {};
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
-                    if (hist?.data) hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) alleDatoer.add(d.dato); });
+                    if (hist?.data) {
+                      const dMap = new Map();
+                      hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                      produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
+                    }
                   });
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
@@ -3428,12 +3447,11 @@ export default function PensumPrognoseModell() {
                     let vektetVerdi = 0;
                     let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
-                      const hist = produktHistorikk[id];
-                      if (hist?.data) {
-                        const match = hist.data.find(d => d.dato === dato);
-                        const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                        if (match && startVerdi) {
-                          const indeksert = (match.verdi / startVerdi) * 100;
+                      const pm = produktMaps[id];
+                      if (pm) {
+                        const verdi = pm.dMap.get(dato);
+                        if (verdi !== undefined && pm.startVerdi) {
+                          const indeksert = (verdi / pm.startVerdi) * 100;
                           punkt[id] = indeksert;
                           const allok = pensumAllokering.find(a => a.id === id);
                           if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
@@ -3486,8 +3504,8 @@ export default function PensumPrognoseModell() {
                               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                                 <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; return m===1||m===7 ? `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}` : ''; }}
-                                  interval="preserveStartEnd" />
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                  interval={Math.max(1, Math.floor(chartData.length / 12))} />
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
@@ -3865,19 +3883,23 @@ export default function PensumPrognoseModell() {
                   return punkt;
                 });
                 const dashChartDatoer = new Set();
+                const dashProdMaps = {};
                 dashboardProdukter.forEach(id => {
                   const hist = alleHistorikk2[id];
-                  if (hist && hist.data) hist.data.forEach(d => { const parsed = parseHistorikkDato(d.dato); if (parsed && parsed >= dashStartDato) dashChartDatoer.add(d.dato); });
+                  if (hist && hist.data) {
+                    const dMap = new Map();
+                    hist.data.forEach(d => { const parsed = parseHistorikkDato(d.dato); if (parsed && parsed >= dashStartDato) { dashChartDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                    dashProdMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, dashStartDato) };
+                  }
                 });
                 const dashChartData = Array.from(dashChartDatoer).sort().map(dato => {
                   const punkt = { dato };
                   dashboardProdukter.forEach(id => {
-                    const hist = alleHistorikk2[id];
-                    if (hist && hist.data) {
-                      const match = hist.data.find(d => d.dato === dato);
-                      if (match) {
-                        const startVerdi = finnStartVerdiVedPeriode(hist.data, dashStartDato);
-                        punkt[id] = parseFloat(((match.verdi / startVerdi) * 100).toFixed(2));
+                    const pm = dashProdMaps[id];
+                    if (pm) {
+                      const verdi = pm.dMap.get(dato);
+                      if (verdi !== undefined) {
+                        punkt[id] = parseFloat(((verdi / pm.startVerdi) * 100).toFixed(2));
                       }
                     }
                   });
@@ -3954,8 +3976,8 @@ export default function PensumPrognoseModell() {
                             <LineChart data={dashChartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
-                                tickFormatter={(d) => { const parts = d.split("-"); return (parts[1] === "01" || parts[1] === "07") ? parts[1] + "/" + parts[0].slice(2) : ""; }}
-                                interval="preserveStartEnd" />
+                                tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                interval={20} />
                               <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0)} domain={["dataMin - 5", "dataMax + 5"]} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 labelFormatter={(d) => formatHistorikkEtikett(d)}
@@ -4035,8 +4057,8 @@ export default function PensumPrognoseModell() {
                             <LineChart data={ddData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
-                                tickFormatter={(d) => { const parts = d.split("-"); return (parts[1] === "01" || parts[1] === "07") ? parts[1] + "/" + parts[0].slice(2) : ""; }}
-                                interval="preserveStartEnd" />
+                                tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
+                                interval={20} />
                               <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0) + "%"} domain={["dataMin - 2", 0]} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 formatter={(v, name) => [v.toFixed(1) + "%", produktNavn2[name] || name]} />
