@@ -7,7 +7,7 @@ export const defaultPensumProdukter = {
     ],
     fondsportefoljer: [
       { id: 'global-core-active', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 10.0, forventetYield: 1.8, aarlig3ar: 21.3, risiko3ar: 10.4 },
-      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', aar2026: null, aar2025: 10.0, aar2024: 9.8, aar2023: 11.3, aar2022: -12.6, forventetAvkastning: 10.5, forventetYield: 1.2, aarlig3ar: 10.4, risiko3ar: 0.6 },
+      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', aar2026: -2.1, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 10.5, forventetYield: 1.2, aarlig3ar: 21.3, risiko3ar: 5.4 },
       { id: 'basis', navn: 'Pensum Basis', aktivatype: 'blandet', likviditet: 'likvid', aar2026: null, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 8.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.7 },
       { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2026: null, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.5, forventetYield: 7.0, aarlig3ar: 6.9, risiko3ar: 0.7 },
       { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', aar2026: null, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 7.5, forventetYield: 7.2, aarlig3ar: 8.9, risiko3ar: 2.0 }
