@@ -48,7 +48,7 @@ export function CollapsibleSection({ title, isOpen, onToggle, sum, children }) {
   );
 }
 
-export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning }) {
+export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning, avkastningLaast }) {
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
@@ -82,7 +82,7 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
         {formatCurrency((item.vekt / 100) * effektivtInvestertBelop)}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
-        <input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} className="w-16 text-center text-sm border border-gray-200 rounded py-1 px-1" />
+        <input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} disabled={avkastningLaast} className={"w-16 text-center text-sm border border-gray-200 rounded py-1 px-1" + (avkastningLaast ? " bg-gray-100 text-gray-400 cursor-not-allowed" : "")} title={avkastningLaast ? "Avkastningsraten er låst av admin" : ""} />
         <span className="text-xs text-gray-400">%</span>
       </div>
     </div>
