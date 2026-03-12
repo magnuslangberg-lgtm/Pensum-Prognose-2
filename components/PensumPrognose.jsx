@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
@@ -74,6 +74,13 @@ export default function PensumPrognoseModell() {
     tilAktiva: 'Globale Aksjer',
     prosentPerAar: 10
   });
+
+  // Kostnadsanalyse - hva koster det å ikke investere?
+  const [kostnadsanalyseAktiv, setKostnadsanalyseAktiv] = useState(false);
+  const [skattepliktigFormue, setSkattepliktigFormue] = useState(40000000);
+  const [aarligForbruk, setAarligForbruk] = useState(1000000);
+  const [inflasjon, setInflasjon] = useState(2);
+  const [renteAvkastning, setRenteAvkastning] = useState(4);
 
   // Lagring av kunder - bruker window.storage API (Claude's persistent storage)
   const [lagredeKunder, setLagredeKunder] = useState([]);
@@ -1554,6 +1561,67 @@ export default function PensumPrognoseModell() {
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
   const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
+
+  // Kostnadsanalyse - beregn "break-even" avkastning og formuesutvikling uten investering
+  const kostnadsanalyseData = useMemo(() => {
+    if (!kostnadsanalyseAktiv) return null;
+    const startYear = new Date().getFullYear();
+    const kapital = totalKapital;
+
+    // Formuesskatt-beregning (2025-satser)
+    const beregnFormuesskatt = (formue) => {
+      // Fribeløp 1,7 mill (enslig), vi bruker skattepliktigFormue direkte
+      const grense = 20000000;
+      const satsUnder = 0.01; // 1,0% under 20M
+      const satsOver = 0.011; // 1,1% over 20M
+      if (formue <= 0) return 0;
+      if (formue <= grense) return formue * satsUnder;
+      return grense * satsUnder + (formue - grense) * satsOver;
+    };
+
+    const skattSats22 = 0.22;    // kapitalinntektsskatt
+    const skattSatsAksje = 0.378; // aksjegevinstskatt (inkl. oppjusteringsfaktor 2025: 1.72 * 0.22)
+
+    // Årlig formuesskatt basert på oppgitt skattepliktig formue
+    const aarligFormuesskatt = beregnFormuesskatt(skattepliktigFormue);
+
+    // Scenario 1: "Kontoinnskudd" - kun renteavkastning, ingen aksjeinvestering
+    // Netto rente etter skatt
+    const nettoRente = renteAvkastning * (1 - skattSats22);
+
+    // Break-even: hvilken brutto aksje-avkastning trengs for å opprettholde realformue?
+    // Realformue opprettholdes når: avkastning dekker forbruk + formuesskatt + inflasjon
+    const aarligKostnad = aarligForbruk + aarligFormuesskatt;
+    const inflasjonsFaktor = inflasjon / 100;
+
+    // Brutto aksje-avkastning som trengs (etter skatt) for å dekke kostnader + inflasjon
+    const nettoAvkastningPaakrevet = kapital > 0 ? (aarligKostnad / kapital) + inflasjonsFaktor : 0;
+    const bruttoAksjePaakrevet = kapital > 0 ? nettoAvkastningPaakrevet / (1 - skattSatsAksje) : 0;
+
+    // Bygg serie: formuesutvikling UTEN investering (kun bankkonto med rente)
+    const bankSerie = [];
+    let bankFormue = kapital;
+    for (let i = 0; i <= horisont; i++) {
+      bankSerie.push({ year: startYear + i, bankFormue: Math.max(0, bankFormue) });
+      if (i < horisont) {
+        // Renteinntekt etter skatt
+        const renteinntekt = bankFormue * (nettoRente / 100);
+        // Trekk fra forbruk og formuesskatt, legg til rente
+        bankFormue = bankFormue + renteinntekt - aarligForbruk - beregnFormuesskatt(skattepliktigFormue);
+        // Juster for inflasjon (realverdi)
+        bankFormue = bankFormue / (1 + inflasjonsFaktor);
+      }
+    }
+
+    return {
+      aarligFormuesskatt,
+      nettoRente,
+      bruttoAksjePaakrevet,
+      nettoAvkastningPaakrevet,
+      bankSerie,
+      aarligKostnad,
+    };
+  }, [kostnadsanalyseAktiv, totalKapital, skattepliktigFormue, aarligForbruk, inflasjon, renteAvkastning, horisont]);
 
 
   return (
