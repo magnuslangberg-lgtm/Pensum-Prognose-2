@@ -2644,6 +2644,106 @@ export default function PensumPrognoseModell() {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {/* ====== KOSTNADSANALYSE ====== */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#7C3AED' }}>
+                <h3 className="text-lg font-semibold text-white">Kostnadsanalyse — Hva koster det å ikke investere?</h3>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={kostnadsanalyseAktiv} onChange={(e) => setKostnadsanalyseAktiv(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
+                  <span className="text-sm text-purple-200">Aktiver analyse</span>
+                </label>
+              </div>
+              {kostnadsanalyseAktiv && kostnadsanalyseData && (
+                <div className="p-6 space-y-6">
+                  {/* Parametre */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Skattepliktig formue</label>
+                      <input type="number" value={skattepliktigFormue} onChange={(e) => setSkattepliktigFormue(Number(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Årlig forbruk (uttak)</label>
+                      <input type="number" value={aarligForbruk} onChange={(e) => setAarligForbruk(Number(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Inflasjon (%)</label>
+                      <input type="number" step="0.1" value={inflasjon} onChange={(e) => setInflasjon(Number(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Bankrente (%)</label>
+                      <input type="number" step="0.1" value={renteAvkastning} onChange={(e) => setRenteAvkastning(Number(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                    </div>
+                  </div>
+
+                  {/* Nøkkeltall */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                      <div className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-1">Årlig kostnad</div>
+                      <div className="text-sm text-purple-400 mb-2">Forbruk + formuesskatt</div>
+                      <div className="text-2xl font-bold text-purple-700">{formatCurrency(kostnadsanalyseData.aarligKostnad)}</div>
+                      <div className="mt-2 text-xs text-purple-400">
+                        Forbruk: {formatCurrency(aarligForbruk)} | Formuesskatt: {formatCurrency(kostnadsanalyseData.aarligFormuesskatt)}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                      <div className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Break-even avkastning</div>
+                      <div className="text-sm text-amber-400 mb-2">For å opprettholde realformue</div>
+                      <div className="text-2xl font-bold text-amber-700">{formatPercent(kostnadsanalyseData.bruttoAksjePaakrevet * 100)} <span className="text-sm font-normal">brutto p.a.</span></div>
+                      <div className="mt-2 text-xs text-amber-500">
+                        Netto påkrevet: {formatPercent(kostnadsanalyseData.nettoAvkastningPaakrevet * 100)} | Portefølje: {formatPercent(vektetAvkastning)}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl border-2" style={{ backgroundColor: '#0D2240', borderColor: PENSUM_COLORS.darkBlue }}>
+                      <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-1">Bankkonto etter {horisont} år</div>
+                      <div className="text-sm text-blue-400 mb-2">Kun rente ({formatPercent(renteAvkastning)}, netto {formatPercent(kostnadsanalyseData.nettoRente)})</div>
+                      <div className="text-2xl font-bold text-white">{formatCurrency(kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0)}</div>
+                      <div className="mt-2 text-xs text-blue-400">
+                        Tapt kjøpekraft: {formatCurrency(totalKapital - (kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sammenligning: Bank vs Investert */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Realformue over tid — Bankkonto vs. Investert portefølje</h4>
+                    <ResponsiveContainer width="100%" height={380}>
+                      <ComposedChart
+                        data={kostnadsanalyseData.bankSerie.map((b, i) => ({
+                          ...b,
+                          investert: scenarioData[i]?.forventet || 0,
+                        }))}
+                        margin={{ top: 20, right: 40, left: 20, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                        <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} width={100} />
+                        <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'bankFormue' ? 'Bankkonto (real)' : 'Investert portefølje']} />
+                        <Legend iconType="circle" />
+                        <Area type="monotone" dataKey="investert" name="Investert portefølje" fill={PENSUM_COLORS.darkBlue} fillOpacity={0.08} stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
+                        <Area type="monotone" dataKey="bankFormue" name="Bankkonto (real)" fill="#7C3AED" fillOpacity={0.08} stroke="#7C3AED" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+                        <ReferenceLine y={totalKapital} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Startkapital', position: 'right', fill: '#9CA3AF', fontSize: 11 }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Oppsummering */}
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="text-sm text-gray-600">
+                      <strong>Oppsummering:</strong> Med et årlig forbruk på {formatCurrency(aarligForbruk)} og formuesskatt på {formatCurrency(kostnadsanalyseData.aarligFormuesskatt)},
+                      {' '}vil en bankkonto med {formatPercent(renteAvkastning)} rente gi en realformue på{' '}
+                      <strong>{formatCurrency(kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0)}</strong> etter {horisont} år.
+                      {' '}Til sammenligning gir den forventede porteføljen <strong>{formatCurrency(scenarioData[scenarioData.length - 1]?.forventet || 0)}</strong>.
+                      {' '}Du trenger minst <strong>{formatPercent(kostnadsanalyseData.bruttoAksjePaakrevet * 100)}</strong> brutto årlig avkastning for å opprettholde realformuen.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
