@@ -61,8 +61,9 @@ export default function PensumPrognoseModell() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
-  const [valgtePensumScen, setValgtePensumScen] = useState(['Global Core Active', 'Basis', 'Global Høyrente', 'Norske Aksjer', 'Global Energy']);
-  const [valgteIndekserScen, setValgteIndekserScen] = useState([]);
+  const [valgtePensumScen, setValgtePensumScen] = useState([]);
+  const [valgteIndekserScen, setValgteIndekserScen] = useState(['MSCI World', 'Oslo Børs', 'Norske Statsobl.']);
+  const [visPortefoljeScen, setVisPortefoljeScen] = useState(true);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -2068,7 +2069,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'allokering', 'losninger', 'scenario', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Allokering & Prognose' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Kunderapport'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Prognoser' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Kunderapport'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -2987,6 +2988,81 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
+                {/* Aggregert porteføljeeksponering (kun aksjedelen) */}
+                {(() => {
+                  // Beregn vektet aggregert eksponering for hele porteføljen (ekskl. høyrente/rente)
+                  const aksjeProdukter = pensumAllokering.filter(a => {
+                    if (a.vekt <= 0) return false;
+                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                    const p = alle.find(pp => pp.id === a.id);
+                    // Ekskluder rente/høyrente-produkter
+                    if (p?.aktivatype === 'rente') return false;
+                    if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
+                    return true;
+                  });
+                  const totalAksjeVekt = aksjeProdukter.reduce((s, a) => s + a.vekt, 0) || 1;
+
+                  const aggreger = (key) => {
+                    const sumMap = {};
+                    aksjeProdukter.forEach(a => {
+                      const eks = produktEksponering?.[a.id]?.[key];
+                      if (!eks) return;
+                      const relVekt = a.vekt / totalAksjeVekt;
+                      eks.forEach(row => {
+                        if (!sumMap[row.navn]) sumMap[row.navn] = 0;
+                        sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt;
+                      });
+                    });
+                    return Object.entries(sumMap)
+                      .map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) }))
+                      .sort((a, b) => b.vekt - a.vekt)
+                      .slice(0, 10);
+                  };
+
+                  const aggRegioner = aggreger('regioner');
+                  const aggSektorer = aggreger('sektorer');
+                  const aggStil = aggreger('stil');
+
+                  if (aksjeProdukter.length === 0) return null;
+
+                  return (
+                    <div className="mt-8 rounded-2xl border border-blue-200/60 overflow-hidden" style={{ background: 'linear-gradient(135deg, #F0F7FF 0%, #EBF3FF 50%, #DBEAFE 100%)' }}>
+                      <div className="px-5 py-4 border-b border-blue-200/50" style={{ backgroundColor: 'rgba(13, 34, 64, 0.04)' }}>
+                        <h4 className="font-semibold text-base" style={{ color: PENSUM_COLORS.darkBlue }}>Aggregert porteføljeeksponering</h4>
+                        <p className="text-xs text-gray-500 mt-1">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdukter.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
+                      </div>
+                      <div className="p-5">
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                          {[
+                            { title: 'Regioner', data: aggRegioner, color: PENSUM_COLORS.teal },
+                            { title: 'Sektorer', data: aggSektorer, color: PENSUM_COLORS.lightBlue },
+                            { title: 'Stil', data: aggStil, color: PENSUM_COLORS.gold }
+                          ].map(block => (
+                            <div key={block.title} className="rounded-xl border border-slate-200 bg-white p-4">
+                              <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
+                              {block.data.length > 0 ? (
+                                <div className="space-y-2">
+                                  {block.data.map((row, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <span className="text-xs min-w-0 flex-1 truncate">{row.navn}</span>
+                                      <div className="w-24 bg-slate-100 rounded-full h-3.5 overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
+                                      </div>
+                                      <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="h-[100px] flex items-center justify-center text-sm text-slate-400">Ingen data</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Produktspesifikk eksponering */}
                 <div className="mt-8 rounded-2xl border border-amber-200/60 overflow-hidden" style={{ background: 'linear-gradient(135deg, #FFFBF0 0%, #FFF7E6 50%, #FEF3D0 100%)' }}>
                   <div className="px-5 py-4 border-b border-amber-200/50 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3" style={{ backgroundColor: 'rgba(180, 134, 11, 0.06)' }}>
@@ -3665,7 +3741,22 @@ export default function PensumPrognoseModell() {
                     }
                   });
                   avkastninger['portefolje'] = vektetAvk;
-                  return { chartData, avkastninger };
+                  // Beregn max drawdown fra indekserte serier
+                  const maxDrawdowns = {};
+                  const beregnDD = (serie) => {
+                    let peak = -Infinity; let maxDD = 0;
+                    serie.forEach(v => { if (v > peak) peak = v; const dd = ((v - peak) / peak) * 100; if (dd < maxDD) maxDD = dd; });
+                    return parseFloat(maxDD.toFixed(1));
+                  };
+                  // Per produkt
+                  valgteProdukterIds.forEach(id => {
+                    const serie = chartData.map(p => p[id]).filter(v => v !== undefined);
+                    if (serie.length > 1) maxDrawdowns[id] = beregnDD(serie);
+                  });
+                  // Portefølje
+                  const portSerie = chartData.map(p => p['portefolje']).filter(v => v !== undefined);
+                  if (portSerie.length > 1) maxDrawdowns['portefolje'] = beregnDD(portSerie);
+                  return { chartData, avkastninger, maxDrawdowns };
                 };
 
                 const perioder = [
@@ -3677,7 +3768,7 @@ export default function PensumPrognoseModell() {
                 return (
                   <div className="p-6 space-y-8">
                     {perioder.map(({ label, years }) => {
-                      const { chartData, avkastninger } = buildSnapshotData(years);
+                      const { chartData, avkastninger, maxDrawdowns } = buildSnapshotData(years);
                       if (chartData.length < 2) return null;
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
@@ -3730,6 +3821,22 @@ export default function PensumPrognoseModell() {
                                       {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
                                     </span>
                                   </div>
+                                );
+                              })}
+                            </div>
+                            {/* Max Drawdown */}
+                            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 justify-center items-center">
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Maks drawdown:</span>
+                              <div className="text-xs font-medium px-2 py-0.5 rounded bg-red-50 text-red-700">
+                                Portefølje: {erGyldigTall(maxDrawdowns['portefolje']) ? maxDrawdowns['portefolje'].toFixed(1) + '%' : '—'}
+                              </div>
+                              {valgteProdukterIds.map(id => {
+                                const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
+                                const dd = maxDrawdowns[id];
+                                return (
+                                  <span key={id} className="text-[11px] text-gray-500">
+                                    {pi?.navn?.replace('Pensum ', '') || id}: <span className="text-red-600 font-medium">{erGyldigTall(dd) ? dd.toFixed(1) + '%' : '—'}</span>
+                                  </span>
                                 );
                               })}
                             </div>
@@ -3859,7 +3966,7 @@ export default function PensumPrognoseModell() {
           // Bygg sammenligningsdata fra månedlige historikkpunkter
           const byggSammenligningsdata = () => {
             const alleNavn = [...valgtePensumScen, ...valgteIndekserScen];
-            if (alleNavn.length === 0) return [];
+            if (alleNavn.length === 0 && !visPortefoljeScen) return [];
 
             // Samle månedlige serier per serie-navn
             const serieMap = {};
@@ -3891,6 +3998,52 @@ export default function PensumPrognoseModell() {
               }
             });
 
+            // Beregn vektet portefølje-serie fra pensumAllokering
+            if (visPortefoljeScen) {
+              const valgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+              const totalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+              const produktSerier = {};
+              valgteProdIds.forEach(id => {
+                const hist = produktHistorikk?.[id];
+                if (!hist?.data?.length) return;
+                const maanedlig = byggMaanedssluttSerie(hist.data);
+                const filtrert = maanedlig.filter(d => {
+                  const dato = parseHistorikkDato(d.dato);
+                  return dato && dato >= periodeStartDato;
+                });
+                if (filtrert.length > 0) {
+                  const startVerdi = filtrert[0].verdi;
+                  produktSerier[id] = {};
+                  filtrert.forEach(d => {
+                    produktSerier[id][d.dato] = startVerdi > 0 ? (d.verdi / startVerdi) * 100 : 100;
+                  });
+                }
+              });
+              // Bygg vektet porteføljeserie
+              const portDatoer = new Set();
+              Object.values(produktSerier).forEach(map => Object.keys(map).forEach(d => portDatoer.add(d)));
+              const portSortert = Array.from(portDatoer).sort();
+              const portSerie = [];
+              portSortert.forEach(dato => {
+                let vektetVerdi = 0; let totalProdVekt = 0;
+                valgteProdIds.forEach(id => {
+                  if (produktSerier[id]?.[dato] !== undefined) {
+                    const allok = pensumAllokering.find(a => a.id === id);
+                    if (allok) {
+                      vektetVerdi += produktSerier[id][dato] * (allok.vekt / totalVekt);
+                      totalProdVekt += allok.vekt / totalVekt;
+                    }
+                  }
+                });
+                if (totalProdVekt > 0) {
+                  portSerie.push({ dato, indeksert: parseFloat((vektetVerdi / totalProdVekt).toFixed(2)) });
+                }
+              });
+              if (portSerie.length > 0) {
+                serieMap['Din portefølje'] = portSerie;
+              }
+            }
+
             // Samle alle unike datoer
             const alleDatoer = new Set();
             Object.values(serieMap).forEach(serie => serie.forEach(d => alleDatoer.add(d.dato)));
@@ -3908,7 +4061,7 @@ export default function PensumPrognoseModell() {
           };
 
           const sammenligningsData = byggSammenligningsdata();
-          const alleSammenligningsNavn = [...valgtePensumScen, ...valgteIndekserScen];
+          const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Din portefølje'] : []), ...valgtePensumScen, ...valgteIndekserScen];
 
           const alleNavn2 = Object.keys(PENSUM_AARLIG);
           const alleIndeksNavn = Object.keys(REFERANSE_DATA);
@@ -3935,9 +4088,21 @@ export default function PensumPrognoseModell() {
                     })}
                   </div>
 
+                  {/* Din portefølje toggle */}
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Din portefølje</div>
+                    <button
+                      onClick={() => setVisPortefoljeScen(prev => !prev)}
+                      className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visPortefoljeScen ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
+                      style={visPortefoljeScen ? { backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' } : { color: '#1B3A5F' }}>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visPortefoljeScen ? 'white' : '#1B3A5F' }}></span>
+                      Din portefølje (vektet)
+                    </button>
+                  </div>
+
                   {/* Pensum-løsninger knapper */}
                   <div className="mb-2">
-                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums løsninger</div>
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums enkeltløsninger</div>
                     <div className="flex flex-wrap gap-2">
                       {alleNavn2.map(n => {
                         const aktiv = valgtePensumScen.includes(n);
@@ -3988,11 +4153,12 @@ export default function PensumPrognoseModell() {
                         <Legend verticalAlign="bottom" height={36} />
                         <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
                         {alleSammenligningsNavn.map(n => {
-                          const farge = PENSUM_AARLIG[n]?.farge || REFERANSE_DATA[n]?.farge || '#999';
+                          const erPortefolje = n === 'Din portefølje';
+                          const farge = erPortefolje ? '#1B3A5F' : (PENSUM_AARLIG[n]?.farge || REFERANSE_DATA[n]?.farge || '#999');
                           const erIndeks = !!REFERANSE_DATA[n];
                           return (
                             <Line key={n} type="monotone" dataKey={n} stroke={farge}
-                              strokeWidth={erIndeks ? 1.5 : 2.5} dot={false} activeDot={{ r: 4 }}
+                              strokeWidth={erPortefolje ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje ? 5 : 4 }}
                               strokeDasharray={erIndeks ? '4 3' : undefined} connectNulls />
                           );
                         })}
