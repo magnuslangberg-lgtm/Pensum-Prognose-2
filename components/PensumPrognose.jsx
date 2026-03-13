@@ -3690,9 +3690,18 @@ export default function PensumPrognoseModell() {
                 const valgteProdukterIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
                 const totalVektSnap = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
 
+                // Referanseindekser for snapshot-grafene
+                const SNAPSHOT_INDEKSER = {
+                  'MSCI World': { feedKey: 'msci-world', farge: '#0891B2', dash: '6 3' },
+                  'Oslo Børs': { feedKey: 'oslo-bors', farge: '#EA580C', dash: '4 3' },
+                  'Norske Statsobl.': { feedKey: 'norske-statsobl', farge: '#64748B', dash: '2 2' },
+                };
+
                 const buildSnapshotData = (periodYears) => {
                   const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
                   const alleDatoer = new Set();
+
+                  // Bygg produktdata for vektet portefølje
                   const produktMaps = {};
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
@@ -3702,45 +3711,69 @@ export default function PensumPrognoseModell() {
                       produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
                     }
                   });
+
+                  // Bygg indeksdata
+                  const indeksMaps = {};
+                  Object.entries(SNAPSHOT_INDEKSER).forEach(([navn, cfg]) => {
+                    const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                    if (hist?.data) {
+                      const dMap = new Map();
+                      hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato && erGyldigTall(d.verdi)) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                      const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                      if (startVerdi) indeksMaps[navn] = { dMap, startVerdi };
+                    }
+                  });
+
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
                     const punkt = { dato };
-                    let vektetVerdi = 0;
-                    let totalProdVekt = 0;
+                    // Vektet portefølje
+                    let vektetVerdi = 0; let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
                       const pm = produktMaps[id];
                       if (pm) {
                         const verdi = pm.dMap.get(dato);
                         if (verdi !== undefined && pm.startVerdi) {
                           const indeksert = (verdi / pm.startVerdi) * 100;
-                          punkt[id] = indeksert;
                           const allok = pensumAllokering.find(a => a.id === id);
                           if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
                         }
                       }
                     });
                     if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                    // Indekser
+                    Object.entries(indeksMaps).forEach(([navn, im]) => {
+                      const verdi = im.dMap.get(dato);
+                      if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                    });
                     return punkt;
                   });
-                  // Beregn totalavkastning per produkt
+
+                  // Beregn avkastning
                   const avkastninger = {};
+                  // Portefølje
+                  let vektetAvk = 0;
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
                     if (hist?.data && hist.data.length >= 2) {
                       const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
                       const sluttVerdi = hist.data[hist.data.length - 1].verdi;
-                      if (startVerdi) avkastninger[id] = ((sluttVerdi / startVerdi) - 1) * 100;
-                    }
-                  });
-                  // Vektet porteføljeavkastning
-                  let vektetAvk = 0;
-                  valgteProdukterIds.forEach(id => {
-                    if (erGyldigTall(avkastninger[id])) {
-                      const allok = pensumAllokering.find(a => a.id === id);
-                      if (allok) vektetAvk += avkastninger[id] * (allok.vekt / totalVektSnap);
+                      if (startVerdi) {
+                        const avk = ((sluttVerdi / startVerdi) - 1) * 100;
+                        const allok = pensumAllokering.find(a => a.id === id);
+                        if (allok) vektetAvk += avk * (allok.vekt / totalVektSnap);
+                      }
                     }
                   });
                   avkastninger['portefolje'] = vektetAvk;
+                  // Indekser
+                  Object.entries(indeksMaps).forEach(([navn, im]) => {
+                    const sortert = Array.from(im.dMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                    if (sortert.length >= 2) {
+                      const sluttVerdi = sortert[sortert.length - 1][1];
+                      avkastninger[navn] = ((sluttVerdi / im.startVerdi) - 1) * 100;
+                    }
+                  });
                   return { chartData, avkastninger };
                 };
 
@@ -3770,22 +3803,12 @@ export default function PensumPrognoseModell() {
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
-                                  formatter={(v, name) => {
-                                    if (name === 'portefolje') return [v.toFixed(1), 'Din portefølje'];
-                                    const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === name);
-                                    return [v.toFixed(1), pi?.navn?.replace('Pensum ', '') || name];
-                                  }} />
+                                  formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
                                 <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
-                                <defs>
-                                  <filter id="portfolioGlow">
-                                    <feGaussianBlur stdDeviation="2" result="blur" />
-                                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                                  </filter>
-                                </defs>
-                                {valgteProdukterIds.map(id => (
-                                  <Line key={id} type="monotone" dataKey={id} stroke={SNAPSHOT_FARGER[id] || '#999'} strokeWidth={1.2} dot={false} opacity={0.45} strokeDasharray={id === 'portefolje' ? undefined : '6 3'} />
+                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
+                                {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
+                                  <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
                                 ))}
-                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={2.5} dot={false} name="portefolje" filter="url(#portfolioGlow)" />
                               </LineChart>
                             </ResponsiveContainer>
                             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 justify-center">
@@ -3795,13 +3818,12 @@ export default function PensumPrognoseModell() {
                                   {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
                                 </span>
                               </div>
-                              {valgteProdukterIds.map(id => {
-                                const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
-                                const avk = avkastninger[id];
+                              {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => {
+                                const avk = avkastninger[navn];
                                 return (
-                                  <div key={id} className="flex items-center gap-1.5 text-xs text-gray-500">
-                                    <div className="w-4 h-px" style={{ backgroundColor: SNAPSHOT_FARGER[id] || '#999', borderTop: '1px dashed ' + (SNAPSHOT_FARGER[id] || '#999') }}></div>
-                                    <span>{pi?.navn?.replace('Pensum ', '') || id}:</span>
+                                  <div key={navn} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                    <div className="w-4 h-0" style={{ borderTop: '2px dashed ' + cfg.farge }}></div>
+                                    <span>{navn}:</span>
                                     <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                       {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
                                     </span>
