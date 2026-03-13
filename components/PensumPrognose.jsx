@@ -674,27 +674,50 @@ export default function PensumPrognoseModell() {
     }
 
     try {
-      const brukereKey = 'pensum_brukere';
-      let brukere = {};
-      const raw = await storageGet(brukereKey);
-      if (raw) brukere = JSON.parse(raw);
-
       const epostNormalisert = registrerEpost.toLowerCase().trim();
-      if (brukere[epostNormalisert]) {
-        setAuthFeilmelding('Denne e-postadressen er allerede registrert');
-        return;
+      let nyBruker = null;
+
+      // Try server API first
+      try {
+        const resp = await fetch('/api/brukere', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ epost: epostNormalisert, pin: registrerPin, navn: registrerNavn })
+        });
+        if (resp.status === 409) {
+          setAuthFeilmelding('Denne e-postadressen er allerede registrert');
+          return;
+        }
+        if (resp.ok) {
+          nyBruker = await resp.json();
+        }
+      } catch (apiErr) {
+        console.log('API ikke tilgjengelig, bruker lokal lagring:', apiErr);
       }
 
-      const nyBruker = {
-        epost: epostNormalisert,
-        pin: registrerPin,
-        navn: registrerNavn,
-        opprettet: new Date().toISOString()
-      };
+      // Fallback to local storage if API failed
+      if (!nyBruker) {
+        const brukereKey = 'pensum_brukere';
+        let brukere = {};
+        const raw = await storageGet(brukereKey);
+        if (raw) brukere = JSON.parse(raw);
 
-      brukere[epostNormalisert] = nyBruker;
+        if (brukere[epostNormalisert]) {
+          setAuthFeilmelding('Denne e-postadressen er allerede registrert');
+          return;
+        }
 
-      await storageSet(brukereKey, JSON.stringify(brukere));
+        nyBruker = {
+          epost: epostNormalisert,
+          pin: registrerPin,
+          navn: registrerNavn,
+          opprettet: new Date().toISOString()
+        };
+
+        brukere[epostNormalisert] = nyBruker;
+        await storageSet(brukereKey, JSON.stringify(brukere));
+      }
+
       await storageSet('pensum_aktiv_bruker', JSON.stringify(nyBruker));
 
       setBruker(nyBruker);
@@ -724,13 +747,28 @@ export default function PensumPrognoseModell() {
     }
 
     try {
-      const brukereKey = 'pensum_brukere';
-      let brukere = {};
-      const raw = await storageGet(brukereKey);
-      if (raw) brukere = JSON.parse(raw);
-
       const epostNormalisert = loginEpost.toLowerCase().trim();
-      const brukerData = brukere[epostNormalisert];
+      let brukerData = null;
+
+      // Try server API first
+      try {
+        const resp = await fetch('/api/brukere');
+        if (resp.ok) {
+          const brukere = await resp.json();
+          brukerData = brukere[epostNormalisert] || null;
+        }
+      } catch (apiErr) {
+        console.log('API ikke tilgjengelig, bruker lokal lagring:', apiErr);
+      }
+
+      // Fallback to local storage if API didn't find user
+      if (!brukerData) {
+        const brukereKey = 'pensum_brukere';
+        let brukere = {};
+        const raw = await storageGet(brukereKey);
+        if (raw) brukere = JSON.parse(raw);
+        brukerData = brukere[epostNormalisert] || null;
+      }
 
       if (!brukerData) {
         setAuthFeilmelding('Fant ingen bruker med denne e-postadressen');
@@ -2260,7 +2298,7 @@ export default function PensumPrognoseModell() {
                       ))}
                     </div>
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pl-3 border-l border-blue-400">
                       <button onClick={() => setShowComparison(!showComparison)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (showComparison ? "bg-purple-400 text-white" : "bg-blue-800 text-white hover:bg-blue-700")}>
                         {showComparison ? 'Skjul sammenligning' : 'Sammenlign'}
                       </button>
@@ -5436,13 +5474,24 @@ export default function PensumPrognoseModell() {
                   </div>
                   <div className="p-6">
                     <p className="text-sm text-gray-600 mb-4">
-                      Oversikt over registrerte brukere. Brukere opprettes via "Ny bruker"-dialogen og lagres i nettleserens lokale lagring.
+                      Oversikt over registrerte brukere. Brukere opprettes via "Ny bruker"-dialogen og lagres på serveren.
                     </p>
                     <button
                       onClick={async () => {
                         try {
-                          const raw = await storageGet('pensum_brukere');
-                          setAdminBrukere(raw ? JSON.parse(raw) : {});
+                          // Try API first, fallback to localStorage
+                          let brukere = null;
+                          try {
+                            const resp = await fetch('/api/brukere');
+                            if (resp.ok) brukere = await resp.json();
+                          } catch (apiErr) {
+                            console.log('API ikke tilgjengelig:', apiErr);
+                          }
+                          if (!brukere) {
+                            const raw = await storageGet('pensum_brukere');
+                            brukere = raw ? JSON.parse(raw) : {};
+                          }
+                          setAdminBrukere(brukere);
                         } catch (e) {
                           setAdminBrukere({});
                           setAdminMelding('Kunne ikke laste brukere: ' + e.message);
@@ -5477,6 +5526,16 @@ export default function PensumPrognoseModell() {
                                   <button
                                     onClick={async () => {
                                       if (!confirm('Slette bruker ' + b.epost + '?')) return;
+                                      // Try API first
+                                      try {
+                                        await fetch('/api/brukere', {
+                                          method: 'DELETE',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ epost: b.epost })
+                                        });
+                                      } catch (apiErr) {
+                                        console.log('API slett feilet:', apiErr);
+                                      }
                                       const oppdatert = { ...adminBrukere };
                                       delete oppdatert[b.epost];
                                       await storageSet('pensum_brukere', JSON.stringify(oppdatert));
