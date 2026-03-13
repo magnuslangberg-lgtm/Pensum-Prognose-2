@@ -112,34 +112,47 @@ export default function PensumPrognoseModell() {
   const [adminPassord, setAdminPassord] = useState('');
   const [erAdmin, setErAdmin] = useState(false);
   const [adminMelding, setAdminMelding] = useState('');
+  const [adminBrukere, setAdminBrukere] = useState(null);
   const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
 
   const storageGet = async (key) => {
     if (typeof window === 'undefined') return null;
+    // Try window.storage first, then localStorage
+    let val = null;
     if (window.storage && window.storage.get) {
-      const result = await window.storage.get(key);
-      return result && result.value ? result.value : null;
+      try {
+        const result = await window.storage.get(key);
+        if (result && result.value) val = result.value;
+      } catch (e) { /* fallthrough */ }
     }
-    return window.localStorage.getItem(key);
+    if (!val && typeof localStorage !== 'undefined') {
+      try { val = localStorage.getItem(key); } catch (e) { /* ignore */ }
+    }
+    return val;
   };
 
   const storageSet = async (key, value) => {
     if (typeof window === 'undefined') return false;
+    let saved = false;
+    // Always try BOTH storage mechanisms for redundancy
     if (window.storage && window.storage.set) {
-      await window.storage.set(key, value);
-      return true;
+      try { await window.storage.set(key, value); saved = true; } catch (e) { /* fallthrough */ }
     }
-    window.localStorage.setItem(key, value);
-    return true;
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(key, value); saved = true; } catch (e) { /* ignore */ }
+    }
+    return saved;
   };
 
   const storageDelete = async (key) => {
     if (typeof window === 'undefined') return false;
+    // Delete from BOTH storage mechanisms
     if (window.storage && window.storage.delete) {
-      await window.storage.delete(key);
-      return true;
+      try { await window.storage.delete(key); } catch (e) { /* ignore */ }
     }
-    window.localStorage.removeItem(key);
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
+    }
     return true;
   };
   const [pdfMalConfig, setPdfMalConfig] = useState({
@@ -630,14 +643,7 @@ export default function PensumPrognoseModell() {
   useEffect(() => {
     const lastBruker = async () => {
       try {
-        let brukerJson = null;
-        if (window.storage && window.storage.get) {
-          const result = await window.storage.get('pensum_aktiv_bruker');
-          if (result && result.value) brukerJson = result.value;
-        }
-        if (!brukerJson && typeof localStorage !== 'undefined') {
-          brukerJson = localStorage.getItem('pensum_aktiv_bruker');
-        }
+        const brukerJson = await storageGet('pensum_aktiv_bruker');
         if (brukerJson) {
           const brukerData = JSON.parse(brukerJson);
           setBruker(brukerData);
@@ -653,7 +659,7 @@ export default function PensumPrognoseModell() {
   // Registrer ny bruker
   const registrerBruker = useCallback(async () => {
     setAuthFeilmelding('');
-    
+
     if (!registrerEpost || !registrerEpost.includes('@')) {
       setAuthFeilmelding('Vennligst oppgi en gyldig e-postadresse');
       return;
@@ -668,18 +674,10 @@ export default function PensumPrognoseModell() {
     }
 
     try {
-      // Sjekk om e-post allerede er registrert
       const brukereKey = 'pensum_brukere';
       let brukere = {};
-
-      if (window.storage && window.storage.get) {
-        const result = await window.storage.get(brukereKey);
-        if (result && result.value) brukere = JSON.parse(result.value);
-      }
-      if (Object.keys(brukere).length === 0 && typeof localStorage !== 'undefined') {
-        const lsVal = localStorage.getItem(brukereKey);
-        if (lsVal) brukere = JSON.parse(lsVal);
-      }
+      const raw = await storageGet(brukereKey);
+      if (raw) brukere = JSON.parse(raw);
 
       const epostNormalisert = registrerEpost.toLowerCase().trim();
       if (brukere[epostNormalisert]) {
@@ -687,26 +685,17 @@ export default function PensumPrognoseModell() {
         return;
       }
 
-      // Lagre ny bruker
       const nyBruker = {
         epost: epostNormalisert,
         pin: registrerPin,
         navn: registrerNavn,
         opprettet: new Date().toISOString()
       };
-      
+
       brukere[epostNormalisert] = nyBruker;
-      
-      const brukereStr = JSON.stringify(brukere);
-      const nyBrukerStr = JSON.stringify(nyBruker);
-      if (window.storage && window.storage.set) {
-        await window.storage.set(brukereKey, brukereStr);
-        await window.storage.set('pensum_aktiv_bruker', nyBrukerStr);
-      }
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(brukereKey, brukereStr);
-        localStorage.setItem('pensum_aktiv_bruker', nyBrukerStr);
-      }
+
+      await storageSet(brukereKey, JSON.stringify(brukere));
+      await storageSet('pensum_aktiv_bruker', JSON.stringify(nyBruker));
 
       setBruker(nyBruker);
       setRadgiver(nyBruker.navn);
@@ -714,8 +703,7 @@ export default function PensumPrognoseModell() {
       setRegistrerEpost('');
       setRegistrerPin('');
       setRegistrerNavn('');
-      
-      // Hvis vi ventet på registrering for å lagre, gjør det nå
+
       if (ventPaaRegistrering) {
         setVentPaaRegistrering(false);
         setTimeout(() => lagreKundeEtterAuth(), 100);
@@ -729,7 +717,7 @@ export default function PensumPrognoseModell() {
   // Logg inn bruker
   const loggInnBruker = useCallback(async () => {
     setAuthFeilmelding('');
-    
+
     if (!loginEpost || !loginPin) {
       setAuthFeilmelding('Vennligst fyll inn e-post og PIN');
       return;
@@ -738,37 +726,23 @@ export default function PensumPrognoseModell() {
     try {
       const brukereKey = 'pensum_brukere';
       let brukere = {};
-
-      if (window.storage && window.storage.get) {
-        const result = await window.storage.get(brukereKey);
-        if (result && result.value) brukere = JSON.parse(result.value);
-      }
-      if (Object.keys(brukere).length === 0 && typeof localStorage !== 'undefined') {
-        const lsVal = localStorage.getItem(brukereKey);
-        if (lsVal) brukere = JSON.parse(lsVal);
-      }
+      const raw = await storageGet(brukereKey);
+      if (raw) brukere = JSON.parse(raw);
 
       const epostNormalisert = loginEpost.toLowerCase().trim();
       const brukerData = brukere[epostNormalisert];
-      
+
       if (!brukerData) {
         setAuthFeilmelding('Fant ingen bruker med denne e-postadressen');
         return;
       }
-      
+
       if (brukerData.pin !== loginPin) {
         setAuthFeilmelding('Feil PIN-kode');
         return;
       }
 
-      // Lagre aktiv bruker
-      const brukerStr = JSON.stringify(brukerData);
-      if (window.storage && window.storage.set) {
-        await window.storage.set('pensum_aktiv_bruker', brukerStr);
-      }
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('pensum_aktiv_bruker', brukerStr);
-      }
+      await storageSet('pensum_aktiv_bruker', JSON.stringify(brukerData));
 
       setBruker(brukerData);
       setRadgiver(brukerData.navn);
@@ -790,12 +764,7 @@ export default function PensumPrognoseModell() {
   // Logg ut bruker
   const loggUtBruker = useCallback(async () => {
     try {
-      if (window.storage && window.storage.delete) {
-        await window.storage.delete('pensum_aktiv_bruker');
-      }
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('pensum_aktiv_bruker');
-      }
+      await storageDelete('pensum_aktiv_bruker');
     } catch (e) {
       console.log('Kunne ikke slette bruker fra storage:', e);
     }
@@ -2252,58 +2221,56 @@ export default function PensumPrognoseModell() {
 
         {activeTab === 'allokering' && (
           <div className="space-y-6 no-print">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-6">
-                  {/* Investert beløp */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Investert beløp:</label>
-                    <input 
-                      type="text" 
-                      value={investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital)}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
-                        setInvestertBelop(value);
-                      }}
-                      className="border border-gray-200 rounded-lg py-2 px-3 w-36 text-right"
-                    />
-                    {investertBelop !== null && (
-                      <button 
-                        onClick={() => setInvestertBelop(null)} 
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
-                        title="Tilbakestill til kundeinformasjon"
-                      >
-                        Tilbakestill
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <h3 className="text-lg font-semibold text-white">Pensum Prognosemodell</h3>
+                  <div className="flex items-center gap-4">
+                    {/* Investert beløp */}
+                    <div className="flex items-center gap-2 pr-4 border-r border-blue-400">
+                      <span className="text-sm text-blue-200">Beløp:</span>
+                      <input
+                        type="text"
+                        value={investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital)}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
+                          setInvestertBelop(value);
+                        }}
+                        className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-28 text-right text-sm"
+                      />
+                      <span className="text-blue-300 text-sm">kr</span>
+                      {investertBelop !== null && (
+                        <button onClick={() => setInvestertBelop(null)} className="text-blue-300 hover:text-white" title="Tilbakestill">↺</button>
+                      )}
+                    </div>
+                    {/* Alternative investeringer */}
+                    <div className="flex items-center gap-4 pr-4 border-r border-blue-400">
+                      <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer">
+                        <input type="checkbox" checked={effektivVisAlternative} onChange={(e) => setVisAlternativeAllokering(e.target.checked)} className="w-4 h-4 rounded" />
+                        <span>Alternative investeringer</span>
+                      </label>
+                    </div>
+                    {/* Risikoprofil buttons */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-blue-200">Risikoprofil:</span>
+                      {['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].map(profil => (
+                        <button key={profil} onClick={() => resetTilAutomatisk(profil)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (risikoprofil === profil ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}>
+                          {profil}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setShowComparison(!showComparison)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (showComparison ? "bg-purple-400 text-white" : "bg-blue-800 text-white hover:bg-blue-700")}>
+                        {showComparison ? 'Skjul sammenligning' : 'Sammenlign'}
                       </button>
-                    )}
+                      <button onClick={() => { setVisAlternativeAllokering(null); resetTilAutomatisk(); setInvestertBelop(null); }} className="px-3 py-1.5 rounded text-xs font-medium bg-blue-800 text-white hover:bg-blue-700 transition-colors">Tilbakestill alt</button>
+                    </div>
                   </div>
-                  {/* Risikoprofil */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Risikoprofil:</label>
-                    <select value={risikoprofil} onChange={(e) => resetTilAutomatisk(e.target.value)} className="border border-gray-200 rounded-lg py-2 px-4">
-                      <option>Defensiv</option><option>Moderat</option><option>Dynamisk</option><option>Offensiv</option>
-                    </select>
-                  </div>
-                  {/* Alternative investeringer checkbox */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={effektivVisAlternative} 
-                      onChange={(e) => setVisAlternativeAllokering(e.target.checked)}
-                      className="w-4 h-4 rounded"
-                    />
-                    <span className="text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>Alternative investeringer</span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setShowComparison(!showComparison)} className={"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border " + (showComparison ? "bg-purple-100 border-purple-300 text-purple-700" : "border-gray-200 hover:bg-gray-100")} style={{ color: showComparison ? undefined : PENSUM_COLORS.darkBlue }}>
-                    {showComparison ? 'Skjul sammenligning' : 'Sammenlign'}
-                  </button>
-                  <button onClick={() => { setVisAlternativeAllokering(null); resetTilAutomatisk(); setInvestertBelop(null); }} className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-100" style={{ color: PENSUM_COLORS.darkBlue }}>Tilbakestill alt</button>
                 </div>
               </div>
               {showComparison && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="p-5 border-b border-gray-200 bg-purple-50/50">
                   <div className="flex items-center gap-4 mb-4">
                     <span className="text-sm font-medium" style={{ color: PENSUM_COLORS.purple }}>Utgangspunkt:</span>
                     <select value={sammenligningProfil} onChange={(e) => oppdaterSammenligningProfil(e.target.value)} className="border border-purple-200 rounded-lg py-2 px-4 bg-purple-50">
@@ -2379,76 +2346,112 @@ export default function PensumPrognoseModell() {
               </div>
               <div className="xl:col-span-2">
                 <div className="grid grid-cols-1 gap-4">
-                  {/* Porteføljesammensetning */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-4 py-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-sm font-semibold text-white">Porteføljesammensetning</h3></div>
-                    <div className="p-3">
-                      {showComparison ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <h4 className="text-center text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h4>
-                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={pieData} cx="50%" cy="50%" outerRadius={45} dataKey="value">{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} stroke="white" strokeWidth={1} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} /></PieChart></ResponsiveContainer>
-                          </div>
-                          <div>
-                            <h4 className="text-center text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.purple }}>{sammenligningProfil}</h4>
-                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" outerRadius={45} dataKey="value">{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} stroke="white" strokeWidth={1} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} /></PieChart></ResponsiveContainer>
-                          </div>
+                  {/* Porteføljesammensetning - donut chart with side legend */}
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</h4>
+                    {showComparison ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h5>
+                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={30} outerRadius={55} dataKey="value" paddingAngle={2} cornerRadius={3}>{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} /></PieChart></ResponsiveContainer>
                         </div>
-                      ) : (
-                        <ResponsiveContainer width="100%" height={180}><PieChart><Pie data={pieData} cx="50%" cy="45%" outerRadius={55} dataKey="value">{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} stroke="white" strokeWidth={2} />)}</Pie><Tooltip formatter={(v, n) => [v.toFixed(1) + '%', n]} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '10px' }} /></PieChart></ResponsiveContainer>
-                      )}
-                    </div>
+                        <div>
+                          <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.purple }}>{sammenligningProfil}</h5>
+                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" innerRadius={30} outerRadius={55} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} /></PieChart></ResponsiveContainer>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-6">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={180} height={180}>
+                            <PieChart>
+                              <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                {pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} />)}
+                              </Pie>
+                              <Tooltip formatter={(v, n) => [v.toFixed(1) + '%', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          {pieData.filter(d => d.value > 0).map((entry, idx) => (
+                            <div key={entry.name} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[entry.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === entry.name)?.kategori] || '#888' }}></div>
+                                <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
+                              </div>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Likviditet og Aktiva side om side */}
+
+                  {/* Likviditet og Aktiva side om side - donut style */}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Likviditet */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div className="px-4 py-2" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-sm font-semibold text-white">Likviditet</h3></div>
-                      <div className="p-3">
-                        <ResponsiveContainer width="100%" height={100}>
-                          <PieChart>
-                            <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" outerRadius={40} dataKey="value">
-                              <Cell fill={PENSUM_COLORS.darkBlue} />
-                              <Cell fill={PENSUM_COLORS.salmon} />
-                            </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(1) + '%'} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="flex justify-center gap-4 mt-2">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                            <span className="text-xs text-gray-600">Likvid ({formatPercent(likviditetData[0].value)})</span>
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
+                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={100} height={100}>
+                            <PieChart>
+                              <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                <Cell fill={PENSUM_COLORS.darkBlue} />
+                                <Cell fill={PENSUM_COLORS.salmon} />
+                              </Pie>
+                              <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                              <span className="text-gray-600">Likvid</span>
+                            </div>
+                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[0].value)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
-                            <span className="text-xs text-gray-600">Illikvid ({formatPercent(likviditetData[1].value)})</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
+                              <span className="text-gray-600">Illikvid</span>
+                            </div>
+                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[1].value)}</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Aktiva */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div className="px-4 py-2" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-sm font-semibold text-white">Aktiva</h3></div>
-                      <div className="p-3">
-                        <ResponsiveContainer width="100%" height={100}>
-                          <PieChart>
-                            <Pie data={renterAksjerData.filter(d => d.value > 0)} cx="50%" cy="50%" outerRadius={40} dataKey="value">
-                              <Cell fill={PENSUM_COLORS.darkBlue} />
-                              <Cell fill={PENSUM_COLORS.salmon} />
-                            </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(1) + '%'} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="flex justify-center gap-4 mt-2">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                            <span className="text-xs text-gray-600">Renter ({formatPercent(renterAksjerData[0].value)})</span>
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
+                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktiva</h4>
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={100} height={100}>
+                            <PieChart>
+                              <Pie data={renterAksjerData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                <Cell fill={PENSUM_COLORS.darkBlue} />
+                                <Cell fill={PENSUM_COLORS.salmon} />
+                              </Pie>
+                              <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                              <span className="text-gray-600">Renter</span>
+                            </div>
+                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(renterAksjerData[0].value)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
-                            <span className="text-xs text-gray-600">Aksjer ({formatPercent(renterAksjerData[1].value)})</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
+                              <span className="text-gray-600">Aksjer</span>
+                            </div>
+                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(renterAksjerData[1].value)}</span>
                           </div>
                         </div>
                       </div>
@@ -5420,6 +5423,123 @@ export default function PensumPrognoseModell() {
                     >
                       Lagre endringer
                     </button>
+                  </div>
+                </div>
+
+                {/* Brukeradministrasjon */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                      Brukeradministrasjon
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Oversikt over registrerte brukere. Brukere opprettes via "Ny bruker"-dialogen og lagres i nettleserens lokale lagring.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const raw = await storageGet('pensum_brukere');
+                          setAdminBrukere(raw ? JSON.parse(raw) : {});
+                        } catch (e) {
+                          setAdminBrukere({});
+                          setAdminMelding('Kunne ikke laste brukere: ' + e.message);
+                        }
+                      }}
+                      className="mb-4 px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ backgroundColor: PENSUM_COLORS.teal }}
+                    >
+                      Last inn brukerliste
+                    </button>
+                    {adminBrukere && Object.keys(adminBrukere).length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                              <th className="py-2 px-3 text-left font-medium">Navn</th>
+                              <th className="py-2 px-3 text-left font-medium">E-post</th>
+                              <th className="py-2 px-3 text-left font-medium">PIN</th>
+                              <th className="py-2 px-3 text-left font-medium">Opprettet</th>
+                              <th className="py-2 px-3 text-center font-medium">Handlinger</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.values(adminBrukere).map((b) => (
+                              <tr key={b.epost} className="border-b border-gray-100">
+                                <td className="py-2 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{b.navn || '–'}</td>
+                                <td className="py-2 px-3 text-gray-600">{b.epost}</td>
+                                <td className="py-2 px-3">
+                                  <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-sm">{b.pin}</span>
+                                </td>
+                                <td className="py-2 px-3 text-gray-500 text-xs">{b.opprettet ? new Date(b.opprettet).toLocaleDateString('nb-NO') : '–'}</td>
+                                <td className="py-2 px-3 text-center">
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm('Slette bruker ' + b.epost + '?')) return;
+                                      const oppdatert = { ...adminBrukere };
+                                      delete oppdatert[b.epost];
+                                      await storageSet('pensum_brukere', JSON.stringify(oppdatert));
+                                      setAdminBrukere(oppdatert);
+                                      setAdminMelding('Bruker ' + b.epost + ' slettet.');
+                                    }}
+                                    className="text-xs text-red-600 hover:text-red-800 underline"
+                                  >
+                                    Slett
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="mt-3 text-xs text-gray-500">
+                          Totalt {Object.keys(adminBrukere).length} bruker{Object.keys(adminBrukere).length !== 1 ? 'e' : ''} registrert.
+                        </div>
+                      </div>
+                    ) : adminBrukere ? (
+                      <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-lg">
+                        Ingen brukere registrert ennå. Brukere opprettes via "Ny bruker"-dialogen i kundeinformasjon-fanen.
+                      </div>
+                    ) : null}
+                    {/* Opprett bruker manuelt */}
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Opprett ny bruker manuelt</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="text" placeholder="Navn" id="admin-ny-bruker-navn" className="border border-gray-200 rounded-lg py-2 px-3 text-sm" />
+                        <input type="email" placeholder="E-post" id="admin-ny-bruker-epost" className="border border-gray-200 rounded-lg py-2 px-3 text-sm" />
+                        <input type="text" placeholder="PIN (minst 4 tegn)" id="admin-ny-bruker-pin" className="border border-gray-200 rounded-lg py-2 px-3 text-sm" />
+                        <button
+                          onClick={async () => {
+                            const navn = document.getElementById('admin-ny-bruker-navn').value;
+                            const epost = document.getElementById('admin-ny-bruker-epost').value.toLowerCase().trim();
+                            const pin = document.getElementById('admin-ny-bruker-pin').value;
+                            if (!navn || !epost || !epost.includes('@') || !pin || pin.length < 4) {
+                              setAdminMelding('Fyll inn alle felt korrekt (navn, gyldig e-post, PIN minst 4 tegn).');
+                              return;
+                            }
+                            let brukere = {};
+                            try {
+                              const raw = await storageGet('pensum_brukere');
+                              if (raw) brukere = JSON.parse(raw);
+                            } catch (e) {}
+                            if (brukere[epost]) {
+                              setAdminMelding('E-posten ' + epost + ' er allerede registrert.');
+                              return;
+                            }
+                            brukere[epost] = { epost, pin, navn, opprettet: new Date().toISOString() };
+                            await storageSet('pensum_brukere', JSON.stringify(brukere));
+                            setAdminBrukere(brukere);
+                            document.getElementById('admin-ny-bruker-navn').value = '';
+                            document.getElementById('admin-ny-bruker-epost').value = '';
+                            document.getElementById('admin-ny-bruker-pin').value = '';
+                            setAdminMelding('Bruker ' + epost + ' opprettet.');
+                          }}
+                          className="py-2 px-4 text-sm font-medium text-white rounded-lg" style={{ backgroundColor: PENSUM_COLORS.teal }}
+                        >
+                          Opprett bruker
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
