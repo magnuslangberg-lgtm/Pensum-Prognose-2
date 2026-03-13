@@ -3690,9 +3690,18 @@ export default function PensumPrognoseModell() {
                 const valgteProdukterIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
                 const totalVektSnap = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
 
+                // Referanseindekser for snapshot-grafene
+                const SNAPSHOT_INDEKSER = {
+                  'MSCI World': { feedKey: 'msci-world', farge: '#0891B2', dash: '6 3' },
+                  'Oslo Børs': { feedKey: 'oslo-bors', farge: '#EA580C', dash: '4 3' },
+                  'Norske Statsobl.': { feedKey: 'norske-statsobl', farge: '#64748B', dash: '2 2' },
+                };
+
                 const buildSnapshotData = (periodYears) => {
                   const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
                   const alleDatoer = new Set();
+
+                  // Bygg produktdata for vektet portefølje
                   const produktMaps = {};
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
@@ -3702,61 +3711,70 @@ export default function PensumPrognoseModell() {
                       produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
                     }
                   });
+
+                  // Bygg indeksdata
+                  const indeksMaps = {};
+                  Object.entries(SNAPSHOT_INDEKSER).forEach(([navn, cfg]) => {
+                    const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                    if (hist?.data) {
+                      const dMap = new Map();
+                      hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato && erGyldigTall(d.verdi)) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                      const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                      if (startVerdi) indeksMaps[navn] = { dMap, startVerdi };
+                    }
+                  });
+
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
                     const punkt = { dato };
-                    let vektetVerdi = 0;
-                    let totalProdVekt = 0;
+                    // Vektet portefølje
+                    let vektetVerdi = 0; let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
                       const pm = produktMaps[id];
                       if (pm) {
                         const verdi = pm.dMap.get(dato);
                         if (verdi !== undefined && pm.startVerdi) {
                           const indeksert = (verdi / pm.startVerdi) * 100;
-                          punkt[id] = indeksert;
                           const allok = pensumAllokering.find(a => a.id === id);
                           if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
                         }
                       }
                     });
                     if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                    // Indekser
+                    Object.entries(indeksMaps).forEach(([navn, im]) => {
+                      const verdi = im.dMap.get(dato);
+                      if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                    });
                     return punkt;
                   });
-                  // Beregn totalavkastning per produkt
+
+                  // Beregn avkastning
                   const avkastninger = {};
+                  // Portefølje
+                  let vektetAvk = 0;
                   valgteProdukterIds.forEach(id => {
                     const hist = produktHistorikk[id];
                     if (hist?.data && hist.data.length >= 2) {
                       const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
                       const sluttVerdi = hist.data[hist.data.length - 1].verdi;
-                      if (startVerdi) avkastninger[id] = ((sluttVerdi / startVerdi) - 1) * 100;
-                    }
-                  });
-                  // Vektet porteføljeavkastning
-                  let vektetAvk = 0;
-                  valgteProdukterIds.forEach(id => {
-                    if (erGyldigTall(avkastninger[id])) {
-                      const allok = pensumAllokering.find(a => a.id === id);
-                      if (allok) vektetAvk += avkastninger[id] * (allok.vekt / totalVektSnap);
+                      if (startVerdi) {
+                        const avk = ((sluttVerdi / startVerdi) - 1) * 100;
+                        const allok = pensumAllokering.find(a => a.id === id);
+                        if (allok) vektetAvk += avk * (allok.vekt / totalVektSnap);
+                      }
                     }
                   });
                   avkastninger['portefolje'] = vektetAvk;
-                  // Beregn max drawdown fra indekserte serier
-                  const maxDrawdowns = {};
-                  const beregnDD = (serie) => {
-                    let peak = -Infinity; let maxDD = 0;
-                    serie.forEach(v => { if (v > peak) peak = v; const dd = ((v - peak) / peak) * 100; if (dd < maxDD) maxDD = dd; });
-                    return parseFloat(maxDD.toFixed(1));
-                  };
-                  // Per produkt
-                  valgteProdukterIds.forEach(id => {
-                    const serie = chartData.map(p => p[id]).filter(v => v !== undefined);
-                    if (serie.length > 1) maxDrawdowns[id] = beregnDD(serie);
+                  // Indekser
+                  Object.entries(indeksMaps).forEach(([navn, im]) => {
+                    const sortert = Array.from(im.dMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                    if (sortert.length >= 2) {
+                      const sluttVerdi = sortert[sortert.length - 1][1];
+                      avkastninger[navn] = ((sluttVerdi / im.startVerdi) - 1) * 100;
+                    }
                   });
-                  // Portefølje
-                  const portSerie = chartData.map(p => p['portefolje']).filter(v => v !== undefined);
-                  if (portSerie.length > 1) maxDrawdowns['portefolje'] = beregnDD(portSerie);
-                  return { chartData, avkastninger, maxDrawdowns };
+                  return { chartData, avkastninger };
                 };
 
                 const perioder = [
@@ -3768,7 +3786,7 @@ export default function PensumPrognoseModell() {
                 return (
                   <div className="p-6 space-y-8">
                     {perioder.map(({ label, years }) => {
-                      const { chartData, avkastninger, maxDrawdowns } = buildSnapshotData(years);
+                      const { chartData, avkastninger } = buildSnapshotData(years);
                       if (chartData.length < 2) return null;
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
@@ -3785,22 +3803,12 @@ export default function PensumPrognoseModell() {
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
-                                  formatter={(v, name) => {
-                                    if (name === 'portefolje') return [v.toFixed(1), 'Din portefølje'];
-                                    const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === name);
-                                    return [v.toFixed(1), pi?.navn?.replace('Pensum ', '') || name];
-                                  }} />
+                                  formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
                                 <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
-                                <defs>
-                                  <filter id="portfolioGlow">
-                                    <feGaussianBlur stdDeviation="2" result="blur" />
-                                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                                  </filter>
-                                </defs>
-                                {valgteProdukterIds.map(id => (
-                                  <Line key={id} type="monotone" dataKey={id} stroke={SNAPSHOT_FARGER[id] || '#999'} strokeWidth={1.2} dot={false} opacity={0.45} strokeDasharray={id === 'portefolje' ? undefined : '6 3'} />
+                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
+                                {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
+                                  <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
                                 ))}
-                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={2.5} dot={false} name="portefolje" filter="url(#portfolioGlow)" />
                               </LineChart>
                             </ResponsiveContainer>
                             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 justify-center">
@@ -3810,13 +3818,12 @@ export default function PensumPrognoseModell() {
                                   {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
                                 </span>
                               </div>
-                              {valgteProdukterIds.map(id => {
-                                const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
-                                const avk = avkastninger[id];
+                              {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => {
+                                const avk = avkastninger[navn];
                                 return (
-                                  <div key={id} className="flex items-center gap-1.5 text-xs text-gray-500">
-                                    <div className="w-4 h-px" style={{ backgroundColor: SNAPSHOT_FARGER[id] || '#999', borderTop: '1px dashed ' + (SNAPSHOT_FARGER[id] || '#999') }}></div>
-                                    <span>{pi?.navn?.replace('Pensum ', '') || id}:</span>
+                                  <div key={navn} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                    <div className="w-4 h-0" style={{ borderTop: '2px dashed ' + cfg.farge }}></div>
+                                    <span>{navn}:</span>
                                     <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                       {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
                                     </span>
@@ -3824,26 +3831,172 @@ export default function PensumPrognoseModell() {
                                 );
                               })}
                             </div>
-                            {/* Max Drawdown */}
-                            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 justify-center items-center">
-                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Maks drawdown:</span>
-                              <div className="text-xs font-medium px-2 py-0.5 rounded bg-red-50 text-red-700">
-                                Portefølje: {erGyldigTall(maxDrawdowns['portefolje']) ? maxDrawdowns['portefolje'].toFixed(1) + '%' : '—'}
-                              </div>
-                              {valgteProdukterIds.map(id => {
-                                const pi = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative].find(p => p.id === id);
-                                const dd = maxDrawdowns[id];
-                                return (
-                                  <span key={id} className="text-[11px] text-gray-500">
-                                    {pi?.navn?.replace('Pensum ', '') || id}: <span className="text-red-600 font-medium">{erGyldigTall(dd) ? dd.toFixed(1) + '%' : '—'}</span>
-                                  </span>
-                                );
-                              })}
-                            </div>
                           </div>
                         </div>
                       );
                     })}
+                    {/* Nedsiderisiko (drawdown) graf — siste 5 år */}
+                    {(() => {
+                      const ddStartDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+                      // Bygg drawdown-serier for portefølje + indekser
+                      const INDEKS_DD = {
+                        'MSCI World': { feedKey: 'msci-world', farge: '#0D2240', dash: '6 3' },
+                        'Oslo Børs': { feedKey: 'oslo-bors', farge: '#EA580C', dash: '3 3' },
+                      };
+
+                      // Hjelpefunksjon: konverter daglige verdier til drawdown-serie
+                      const byggDrawdownSerie = (data, startDato) => {
+                        if (!data?.length) return [];
+                        const filtrert = data.filter(d => {
+                          const dt = parseHistorikkDato(d.dato);
+                          return dt && dt >= startDato && erGyldigTall(d.verdi);
+                        });
+                        if (filtrert.length < 2) return [];
+                        let peak = filtrert[0].verdi;
+                        return filtrert.map(d => {
+                          if (d.verdi > peak) peak = d.verdi;
+                          return { dato: d.dato, dd: peak > 0 ? parseFloat((((d.verdi - peak) / peak) * 100).toFixed(2)) : 0 };
+                        });
+                      };
+
+                      // Portefølje: vektet drawdown fra daglige data
+                      const portProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                      const ddTotalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+                      const portDaglig = {};
+                      const allePortDatoer = new Set();
+                      portProdIds.forEach(id => {
+                        const hist = produktHistorikk?.[id];
+                        if (!hist?.data?.length) return;
+                        portDaglig[id] = {};
+                        hist.data.forEach(d => {
+                          const dt = parseHistorikkDato(d.dato);
+                          if (dt && dt >= ddStartDato && erGyldigTall(d.verdi)) {
+                            allePortDatoer.add(d.dato);
+                            portDaglig[id][d.dato] = d.verdi;
+                          }
+                        });
+                      });
+                      // Bygg vektet porteføljeserie (daglig)
+                      const portDatoerSortert = Array.from(allePortDatoer).sort();
+                      const portStartVerdier = {};
+                      portProdIds.forEach(id => {
+                        if (portDaglig[id]) {
+                          const forsteDato = portDatoerSortert.find(d => portDaglig[id][d] !== undefined);
+                          if (forsteDato) portStartVerdier[id] = portDaglig[id][forsteDato];
+                        }
+                      });
+                      const portVektetSerie = portDatoerSortert.map(dato => {
+                        let vektet = 0; let totV = 0;
+                        portProdIds.forEach(id => {
+                          const v = portDaglig[id]?.[dato];
+                          const sv = portStartVerdier[id];
+                          if (v !== undefined && sv) {
+                            const allok = pensumAllokering.find(a => a.id === id);
+                            if (allok) {
+                              vektet += (v / sv) * (allok.vekt / ddTotalVekt);
+                              totV += allok.vekt / ddTotalVekt;
+                            }
+                          }
+                        });
+                        return { dato, verdi: totV > 0 ? vektet / totV : null };
+                      }).filter(d => d.verdi !== null);
+
+                      // Beregn drawdown for porteføljen
+                      let portPeak = 0;
+                      const portDD = portVektetSerie.map(d => {
+                        if (d.verdi > portPeak) portPeak = d.verdi;
+                        return { dato: d.dato, dd: portPeak > 0 ? parseFloat((((d.verdi - portPeak) / portPeak) * 100).toFixed(2)) : 0 };
+                      });
+
+                      // Bygg indeks-drawdowns
+                      const indeksDD = {};
+                      Object.entries(INDEKS_DD).forEach(([navn, cfg]) => {
+                        const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                        if (hist?.data) {
+                          indeksDD[navn] = byggDrawdownSerie(hist.data, ddStartDato);
+                        }
+                      });
+
+                      // Samle alle datoer og bygg chartData
+                      const alleDDDatoer = new Set();
+                      portDD.forEach(d => alleDDDatoer.add(d.dato));
+                      Object.values(indeksDD).forEach(serie => serie.forEach(d => alleDDDatoer.add(d.dato)));
+                      const ddSorterteDatoer = Array.from(alleDDDatoer).sort();
+
+                      // Lag lookup maps
+                      const portDDMap = {};
+                      portDD.forEach(d => { portDDMap[d.dato] = d.dd; });
+                      const indeksDDMaps = {};
+                      Object.entries(indeksDD).forEach(([navn, serie]) => {
+                        indeksDDMaps[navn] = {};
+                        serie.forEach(d => { indeksDDMaps[navn][d.dato] = d.dd; });
+                      });
+
+                      // Sample ned til ca månedlig for ytelse (ta hver ~20. punkt)
+                      const sampleRate = Math.max(1, Math.floor(ddSorterteDatoer.length / 200));
+                      const ddChartData = ddSorterteDatoer
+                        .filter((_, i) => i % sampleRate === 0 || i === ddSorterteDatoer.length - 1)
+                        .map(dato => {
+                          const punkt = { dato };
+                          if (portDDMap[dato] !== undefined) punkt['Din portefølje'] = portDDMap[dato];
+                          Object.keys(indeksDDMaps).forEach(navn => {
+                            if (indeksDDMaps[navn][dato] !== undefined) punkt[navn] = indeksDDMaps[navn][dato];
+                          });
+                          return punkt;
+                        });
+
+                      if (ddChartData.length < 5) return null;
+
+                      // Finn maks drawdown per serie for oppsummering
+                      const portMaxDD = portDD.length > 0 ? Math.min(...portDD.map(d => d.dd)) : 0;
+                      const indeksMaxDD = {};
+                      Object.entries(indeksDD).forEach(([navn, serie]) => {
+                        indeksMaxDD[navn] = serie.length > 0 ? Math.min(...serie.map(d => d.dd)) : 0;
+                      });
+
+                      return (
+                        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
+                          <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
+                            <div>
+                              <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko — siste 5 år</h4>
+                              <p className="text-xs text-gray-400 mt-0.5">Drawdown fra løpende toppverdi (0% = all-time high i perioden)</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                                Portefølje maks: {portMaxDD.toFixed(1)}%
+                              </span>
+                              {Object.entries(indeksMaxDD).map(([navn, dd]) => (
+                                <span key={navn} className="text-xs text-gray-500">
+                                  {navn}: {dd.toFixed(1)}%
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="p-5">
+                            <ResponsiveContainer width="100%" height={280}>
+                              <ComposedChart data={ddChartData} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
+                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                  interval={Math.max(1, Math.floor(ddChartData.length / 10))} />
+                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                <Tooltip
+                                  contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
+                                  labelFormatter={formatHistorikkEtikett}
+                                  formatter={(v, name) => [v.toFixed(2) + '%', name]} />
+                                <Legend verticalAlign="bottom" height={36} />
+                                <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
+                                <Area type="monotone" dataKey="Din portefølje" stroke="#8DB600" fill="#8DB600" fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
+                                {Object.entries(INDEKS_DD).map(([navn, cfg]) => (
+                                  <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} name={navn} />
+                                ))}
+                              </ComposedChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="text-xs text-gray-400 p-4 bg-gray-50/80 rounded-lg border border-gray-100">
                       <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
                     </div>
