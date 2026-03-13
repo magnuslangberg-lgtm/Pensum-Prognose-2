@@ -1063,14 +1063,18 @@ export default function PensumPrognoseModell() {
     ];
   }, [allokering, totalVekt, totalKapital]);
 
-  // Renter vs Aksjer (andel av total portefølje)
+  // Aktiva-fordeling (aksjer, renter, PE, eiendom)
   const renterAksjerData = useMemo(() => {
     const aksjerVekt = allokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0);
     const renterVekt = allokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0);
+    const peVekt = allokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0);
+    const eiendomVekt = allokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
     return [
-      { name: 'Renter', value: renterVekt },
-      { name: 'Aksjer', value: aksjerVekt }
-    ];
+      { name: 'Aksjer', value: aksjerVekt, color: PENSUM_COLORS.darkBlue },
+      { name: 'Renter', value: renterVekt, color: PENSUM_COLORS.salmon },
+      { name: 'Private Equity', value: peVekt, color: PENSUM_COLORS.teal },
+      { name: 'Eiendom', value: eiendomVekt, color: PENSUM_COLORS.gold }
+    ].filter(d => d.value > 0);
   }, [allokering]);
 
   useEffect(() => {
@@ -2342,29 +2346,25 @@ export default function PensumPrognoseModell() {
                         <div className="shrink-0">
                           <ResponsiveContainer width={100} height={100}>
                             <PieChart>
-                              <Pie data={renterAksjerData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                <Cell fill={PENSUM_COLORS.darkBlue} />
-                                <Cell fill={PENSUM_COLORS.salmon} />
+                              <Pie data={renterAksjerData} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                {renterAksjerData.map((entry) => (
+                                  <Cell key={entry.name} fill={entry.color} />
+                                ))}
                               </Pie>
                               <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
                         <div className="space-y-2 flex-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                              <span className="text-gray-600">Renter</span>
+                          {renterAksjerData.map(a => (
+                            <div key={a.name} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
+                                <span className="text-gray-600">{a.name}</span>
+                              </div>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(a.value)}</span>
                             </div>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(renterAksjerData[0].value)}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
-                              <span className="text-gray-600">Aksjer</span>
-                            </div>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(renterAksjerData[1].value)}</span>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -3713,8 +3713,8 @@ export default function PensumPrognoseModell() {
                               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                                 <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
-                                  interval={Math.max(1, Math.floor(chartData.length / 12))} />
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
+                                  interval={Math.max(1, Math.floor(chartData.length / 20))} />
                                 <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={formatHistorikkEtikett}
