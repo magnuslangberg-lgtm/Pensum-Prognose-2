@@ -33,17 +33,21 @@ export const defaultProduktEksponering = {
         {navn: 'JPM Japan Strategic Value C (acc) JPY', vekt: 5.3}
       ],
       regioner: [
-        {navn: 'United States', vekt: 59.8}, {navn: 'Japan', vekt: 6.3}, {navn: 'United Kingdom', vekt: 4.6},
-        {navn: 'France', vekt: 3.6}, {navn: 'Taiwan', vekt: 3.3}, {navn: 'Other', vekt: 22.4}
+        {navn: 'United States', vekt: 53.6}, {navn: 'Japan', vekt: 6.7}, {navn: 'United Kingdom', vekt: 4.7},
+        {navn: 'France', vekt: 3.5}, {navn: 'Taiwan', vekt: 3.3}, {navn: 'China', vekt: 2.7},
+        {navn: 'Switzerland', vekt: 2.7}, {navn: 'Germany', vekt: 2.6}, {navn: 'Sweden', vekt: 2.3},
+        {navn: 'South Korea', vekt: 1.9}, {navn: 'Other', vekt: 16.0}
       ],
       sektorer: [
-        {navn: 'Technology', vekt: 26.9}, {navn: 'Financial Services', vekt: 17.3}, {navn: 'Industrials', vekt: 13.5},
-        {navn: 'Healthcare', vekt: 10.8}, {navn: 'Communication Services', vekt: 9.8}, {navn: 'Consumer Cyclical', vekt: 8.6},
-        {navn: 'Other', vekt: 13.1}
+        {navn: 'Technology', vekt: 24.0}, {navn: 'Financial Services', vekt: 17.2}, {navn: 'Industrials', vekt: 13.5},
+        {navn: 'Healthcare', vekt: 10.8}, {navn: 'Communication Services', vekt: 9.0}, {navn: 'Consumer Cyclical', vekt: 8.6},
+        {navn: 'Consumer Defensive', vekt: 5.3}, {navn: 'Basic Materials', vekt: 2.7}, {navn: 'Energy', vekt: 2.5},
+        {navn: 'Utilities', vekt: 1.0}, {navn: 'Other', vekt: 5.4}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 23.7}, {navn: 'Large Core', vekt: 42.1}, {navn: 'Large Growth', vekt: 17.8},
-        {navn: 'Mid Cap', vekt: 13.9}, {navn: 'Small Cap', vekt: 2.5}
+        {navn: 'Large Value', vekt: 25.1}, {navn: 'Large Core', vekt: 41.7}, {navn: 'Large Growth', vekt: 17.7},
+        {navn: 'Mid Value', vekt: 4.8}, {navn: 'Mid Core', vekt: 5.8}, {navn: 'Mid Growth', vekt: 0.8},
+        {navn: 'Small Value', vekt: 1.2}, {navn: 'Small Core', vekt: 1.2}, {navn: 'Small Growth', vekt: 0.6}
       ],
       disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid.'
     },
@@ -62,16 +66,21 @@ export const defaultProduktEksponering = {
         {navn: 'FIRST Impact', vekt: 5.2}
       ],
       regioner: [
-        {navn: 'United States', vekt: 46.8}, {navn: 'Sweden', vekt: 7.1}, {navn: 'United Kingdom', vekt: 4.9},
-        {navn: 'China', vekt: 4.3}, {navn: 'Canada', vekt: 4.0}, {navn: 'Other', vekt: 32.9}
+        {navn: 'United States', vekt: 40.8}, {navn: 'United Kingdom', vekt: 6.3}, {navn: 'China', vekt: 6.1},
+        {navn: 'Sweden', vekt: 6.0}, {navn: 'Japan', vekt: 4.5}, {navn: 'Canada', vekt: 3.7},
+        {navn: 'Denmark', vekt: 2.7}, {navn: 'Taiwan', vekt: 2.5}, {navn: 'Germany', vekt: 2.5},
+        {navn: 'Other', vekt: 24.9}
       ],
       sektorer: [
         {navn: 'Technology', vekt: 22.8}, {navn: 'Industrials', vekt: 16.0}, {navn: 'Healthcare', vekt: 14.6},
-        {navn: 'Financial Services', vekt: 11.8}, {navn: 'Basic Materials', vekt: 9.7}, {navn: 'Other', vekt: 25.1}
+        {navn: 'Financial Services', vekt: 11.8}, {navn: 'Basic Materials', vekt: 9.7}, {navn: 'Consumer Cyclical', vekt: 5.9},
+        {navn: 'Communication Services', vekt: 5.1}, {navn: 'Utilities', vekt: 2.6}, {navn: 'Energy', vekt: 2.0},
+        {navn: 'Consumer Defensive', vekt: 2.0}
       ],
       stil: [
         {navn: 'Large Value', vekt: 11.1}, {navn: 'Large Core', vekt: 24.7}, {navn: 'Large Growth', vekt: 12.8},
-        {navn: 'Mid Cap', vekt: 22.1}, {navn: 'Small Cap', vekt: 29.3}
+        {navn: 'Mid Value', vekt: 8.0}, {navn: 'Mid Core', vekt: 8.0}, {navn: 'Mid Growth', vekt: 6.8},
+        {navn: 'Small Value', vekt: 10.5}, {navn: 'Small Core', vekt: 13.2}, {navn: 'Small Growth', vekt: 4.9}
       ],
       disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid.'
     },
@@ -89,6 +98,23 @@ export const defaultProduktEksponering = {
         {navn: 'Elopak ASA', vekt: 3.5},
         {navn: 'Public Property Invest ASA', vekt: 3.1},
         {navn: 'Sentia ASA Registered Shares', vekt: 3.0}
+      ],
+      regioner: [
+        {navn: 'United States', vekt: 34.0}, {navn: 'Norway', vekt: 13.7}, {navn: 'Sweden', vekt: 7.7},
+        {navn: 'United Kingdom', vekt: 4.6}, {navn: 'Switzerland', vekt: 4.1}, {navn: 'China', vekt: 3.4},
+        {navn: 'Japan', vekt: 3.2}, {navn: 'Taiwan', vekt: 2.1}, {navn: 'South Korea', vekt: 2.1},
+        {navn: 'Germany', vekt: 2.0}, {navn: 'Other', vekt: 23.1}
+      ],
+      sektorer: [
+        {navn: 'Industrials', vekt: 19.0}, {navn: 'Technology', vekt: 15.4}, {navn: 'Financial Services', vekt: 14.4},
+        {navn: 'Consumer Cyclical', vekt: 13.4}, {navn: 'Healthcare', vekt: 12.7}, {navn: 'Real Estate', vekt: 4.3},
+        {navn: 'Consumer Defensive', vekt: 4.2}, {navn: 'Communication Services', vekt: 5.3},
+        {navn: 'Basic Materials', vekt: 2.7}, {navn: 'Energy', vekt: 3.2}, {navn: 'Other', vekt: 5.4}
+      ],
+      stil: [
+        {navn: 'Large Value', vekt: 44.5}, {navn: 'Large Core', vekt: 21.3}, {navn: 'Large Growth', vekt: 9.2},
+        {navn: 'Mid Value', vekt: 4.5}, {navn: 'Mid Core', vekt: 5.2}, {navn: 'Mid Growth', vekt: 4.3},
+        {navn: 'Small Value', vekt: 0.8}, {navn: 'Small Core', vekt: 10.2}, {navn: 'Small Growth', vekt: 0.0}
       ],
       disclaimer: 'Avkastning før oppstart 12. september 2023 er estimert med en lignende portefølje med 50% rentefond og 50% aksjer.'
     },
@@ -116,6 +142,23 @@ export const defaultProduktEksponering = {
         {navn: 'Chevron Corp', vekt: 4.3}, {navn: 'International Petroleum Corp', vekt: 4.3},
         {navn: 'Frontline PLC', vekt: 4.1}, {navn: 'DOF Group ASA', vekt: 4.1}, {navn: 'Subsea 7 SA', vekt: 4.0}
       ],
+      regioner: [
+        {navn: 'United States', vekt: 33.6}, {navn: 'Norway', vekt: 30.5}, {navn: 'United Kingdom', vekt: 7.8},
+        {navn: 'Canada', vekt: 9.7}, {navn: 'Denmark', vekt: 3.0}, {navn: 'France', vekt: 2.9},
+        {navn: 'Japan', vekt: 2.0}, {navn: 'Pakistan', vekt: 1.9}, {navn: 'China', vekt: 0.9},
+        {navn: 'Other', vekt: 7.7}
+      ],
+      sektorer: [
+        {navn: 'Energy', vekt: 84.3}, {navn: 'Industrials', vekt: 5.5}, {navn: 'Technology', vekt: 3.8},
+        {navn: 'Basic Materials', vekt: 3.0}, {navn: 'Consumer Cyclical', vekt: 1.0}, {navn: 'Financial Services', vekt: 0.7},
+        {navn: 'Real Estate', vekt: 0.6}, {navn: 'Consumer Defensive', vekt: 0.5}, {navn: 'Healthcare', vekt: 0.3},
+        {navn: 'Other', vekt: 0.3}
+      ],
+      stil: [
+        {navn: 'Large Value', vekt: 28.7}, {navn: 'Large Core', vekt: 9.0}, {navn: 'Large Growth', vekt: 2.5},
+        {navn: 'Mid Value', vekt: 24.7}, {navn: 'Mid Core', vekt: 6.5}, {navn: 'Mid Growth', vekt: 0.0},
+        {navn: 'Small Value', vekt: 10.8}, {navn: 'Small Core', vekt: 10.8}, {navn: 'Small Growth', vekt: 3.7}
+      ],
       disclaimer: 'Avkastning før oppstart desember 2022 er estimert med et lignende diskresjonært mandat forvaltet av samme forvalter.'
     },
     'banking-d': {
@@ -124,6 +167,17 @@ export const defaultProduktEksponering = {
         {navn: 'SpareBank 1 SMN Depository Receipts', vekt: 12.2}, {navn: 'Sparebank 1 Sorost-Norge', vekt: 10.3},
         {navn: 'Sparebanken Norge Depository Receipts', vekt: 8.9}, {navn: 'Danske Bank AS', vekt: 4.7},
         {navn: 'Swedbank AB Class A', vekt: 4.4}
+      ],
+      regioner: [
+        {navn: 'Norway', vekt: 66.6}, {navn: 'Sweden', vekt: 26.5}, {navn: 'Denmark', vekt: 6.0},
+        {navn: 'Other', vekt: 0.9}
+      ],
+      sektorer: [
+        {navn: 'Financial Services', vekt: 100.0}
+      ],
+      stil: [
+        {navn: 'Large Value', vekt: 56.3}, {navn: 'Mid Value', vekt: 15.0}, {navn: 'Small Value', vekt: 28.6},
+        {navn: 'Small Core', vekt: 0.1}
       ],
       disclaimer: 'Oppstart 29. januar 2025. Utvikling før dette er estimert med det lignende mandatet Pensum Sparebank+.'
     },
@@ -134,6 +188,21 @@ export const defaultProduktEksponering = {
         {navn: 'Aker ASA Class A', vekt: 4.1}, {navn: 'DOF Group ASA', vekt: 4.0},
         {navn: 'Mowi ASA', vekt: 4.0}, {navn: 'Public Property Invest ASA', vekt: 3.5},
         {navn: 'SpareBank 1 Sor Norge ASA', vekt: 3.5}
+      ],
+      regioner: [
+        {navn: 'Norway', vekt: 91.2}, {navn: 'Singapore', vekt: 2.7}, {navn: 'Greece', vekt: 3.0},
+        {navn: 'United States', vekt: 2.5}, {navn: 'Netherlands', vekt: 1.1}
+      ],
+      sektorer: [
+        {navn: 'Industrials', vekt: 28.2}, {navn: 'Financial Services', vekt: 27.9}, {navn: 'Consumer Defensive', vekt: 13.7},
+        {navn: 'Consumer Cyclical', vekt: 8.0}, {navn: 'Energy', vekt: 6.6}, {navn: 'Communication Services', vekt: 4.2},
+        {navn: 'Technology', vekt: 3.9}, {navn: 'Real Estate', vekt: 3.5}, {navn: 'Utilities', vekt: 2.1},
+        {navn: 'Basic Materials', vekt: 1.9}
+      ],
+      stil: [
+        {navn: 'Large Value', vekt: 11.8}, {navn: 'Large Core', vekt: 0.0}, {navn: 'Large Growth', vekt: 8.2},
+        {navn: 'Mid Value', vekt: 9.2}, {navn: 'Mid Core', vekt: 17.5}, {navn: 'Mid Growth', vekt: 13.4},
+        {navn: 'Small Value', vekt: 10.6}, {navn: 'Small Core', vekt: 25.3}, {navn: 'Small Growth', vekt: 9.2}
       ],
       disclaimer: 'Oppstart 27. november 2023. Utvikling før dette er estimert med lignende porteføljer.'
     },
