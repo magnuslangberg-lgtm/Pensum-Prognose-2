@@ -5,31 +5,35 @@ const PptxGenJS = typeof PptxGenJSImport === 'function'
   : (PptxGenJSImport?.default || PptxGenJSImport?.PptxGenJS);
 
 const COLORS = {
-  navy: '0D2240',
-  blue: '4C84C4',
-  salmon: 'D4886B',
-  teal: '0F9888',
-  green: '1F8A3B',
-  gold: 'B8860B',
-  danger: 'B42318',
-  text: '1E293B',
-  muted: '64748B',
-  light: 'F8FAFC',
-  line: 'D9E2EC',
+  navy: '0D2841',
+  darkBlue: '012441',
+  blue: '6B9DB8',
+  salmon: 'C4967E',
+  teal: '2D6A6A',
+  green: '2D6A4F',
+  gold: 'A67B3D',
+  purple: '5B4FA0',
+  danger: 'B91C1C',
+  text: '262626',
+  muted: '4A5568',
+  light: 'F5F5F5',
+  lightBlue: 'E8F0F4',
+  line: 'D1D5DB',
   white: 'FFFFFF',
-  softBlue: 'EFF6FF',
-  softAmber: 'FFF7ED',
-  softGreen: 'F0FDF4',
-  softRed: 'FEF2F2'
+  midBlue: '123C6A',
+  softBlue: 'E8F0F4',
+  softAmber: 'FDF6F2',
+  softGreen: 'E8F0F0',
+  softRed: 'FDF6F2'
 };
 
 const ALLOC_COLORS = {
-  'Globale Aksjer': '5B9BD5',
-  'Norske Aksjer': '0D2240',
-  'Høyrente': 'D4886B',
-  'Investment Grade': 'E8A690',
-  'Private Equity': '0D9488',
-  'Eiendom': 'B8860B'
+  'Globale Aksjer': '6B9DB8',
+  'Norske Aksjer': '0D2841',
+  'Høyrente': 'C4967E',
+  'Investment Grade': 'D4B8A8',
+  'Private Equity': '2D6A6A',
+  'Eiendom': 'A67B3D'
 };
 
 const PRODUCT_LABELS = {

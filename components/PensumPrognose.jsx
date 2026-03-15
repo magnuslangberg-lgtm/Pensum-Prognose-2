@@ -983,7 +983,7 @@ export default function PensumPrognoseModell() {
     return prognose;
   }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, erGyldigTall]);
 
-  const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, '#7C3AED', '#2E7D32', '#BE185D', '#EA580C'];
+  const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
 
   const oppdaterSammenligningProfil = useCallback((nyProfil) => {
@@ -1236,7 +1236,7 @@ export default function PensumPrognoseModell() {
     const optimistiskSluttverdi = scenarioData[scenarioData.length - 1]?.optimistisk || 0;
 
     const alleProduktHTML = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
-    const produktFargerHTML = ['#0D2240','#5B9BD5','#D4886B','#0D9488','#B8860B','#7C3AED','#2E7D32','#BE185D','#EA580C'];
+    const produktFargerHTML = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
     const produktNavnRapport = {
       'global-core-active': 'Global Core Active', 'global-edge': 'Global Edge', 'basis': 'Basis',
       'global-hoyrente': 'Global Høyrente', 'nordisk-hoyrente': 'Nordisk Høyrente',
@@ -1292,7 +1292,7 @@ export default function PensumPrognoseModell() {
       const fYield = produkt?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
       const typeLbl = produkt?.aktivatype === 'aksje' ? 'Aksje' : produkt?.aktivatype === 'rente' ? 'Rente' : produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.';
       const typeCol = produkt?.aktivatype === 'aksje' ? '#DBEAFE;color:#1D4ED8' : produkt?.aktivatype === 'rente' ? '#FED7AA;color:#C2410C' : '#F3F4F6;color:#4B5563';
-      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:8px;font-size:12px;font-weight:500"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:' + produktFargerHTML[idx % produktFargerHTML.length] + '"></span>' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:8px;text-align:center;font-size:12px;font-weight:600">' + a.vekt.toFixed(1) + '%</td><td style="padding:8px;text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:' + typeCol + '">' + typeLbl + '</span></td><td style="padding:8px;text-align:right;font-size:12px;color:#16A34A;font-weight:500">' + (erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—') + '</td><td style="padding:8px;text-align:right;font-size:12px;color:#0D9488;font-weight:500">' + (erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—') + '</td></tr>';
+      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:8px;font-size:12px;font-weight:500"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:' + produktFargerHTML[idx % produktFargerHTML.length] + '"></span>' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:8px;text-align:center;font-size:12px;font-weight:600">' + a.vekt.toFixed(1) + '%</td><td style="padding:8px;text-align:center"><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:' + typeCol + '">' + typeLbl + '</span></td><td style="padding:8px;text-align:right;font-size:12px;color:' + PENSUM_COLORS.teal + ';font-weight:500">' + (erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—') + '</td><td style="padding:8px;text-align:right;font-size:12px;color:' + PENSUM_COLORS.teal + ';font-weight:500">' + (erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—') + '</td></tr>';
     }).join('');
 
     // Historisk avkastning tabell
@@ -1300,9 +1300,9 @@ export default function PensumPrognoseModell() {
       const s1 = beregnProduktStatistikk(produktHistorikk[a.id], start1y);
       const s3 = beregnProduktStatistikk(produktHistorikk[a.id], start3y);
       const s5 = beregnProduktStatistikk(produktHistorikk[a.id], start5y);
-      const fmtA = (v) => erGyldigTall(v) ? '<span style="color:' + (v >= 0 ? '#16A34A' : '#DC2626') + ';font-weight:600">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : '—';
-      const sharpeBg = s5 ? (s5.sharpe >= 1 ? '#DCFCE7;color:#16A34A' : s5.sharpe >= 0.5 ? '#FEF3C7;color:#D97706' : '#FEE2E2;color:#DC2626') : '#F3F4F6;color:#9CA3AF';
-      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:7px 8px;font-size:11px;font-weight:500">' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:7px 4px;text-align:center;font-size:11px;color:#6B7280">' + a.vekt.toFixed(1) + '%</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB">' + fmtA(s1?.totalAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s3?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s5?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB;color:#4B5563">' + (s5 ? s5.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:7px 4px;text-align:right;font-size:11px"><span style="padding:1px 5px;border-radius:3px;font-weight:600;font-size:10px;background:' + sharpeBg + '">' + (s5 ? s5.sharpe.toFixed(2) : '—') + '</span></td><td style="padding:7px 4px;text-align:right;font-size:11px;color:#DC2626;font-weight:500">' + (s5 ? s5.maxDrawdown.toFixed(1) + '%' : '—') + '</td></tr>';
+      const fmtA = (v) => erGyldigTall(v) ? '<span style="color:' + (v >= 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon) + ';font-weight:600">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : '—';
+      const sharpeBg = s5 ? (s5.sharpe >= 1 ? '#E8F0F0;color:' + PENSUM_COLORS.teal : s5.sharpe >= 0.5 ? '#FDF6F2;color:' + PENSUM_COLORS.gold : '#FDF6F2;color:' + PENSUM_COLORS.salmon) : '#F3F4F6;color:#9CA3AF';
+      return '<tr style="background:' + (idx % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:7px 8px;font-size:11px;font-weight:500">' + (produktNavnRapport[a.id] || a.navn) + '</td><td style="padding:7px 4px;text-align:center;font-size:11px;color:#6B7280">' + a.vekt.toFixed(1) + '%</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB">' + fmtA(s1?.totalAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s3?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px">' + fmtA(s5?.aarligAvkastning) + '</td><td style="padding:7px 4px;text-align:right;font-size:11px;border-left:1px solid #E5E7EB;color:#4B5563">' + (s5 ? s5.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:7px 4px;text-align:right;font-size:11px"><span style="padding:1px 5px;border-radius:3px;font-weight:600;font-size:10px;background:' + sharpeBg + '">' + (s5 ? s5.sharpe.toFixed(2) : '—') + '</span></td><td style="padding:7px 4px;text-align:right;font-size:11px;color:' + PENSUM_COLORS.salmon + ';font-weight:500">' + (s5 ? s5.maxDrawdown.toFixed(1) + '%' : '—') + '</td></tr>';
     }).join('');
 
     // Historisk porteføljeavkastning
@@ -1315,7 +1315,7 @@ export default function PensumPrognoseModell() {
     ];
     const histPortCards = histYears.map(({ aar, key }) => {
       const v = beregnPensumHistorikk[key];
-      const col = erGyldigTall(v) ? (v >= 0 ? '#16A34A' : '#DC2626') : '#9CA3AF';
+      const col = erGyldigTall(v) ? (v >= 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon) : '#9CA3AF';
       const txt = erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
       return '<div style="background:white;border-radius:8px;padding:12px 8px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,0.05)"><div style="font-size:9px;color:#6B7280;margin-bottom:4px;font-weight:500">' + aar + '</div><div style="font-size:18px;font-weight:700;color:' + col + '">' + txt + '</div></div>';
     }).join('');
@@ -1352,7 +1352,7 @@ export default function PensumPrognoseModell() {
 
     '<div class="hist-port"><h3>Din porteføljes historiske avkastning (vektet)</h3><div class="hist-port-grid">' + histPortCards + '</div></div>' +
 
-    '<div class="section"><h2>Scenarioanalyse — ' + horisont + ' års horisont</h2><div class="scenarios"><div class="box" style="background:#0D2240;border:2px solid #0D2240"><div class="box-label" style="color:#93C5FD">Forventet</div><div class="box-value" style="color:white">' + formatCurrency(forventetSluttverdi) + '</div><div class="box-sub" style="color:#93C5FD">CAGR ' + formatPercent(vektetAvkastning) + '</div></div><div class="box" style="background:#DCFCE7;border:1px solid #BBF7D0"><div class="box-label" style="color:#16A34A">Optimistisk</div><div class="box-value" style="color:#15803D">' + formatCurrency(optimistiskSluttverdi) + '</div><div class="box-sub" style="color:#16A34A">CAGR ' + formatPercent(scenarioParams.optimistisk) + '</div></div><div class="box" style="background:#F8FAFC;border:1px solid #E2E8F0"><div class="box-label" style="color:#6B7280">Sluttverdi</div><div class="box-value" style="color:#1B3A5F">' + formatCurrency(sluttverdi) + '</div><div class="box-sub" style="color:#6B7280">Aktivaallokering</div></div></div></div>' +
+    '<div class="section"><h2>Scenarioanalyse — ' + horisont + ' års horisont</h2><div class="scenarios"><div class="box" style="background:' + PENSUM_COLORS.darkBlue + ';border:2px solid ' + PENSUM_COLORS.darkBlue + '"><div class="box-label" style="color:' + PENSUM_COLORS.lightBlue + '">Forventet</div><div class="box-value" style="color:white">' + formatCurrency(forventetSluttverdi) + '</div><div class="box-sub" style="color:' + PENSUM_COLORS.lightBlue + '">CAGR ' + formatPercent(vektetAvkastning) + '</div></div><div class="box" style="background:#E8F0F0;border:1px solid #B8D4D4"><div class="box-label" style="color:' + PENSUM_COLORS.teal + '">Optimistisk</div><div class="box-value" style="color:' + PENSUM_COLORS.teal + '">' + formatCurrency(optimistiskSluttverdi) + '</div><div class="box-sub" style="color:' + PENSUM_COLORS.teal + '">CAGR ' + formatPercent(scenarioParams.optimistisk) + '</div></div><div class="box" style="background:#F8FAFC;border:1px solid #E2E8F0"><div class="box-label" style="color:#6B7280">Sluttverdi</div><div class="box-value" style="color:' + PENSUM_COLORS.darkBlue + '">' + formatCurrency(sluttverdi) + '</div><div class="box-sub" style="color:#6B7280">Aktivaallokering</div></div></div></div>' +
 
     '<div class="section"><h2>Forventet verdiutvikling per aktivaklasse</h2><div class="chart-section"><div class="chart-legend">' + barLegend + '</div>' + barSvg + '</div></div>' +
 
@@ -1843,9 +1843,9 @@ export default function PensumPrognoseModell() {
                   {Object.entries(PRODUKT_NAVN_MAP_PDF).map(([id, navn]) => {
                     const aktiv = pdfProduktValg.includes(id);
                     const farger = {
-                      'global-core-active': '#0D2240', 'global-edge': '#5B9BD5', 'basis': '#1B3A5F',
-                      'global-hoyrente': '#16A34A', 'nordisk-hoyrente': '#7C3AED', 'norge-a': '#DC2626',
-                      'energy-a': '#F59E0B', 'banking-d': '#0891B2', 'financial-d': '#D4886B',
+                      'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue, 'basis': PENSUM_COLORS.midBlue,
+                      'global-hoyrente': PENSUM_COLORS.teal, 'nordisk-hoyrente': PENSUM_COLORS.purple, 'norge-a': PENSUM_COLORS.red,
+                      'energy-a': PENSUM_COLORS.gold, 'banking-d': PENSUM_COLORS.darkBlue, 'financial-d': PENSUM_COLORS.salmon,
                     };
                     return (
                       <button key={id} onClick={() => setPdfProduktValg(prev => aktiv ? prev.filter(x => x !== id) : [...prev, id])}
@@ -1868,9 +1868,9 @@ export default function PensumPrognoseModell() {
               )}
 
               {/* AI-info */}
-              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p className="text-xs text-blue-700">Presentasjonen genereres fra kundeinformasjon, investerbar kapital, valgte produkter og rapportfelt i Pensum Løsninger.</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl border" style={{ backgroundColor: PENSUM_COLORS.lightBlue === '#6B9DB8' ? '#E8F0F4' : '#E8F0F4', borderColor: '#D1D5DB' }}>
+                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p className="text-xs" style={{ color: PENSUM_COLORS.muted }}>Presentasjonen genereres fra kundeinformasjon, investerbar kapital, valgte produkter og rapportfelt i Pensum Løsninger.</p>
               </div>
             </div>
 
@@ -1934,7 +1934,7 @@ export default function PensumPrognoseModell() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Investeringsforslag
               </button>
-              <button onClick={lagreKunde} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? '#16A34A' : PENSUM_COLORS.darkBlue }}>
+              <button onClick={lagreKunde} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
                 {lagringsStatus ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 ) : (
@@ -2553,9 +2553,9 @@ export default function PensumPrognoseModell() {
                     <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} width={100} />
                     <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'forventet' ? 'Forventet' : name === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
                     <Legend iconType="circle" />
-                    {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
+                    {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="5 5" dot={false} />}
                     <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
-                    <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#16A34A" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke={PENSUM_COLORS.teal} strokeWidth={2} strokeDasharray="5 5" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -2563,11 +2563,11 @@ export default function PensumPrognoseModell() {
 
             {/* ====== KOSTNADSANALYSE ====== */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#7C3AED' }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
                 <h3 className="text-lg font-semibold text-white">Kostnadsanalyse — Hva koster det å ikke investere?</h3>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={kostnadsanalyseAktiv} onChange={(e) => setKostnadsanalyseAktiv(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
-                  <span className="text-sm text-purple-200">Aktiver analyse</span>
+                  <span className="text-sm" style={{ color: '#F5E6DF' }}>Aktiver analyse</span>
                 </label>
               </div>
               {kostnadsanalyseAktiv && kostnadsanalyseData && (
@@ -2577,32 +2577,32 @@ export default function PensumPrognoseModell() {
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Skattepliktig formue</label>
                       <input type="number" value={skattepliktigFormue} onChange={(e) => setSkattepliktigFormue(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Årlig forbruk (uttak)</label>
                       <input type="number" value={aarligForbruk} onChange={(e) => setAarligForbruk(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Inflasjon (%)</label>
                       <input type="number" step="0.1" value={inflasjon} onChange={(e) => setInflasjon(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Bankrente (%)</label>
                       <input type="number" step="0.1" value={renteAvkastning} onChange={(e) => setRenteAvkastning(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400" />
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                   </div>
 
                   {/* Nøkkeltall */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-                      <div className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-1">Årlig kostnad</div>
-                      <div className="text-sm text-purple-400 mb-2">Forbruk + formuesskatt</div>
-                      <div className="text-2xl font-bold text-purple-700">{formatCurrency(kostnadsanalyseData.aarligKostnad)}</div>
-                      <div className="mt-2 text-xs text-purple-400">
+                    <div className="p-4 rounded-xl border" style={{ backgroundColor: '#FDF6F2', borderColor: '#E8CFC2' }}>
+                      <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: PENSUM_COLORS.salmon }}>Årlig kostnad</div>
+                      <div className="text-sm mb-2" style={{ color: '#B8917D' }}>Forbruk + formuesskatt</div>
+                      <div className="text-2xl font-bold" style={{ color: '#8B6650' }}>{formatCurrency(kostnadsanalyseData.aarligKostnad)}</div>
+                      <div className="mt-2 text-xs" style={{ color: '#B8917D' }}>
                         Forbruk: {formatCurrency(aarligForbruk)} | Formuesskatt: {formatCurrency(kostnadsanalyseData.aarligFormuesskatt)}
                       </div>
                     </div>
@@ -2641,7 +2641,7 @@ export default function PensumPrognoseModell() {
                         <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'bankFormue' ? 'Bankkonto (real)' : 'Investert portefølje']} />
                         <Legend iconType="circle" />
                         <Area type="monotone" dataKey="investert" name="Investert portefølje" fill={PENSUM_COLORS.darkBlue} fillOpacity={0.08} stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
-                        <Area type="monotone" dataKey="bankFormue" name="Bankkonto (real)" fill="#7C3AED" fillOpacity={0.08} stroke="#7C3AED" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+                        <Area type="monotone" dataKey="bankFormue" name="Bankkonto (real)" fill={PENSUM_COLORS.salmon} fillOpacity={0.08} stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="6 3" dot={false} />
                         <ReferenceLine y={totalKapital} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Startkapital', position: 'right', fill: '#9CA3AF', fontSize: 11 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -2853,7 +2853,7 @@ export default function PensumPrognoseModell() {
                             <PieChart>
                               <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
                                 {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
-                                  <Cell key={entry.id} fill={['#1B3A5F', '#5B9BD5', '#D4886B', '#0D9488', '#B8860B', '#7C3AED', '#2E7D32'][idx % 7]} />
+                                  <Cell key={entry.id} fill={[PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
                                 ))}
                               </Pie>
                               <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
@@ -2863,7 +2863,7 @@ export default function PensumPrognoseModell() {
                         <div className="space-y-2 flex-1">
                           {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
                             <div key={p.id} className="flex items-center gap-2.5 text-sm">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: ['#1B3A5F', '#5B9BD5', '#D4886B', '#0D9488', '#B8860B', '#7C3AED', '#2E7D32'][idx % 7] }}></div>
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: [PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
                               <span className="flex-1 truncate text-gray-700">{p.navn}</span>
                               <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt}%</span>
                             </div>
@@ -3218,15 +3218,15 @@ export default function PensumPrognoseModell() {
                         const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
                         const erValgt = valgteProdukterHistorikk.includes(produktId);
                         const farger = {
-                          'global-core-active': '#0D2240',
-                          'global-edge': '#5B9BD5',
-                          'basis': '#D4886B',
-                          'global-hoyrente': '#16A34A',
-                          'nordisk-hoyrente': '#7C3AED',
-                          'norge-a': '#DC2626',
-                          'energy-a': '#F59E0B',
-                          'banking-d': '#0D9488',
-                          'financial-d': '#B8860B'
+                          'global-core-active': PENSUM_COLORS.navy,
+                          'global-edge': PENSUM_COLORS.lightBlue,
+                          'basis': PENSUM_COLORS.salmon,
+                          'global-hoyrente': PENSUM_COLORS.teal,
+                          'nordisk-hoyrente': PENSUM_COLORS.purple,
+                          'norge-a': PENSUM_COLORS.red,
+                          'energy-a': PENSUM_COLORS.gold,
+                          'banking-d': PENSUM_COLORS.midBlue,
+                          'financial-d': PENSUM_COLORS.gray
                         };
                         return (
                           <button
@@ -3301,15 +3301,15 @@ export default function PensumPrognoseModell() {
                         });
                         
                         const farger = {
-                          'global-core-active': '#0D2240',
-                          'global-edge': '#5B9BD5',
-                          'basis': '#D4886B',
-                          'global-hoyrente': '#16A34A',
-                          'nordisk-hoyrente': '#7C3AED',
-                          'norge-a': '#DC2626',
-                          'energy-a': '#F59E0B',
-                          'banking-d': '#0D9488',
-                          'financial-d': '#B8860B'
+                          'global-core-active': PENSUM_COLORS.navy,
+                          'global-edge': PENSUM_COLORS.lightBlue,
+                          'basis': PENSUM_COLORS.salmon,
+                          'global-hoyrente': PENSUM_COLORS.teal,
+                          'nordisk-hoyrente': PENSUM_COLORS.purple,
+                          'norge-a': PENSUM_COLORS.red,
+                          'energy-a': PENSUM_COLORS.gold,
+                          'banking-d': PENSUM_COLORS.midBlue,
+                          'financial-d': PENSUM_COLORS.gray
                         };
                         
                         if (chartData.length === 0 || valgteProdukterHistorikk.length === 0) {
@@ -3383,13 +3383,13 @@ export default function PensumPrognoseModell() {
                           const hist = produktHistorikk[produktId];
                           const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
                           const farger = {
-                            'global-core-active': '#0D2240',
-                            'global-edge': '#5B9BD5',
-                            'basis': '#D4886B',
-                            'global-hoyrente': '#16A34A',
-                            'nordisk-hoyrente': '#7C3AED',
-                            'norge-a': '#DC2626',
-                            'energy-a': '#F59E0B'
+                            'global-core-active': PENSUM_COLORS.navy,
+                            'global-edge': PENSUM_COLORS.lightBlue,
+                            'basis': PENSUM_COLORS.salmon,
+                            'global-hoyrente': PENSUM_COLORS.teal,
+                            'nordisk-hoyrente': PENSUM_COLORS.purple,
+                            'norge-a': PENSUM_COLORS.red,
+                            'energy-a': PENSUM_COLORS.gold
                           };
                           
                           if (!hist || !hist.data || hist.data.length < 2) return null;
@@ -3597,19 +3597,19 @@ export default function PensumPrognoseModell() {
               </button>
               {visPortefoljSnapshots && (() => {
                 const SNAPSHOT_FARGER = {
-                  'global-core-active': '#0D2240', 'global-edge': '#5B9BD5', 'basis': '#D4886B',
-                  'global-hoyrente': '#16A34A', 'nordisk-hoyrente': '#7C3AED', 'norge-a': '#DC2626',
-                  'energy-a': '#F59E0B', 'banking-d': '#0D9488', 'financial-d': '#B8860B',
-                  'turnstone-pe': '#0F766E', 'amaron-re': '#B45309', 'unoterte-aksjer': '#6D28D9'
+                  'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue, 'basis': PENSUM_COLORS.salmon,
+                  'global-hoyrente': PENSUM_COLORS.teal, 'nordisk-hoyrente': PENSUM_COLORS.purple, 'norge-a': PENSUM_COLORS.red,
+                  'energy-a': PENSUM_COLORS.gold, 'banking-d': PENSUM_COLORS.midBlue, 'financial-d': PENSUM_COLORS.gray,
+                  'turnstone-pe': PENSUM_COLORS.green, 'amaron-re': PENSUM_COLORS.gold, 'unoterte-aksjer': PENSUM_COLORS.purple
                 };
                 const valgteProdukterIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
                 const totalVektSnap = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
 
                 // Referanseindekser for snapshot-grafene
                 const SNAPSHOT_INDEKSER = {
-                  'MSCI World': { feedKey: 'msci-world', farge: '#0891B2', dash: '6 3' },
-                  'Oslo Børs': { feedKey: 'oslo-bors', farge: '#EA580C', dash: '4 3' },
-                  'Norske Statsobl.': { feedKey: 'norske-statsobl', farge: '#64748B', dash: '2 2' },
+                  'MSCI World': { feedKey: 'msci-world', farge: PENSUM_COLORS.lightBlue, dash: '6 3' },
+                  'Oslo Børs': { feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon, dash: '4 3' },
+                  'Norske Statsobl.': { feedKey: 'norske-statsobl', farge: PENSUM_COLORS.gray, dash: '2 2' },
                 };
 
                 const buildSnapshotData = (periodYears) => {
@@ -3755,8 +3755,8 @@ export default function PensumPrognoseModell() {
                       const ddStartDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
                       // Bygg drawdown-serier for portefølje + indekser
                       const INDEKS_DD = {
-                        'MSCI World': { feedKey: 'msci-world', farge: '#0D2240', dash: '6 3' },
-                        'Oslo Børs': { feedKey: 'oslo-bors', farge: '#EA580C', dash: '3 3' },
+                        'MSCI World': { feedKey: 'msci-world', farge: PENSUM_COLORS.navy, dash: '6 3' },
+                        'Oslo Børs': { feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon, dash: '3 3' },
                       };
 
                       // Hjelpefunksjon: konverter daglige verdier til drawdown-serie
@@ -3901,7 +3901,7 @@ export default function PensumPrognoseModell() {
                                   formatter={(v, name) => [v.toFixed(2) + '%', name]} />
                                 <Legend verticalAlign="bottom" height={36} />
                                 <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
-                                <Area type="monotone" dataKey="Din portefølje" stroke="#8DB600" fill="#8DB600" fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
+                                <Area type="monotone" dataKey="Din portefølje" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
                                 {Object.entries(INDEKS_DD).map(([navn, cfg]) => (
                                   <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} name={navn} />
                                 ))}
@@ -3926,14 +3926,14 @@ export default function PensumPrognoseModell() {
         {activeTab === 'scenario' && (() => {
           // Indekskonfigurasjon med farger og mapping til datafeed-nøkler
           const INDEKS_CONFIG = {
-            'MSCI ACWI': { farge: '#DC2626', feedKey: 'msci-acwi' },
-            'MSCI World': { farge: '#0891B2', feedKey: 'msci-world' },
-            'S&P 500': { farge: '#16A34A', feedKey: 'sp500' },
-            'MSCI Europe': { farge: '#F59E0B', feedKey: 'msci-europe' },
-            'MSCI EM': { farge: '#7C3AED', feedKey: 'msci-em' },
-            'TOPIX': { farge: '#BE185D', feedKey: 'topix' },
-            'Oslo Børs': { farge: '#EA580C', feedKey: 'oslo-bors' },
-            'Norske Statsobl.': { farge: '#64748B', feedKey: 'norske-statsobl' },
+            'MSCI ACWI': { farge: PENSUM_COLORS.salmon, feedKey: 'msci-acwi' },
+            'MSCI World': { farge: PENSUM_COLORS.lightBlue, feedKey: 'msci-world' },
+            'S&P 500': { farge: PENSUM_COLORS.teal, feedKey: 'sp500' },
+            'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
+            'MSCI EM': { farge: PENSUM_COLORS.purple, feedKey: 'msci-em' },
+            'TOPIX': { farge: PENSUM_COLORS.midBlue, feedKey: 'topix' },
+            'Oslo Børs': { farge: PENSUM_COLORS.navy, feedKey: 'oslo-bors' },
+            'Norske Statsobl.': { farge: PENSUM_COLORS.gray, feedKey: 'norske-statsobl' },
           };
 
           // Beregn årsavkastning fra historiske daglige data
@@ -3969,15 +3969,15 @@ export default function PensumPrognoseModell() {
 
           // Pensum-løsningenes konfigurasjoner for label/id/farge + historikk-id
           const PENSUM_SCEN_CONFIG = [
-            { label: 'Basis', id: 'basis', farge: '#1B3A5F' },
-            { label: 'Fin. Opp.', id: 'financial-d', farge: '#D4886B' },
-            { label: 'Global Core Active', id: 'global-core-active', farge: '#0D2240' },
-            { label: 'Global Edge', id: 'global-edge', farge: '#5B9BD5' },
-            { label: 'Global Energy', id: 'energy-a', farge: '#F59E0B' },
-            { label: 'Global Høyrente', id: 'global-hoyrente', farge: '#16A34A' },
-            { label: 'Nordic Banking', id: 'banking-d', farge: '#0891B2' },
-            { label: 'Nordisk Høyrente', id: 'nordisk-hoyrente', farge: '#7C3AED' },
-            { label: 'Norske Aksjer', id: 'norge-a', farge: '#DC2626' }
+            { label: 'Basis', id: 'basis', farge: PENSUM_COLORS.salmon },
+            { label: 'Fin. Opp.', id: 'financial-d', farge: PENSUM_COLORS.gray },
+            { label: 'Global Core Active', id: 'global-core-active', farge: PENSUM_COLORS.navy },
+            { label: 'Global Edge', id: 'global-edge', farge: PENSUM_COLORS.lightBlue },
+            { label: 'Global Energy', id: 'energy-a', farge: PENSUM_COLORS.gold },
+            { label: 'Global Høyrente', id: 'global-hoyrente', farge: PENSUM_COLORS.teal },
+            { label: 'Nordic Banking', id: 'banking-d', farge: PENSUM_COLORS.midBlue },
+            { label: 'Nordisk Høyrente', id: 'nordisk-hoyrente', farge: PENSUM_COLORS.purple },
+            { label: 'Norske Aksjer', id: 'norge-a', farge: PENSUM_COLORS.red }
           ];
 
           const PENSUM_AARLIG = (() => {
@@ -4003,13 +4003,13 @@ export default function PensumPrognoseModell() {
 
           const heatmapFarge = (v) => {
             if (v === null) return 'transparent';
-            if (v > 25) return '#15803d';
-            if (v > 15) return '#16a34a';
-            if (v > 5) return '#4ade80';
-            if (v > 0) return '#bbf7d0';
-            if (v > -5) return '#fecaca';
-            if (v > -15) return '#f87171';
-            return '#dc2626';
+            if (v > 25) return PENSUM_COLORS.teal;
+            if (v > 15) return '#4A9A9A';
+            if (v > 5) return '#7AADAD';
+            if (v > 0) return '#D6E8E8';
+            if (v > -5) return '#E8D8CE';
+            if (v > -15) return '#D4B8A8';
+            return PENSUM_COLORS.salmon;
           };
           const textFarge = (v) => {
             if (v === null) return '#9ca3af';
@@ -4343,9 +4343,9 @@ export default function PensumPrognoseModell() {
                 };
                 const dashStartDato = dashPeriodeFilter[dashboardPeriode];
                 const produktFarger2 = {
-                  'global-core-active': '#0D2240', 'global-edge': '#5B9BD5', 'basis': '#D4886B',
-                  'global-hoyrente': '#16A34A', 'nordisk-hoyrente': '#7C3AED',
-                  'norge-a': '#DC2626', 'energy-a': '#F59E0B', 'banking-d': '#0891B2', 'financial-d': '#BE185D'
+                  'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue, 'basis': PENSUM_COLORS.salmon,
+                  'global-hoyrente': PENSUM_COLORS.teal, 'nordisk-hoyrente': PENSUM_COLORS.purple,
+                  'norge-a': PENSUM_COLORS.red, 'energy-a': PENSUM_COLORS.gold, 'banking-d': PENSUM_COLORS.midBlue, 'financial-d': PENSUM_COLORS.gray
                 };
                 const produktNavn2 = {
                   'global-core-active': 'Global Core Active', 'global-edge': 'Global Edge', 'basis': 'Basis',
@@ -4399,17 +4399,17 @@ export default function PensumPrognoseModell() {
                 const korrelasjon = beregnKorrelasjonsmatrise(korrHistorikk, dashStartDato);
                 const korrFarge = (v) => {
                   if (v === null) return '#F3F4F6';
-                  if (v >= 0.8) return '#DC2626';
-                  if (v >= 0.5) return '#F97316';
-                  if (v >= 0.2) return '#FDE68A';
-                  if (v >= -0.2) return '#D1FAE5';
-                  if (v >= -0.5) return '#6EE7B7';
-                  return '#10B981';
+                  if (v >= 0.8) return PENSUM_COLORS.salmon;
+                  if (v >= 0.5) return '#D4B8A8';
+                  if (v >= 0.2) return '#E8D8CE';
+                  if (v >= -0.2) return '#D6E8E8';
+                  if (v >= -0.5) return '#7AADAD';
+                  return PENSUM_COLORS.teal;
                 };
                 const korrTextFarge = (v) => {
                   if (v === null) return '#9CA3AF';
-                  if (v >= 0.8 || v <= -0.5) return 'white';
-                  return '#111827';
+                  if (v >= 0.8 || v <= -0.5) return '#FFFFFF';
+                  return PENSUM_COLORS.charcoal;
                 };
 
                 return (
@@ -4598,11 +4598,11 @@ export default function PensumPrognoseModell() {
                             </tbody>
                           </table>
                           <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#10B981' }}></span> Lav (&lt;-0.2)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D1FAE5' }}></span> Moderat (-0.2 – 0.2)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#FDE68A' }}></span> Middels (0.2 – 0.5)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#F97316' }}></span> Høy (0.5 – 0.8)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#DC2626' }}></span> Svært høy (&gt;0.8)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.teal }}></span> Lav (&lt;-0.2)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D6E8E8' }}></span> Moderat (-0.2 – 0.2)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#E8D8CE' }}></span> Middels (0.2 – 0.5)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D4B8A8' }}></span> Høy (0.5 – 0.8)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.salmon }}></span> Svært høy (&gt;0.8)</span>
                           </div>
                         </div>
                       </div>
@@ -4620,11 +4620,11 @@ export default function PensumPrognoseModell() {
                               <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(1)} />
                               <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
                               <Tooltip formatter={(v) => [v.toFixed(2), "Sharpe"]} labelFormatter={id => produktNavn2[id] || id} />
-                              <ReferenceLine x={1} stroke="#16A34A" strokeDasharray="4 4" />
-                              <ReferenceLine x={0.5} stroke="#F59E0B" strokeDasharray="4 4" />
+                              <ReferenceLine x={1} stroke={PENSUM_COLORS.teal} strokeDasharray="4 4" />
+                              <ReferenceLine x={0.5} stroke={PENSUM_COLORS.gold} strokeDasharray="4 4" />
                               <Bar dataKey="sharpe" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(2) }}>
                                 {sortedBySharpe.map(s => (
-                                  <Cell key={s.id} fill={s.sharpe >= 1 ? "#16A34A" : s.sharpe >= 0.5 ? "#F59E0B" : "#DC2626"} />
+                                  <Cell key={s.id} fill={s.sharpe >= 1 ? PENSUM_COLORS.teal : s.sharpe >= 0.5 ? PENSUM_COLORS.gold : PENSUM_COLORS.salmon} />
                                 ))}
                               </Bar>
                             </BarChart>
@@ -4664,8 +4664,8 @@ export default function PensumPrognoseModell() {
                             <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0) + "%"} />
                             <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
                             <Tooltip formatter={(v) => [v.toFixed(1) + "%", "Maks drawdown"]} labelFormatter={id => produktNavn2[id] || id} />
-                            <Bar dataKey="maxDrawdown" radius={[0, 4, 4, 0]} fill="#DC2626" fillOpacity={0.75}
-                              label={{ position: "right", fontSize: 10, fill: "#DC2626", formatter: v => v.toFixed(1) + "%" }} />
+                            <Bar dataKey="maxDrawdown" radius={[0, 4, 4, 0]} fill={PENSUM_COLORS.salmon} fillOpacity={0.85}
+                              label={{ position: "right", fontSize: 10, fill: PENSUM_COLORS.salmon, formatter: v => v.toFixed(1) + "%" }} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -4673,23 +4673,23 @@ export default function PensumPrognoseModell() {
 
                     {allStatistikk.length > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 bg-green-50 rounded-xl border border-green-100 text-center">
-                          <div className="text-xs text-green-600 font-medium mb-2">Beste Sharpe Ratio</div>
-                          <div className="font-bold text-green-800 text-lg">{produktNavn2[sortedBySharpe[0].id]}</div>
-                          <div className="text-green-600 font-semibold">{sortedBySharpe[0].sharpe.toFixed(2)}</div>
-                          <div className="text-xs text-green-500 mt-1">{sortedBySharpe[0].aarligAvkastning.toFixed(1)}% p.a. / {sortedBySharpe[0].standardavvik.toFixed(1)}% vol.</div>
+                        <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#E8F0F0', borderColor: '#B8D4D4' }}>
+                          <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.teal }}>Beste Sharpe Ratio</div>
+                          <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedBySharpe[0].id]}</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.teal }}>{sortedBySharpe[0].sharpe.toFixed(2)}</div>
+                          <div className="text-xs mt-1" style={{ color: '#4A8A8A' }}>{sortedBySharpe[0].aarligAvkastning.toFixed(1)}% p.a. / {sortedBySharpe[0].standardavvik.toFixed(1)}% vol.</div>
                         </div>
-                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-center">
-                          <div className="text-xs text-blue-600 font-medium mb-2">Høyest avkastning</div>
-                          <div className="font-bold text-blue-800 text-lg">{produktNavn2[sortedByAvk[0].id]}</div>
-                          <div className="text-blue-600 font-semibold">{sortedByAvk[0].aarligAvkastning.toFixed(2)}% p.a.</div>
-                          <div className="text-xs text-blue-500 mt-1">Sharpe: {sortedByAvk[0].sharpe.toFixed(2)} / Vol: {sortedByAvk[0].standardavvik.toFixed(1)}%</div>
+                        <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#E8F0F4', borderColor: '#B8D0DB' }}>
+                          <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.lightBlue }}>Høyest avkastning</div>
+                          <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedByAvk[0].id]}</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.lightBlue }}>{sortedByAvk[0].aarligAvkastning.toFixed(2)}% p.a.</div>
+                          <div className="text-xs mt-1" style={{ color: '#5A8DA5' }}>{sortedByAvk[0].sharpe.toFixed(2)} Sharpe / {sortedByAvk[0].standardavvik.toFixed(1)}% vol.</div>
                         </div>
-                        <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 text-center">
-                          <div className="text-xs text-purple-600 font-medium mb-2">Lavest risiko</div>
-                          <div className="font-bold text-purple-800 text-lg">{produktNavn2[sortedByVol[0].id]}</div>
-                          <div className="text-purple-600 font-semibold">{sortedByVol[0].standardavvik.toFixed(1)}% vol.</div>
-                          <div className="text-xs text-purple-500 mt-1">{sortedByVol[0].aarligAvkastning.toFixed(1)}% p.a. / Sharpe: {sortedByVol[0].sharpe.toFixed(2)}</div>
+                        <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#FDF6F2', borderColor: '#E8CFC2' }}>
+                          <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.salmon }}>Lavest risiko</div>
+                          <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedByVol[0].id]}</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.salmon }}>{sortedByVol[0].standardavvik.toFixed(1)}% vol.</div>
+                          <div className="text-xs mt-1" style={{ color: '#B8917D' }}>{sortedByVol[0].aarligAvkastning.toFixed(1)}% p.a. / Sharpe: {sortedByVol[0].sharpe.toFixed(2)}</div>
                         </div>
                       </div>
                     )}
@@ -4726,7 +4726,7 @@ export default function PensumPrognoseModell() {
           });
           const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
 
-          const produktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, '#BE185D', '#EA580C'];
+          const produktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
 
           const formatAvk = (v) => erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—';
           const avkFarge = (v) => erGyldigTall(v) ? (v >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400';
@@ -4925,9 +4925,9 @@ export default function PensumPrognoseModell() {
                       <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} />
                       <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 10 }} width={90} />
                       <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'forventet' ? 'Forventet' : n === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
-                      {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />}
+                      {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="5 5" dot={false} />}
                       <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#16A34A" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                      <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke={PENSUM_COLORS.teal} strokeWidth={2} strokeDasharray="5 5" dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
