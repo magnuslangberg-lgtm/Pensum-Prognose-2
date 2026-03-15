@@ -57,7 +57,6 @@ export default function PensumPrognoseModell() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
-  const [forslagType, setForslagType] = useState('10page');
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
   const [valgteIndekserScen, setValgteIndekserScen] = useState(['MSCI World', 'Oslo Børs', 'Norske Statsobl.']);
   const [visPortefoljeScen, setVisPortefoljeScen] = useState(true);
@@ -1462,35 +1461,6 @@ export default function PensumPrognoseModell() {
         scenarioData,
         verdiutvikling
       };
-      // Route to new generators if selected
-      if (forslagType === '10page' || forslagType === '25page') {
-        const apiUrl = forslagType === '10page' ? '/api/generate-pptx-10page' : '/api/generate-pptx-25page';
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          let melding = await response.text();
-          try { const parsed = JSON.parse(melding); if (parsed?.error) melding = parsed.error; } catch (_) {}
-          throw new Error(melding || 'Ukjent feil fra server.');
-        }
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const disposition = response.headers.get('content-disposition') || '';
-        const match = disposition.match(/filename="([^"]+)"/i);
-        a.download = match ? match[1] : `Pensum_Forslag_${forslagType === '10page' ? 'Kort' : 'Komplett'}_${(kundeNavn || 'Kunde').replace(/\s+/g, '_')}.pptx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setPdfModal(false);
-        setPdfLoading(false);
-        return;
-      }
-
       let payloadTilSending = payload;
       let templateDroppetPgaStorrelse = false;
       let serializedPayload = JSON.stringify(payloadTilSending);
@@ -1897,31 +1867,6 @@ export default function PensumPrognoseModell() {
                 </div>
               )}
 
-              {/* Forslagstype-velger */}
-              <div>
-                <div className="text-sm font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Velg forslagsformat</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => setForslagType('10page')}
-                    className={"p-3 rounded-xl border-2 text-left transition-all " + (forslagType === '10page' ? "border-current" : "border-gray-200 hover:border-gray-300")}
-                    style={forslagType === '10page' ? { borderColor: PENSUM_COLORS.salmon, backgroundColor: '#FDF6F2' } : {}}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4" style={{ color: forslagType === '10page' ? PENSUM_COLORS.salmon : '#9CA3AF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      <span className="text-sm font-bold" style={{ color: forslagType === '10page' ? PENSUM_COLORS.darkBlue : '#6B7280' }}>Kort versjon</span>
-                    </div>
-                    <p className="text-xs" style={{ color: forslagType === '10page' ? PENSUM_COLORS.salmon : '#9CA3AF' }}>~10 sider, rett på sak. Allokering, scenarioer og nøkkeltall.</p>
-                  </button>
-                  <button onClick={() => setForslagType('25page')}
-                    className={"p-3 rounded-xl border-2 text-left transition-all " + (forslagType === '25page' ? "border-current" : "border-gray-200 hover:border-gray-300")}
-                    style={forslagType === '25page' ? { borderColor: PENSUM_COLORS.teal, backgroundColor: '#E8F0F0' } : {}}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-4 h-4" style={{ color: forslagType === '25page' ? PENSUM_COLORS.teal : '#9CA3AF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      <span className="text-sm font-bold" style={{ color: forslagType === '25page' ? PENSUM_COLORS.darkBlue : '#6B7280' }}>Komplett versjon</span>
-                    </div>
-                    <p className="text-xs" style={{ color: forslagType === '25page' ? PENSUM_COLORS.teal : '#9CA3AF' }}>~20-25 sider. Utfyllende med produktdetaljer, eksponering og historikk.</p>
-                  </button>
-                </div>
-              </div>
-
               {/* AI-info */}
               <div className="flex items-start gap-3 p-3 rounded-xl border" style={{ backgroundColor: PENSUM_COLORS.lightBlue === '#6B9DB8' ? '#E8F0F4' : '#E8F0F4', borderColor: '#D1D5DB' }}>
                 <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -1941,12 +1886,12 @@ export default function PensumPrognoseModell() {
                 {pdfLoading ? (
                   <>
                     <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Genererer {forslagType === '10page' ? 'kort' : forslagType === '25page' ? 'komplett' : ''} forslag...
+                    Genererer PowerPoint...
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Last ned {forslagType === '10page' ? 'kort forslag' : forslagType === '25page' ? 'komplett forslag' : 'PowerPoint'}
+                    Last ned PowerPoint
                   </>
                 )}
               </button>
