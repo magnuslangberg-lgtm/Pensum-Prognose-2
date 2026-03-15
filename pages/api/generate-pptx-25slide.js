@@ -17,6 +17,8 @@ export default async function handler(req, res) {
     return res.status(200).send(buffer);
   } catch (error) {
     console.error('[generate-pptx-25slide] Error:', error);
-    return res.status(500).json({ ok: false, error: error?.message || 'Unknown error' });
+    const stack = error?.stack || '';
+    const shortStack = stack.split('\n').slice(0, 5).join(' | ');
+    return res.status(500).json({ ok: false, error: `${error?.message || 'Unknown error'} [${shortStack}]` });
   }
 }
