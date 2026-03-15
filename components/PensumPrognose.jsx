@@ -1552,6 +1552,128 @@ export default function PensumPrognoseModell() {
     }
   };
 
+  const handleGenerate10Slide = async () => {
+    setPdfLoading(true);
+    try {
+      const valgteProduktIrapport = pdfProduktValg.length > 0 ? pdfProduktValg : Object.keys(PRODUKT_NAVN_MAP_PDF);
+      const historikkTilEksport = valgteProduktIrapport.reduce((acc, id) => {
+        const hist = produktHistorikk?.[id];
+        if (!hist || !Array.isArray(hist.data)) return acc;
+        acc[id] = { ...hist, data: hist.data.slice(-120) };
+        return acc;
+      }, {});
+
+      const produktMap = [...(pensumProdukter?.enkeltfond || []), ...(pensumProdukter?.fondsportefoljer || []), ...(pensumProdukter?.alternative || [])]
+        .reduce((acc, p) => { if (p?.id) acc[p.id] = p; return acc; }, {});
+      const pensumProdukterTilEksport = valgteProduktIrapport
+        .map((id) => produktMap[id])
+        .filter(Boolean)
+        .map((p) => ({
+          id: p.id, navn: p.navn, aktivatype: p.aktivatype, likviditet: p.likviditet,
+          aar2026: p.aar2026, aar2025: p.aar2025, aar2024: p.aar2024, aar2023: p.aar2023, aar2022: p.aar2022,
+          forventetAvkastning: p.forventetAvkastning, forventetYield: p.forventetYield,
+          aarlig3ar: p.aarlig3ar, risiko3ar: p.risiko3ar,
+          ...(produktRapportMeta?.[p.id] || {})
+        }));
+
+      const investerbarKapital = investertBelop !== null ? investertBelop : totalKapital;
+
+      // Beregn historisk porteføljedata
+      const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+      const aarKolonner = ['aar2025', 'aar2024', 'aar2023', 'aar2022'];
+      let histPortefolje = {};
+      const aarData = {};
+      aarKolonner.forEach(aar => {
+        let vektetSum = 0, totalVekt = 0;
+        pensumAllokering.filter(a => valgteProduktIrapport.includes(a.id) && a.vekt > 0).forEach(allok => {
+          const prod = alleProdukt.find(p => p.id === allok.id);
+          if (prod && typeof prod[aar] === 'number') {
+            vektetSum += prod[aar] * allok.vekt;
+            totalVekt += allok.vekt;
+          }
+        });
+        if (totalVekt > 0) aarData[aar] = parseFloat((vektetSum / totalVekt).toFixed(1));
+      });
+      const avkVerdier = Object.values(aarData).filter(v => typeof v === 'number');
+      if (avkVerdier.length >= 2) {
+        const snitt = avkVerdier.reduce((s, v) => s + v, 0) / avkVerdier.length;
+        const varians = avkVerdier.reduce((s, v) => s + Math.pow(v - snitt, 2), 0) / avkVerdier.length;
+        histPortefolje = {
+          ...aarData,
+          aarligAvkastning: parseFloat(snitt.toFixed(1)),
+          risiko: parseFloat(Math.sqrt(varians).toFixed(1)),
+          maxDrawdown: parseFloat(Math.min(...avkVerdier).toFixed(1)),
+          besteAar: parseFloat(Math.max(...avkVerdier).toFixed(1)),
+          svaakesteAar: parseFloat(Math.min(...avkVerdier).toFixed(1)),
+        };
+      }
+
+      const payload = {
+        kundeNavn: kundeNavn || 'Investor',
+        totalFormue: totalKapital,
+        investerbarKapital,
+        risikoProfil: risikoprofil,
+        horisont,
+        vektetAvkastning,
+        radgiver,
+        dato,
+        allokering: aktiveAktiva.map((a) => ({ ...a, belop: ((a.vekt || 0) / 100) * investerbarKapital })),
+        produkterIBruk: valgteProduktIrapport,
+        pensumProdukter: pensumProdukterTilEksport,
+        pensumAllokering: pensumAllokering.filter((p) => valgteProduktIrapport.includes(p.id)),
+        produktEksponering: valgteProduktIrapport.reduce((acc, id) => {
+          if (produktEksponering?.[id]) acc[id] = produktEksponering[id];
+          return acc;
+        }, {}),
+        produktHistorikk: historikkTilEksport,
+        kundeinfo: {
+          totalFormue: totalKapital, investerbarKapital,
+          aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde,
+          peFondKunde, unoterteAksjerKunde, shippingKunde,
+          egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde
+        },
+        eksponering: {
+          sektorer: aggregertPensumEksponering?.sektorer || [],
+          regioner: aggregertPensumEksponering?.regioner || []
+        },
+        historiskPortefolje: histPortefolje,
+        pensumForventetAvkastning,
+        pensumLikviditet,
+        aktivafordeling: pensumAktivafordeling,
+        scenarioParams,
+        scenarioData,
+        verdiutvikling,
+      };
+
+      const response = await fetch('/api/generate-pptx-10slide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        let melding = await response.text();
+        try { const parsed = JSON.parse(melding); if (parsed?.error) melding = parsed.error; } catch (_) {}
+        throw new Error(melding || 'Ukjent feil fra server.');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = response.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/i);
+      a.download = match ? match[1] : `Pensum_Investeringsforslag_10s_${(kundeNavn || 'Kunde').replace(/\s+/g, '_')}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setPdfModal(false);
+    } catch (err) {
+      alert('Feil ved generering av 10-siders presentasjon: ' + err.message);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const handleDownloadHTML = () => {
     const html = generateReportHTML();
     const blob = new Blob([html], { type: 'text/html' });
@@ -1875,26 +1997,46 @@ export default function PensumPrognoseModell() {
             </div>
 
             {/* Footer med knapper */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
-              <button onClick={() => setPdfModal(false)} disabled={pdfLoading}
-                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
-                Avbryt
-              </button>
-              <button onClick={handleGeneratePresentation} disabled={pdfLoading}
-                className="flex-2 py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
-                style={{ backgroundColor: pdfLoading ? '#6B7280' : '#D4886B' }}>
-                {pdfLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Genererer PowerPoint...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Last ned PowerPoint
-                  </>
-                )}
-              </button>
+            <div className="px-6 py-4 border-t border-gray-100 space-y-3">
+              <div className="flex gap-3">
+                <button onClick={() => setPdfModal(false)} disabled={pdfLoading}
+                  className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+                  Avbryt
+                </button>
+                <button onClick={handleGenerate10Slide} disabled={pdfLoading}
+                  className="flex-2 py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
+                  style={{ backgroundColor: pdfLoading ? '#6B7280' : '#0D2841' }}>
+                  {pdfLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      Genererer...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      10-siders forslag
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1" />
+                <button onClick={handleGeneratePresentation} disabled={pdfLoading}
+                  className="flex-2 py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
+                  style={{ backgroundColor: pdfLoading ? '#6B7280' : '#D4886B' }}>
+                  {pdfLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      Genererer...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      Produktpresentasjon
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
