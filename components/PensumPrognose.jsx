@@ -1052,6 +1052,9 @@ export default function PensumPrognoseModell() {
   const aktiveAktiva = useMemo(() => allokering.filter(a => a.vekt > 0), [allokering]);
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
+  // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
+  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
+
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
     const illikvideKategorier = ['privateMarkets', 'eiendom'];
@@ -1083,9 +1086,6 @@ export default function PensumPrognoseModell() {
       optimistisk: Math.max(prev.optimistisk, vektetAvkastning + 2)
     }));
   }, [vektetAvkastning]);
-
-  // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
 
   const verdiutvikling = useMemo(() => {
     const data = [];
