@@ -1058,10 +1058,10 @@ export default function PensumPrognoseModell() {
     const illikvidVekt = allokering.filter(a => illikvideKategorier.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
     const likvidVekt = totalVekt - illikvidVekt;
     return [
-      { name: 'Likvid', value: likvidVekt, belop: (likvidVekt / 100) * totalKapital },
-      { name: 'Illikvid', value: illikvidVekt, belop: (illikvidVekt / 100) * totalKapital }
+      { name: 'Likvid', value: likvidVekt, belop: (likvidVekt / 100) * effektivtInvestertBelop },
+      { name: 'Illikvid', value: illikvidVekt, belop: (illikvidVekt / 100) * effektivtInvestertBelop }
     ];
-  }, [allokering, totalVekt, totalKapital]);
+  }, [allokering, totalVekt, effektivtInvestertBelop]);
 
   // Aktiva-fordeling (aksjer, renter, PE, eiendom)
   const renterAksjerData = useMemo(() => {
@@ -1083,6 +1083,9 @@ export default function PensumPrognoseModell() {
       optimistisk: Math.max(prev.optimistisk, vektetAvkastning + 2)
     }));
   }, [vektetAvkastning]);
+
+  // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
+  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
 
   const verdiutvikling = useMemo(() => {
     const data = [];
@@ -1106,7 +1109,7 @@ export default function PensumPrognoseModell() {
       
       gjeldendAllokering.forEach(asset => {
         if (i === 0) {
-          row[asset.navn] = (asset.vekt / 100) * totalKapital;
+          row[asset.navn] = (asset.vekt / 100) * effektivtInvestertBelop;
         } else {
           // Finn forrige verdi og beregn ny verdi med eventuell rebalansering
           const prevRow = data[i - 1];
@@ -1152,7 +1155,7 @@ export default function PensumPrognoseModell() {
       data.push(row);
     }
     return data;
-  }, [aktiveAktiva, totalKapital, nettoKontantstrom, horisont, rebalanseringAktiv, rebalansering]);
+  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalansering]);
 
   const sammenligningVerdiutvikling = useMemo(() => {
     const data = [];
@@ -1160,7 +1163,7 @@ export default function PensumPrognoseModell() {
     for (let i = 0; i <= horisont; i++) {
       const row = { year: startYear + i };
       sammenligningAktiva.forEach(asset => {
-        if (i === 0) row[asset.navn] = (asset.vekt / 100) * totalKapital;
+        if (i === 0) row[asset.navn] = (asset.vekt / 100) * effektivtInvestertBelop;
         else {
           const prev = data[i - 1][asset.navn] || 0;
           row[asset.navn] = (prev + (asset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
@@ -1170,7 +1173,7 @@ export default function PensumPrognoseModell() {
       data.push(row);
     }
     return data;
-  }, [sammenligningAktiva, totalKapital, nettoKontantstrom, horisont]);
+  }, [sammenligningAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont]);
 
   const kombinertVerdiutvikling = useMemo(() => {
     if (!showComparison) return verdiutvikling;
@@ -1185,11 +1188,11 @@ export default function PensumPrognoseModell() {
     for (let i = 0; i <= horisont; i++) {
       const row = { year: startYear + i };
       // Forventet = samme som verdiutvikling (sum av individuelle aktivaklasser)
-      row.forventet = verdiutvikling[i]?.total || totalKapital;
+      row.forventet = verdiutvikling[i]?.total || effektivtInvestertBelop;
       // Pessimistisk og optimistisk beregnes med justerte rater
       if (i === 0) {
-        row.pessimistisk = totalKapital;
-        row.optimistisk = totalKapital;
+        row.pessimistisk = effektivtInvestertBelop;
+        row.optimistisk = effektivtInvestertBelop;
       } else {
         row.pessimistisk = (data[i-1].pessimistisk + nettoKontantstrom) * (1 + scenarioParams.pessimistisk / 100);
         row.optimistisk = (data[i-1].optimistisk + nettoKontantstrom) * (1 + scenarioParams.optimistisk / 100);
@@ -1197,7 +1200,7 @@ export default function PensumPrognoseModell() {
       data.push(row);
     }
     return data;
-  }, [totalKapital, nettoKontantstrom, verdiutvikling, scenarioParams, horisont]);
+  }, [effektivtInvestertBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
@@ -1213,11 +1216,11 @@ export default function PensumPrognoseModell() {
   const updateAllokeringBelop = useCallback((index, newBelop) => {
     setAllokering(prev => {
       const updated = [...prev];
-      const newVekt = totalKapital > 0 ? (newBelop / totalKapital) * 100 : 0;
+      const newVekt = effektivtInvestertBelop > 0 ? (newBelop / effektivtInvestertBelop) * 100 : 0;
       updated[index] = { ...updated[index], vekt: parseFloat(newVekt.toFixed(1)) };
       return updated;
     });
-  }, [totalKapital]);
+  }, [effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
     setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0 }; return u; });
@@ -1562,14 +1565,11 @@ export default function PensumPrognoseModell() {
     URL.revokeObjectURL(url);
   };
 
-  // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
-
   // Kostnadsanalyse - beregn "break-even" avkastning og formuesutvikling uten investering
   const kostnadsanalyseData = useMemo(() => {
     if (!kostnadsanalyseAktiv) return null;
     const startYear = new Date().getFullYear();
-    const kapital = totalKapital;
+    const kapital = effektivtInvestertBelop;
 
     // Formuesskatt-beregning (2025-satser)
     const beregnFormuesskatt = (formue) => {
@@ -1624,7 +1624,7 @@ export default function PensumPrognoseModell() {
       bankSerie,
       aarligKostnad,
     };
-  }, [kostnadsanalyseAktiv, totalKapital, skattepliktigFormue, aarligForbruk, inflasjon, renteAvkastning, horisont]);
+  }, [kostnadsanalyseAktiv, effektivtInvestertBelop, skattepliktigFormue, aarligForbruk, inflasjon, renteAvkastning, horisont]);
 
 
   return (
@@ -2432,10 +2432,10 @@ export default function PensumPrognoseModell() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <StatCard label="Startkapital" value={formatCurrency(totalKapital)} />
+              <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
               <StatCard label="Forventet avkastning" value={formatPercent(vektetAvkastning)} subtext="årlig" />
               <StatCard label="Sluttverdi" value={formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)} subtext={"etter " + horisont + " år"} />
-              <StatCard label="Total avkastning" value={formatCurrency((verdiutvikling[verdiutvikling.length - 1]?.total || 0) - totalKapital - (nettoKontantstrom * horisont))} color={PENSUM_COLORS.green} />
+              <StatCard label="Total avkastning" value={formatCurrency((verdiutvikling[verdiutvikling.length - 1]?.total || 0) - effektivtInvestertBelop - (nettoKontantstrom * horisont))} color={PENSUM_COLORS.green} />
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -2509,7 +2509,7 @@ export default function PensumPrognoseModell() {
                         onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
                         className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
                       <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-red-100">
-                        <div><div className="text-xs text-red-400">Gevinst</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - totalKapital)}</div></div>
+                        <div><div className="text-xs text-red-400">Gevinst</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - effektivtInvestertBelop)}</div></div>
                         <div><div className="text-xs text-red-400">CAGR</div><div className="font-semibold text-red-700 text-sm">{formatPercent(scenarioParams.pessimistisk)}</div></div>
                       </div>
                     </div>
@@ -2519,7 +2519,7 @@ export default function PensumPrognoseModell() {
                     <div className="text-4xl font-bold text-white mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
                     <div className="text-blue-300 text-sm mb-3">etter {horisont} år</div>
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
-                      <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - totalKapital)}</div></div>
+                      <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
                     </div>
                   </div>
@@ -2532,7 +2532,7 @@ export default function PensumPrognoseModell() {
                       className="w-full h-2 rounded-lg cursor-pointer bg-green-200" />
                     <div className="mt-2 text-center font-bold text-green-600">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
                     <div className="mt-2 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
-                      <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - totalKapital)}</div></div>
+                      <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
                     </div>
                   </div>
@@ -2619,7 +2619,7 @@ export default function PensumPrognoseModell() {
                       <div className="text-sm text-blue-400 mb-2">Kun rente ({formatPercent(renteAvkastning)}, netto {formatPercent(kostnadsanalyseData.nettoRente)})</div>
                       <div className="text-2xl font-bold text-white">{formatCurrency(kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0)}</div>
                       <div className="mt-2 text-xs text-blue-400">
-                        Tapt kjøpekraft: {formatCurrency(totalKapital - (kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0))}
+                        Tapt kjøpekraft: {formatCurrency(effektivtInvestertBelop - (kostnadsanalyseData.bankSerie[kostnadsanalyseData.bankSerie.length - 1]?.bankFormue || 0))}
                       </div>
                     </div>
                   </div>
@@ -2642,7 +2642,7 @@ export default function PensumPrognoseModell() {
                         <Legend iconType="circle" />
                         <Area type="monotone" dataKey="investert" name="Investert portefølje" fill={PENSUM_COLORS.darkBlue} fillOpacity={0.08} stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
                         <Area type="monotone" dataKey="bankFormue" name="Bankkonto (real)" fill={PENSUM_COLORS.salmon} fillOpacity={0.08} stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="6 3" dot={false} />
-                        <ReferenceLine y={totalKapital} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Startkapital', position: 'right', fill: '#9CA3AF', fontSize: 11 }} />
+                        <ReferenceLine y={effektivtInvestertBelop} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Startkapital', position: 'right', fill: '#9CA3AF', fontSize: 11 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
