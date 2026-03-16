@@ -558,7 +558,7 @@ function buildProfessionalPptx(payload) {
         showLegend: true,
         legendPos: 'b',
         holeSize: 58,
-        chartColors: d.assetAlloc.map((a, idx) => Object.values(PRODUCT_COLORS)[idx % Object.values(PRODUCT_COLORS).length]),
+        chartColors: d.assetAlloc.map((a, idx) => { const vals = Object.values(PRODUCT_COLORS); return String(vals[idx % vals.length]); }),
         showTitle: false,
         showPercent: true
       });
