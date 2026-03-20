@@ -5174,7 +5174,6 @@ export default function PensumPrognoseModell() {
                       <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Forutsetninger</h3>
                       <div className="space-y-0">
                         {[
-                          { label: 'Samlet oppgitt formue', value: formatCurrency(totalKapital) },
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
                           { label: 'Risikoprofil', value: risikoprofil },
                           { label: 'Tidshorisont', value: horisont + ' år' },
@@ -5816,17 +5815,25 @@ export default function PensumPrognoseModell() {
 
                 {/* === VERDIUTVIKLING (STACKED BAR) === */}
                 <div data-rapport-slide="verdiutvikling">
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling per aktivaklasse</h2>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={verdiutvikling} barCategoryGap="40%">
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
-                      <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} />
-                      <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={90} />
-                      <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
-                      <Legend iconType="circle" iconSize={8} />
-                      {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling per produkt</h2>
+                  {(() => {
+                    const pensumProdNavn = valgteProdukterRapport.map(p => p.navn);
+                    const pensumProdFarger = valgteProdukterRapport.map((p, idx) => produktFarger[idx % produktFarger.length]);
+                    return (
+                      <>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={pensumPrognose} barCategoryGap="40%">
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                            <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} />
+                            <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={90} />
+                            <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
+                            <Legend iconType="circle" iconSize={8} />
+                            {pensumProdNavn.map((navn, i) => <Bar key={navn} dataKey={navn} stackId="a" fill={pensumProdFarger[i]} />)}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* === DETALJERT VERDIUTVIKLING === */}
@@ -5837,16 +5844,16 @@ export default function PensumPrognoseModell() {
                       <thead>
                         <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
                           <th className="py-2 px-2 text-left font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>År</th>
-                          {aktiveAktiva.map(a => <th key={a.navn} className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.navn}</th>)}
+                          {valgteProdukterRapport.map(p => <th key={p.id} className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn?.replace('Pensum ', '')}</th>)}
                           <th className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Total</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {verdiutvikling.map((row, idx) => (
+                        {pensumPrognose.map((row, idx) => (
                           <tr key={row.year} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                             <td className="py-2 px-2 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
-                            {aktiveAktiva.map(a => <td key={a.navn} className="py-2 px-2 text-right text-gray-600">{formatCurrency(row[a.navn] || 0)}</td>)}
-                            <td className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.total)}</td>
+                            {valgteProdukterRapport.map(p => <td key={p.id} className="py-2 px-2 text-right text-gray-600">{formatCurrency(row[p.navn] || 0)}</td>)}
+                            <td className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.verdi)}</td>
                           </tr>
                         ))}
                       </tbody>
