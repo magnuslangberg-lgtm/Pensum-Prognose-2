@@ -3676,7 +3676,7 @@ export default function PensumPrognoseModell() {
                             if (pm) {
                               const verdi = pm.dataMap.get(dato);
                               if (verdi !== undefined) {
-                                punkt[produktId] = (verdi / pm.startVerdi) * 100;
+                                punkt[produktId] = ((verdi / pm.startVerdi) - 1) * 100;
                               }
                             }
                           });
@@ -3720,17 +3720,17 @@ export default function PensumPrognoseModell() {
                                 }}
                                 interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))}
                               />
-                              <YAxis 
+                              <YAxis
                                 tick={{ fontSize: 10, fill: '#6B7280' }}
-                                tickFormatter={(val) => val.toFixed(0)}
-                                domain={['dataMin - 5', 'dataMax + 5']}
+                                tickFormatter={(val) => val.toFixed(1).replace('.', ',') + '%'}
+                                domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }}
                               />
                               <Tooltip 
                                 contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                                 labelFormatter={(dato) => formatHistorikkEtikett(dato)}
                                 formatter={(value, name) => {
                                   const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === name);
-                                  return [value.toFixed(1), produktInfo?.navn?.replace('Pensum ', '') || name];
+                                  return [value.toFixed(1).replace('.', ',') + '%', produktInfo?.navn?.replace('Pensum ', '') || name];
                                 }}
                               />
                               <Legend 
@@ -3741,7 +3741,7 @@ export default function PensumPrognoseModell() {
                                   return produktInfo?.navn?.replace('Pensum ', '') || value;
                                 }}
                               />
-                              <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                              <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                               {valgteProdukterHistorikk.map(produktId => (
                                 <Line
                                   key={produktId}
@@ -3809,7 +3809,7 @@ export default function PensumPrognoseModell() {
                     
                     {/* Disclaimer */}
                     <div className="mt-4 text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-                      <strong>Viktig informasjon om avkastning:</strong> Historikk er indeksert til 100 ved start av valgt periode.
+                      <strong>Viktig informasjon om avkastning:</strong> Historikk viser prosentvis avkastning fra start av valgt periode.
                       Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes daglig ut fra kursendringer mellom daglige datapunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon.
                       Historisk avkastning er ingen garanti for fremtidig avkastning.
                     </div>
@@ -4025,24 +4025,24 @@ export default function PensumPrognoseModell() {
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
                     const punkt = { dato };
-                    // Vektet portefølje
-                    let vektetVerdi = 0; let totalProdVekt = 0;
+                    // Vektet portefølje — prosentvis avkastning fra start
+                    let vektetPct = 0; let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
                       const pm = produktMaps[id];
                       if (pm) {
                         const verdi = pm.dMap.get(dato);
                         if (verdi !== undefined && pm.startVerdi) {
-                          const indeksert = (verdi / pm.startVerdi) * 100;
+                          const pctReturn = ((verdi / pm.startVerdi) - 1) * 100;
                           const allok = pensumAllokering.find(a => a.id === id);
-                          if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
+                          if (allok) { vektetPct += pctReturn * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
                         }
                       }
                     });
-                    if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
-                    // Indekser
+                    if (totalProdVekt > 0) punkt['portefolje'] = vektetPct / totalProdVekt;
+                    // Indekser — prosentvis avkastning fra start
                     Object.entries(indeksMaps).forEach(([navn, im]) => {
                       const verdi = im.dMap.get(dato);
-                      if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                      if (verdi !== undefined) punkt[navn] = ((verdi / im.startVerdi) - 1) * 100;
                     });
                     return punkt;
                   });
@@ -4089,20 +4089,20 @@ export default function PensumPrognoseModell() {
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                           <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
                           </div>
                           <div className="p-5">
                             <ResponsiveContainer width="100%" height={300}>
-                              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
-                                  interval={Math.max(1, Math.floor(chartData.length / 20))} />
-                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                  interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                                  labelFormatter={formatHistorikkEtikett}
-                                  formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
-                                <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                  labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                 <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
                                 {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
                                   <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
@@ -4274,10 +4274,10 @@ export default function PensumPrognoseModell() {
                             <ResponsiveContainer width="100%" height={280}>
                               <ComposedChart data={ddChartData} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
-                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(ddChartData.length / 10))} />
-                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
                                 <Tooltip
                                   contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                   labelFormatter={formatHistorikkEtikett}
@@ -4296,7 +4296,7 @@ export default function PensumPrognoseModell() {
                     })()}
 
                     <div className="text-xs text-gray-400 p-4 bg-gray-50/80 rounded-lg border border-gray-100">
-                      <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
+                      <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
                     </div>
                   </div>
                 );
@@ -4444,7 +4444,7 @@ export default function PensumPrognoseModell() {
                 const startVerdi = filtrert[0].verdi;
                 serieMap[n] = filtrert.map(d => ({
                   dato: d.dato,
-                  indeksert: startVerdi > 0 ? parseFloat(((d.verdi / startVerdi) * 100).toFixed(2)) : 100
+                  indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
                 }));
               }
             });
@@ -4466,7 +4466,7 @@ export default function PensumPrognoseModell() {
                   const startVerdi = filtrert[0].verdi;
                   produktSerier[id] = {};
                   filtrert.forEach(d => {
-                    produktSerier[id][d.dato] = startVerdi > 0 ? (d.verdi / startVerdi) * 100 : 100;
+                    produktSerier[id][d.dato] = startVerdi > 0 ? ((d.verdi / startVerdi) - 1) * 100 : 0;
                   });
                 }
               });
@@ -4523,7 +4523,7 @@ export default function PensumPrognoseModell() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5">
                   <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sammenlign fond og indekser</h3>
-                  <p className="text-sm text-gray-500 mb-4">Historisk utvikling indeksert til 100 ved startpunkt</p>
+                  <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt</p>
 
                   {/* Periodeknapper */}
                   <div className="flex items-center gap-2 mb-4">
@@ -4597,12 +4597,12 @@ export default function PensumPrognoseModell() {
                         <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                           tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                           interval={Math.max(1, Math.floor(sammenligningsData.length / 12))} />
-                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 5', 'dataMax + 5']} />
+                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
                         <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                           labelFormatter={(d) => formatHistorikkEtikett(d)}
-                          formatter={(v, n) => [v?.toFixed(1), n]} />
+                          formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
                         <Legend verticalAlign="bottom" height={36} />
-                        <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                        <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                         {alleSammenligningsNavn.map(n => {
                           const erPortefolje = n === 'Din portefølje';
                           const farge = erPortefolje ? '#1B3A5F' : (PENSUM_AARLIG[n]?.farge || REFERANSE_DATA[n]?.farge || '#999');
@@ -4764,7 +4764,7 @@ export default function PensumPrognoseModell() {
                     if (pm) {
                       const verdi = pm.dMap.get(dato);
                       if (verdi !== undefined) {
-                        punkt[id] = parseFloat(((verdi / pm.startVerdi) * 100).toFixed(2));
+                        punkt[id] = parseFloat((((verdi / pm.startVerdi) - 1) * 100).toFixed(2));
                       }
                     }
                   });
@@ -4832,7 +4832,7 @@ export default function PensumPrognoseModell() {
 
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                       <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                        <h3 className="text-lg font-semibold text-white">Historisk utvikling (indeksert til 100)</h3>
+                        <h3 className="text-lg font-semibold text-white">Historisk utvikling (prosentvis avkastning)</h3>
                         <span className="text-xs text-blue-200 bg-blue-900 px-2 py-1 rounded">Pensum Løsninger</span>
                       </div>
                       <div className="p-6">
@@ -4843,12 +4843,12 @@ export default function PensumPrognoseModell() {
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
                                 tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
                                 interval={20} />
-                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0)} domain={["dataMin - 5", "dataMax + 5"]} />
+                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 labelFormatter={(d) => formatHistorikkEtikett(d)}
-                                formatter={(v, name) => [v.toFixed(1), produktNavn2[name] || name]} />
+                                formatter={(v, name) => [v.toFixed(1).replace('.', ',') + '%', produktNavn2[name] || name]} />
                               <Legend verticalAlign="bottom" height={36} formatter={(v) => produktNavn2[v] || v} />
-                              <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                              <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                               {dashboardProdukter.filter(id => alleHistorikk2[id]).map(id => (
                                 <Line key={id} type="monotone" dataKey={id} stroke={produktFarger2[id] || "#999"} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                               ))}
@@ -5160,74 +5160,98 @@ export default function PensumPrognoseModell() {
               <div className="p-8 space-y-8">
 
                 {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
-                <div data-rapport-slide="allokering">
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Anbefalt aktivaallokering</h2>
-                  {(() => {
-                    const rapportAktiva = pensumAktivafordeling.filter(a => a.value > 0);
-                    const rapportTotalVekt = rapportAktiva.reduce((s, a) => s + a.value, 0) || 1;
-                    return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <table className="w-full text-sm"><thead><tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}><th className="py-3 px-4 text-left">Aktivaklasse</th><th className="py-3 px-4 text-center">Andel</th><th className="py-3 px-4 text-right">Beløp</th></tr></thead><tbody>{rapportAktiva.map(a => <tr key={a.name} className="border-b border-gray-100"><td className="py-3 px-4 flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }}></div>{a.name}</td><td className="py-3 px-4 text-center">{(a.value / rapportTotalVekt * 100).toFixed(1)}%</td><td className="py-3 px-4 text-right">{formatCurrency((a.value / rapportTotalVekt) * effektivtInvestertBelop)}</td></tr>)}</tbody></table>
-                        <div className="flex justify-center items-center"><ResponsiveContainer width={200} height={200}><PieChart><Pie data={rapportAktiva.map(a => ({ name: a.name, value: a.value }))} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value">{rapportAktiva.map(a => <Cell key={a.name} fill={a.color} stroke="white" strokeWidth={2} />)}</Pie></PieChart></ResponsiveContainer></div>
+                <div data-rapport-slide="allokering" className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Porteføljefordeling */}
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
+                    <div className="flex items-center gap-4">
+                      <div className="shrink-0">
+                        <ResponsiveContainer width={150} height={150}>
+                          <PieChart>
+                            <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={38} outerRadius={65} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                              {valgteProdukterRapport.map((p, idx) => (
+                                <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
-                    );
-                  })()}
-                </div>
-
-                {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
-                <div data-rapport-slide="sammensetning">
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-2">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                            <th className="py-2.5 px-3 text-left text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produkt</th>
-                            <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekt</th>
-                            <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Type</th>
-                            <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Forv. avk.</th>
-                            <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Yield</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {valgteProdukterRapport.map((p, idx) => (
-                            <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="py-2.5 px-3 font-medium text-sm flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
-                                {p.navn}
-                              </td>
-                              <td className="py-2.5 px-3 text-center font-semibold text-sm">{p.vekt.toFixed(1)}%</td>
-                              <td className="py-2.5 px-3 text-center">
-                                <span className={"text-[10px] px-2 py-0.5 rounded-full font-medium " + (p.produkt?.aktivatype === 'aksje' ? 'bg-blue-100 text-blue-700' : p.produkt?.aktivatype === 'rente' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600')}>
-                                  {p.produkt?.aktivatype === 'aksje' ? 'Aksje' : p.produkt?.aktivatype === 'rente' ? 'Rente' : p.produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.'}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—'}</td>
-                              <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <ResponsiveContainer width={160} height={160}>
-                        <PieChart>
-                          <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="vekt">
-                            {valgteProdukterRapport.map((p, idx) => <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />)}
-                          </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex flex-wrap gap-3 justify-center">
-                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                          <div key={a.name} className="flex items-center gap-1.5 text-xs">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
-                            <span className="font-medium">{a.name} {a.value.toFixed(0)}%</span>
+                      <div className="space-y-2 flex-1 min-w-0">
+                        {valgteProdukterRapport.map((p, idx) => (
+                          <div key={p.id} className="flex items-center gap-2 text-xs">
+                            <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                            <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
+                            <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
+
+                  {/* Aktivafordeling */}
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                    <div className="flex items-center gap-6">
+                      <div className="shrink-0">
+                        <ResponsiveContainer width={160} height={160}>
+                          <PieChart>
+                            <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                              {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
+                                <Cell key={entry.name} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="space-y-2.5 flex-1">
+                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                          <div key={a.name} className="flex items-center gap-2.5 text-sm">
+                            <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
+                            <span className="flex-1 text-gray-700">{a.name}</span>
+                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
+                <div data-rapport-slide="sammensetning">
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <th className="py-2.5 px-3 text-left text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produkt</th>
+                        <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekt</th>
+                        <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Type</th>
+                        <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Forv. avk.</th>
+                        <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Yield</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {valgteProdukterRapport.map((p, idx) => (
+                        <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="py-2.5 px-3 font-medium text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                              {p.navn}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-semibold text-sm">{p.vekt.toFixed(1)}%</td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className={"text-[10px] px-2 py-0.5 rounded-full font-medium " + (p.produkt?.aktivatype === 'aksje' ? 'bg-blue-100 text-blue-700' : p.produkt?.aktivatype === 'rente' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600')}>
+                              {p.produkt?.aktivatype === 'aksje' ? 'Aksje' : p.produkt?.aktivatype === 'rente' ? 'Rente' : p.produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—'}</td>
+                          <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* === HISTORISK AVKASTNING PER PRODUKT (1, 3, 5 ÅR) === */}
@@ -5333,22 +5357,22 @@ export default function PensumPrognoseModell() {
                     const sorterteDatoer = Array.from(alleDatoer).sort();
                     const chartData = sorterteDatoer.map(dato => {
                       const punkt = { dato };
-                      let vektetVerdi = 0; let totalProdVekt = 0;
+                      let vektetPct = 0; let totalProdVekt = 0;
                       rapValgteProdIds.forEach(id => {
                         const pm = produktMaps[id];
                         if (pm) {
                           const verdi = pm.dMap.get(dato);
                           if (verdi !== undefined && pm.startVerdi) {
-                            const indeksert = (verdi / pm.startVerdi) * 100;
+                            const pctReturn = ((verdi / pm.startVerdi) - 1) * 100;
                             const allok = pensumAllokering.find(a => a.id === id);
-                            if (allok) { vektetVerdi += indeksert * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
+                            if (allok) { vektetPct += pctReturn * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
                           }
                         }
                       });
-                      if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                      if (totalProdVekt > 0) punkt['portefolje'] = vektetPct / totalProdVekt;
                       Object.entries(indeksMaps).forEach(([navn, im]) => {
                         const verdi = im.dMap.get(dato);
-                        if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                        if (verdi !== undefined) punkt[navn] = ((verdi / im.startVerdi) - 1) * 100;
                       });
                       return punkt;
                     });
@@ -5460,20 +5484,20 @@ export default function PensumPrognoseModell() {
                           return (
                             <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                               <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
                               </div>
                               <div className="p-5">
                                 <ResponsiveContainer width="100%" height={280}>
-                                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                    <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                      tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
-                                      interval={Math.max(1, Math.floor(chartData.length / 20))} />
-                                    <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                    <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                      tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                      interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                                      labelFormatter={formatHistorikkEtikett}
-                                      formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
-                                    <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                      labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                    <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                     <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
                                     {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => (
                                       <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
@@ -5526,10 +5550,10 @@ export default function PensumPrognoseModell() {
                               <ResponsiveContainer width="100%" height={260}>
                                 <ComposedChart data={ddChartDataR} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
-                                  <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                    tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                  <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                    tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                     interval={Math.max(1, Math.floor(ddChartDataR.length / 10))} />
-                                  <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
                                   <Tooltip
                                     contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                     labelFormatter={formatHistorikkEtikett}
@@ -5547,7 +5571,7 @@ export default function PensumPrognoseModell() {
                         )}
 
                         <div className="text-xs text-gray-400 p-3 bg-gray-50/80 rounded-lg border border-gray-100">
-                          <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning.
+                          <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning.
                         </div>
                       </div>
                     </div>
