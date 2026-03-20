@@ -1770,12 +1770,13 @@ export default function PensumPrognoseModell() {
       if (slideElements.length === 0) throw new Error('Fant ingen rapportseksjoner å eksportere.');
 
       // Group sections into logical slides
+      // 'snapshot-charts' is special: each child chart card gets its own slide
       const slideGroups = [
         { name: 'Forside', selectors: ['header', 'kundeinfo', 'kpi'] },
         { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
         { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
-        { name: 'Porteføljeavkastning', selectors: ['snapshot-charts'] },
-        { name: 'Eksponering', selectors: ['eksponering'] },
+        { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
+        { name: 'Eksponering', selectors: ['eksponering'], wide: true },
         { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
@@ -1789,11 +1790,81 @@ export default function PensumPrognoseModell() {
 
       const SLIDE_W = 13.33;
       const SLIDE_H = 7.5;
-      const MARGIN = 0.4;
+      const MARGIN = 0.3;
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
       const CONTENT_H = SLIDE_H - 2 * MARGIN;
 
+      const captureElement = async (element, renderWidth = 1120) => {
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:white;padding:28px 36px;`;
+        const clone = element.cloneNode(true);
+        // Ensure SVG charts inside are fully visible
+        clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
+          rc.style.width = '100%';
+          rc.style.minHeight = '280px';
+        });
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        await new Promise(r => setTimeout(r, 200));
+        try {
+          const canvas = await html2canvas(wrapper, {
+            scale: 2.5,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: renderWidth,
+          });
+          return canvas.toDataURL('image/png');
+        } finally {
+          document.body.removeChild(wrapper);
+        }
+      };
+
+      const addImageSlide = (imgData, imgAspectRaw) => {
+        const imgAspect = imgAspectRaw;
+        const slideAspect = CONTENT_W / CONTENT_H;
+        let imgW, imgH;
+        if (imgAspect > slideAspect) {
+          imgW = CONTENT_W;
+          imgH = CONTENT_W / imgAspect;
+        } else {
+          imgH = CONTENT_H;
+          imgW = CONTENT_H * imgAspect;
+        }
+        const imgX = (SLIDE_W - imgW) / 2;
+        const imgY = (SLIDE_H - imgH) / 2;
+        const slide = pptx.addSlide();
+        slide.background = { color: 'FFFFFF' };
+        slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
+      };
+
       for (const group of slideGroups) {
+        if (group.name === 'snapshot-charts-split') {
+          // Split: find individual chart cards within snapshot-charts
+          const snapSection = container.querySelector('[data-rapport-slide="snapshot-charts"]');
+          if (!snapSection) continue;
+          // Each .rounded-xl child inside .space-y-6 is an individual chart
+          const chartCards = snapSection.querySelectorAll(':scope > div.space-y-6 > div');
+          if (chartCards.length === 0) {
+            // Fallback: render as one
+            const imgData = await captureElement(snapSection, 1120);
+            const canvas = document.createElement('canvas');
+            const img = new Image();
+            await new Promise(r => { img.onload = r; img.src = imgData; });
+            addImageSlide(imgData, img.width / img.height);
+          } else {
+            for (const card of chartCards) {
+              // Skip the disclaimer note at the bottom (text-only, no chart)
+              if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
+              const imgData = await captureElement(card, 1120);
+              const img = new Image();
+              await new Promise(r => { img.onload = r; img.src = imgData; });
+              addImageSlide(imgData, img.width / img.height);
+            }
+          }
+          continue;
+        }
+
         // Find matching elements
         const elements = group.selectors
           .map(sel => container.querySelector(`[data-rapport-slide="${sel}"]`))
@@ -1801,52 +1872,36 @@ export default function PensumPrognoseModell() {
         if (elements.length === 0) continue;
 
         // Create a temporary wrapper to render all group elements together
+        const renderWidth = group.wide ? 1400 : 1120;
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:896px;background:white;padding:24px 32px;';
-        // Clone each element into the wrapper
+        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:white;padding:28px 36px;`;
         elements.forEach(el => {
           const clone = el.cloneNode(true);
-          clone.style.marginBottom = '16px';
+          clone.style.marginBottom = '20px';
+          if (group.wide) {
+            // For exposure section, prevent text truncation
+            clone.querySelectorAll('.truncate').forEach(t => {
+              t.classList.remove('truncate');
+              t.style.overflow = 'visible';
+              t.style.textOverflow = 'unset';
+              t.style.whiteSpace = 'normal';
+            });
+          }
           wrapper.appendChild(clone);
         });
         document.body.appendChild(wrapper);
-
-        // Wait for rendering
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 200));
 
         try {
           const canvas = await html2canvas(wrapper, {
-            scale: 2,
+            scale: 2.5,
             useCORS: true,
             backgroundColor: '#ffffff',
             logging: false,
-            windowWidth: 896,
+            windowWidth: renderWidth,
           });
-
           const imgData = canvas.toDataURL('image/png');
-          const imgAspect = canvas.width / canvas.height;
-          const slideAspect = CONTENT_W / CONTENT_H;
-
-          let imgW, imgH;
-          if (imgAspect > slideAspect) {
-            imgW = CONTENT_W;
-            imgH = CONTENT_W / imgAspect;
-          } else {
-            imgH = CONTENT_H;
-            imgW = CONTENT_H * imgAspect;
-          }
-          const imgX = (SLIDE_W - imgW) / 2;
-          const imgY = (SLIDE_H - imgH) / 2;
-
-          const slide = pptx.addSlide();
-          slide.background = { color: 'FFFFFF' };
-          slide.addImage({
-            data: imgData,
-            x: imgX,
-            y: imgY,
-            w: imgW,
-            h: imgH,
-          });
+          addImageSlide(imgData, canvas.width / canvas.height);
         } finally {
           document.body.removeChild(wrapper);
         }
