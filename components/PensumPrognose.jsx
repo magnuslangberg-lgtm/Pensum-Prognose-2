@@ -5087,40 +5087,336 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
-                {/* === SCENARIOANALYSE MED GRAF === */}
-                <div>
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Scenarioanalyse — {horisont} års horisont</h2>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    {showPessimistic && (
-                      <div className="text-center p-5 bg-red-50 rounded-xl border border-red-200">
-                        <div className="text-xs font-semibold text-red-500 uppercase">Pessimistisk</div>
-                        <div className="text-2xl font-bold text-red-700 mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.pessimistisk || 0)}</div>
-                        <div className="text-xs text-red-400 mt-1">CAGR {formatPercent(scenarioParams.pessimistisk)}</div>
+                {/* === PORTEFØLJE-AVKASTNING — STANDARDBILDER === */}
+                {(() => {
+                  const SNAP_FARGER = {
+                    'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue, 'basis': PENSUM_COLORS.salmon,
+                    'global-hoyrente': PENSUM_COLORS.teal, 'nordisk-hoyrente': PENSUM_COLORS.purple, 'norge-a': PENSUM_COLORS.red,
+                    'energy-a': PENSUM_COLORS.gold, 'banking-d': PENSUM_COLORS.midBlue, 'financial-d': PENSUM_COLORS.gray,
+                  };
+                  const rapValgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                  const rapTotalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+
+                  const RAP_INDEKSER = {
+                    'MSCI World': { feedKey: 'msci-world', farge: PENSUM_COLORS.lightBlue, dash: '6 3' },
+                    'Oslo Børs': { feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon, dash: '4 3' },
+                    'Norske Statsobl.': { feedKey: 'norske-statsobl', farge: PENSUM_COLORS.gray, dash: '2 2' },
+                  };
+
+                  const buildRapSnapshotData = (periodYears) => {
+                    const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+                    const alleDatoer = new Set();
+                    const produktMaps = {};
+                    rapValgteProdIds.forEach(id => {
+                      const hist = produktHistorikk[id];
+                      if (hist?.data) {
+                        const dMap = new Map();
+                        hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                        produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
+                      }
+                    });
+                    const indeksMaps = {};
+                    Object.entries(RAP_INDEKSER).forEach(([navn, cfg]) => {
+                      const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                      if (hist?.data) {
+                        const dMap = new Map();
+                        hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato && erGyldigTall(d.verdi)) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+                        const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                        if (startVerdi) indeksMaps[navn] = { dMap, startVerdi };
+                      }
+                    });
+                    const sorterteDatoer = Array.from(alleDatoer).sort();
+                    const chartData = sorterteDatoer.map(dato => {
+                      const punkt = { dato };
+                      let vektetVerdi = 0; let totalProdVekt = 0;
+                      rapValgteProdIds.forEach(id => {
+                        const pm = produktMaps[id];
+                        if (pm) {
+                          const verdi = pm.dMap.get(dato);
+                          if (verdi !== undefined && pm.startVerdi) {
+                            const indeksert = (verdi / pm.startVerdi) * 100;
+                            const allok = pensumAllokering.find(a => a.id === id);
+                            if (allok) { vektetVerdi += indeksert * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
+                          }
+                        }
+                      });
+                      if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                      Object.entries(indeksMaps).forEach(([navn, im]) => {
+                        const verdi = im.dMap.get(dato);
+                        if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                      });
+                      return punkt;
+                    });
+                    const avkastninger = {};
+                    let vektetAvkR = 0;
+                    rapValgteProdIds.forEach(id => {
+                      const hist = produktHistorikk[id];
+                      if (hist?.data && hist.data.length >= 2) {
+                        const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                        const sluttVerdi = hist.data[hist.data.length - 1].verdi;
+                        if (startVerdi) {
+                          const avk = ((sluttVerdi / startVerdi) - 1) * 100;
+                          const allok = pensumAllokering.find(a => a.id === id);
+                          if (allok) vektetAvkR += avk * (allok.vekt / rapTotalVekt);
+                        }
+                      }
+                    });
+                    avkastninger['portefolje'] = vektetAvkR;
+                    Object.entries(indeksMaps).forEach(([navn, im]) => {
+                      const sortert = Array.from(im.dMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                      if (sortert.length >= 2) {
+                        const sluttVerdi = sortert[sortert.length - 1][1];
+                        avkastninger[navn] = ((sluttVerdi / im.startVerdi) - 1) * 100;
+                      }
+                    });
+                    return { chartData, avkastninger };
+                  };
+
+                  const rapPerioder = [
+                    { label: '1 år', years: 1 },
+                    { label: '3 år', years: 3 },
+                    { label: '5 år', years: 5 }
+                  ];
+
+                  // Drawdown computation
+                  const ddStartDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+                  const INDEKS_DD_RAP = {
+                    'MSCI World': { feedKey: 'msci-world', farge: PENSUM_COLORS.navy, dash: '6 3' },
+                    'Oslo Børs': { feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon, dash: '3 3' },
+                  };
+                  const byggDrawdownSerieRap = (data, startDato) => {
+                    if (!data?.length) return [];
+                    const filtrert = data.filter(d => { const dt = parseHistorikkDato(d.dato); return dt && dt >= startDato && erGyldigTall(d.verdi); });
+                    if (filtrert.length < 2) return [];
+                    let peak = filtrert[0].verdi;
+                    return filtrert.map(d => { if (d.verdi > peak) peak = d.verdi; return { dato: d.dato, dd: peak > 0 ? parseFloat((((d.verdi - peak) / peak) * 100).toFixed(2)) : 0 }; });
+                  };
+                  const portProdIdsDD = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                  const ddTotalVektR = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+                  const portDagligR = {};
+                  const allePortDatoerR = new Set();
+                  portProdIdsDD.forEach(id => {
+                    const hist = produktHistorikk?.[id];
+                    if (!hist?.data?.length) return;
+                    portDagligR[id] = {};
+                    hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= ddStartDato && erGyldigTall(d.verdi)) { allePortDatoerR.add(d.dato); portDagligR[id][d.dato] = d.verdi; } });
+                  });
+                  const portDatoerSortertR = Array.from(allePortDatoerR).sort();
+                  const portStartVerdierR = {};
+                  portProdIdsDD.forEach(id => {
+                    if (portDagligR[id]) {
+                      const forsteDato = portDatoerSortertR.find(d => portDagligR[id][d] !== undefined);
+                      if (forsteDato) portStartVerdierR[id] = portDagligR[id][forsteDato];
+                    }
+                  });
+                  const portVektetSerieR = portDatoerSortertR.map(dato => {
+                    let vektet = 0; let totV = 0;
+                    portProdIdsDD.forEach(id => {
+                      const v = portDagligR[id]?.[dato]; const sv = portStartVerdierR[id];
+                      if (v !== undefined && sv) { const allok = pensumAllokering.find(a => a.id === id); if (allok) { vektet += (v / sv) * (allok.vekt / ddTotalVektR); totV += allok.vekt / ddTotalVektR; } }
+                    });
+                    return { dato, verdi: totV > 0 ? vektet / totV : null };
+                  }).filter(d => d.verdi !== null);
+                  let portPeakR = 0;
+                  const portDDR = portVektetSerieR.map(d => { if (d.verdi > portPeakR) portPeakR = d.verdi; return { dato: d.dato, dd: portPeakR > 0 ? parseFloat((((d.verdi - portPeakR) / portPeakR) * 100).toFixed(2)) : 0 }; });
+                  const indeksDDR = {};
+                  Object.entries(INDEKS_DD_RAP).forEach(([navn, cfg]) => {
+                    const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                    if (hist?.data) indeksDDR[navn] = byggDrawdownSerieRap(hist.data, ddStartDato);
+                  });
+                  const alleDDDatoerR = new Set();
+                  portDDR.forEach(d => alleDDDatoerR.add(d.dato));
+                  Object.values(indeksDDR).forEach(serie => serie.forEach(d => alleDDDatoerR.add(d.dato)));
+                  const ddSorterteDatoerR = Array.from(alleDDDatoerR).sort();
+                  const portDDMapR = {};
+                  portDDR.forEach(d => { portDDMapR[d.dato] = d.dd; });
+                  const indeksDDMapsR = {};
+                  Object.entries(indeksDDR).forEach(([navn, serie]) => { indeksDDMapsR[navn] = {}; serie.forEach(d => { indeksDDMapsR[navn][d.dato] = d.dd; }); });
+                  const sampleRateR = Math.max(1, Math.floor(ddSorterteDatoerR.length / 200));
+                  const ddChartDataR = ddSorterteDatoerR
+                    .filter((_, i) => i % sampleRateR === 0 || i === ddSorterteDatoerR.length - 1)
+                    .map(dato => {
+                      const punkt = { dato };
+                      if (portDDMapR[dato] !== undefined) punkt['Din portefølje'] = portDDMapR[dato];
+                      Object.keys(indeksDDMapsR).forEach(navn => { if (indeksDDMapsR[navn][dato] !== undefined) punkt[navn] = indeksDDMapsR[navn][dato]; });
+                      return punkt;
+                    });
+                  const portMaxDDR = portDDR.length > 0 ? Math.min(...portDDR.map(d => d.dd)) : 0;
+                  const indeksMaxDDR = {};
+                  Object.entries(indeksDDR).forEach(([navn, serie]) => { indeksMaxDDR[navn] = serie.length > 0 ? Math.min(...serie.map(d => d.dd)) : 0; });
+
+                  return (
+                    <div>
+                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Portefølje-avkastning — standardbilder</h2>
+                      <div className="space-y-6">
+                        {rapPerioder.map(({ label, years }) => {
+                          const { chartData, avkastninger } = buildRapSnapshotData(years);
+                          if (chartData.length < 2) return null;
+                          return (
+                            <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
+                              <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                              </div>
+                              <div className="p-5">
+                                <ResponsiveContainer width="100%" height={280}>
+                                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                    <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
+                                      tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
+                                      interval={Math.max(1, Math.floor(chartData.length / 20))} />
+                                    <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
+                                      labelFormatter={formatHistorikkEtikett}
+                                      formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                    <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                    <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
+                                    {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => (
+                                      <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
+                                    ))}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 justify-center">
+                                  <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
+                                    <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
+                                    Din portefølje: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                      {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
+                                    </span>
+                                  </div>
+                                  {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => {
+                                    const avk = avkastninger[navn];
+                                    return (
+                                      <div key={navn} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <div className="w-4 h-0" style={{ borderTop: '2px dashed ' + cfg.farge }}></div>
+                                        <span>{navn}:</span>
+                                        <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                          {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1) + '%' : '—'}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Drawdown chart */}
+                        {ddChartDataR.length >= 5 && (
+                          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
+                            <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
+                              <div>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko — siste 5 år</h4>
+                                <p className="text-xs text-gray-400 mt-0.5">Drawdown fra løpende toppverdi (0% = all-time high i perioden)</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                                  Portefølje maks: {portMaxDDR.toFixed(1)}%
+                                </span>
+                                {Object.entries(indeksMaxDDR).map(([navn, dd]) => (
+                                  <span key={navn} className="text-xs text-gray-500">{navn}: {dd.toFixed(1)}%</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="p-5">
+                              <ResponsiveContainer width="100%" height={260}>
+                                <ComposedChart data={ddChartDataR} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
+                                  <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
+                                    tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                    interval={Math.max(1, Math.floor(ddChartDataR.length / 10))} />
+                                  <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                  <Tooltip
+                                    contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
+                                    labelFormatter={formatHistorikkEtikett}
+                                    formatter={(v, name) => [v.toFixed(2) + '%', name]} />
+                                  <Legend verticalAlign="bottom" height={36} />
+                                  <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
+                                  <Area type="monotone" dataKey="Din portefølje" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
+                                  {Object.entries(INDEKS_DD_RAP).map(([navn, cfg]) => (
+                                    <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} name={navn} />
+                                  ))}
+                                </ComposedChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-400 p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                          <strong>Merk:</strong> Alle grafer er indeksert til 100 ved periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning.
+                        </div>
                       </div>
-                    )}
-                    <div className={"text-center p-5 rounded-xl border-2 " + (showPessimistic ? '' : 'col-span-1')} style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: PENSUM_COLORS.darkBlue }}>
-                      <div className="text-xs font-semibold text-blue-300 uppercase">Forventet</div>
-                      <div className="text-2xl font-bold text-white mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.forventet || 0)}</div>
-                      <div className="text-xs text-blue-300 mt-1">CAGR {formatPercent(vektetAvkastning)}</div>
                     </div>
-                    <div className="text-center p-5 bg-green-50 rounded-xl border border-green-200">
-                      <div className="text-xs font-semibold text-green-500 uppercase">Optimistisk</div>
-                      <div className="text-2xl font-bold text-green-700 mt-2">{formatCurrency(scenarioData[scenarioData.length - 1]?.optimistisk || 0)}</div>
-                      <div className="text-xs text-green-400 mt-1">CAGR {formatPercent(scenarioParams.optimistisk)}</div>
+                  );
+                })()}
+
+                {/* === AGGREGERT PORTEFØLJEEKSPONERING === */}
+                {(() => {
+                  const aksjeProdRap = pensumAllokering.filter(a => {
+                    if (a.vekt <= 0) return false;
+                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                    const p = alle.find(pp => pp.id === a.id);
+                    if (p?.aktivatype === 'rente') return false;
+                    if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
+                    return true;
+                  });
+                  const totalAksjeVektRap = aksjeProdRap.reduce((s, a) => s + a.vekt, 0) || 1;
+
+                  const aggregerRap = (key) => {
+                    const sumMap = {};
+                    aksjeProdRap.forEach(a => {
+                      const eks = produktEksponering?.[a.id]?.[key];
+                      if (!eks) return;
+                      const relVekt = a.vekt / totalAksjeVektRap;
+                      eks.forEach(row => {
+                        if (!sumMap[row.navn]) sumMap[row.navn] = 0;
+                        sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt;
+                      });
+                    });
+                    return Object.entries(sumMap)
+                      .map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) }))
+                      .sort((a, b) => b.vekt - a.vekt)
+                      .slice(0, 10);
+                  };
+
+                  const aggRegionerRap = aggregerRap('regioner');
+                  const aggSektorerRap = aggregerRap('sektorer');
+                  const aggStilRap = aggregerRap('stil');
+
+                  if (aksjeProdRap.length === 0) return null;
+
+                  return (
+                    <div>
+                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Aggregert porteføljeeksponering</h2>
+                      <p className="text-xs text-gray-500 mb-4">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          { title: 'Regioner', data: aggRegionerRap, color: PENSUM_COLORS.teal },
+                          { title: 'Sektorer', data: aggSektorerRap, color: PENSUM_COLORS.lightBlue },
+                          { title: 'Stil', data: aggStilRap, color: PENSUM_COLORS.gold }
+                        ].map(block => (
+                          <div key={block.title} className="rounded-xl border border-slate-200 bg-white p-4">
+                            <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
+                            {block.data.length > 0 ? (
+                              <div className="space-y-2">
+                                {block.data.map((row, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-xs min-w-0 flex-1 truncate">{row.navn}</span>
+                                    <div className="w-24 bg-slate-100 rounded-full h-3.5 overflow-hidden">
+                                      <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
+                                    </div>
+                                    <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="h-[100px] flex items-center justify-center text-sm text-slate-400">Ingen data</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={scenarioData} margin={{ top: 15, right: 30, left: 15, bottom: 15 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11 }} />
-                      <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 10 }} width={90} />
-                      <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'forventet' ? 'Forventet' : n === 'optimistisk' ? 'Optimistisk' : 'Pessimistisk']} />
-                      {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="5 5" dot={false} />}
-                      <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke={PENSUM_COLORS.teal} strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                  );
+                })()}
 
                 {/* === VERDIUTVIKLING (STACKED BAR) === */}
                 <div>
