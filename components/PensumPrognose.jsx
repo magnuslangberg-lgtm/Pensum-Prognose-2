@@ -2191,15 +2191,15 @@ export default function PensumPrognoseModell() {
       
       {/* ====== PDF INVESTERINGSFORSLAG MODAL ====== */}
       {pdfModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !pdfLoading && setPdfModal(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !pdfLoading && !rapportPptxLoading && setPdfModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="px-6 py-5 rounded-t-2xl" style={{ backgroundColor: '#0D2240' }}>
               <div className="flex items-center gap-3">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Generer investeringsforslag (PowerPoint)</h2>
-                  <p className="text-blue-300 text-sm mt-0.5">PowerPoint med allokering, produkter og malmetadata</p>
+                  <h2 className="text-lg font-bold text-white">Generer investeringsforslag</h2>
+                  <p className="text-blue-300 text-sm mt-0.5">Velg format og last ned som PowerPoint</p>
                 </div>
               </div>
             </div>
@@ -2209,7 +2209,7 @@ export default function PensumPrognoseModell() {
               <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-3">
                 {[
                   ['Kunde', kundeNavn || '—'],
-                  ['Total kapital', new Intl.NumberFormat('nb-NO', {style:'currency',currency:'NOK',maximumFractionDigits:0}).format(totalKapital)],
+                  ['Investerbar kapital', formatCurrency(investertBelop !== null ? investertBelop : totalKapital)],
                   ['Risikoprofil', risikoprofil],
                   ['Forv. avkastning', vektetAvkastning.toFixed(1) + '% p.a.'],
                 ].map(([lbl, val]) => (
@@ -2220,65 +2220,56 @@ export default function PensumPrognoseModell() {
                 ))}
               </div>
 
-              {/* Produktvalg */}
-              <div>
-                <div className="text-sm font-semibold mb-2" style={{ color: '#0D2240' }}>Velg Pensum-produkter å inkludere</div>
-                <p className="text-xs text-gray-400 mb-3">Velger du ingen inkluderes alle tilgjengelige produkter automatisk</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(PRODUKT_NAVN_MAP_PDF).map(([id, navn]) => {
-                    const aktiv = pdfProduktValg.includes(id);
-                    const farger = {
-                      'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue, 'basis': PENSUM_COLORS.midBlue,
-                      'global-hoyrente': PENSUM_COLORS.teal, 'nordisk-hoyrente': PENSUM_COLORS.purple, 'norge-a': PENSUM_COLORS.red,
-                      'energy-a': PENSUM_COLORS.gold, 'banking-d': PENSUM_COLORS.darkBlue, 'financial-d': PENSUM_COLORS.salmon,
-                    };
-                    return (
-                      <button key={id} onClick={() => setPdfProduktValg(prev => aktiv ? prev.filter(x => x !== id) : [...prev, id])}
-                        className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
-                        style={aktiv ? { backgroundColor: farger[id], borderColor: farger[id] } : {}}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'rgba(255,255,255,0.7)' : farger[id] }}></span>
-                        {navn}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Valg: Standard vs Utvidet */}
+              <div className="space-y-3">
+                {/* Standard — rapport-basert */}
+                <button
+                  onClick={() => { setPdfModal(false); setActiveTab('rapport'); setTimeout(() => handleGenerateRapportPPTX(), 300); }}
+                  disabled={pdfLoading || rapportPptxLoading}
+                  className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded text-white" style={{ backgroundColor: PENSUM_COLORS.salmon }}>Standard</span>
+                        <h3 className="text-sm font-bold" style={{ color: '#0D2240' }}>Investeringsforslag</h3>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Kompakt presentasjon med forside, mandat, allokering, byggesteiner, historisk avkastning, eksponering, verdiutvikling og produktark.</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  </div>
+                </button>
+
+                {/* Utvidet — gammel detaljert versjon */}
+                <button
+                  onClick={handleGeneratePresentation}
+                  disabled={pdfLoading || rapportPptxLoading}
+                  className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.lightBlue }}>Utvidet</span>
+                        <h3 className="text-sm font-bold" style={{ color: '#0D2240' }}>Detaljert investeringsforslag</h3>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Lengre presentasjon med utfyllende produktbeskrivelser, detaljerte eksponeringsdiagrammer og utvidet rapportmetadata.</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  </div>
+                </button>
               </div>
 
-              {/* Template-advarsel */}
-              {(malKreverOpplasting || (Boolean(pdfMalConfig?.filnavn) && !pdfMalConfig?.filDataUrl)) && (
-                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                  <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
-                  <p className="text-xs text-amber-800">Malfil «{pdfMalConfig.filnavn}» er ikke tilgjengelig i denne økten. Presentasjonen genereres uten template-merge. Last opp filen i Admin for å bruke din PPTX-mal.</p>
+              {(pdfLoading || rapportPptxLoading) && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <svg className="animate-spin w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  <span className="text-sm text-gray-500">Genererer PowerPoint...</span>
                 </div>
               )}
-
-              {/* AI-info */}
-              <div className="flex items-start gap-3 p-3 rounded-xl border" style={{ backgroundColor: PENSUM_COLORS.lightBlue === '#6B9DB8' ? '#E8F0F4' : '#E8F0F4', borderColor: '#D1D5DB' }}>
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p className="text-xs" style={{ color: PENSUM_COLORS.muted }}>Presentasjonen genereres fra kundeinformasjon, investerbar kapital, valgte produkter og rapportfelt i Pensum Løsninger.</p>
-              </div>
             </div>
 
-            {/* Footer med knapper */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
-              <button onClick={() => setPdfModal(false)} disabled={pdfLoading}
-                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
-                Avbryt
-              </button>
-              <button onClick={handleGeneratePresentation} disabled={pdfLoading}
-                className="flex-2 py-2.5 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 min-w-[180px]"
-                style={{ backgroundColor: pdfLoading ? '#6B7280' : '#D4886B' }}>
-                {pdfLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Genererer PowerPoint...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Last ned PowerPoint
-                  </>
-                )}
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setPdfModal(false)} disabled={pdfLoading || rapportPptxLoading}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+                Lukk
               </button>
             </div>
           </div>
@@ -2339,7 +2330,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'allokering', 'losninger', 'scenario', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Prognoser' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Kunderapport'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Prognoser' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
