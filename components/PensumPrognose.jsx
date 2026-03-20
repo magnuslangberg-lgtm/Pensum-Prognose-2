@@ -1759,221 +1759,101 @@ export default function PensumPrognoseModell() {
   const handleGenerateRapportPPTX = async () => {
     setRapportPptxLoading(true);
     try {
-      // Build snapshot chart data for 1/3/5yr periods
-      const rapValgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
-      const rapTotalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
-      const RAP_INDEKSER = {
-        'MSCI World': { feedKey: 'msci-world' },
-        'Oslo Børs': { feedKey: 'oslo-bors' },
-        'Norske Statsobl.': { feedKey: 'norske-statsobl' },
-      };
+      const html2canvas = (await import('html2canvas')).default;
+      const PptxGenJS = (await import('pptxgenjs')).default;
 
-      const buildSnapForPPTX = (periodYears) => {
-        const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
-        const alleDatoer = new Set();
-        const produktMaps = {};
-        rapValgteProdIds.forEach(id => {
-          const hist = produktHistorikk[id];
-          if (hist?.data) {
-            const dMap = new Map();
-            hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
-            produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
-          }
-        });
-        const indeksMaps = {};
-        Object.entries(RAP_INDEKSER).forEach(([navn, cfg]) => {
-          const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
-          if (hist?.data) {
-            const dMap = new Map();
-            hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato && erGyldigTall(d.verdi)) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
-            const sv = finnStartVerdiVedPeriode(hist.data, startDato);
-            if (sv) indeksMaps[navn] = { dMap, startVerdi: sv };
-          }
-        });
-        const sorterteDatoer = Array.from(alleDatoer).sort();
-        // Sample to ~60 points for PPTX
-        const sampleRate = Math.max(1, Math.floor(sorterteDatoer.length / 60));
-        const sampledDatoer = sorterteDatoer.filter((_, i) => i % sampleRate === 0 || i === sorterteDatoer.length - 1);
-        const labelInterval = Math.max(1, Math.floor(sampledDatoer.length / 12));
-        const labels = sampledDatoer.map((d, i) => i % labelInterval === 0 ? d : '');
+      // Find all rapport sections in the DOM
+      const container = document.getElementById('rapport-container');
+      if (!container) throw new Error('Rapport-siden er ikke synlig. Gå til Kunderapport-fanen først.');
 
-        // Build series: portfolio + indices
-        const portValues = sampledDatoer.map(dato => {
-          let vektetVerdi = 0; let totalProdVekt = 0;
-          rapValgteProdIds.forEach(id => {
-            const pm = produktMaps[id];
-            if (pm) {
-              const verdi = pm.dMap.get(dato);
-              if (verdi !== undefined && pm.startVerdi) {
-                const indeksert = (verdi / pm.startVerdi) * 100;
-                const allok = pensumAllokering.find(a => a.id === id);
-                if (allok) { vektetVerdi += indeksert * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
-              }
-            }
+      const slideElements = container.querySelectorAll('[data-rapport-slide]');
+      if (slideElements.length === 0) throw new Error('Fant ingen rapportseksjoner å eksportere.');
+
+      // Group sections into logical slides
+      const slideGroups = [
+        { name: 'Forside', selectors: ['header', 'kundeinfo', 'kpi'] },
+        { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
+        { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
+        { name: 'Porteføljeavkastning', selectors: ['snapshot-charts'] },
+        { name: 'Eksponering', selectors: ['eksponering'] },
+        { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
+        { name: 'Viktig informasjon', selectors: ['disclaimer'] },
+      ];
+
+      const pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5 inches
+      pptx.author = 'Pensum Asset Management';
+      pptx.company = 'Pensum Asset Management';
+      pptx.subject = 'Kunderapport';
+      pptx.title = `Kunderapport ${kundeNavn || 'Investor'}`;
+
+      const SLIDE_W = 13.33;
+      const SLIDE_H = 7.5;
+      const MARGIN = 0.4;
+      const CONTENT_W = SLIDE_W - 2 * MARGIN;
+      const CONTENT_H = SLIDE_H - 2 * MARGIN;
+
+      for (const group of slideGroups) {
+        // Find matching elements
+        const elements = group.selectors
+          .map(sel => container.querySelector(`[data-rapport-slide="${sel}"]`))
+          .filter(Boolean);
+        if (elements.length === 0) continue;
+
+        // Create a temporary wrapper to render all group elements together
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:896px;background:white;padding:24px 32px;';
+        // Clone each element into the wrapper
+        elements.forEach(el => {
+          const clone = el.cloneNode(true);
+          clone.style.marginBottom = '16px';
+          wrapper.appendChild(clone);
+        });
+        document.body.appendChild(wrapper);
+
+        // Wait for rendering
+        await new Promise(r => setTimeout(r, 150));
+
+        try {
+          const canvas = await html2canvas(wrapper, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: 896,
           });
-          return totalProdVekt > 0 ? vektetVerdi / totalProdVekt : null;
-        });
 
-        // Portfolio return
-        let portAvk = 0;
-        rapValgteProdIds.forEach(id => {
-          const hist = produktHistorikk[id];
-          if (hist?.data && hist.data.length >= 2) {
-            const sv = finnStartVerdiVedPeriode(hist.data, startDato);
-            const ev = hist.data[hist.data.length - 1].verdi;
-            if (sv) { const avk = ((ev / sv) - 1) * 100; const allok = pensumAllokering.find(a => a.id === id); if (allok) portAvk += avk * (allok.vekt / rapTotalVekt); }
+          const imgData = canvas.toDataURL('image/png');
+          const imgAspect = canvas.width / canvas.height;
+          const slideAspect = CONTENT_W / CONTENT_H;
+
+          let imgW, imgH;
+          if (imgAspect > slideAspect) {
+            imgW = CONTENT_W;
+            imgH = CONTENT_W / imgAspect;
+          } else {
+            imgH = CONTENT_H;
+            imgW = CONTENT_H * imgAspect;
           }
-        });
+          const imgX = (SLIDE_W - imgW) / 2;
+          const imgY = (SLIDE_H - imgH) / 2;
 
-        const series = [{ name: 'Din portefølje', values: portValues, avkastning: portAvk }];
-        Object.entries(indeksMaps).forEach(([navn, im]) => {
-          const vals = sampledDatoer.map(dato => { const v = im.dMap.get(dato); return v !== undefined ? (v / im.startVerdi) * 100 : null; });
-          const sorted = Array.from(im.dMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-          const avk = sorted.length >= 2 ? ((sorted[sorted.length - 1][1] / im.startVerdi) - 1) * 100 : 0;
-          series.push({ name: navn, values: vals, avkastning: avk });
-        });
-
-        return { label: periodYears === 1 ? '1 år' : periodYears === 3 ? '3 år' : '5 år', labels, series };
-      };
-
-      const snapshotCharts = [1, 3, 5].map(y => buildSnapForPPTX(y)).filter(s => s.labels.length >= 2);
-
-      // Build drawdown chart data
-      const ddStartDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
-      const portDagligDD = {};
-      const allePortDatoerDD = new Set();
-      rapValgteProdIds.forEach(id => {
-        const hist = produktHistorikk?.[id];
-        if (!hist?.data?.length) return;
-        portDagligDD[id] = {};
-        hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= ddStartDato && erGyldigTall(d.verdi)) { allePortDatoerDD.add(d.dato); portDagligDD[id][d.dato] = d.verdi; } });
-      });
-      const portDDSorted = Array.from(allePortDatoerDD).sort();
-      const portStartDD = {};
-      rapValgteProdIds.forEach(id => { if (portDagligDD[id]) { const f = portDDSorted.find(d => portDagligDD[id][d] !== undefined); if (f) portStartDD[id] = portDagligDD[id][f]; } });
-      const portVektetDD = portDDSorted.map(dato => {
-        let vektet = 0; let totV = 0;
-        rapValgteProdIds.forEach(id => {
-          const v = portDagligDD[id]?.[dato]; const sv = portStartDD[id];
-          if (v !== undefined && sv) { const allok = pensumAllokering.find(a => a.id === id); if (allok) { vektet += (v / sv) * (allok.vekt / rapTotalVekt); totV += allok.vekt / rapTotalVekt; } }
-        });
-        return { dato, verdi: totV > 0 ? vektet / totV : null };
-      }).filter(d => d.verdi !== null);
-      let ppk = 0;
-      const portDDSerie = portVektetDD.map(d => { if (d.verdi > ppk) ppk = d.verdi; return { dato: d.dato, dd: ppk > 0 ? parseFloat((((d.verdi - ppk) / ppk) * 100).toFixed(2)) : 0 }; });
-
-      const INDEKS_DD_KEYS = { 'MSCI World': 'msci-world', 'Oslo Børs': 'oslo-bors' };
-      const indeksDDSeries = {};
-      Object.entries(INDEKS_DD_KEYS).forEach(([navn, feedKey]) => {
-        const hist = DATAFEED_INDEKS_HISTORIKK?.[feedKey];
-        if (!hist?.data) return;
-        const filtrert = hist.data.filter(d => { const dt = parseHistorikkDato(d.dato); return dt && dt >= ddStartDato && erGyldigTall(d.verdi); });
-        if (filtrert.length < 2) return;
-        let peak = filtrert[0].verdi;
-        indeksDDSeries[navn] = filtrert.map(d => { if (d.verdi > peak) peak = d.verdi; return { dato: d.dato, dd: peak > 0 ? parseFloat((((d.verdi - peak) / peak) * 100).toFixed(2)) : 0 }; });
-      });
-
-      // Merge into sampled drawdown chart
-      const allDDDatoer = new Set();
-      portDDSerie.forEach(d => allDDDatoer.add(d.dato));
-      Object.values(indeksDDSeries).forEach(s => s.forEach(d => allDDDatoer.add(d.dato)));
-      const ddAllSorted = Array.from(allDDDatoer).sort();
-      const ddSampleRate = Math.max(1, Math.floor(ddAllSorted.length / 100));
-      const ddSampled = ddAllSorted.filter((_, i) => i % ddSampleRate === 0 || i === ddAllSorted.length - 1);
-      const ddLabelInt = Math.max(1, Math.floor(ddSampled.length / 12));
-      const ddLabels = ddSampled.map((d, i) => i % ddLabelInt === 0 ? d : '');
-
-      const portDDMap = {}; portDDSerie.forEach(d => { portDDMap[d.dato] = d.dd; });
-      const ddSeriesArr = [{ name: 'Din portefølje', values: ddSampled.map(d => portDDMap[d] ?? null), maxDD: portDDSerie.length > 0 ? Math.min(...portDDSerie.map(d => d.dd)) : 0 }];
-      Object.entries(indeksDDSeries).forEach(([navn, serie]) => {
-        const m = {}; serie.forEach(d => { m[d.dato] = d.dd; });
-        ddSeriesArr.push({ name: navn, values: ddSampled.map(d => m[d] ?? null), maxDD: serie.length > 0 ? Math.min(...serie.map(d => d.dd)) : 0 });
-      });
-
-      const drawdownChart = ddSampled.length >= 5 ? { labels: ddLabels, series: ddSeriesArr } : null;
-
-      // Aggregated exposure
-      const alleProduktFlat = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
-      const aksjeProdRap = pensumAllokering.filter(a => {
-        if (a.vekt <= 0) return false;
-        const p = alleProduktFlat.find(pp => pp.id === a.id);
-        if (p?.aktivatype === 'rente') return false;
-        if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
-        return true;
-      });
-      const totalAksjeVektRap = aksjeProdRap.reduce((s, a) => s + a.vekt, 0) || 1;
-      const aggregerRap = (key) => {
-        const sumMap = {};
-        aksjeProdRap.forEach(a => {
-          const eks = produktEksponering?.[a.id]?.[key];
-          if (!eks) return;
-          const relVekt = a.vekt / totalAksjeVektRap;
-          eks.forEach(row => { if (!sumMap[row.navn]) sumMap[row.navn] = 0; sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt; });
-        });
-        return Object.entries(sumMap).map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) })).sort((a, b) => b.vekt - a.vekt).slice(0, 10);
-      };
-      const aggregertEksponering = aksjeProdRap.length > 0 ? {
-        regioner: aggregerRap('regioner'),
-        sektorer: aggregerRap('sektorer'),
-        stil: aggregerRap('stil'),
-        beskrivelse: `Aksjedelen: ${aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}`
-      } : null;
-
-      // Build the PPTX payload (reuse same structure as handleGeneratePresentation)
-      const produktMap = alleProduktFlat.reduce((acc, p) => { if (p?.id) acc[p.id] = p; return acc; }, {});
-      const valgteIds = rapValgteProdIds;
-      const historikkTilEksport = valgteIds.reduce((acc, id) => {
-        const hist = produktHistorikk?.[id];
-        if (!hist || !Array.isArray(hist.data)) return acc;
-        acc[id] = { ...hist, data: hist.data.slice(-120) };
-        return acc;
-      }, {});
-      const pensumProdukterTilEksport = valgteIds.map(id => produktMap[id]).filter(Boolean).map(p => ({
-        id: p.id, navn: p.navn, aar2026: p.aar2026, aar2025: p.aar2025, aar2024: p.aar2024, aar2023: p.aar2023, aar2022: p.aar2022,
-        ...(produktRapportMeta?.[p.id] || {})
-      }));
-
-      const investerbarKapital = investertBelop !== null ? investertBelop : totalKapital;
-      const payload = {
-        rapportMode: true,
-        snapshotCharts,
-        drawdownChart,
-        aggregertEksponering,
-        kundeNavn: kundeNavn || 'Investor',
-        totalKapital: investerbarKapital,
-        totalFormue: totalKapital,
-        investerbarKapital,
-        risikoProfil: risikoprofil,
-        horisont,
-        vektetAvkastning,
-        allokering: aktiveAktiva.map(a => ({ ...a, belop: ((a.vekt || 0) / 100) * investerbarKapital })),
-        produkterIBruk: valgteIds,
-        pensumProdukter: pensumProdukterTilEksport,
-        pensumAllokering: pensumAllokering.filter(p => valgteIds.includes(p.id)),
-        produktEksponering: valgteIds.reduce((acc, id) => { if (produktEksponering?.[id]) acc[id] = produktEksponering[id]; return acc; }, {}),
-        produktHistorikk: historikkTilEksport,
-        kundeinfo: { totalFormue: totalKapital, investerbarKapital, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde },
-        eksponering: { sektorer: aggregertPensumEksponering?.sektorer || [], regioner: aggregertPensumEksponering?.regioner || [] },
-        historiskPortefolje: beregnPensumHistorikk,
-        pensumForventetAvkastning,
-        pensumLikviditet,
-        aktivafordeling: pensumAktivafordeling,
-        scenarioParams,
-        scenarioData: [],
-        verdiutvikling
-      };
-
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        let melding = await response.text();
-        try { const parsed = JSON.parse(melding); if (parsed?.error) melding = parsed.error; } catch (_) {}
-        throw new Error(melding || 'Ukjent feil fra server.');
+          const slide = pptx.addSlide();
+          slide.background = { color: 'FFFFFF' };
+          slide.addImage({
+            data: imgData,
+            x: imgX,
+            y: imgY,
+            w: imgW,
+            h: imgH,
+          });
+        } finally {
+          document.body.removeChild(wrapper);
+        }
       }
-      const blob = await response.blob();
+
+      // Download
+      const blob = await pptx.write({ outputType: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -5156,10 +5036,10 @@ export default function PensumPrognoseModell() {
           const avkFarge = (v) => erGyldigTall(v) ? (v >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400';
 
           return (
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-6 max-w-4xl mx-auto" id="rapport-container">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               {/* === HEADER === */}
-              <div className="p-6 flex items-center justify-between border-b border-gray-200">
+              <div data-rapport-slide="header" className="p-6 flex items-center justify-between border-b border-gray-200">
                 <img src={PENSUM_LOGO} alt="Pensum" className="h-20" />
                 <div className="text-right">
                   <div className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsforslag</div>
@@ -5169,7 +5049,7 @@ export default function PensumPrognoseModell() {
 
               <div className="p-8 space-y-8">
                 {/* === KUNDEINFORMASJON === */}
-                <div className="grid grid-cols-2 gap-4 text-sm border-b border-gray-100 pb-6">
+                <div data-rapport-slide="kundeinfo" className="grid grid-cols-2 gap-4 text-sm border-b border-gray-100 pb-6">
                   <div><span className="text-gray-500">Utarbeidet for:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{kundeNavn || '—'}</strong></div>
                   <div className="text-right"><span className="text-gray-500">Rådgiver:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || '—'}</strong></div>
                   <div><span className="text-gray-500">Risikoprofil:</span> <strong style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</strong></div>
@@ -5177,7 +5057,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === NØKKELTALL-STRIPE (utvidet) === */}
-                <div className="rounded-xl p-5" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <div data-rapport-slide="kpi" className="rounded-xl p-5" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
                     <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Investert beløp</div><div className="text-lg font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
                     <div><div className="text-[10px] text-blue-300 uppercase tracking-wider">Forv. avkastning</div><div className="text-lg font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
@@ -5189,7 +5069,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
-                <div>
+                <div data-rapport-slide="allokering">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Anbefalt aktivaallokering</h2>
                   {(() => {
                     const rapportAktiva = pensumAktivafordeling.filter(a => a.value > 0);
@@ -5204,7 +5084,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
-                <div>
+                <div data-rapport-slide="sammensetning">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
@@ -5260,7 +5140,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === HISTORISK AVKASTNING PER PRODUKT (1, 3, 5 ÅR) === */}
-                <div>
+                <div data-rapport-slide="historisk">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Historisk avkastning</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -5301,7 +5181,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === PORTEFØLJENS HISTORISKE AVKASTNING (vektet) === */}
-                <div className="rounded-xl p-5 border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' }}>
+                <div data-rapport-slide="kalenderaar" className="rounded-xl p-5 border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' }}>
                   <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Din porteføljes historiske avkastning (vektet)</h3>
                   <div className="grid grid-cols-5 gap-4 text-center">
                     {[
@@ -5480,7 +5360,7 @@ export default function PensumPrognoseModell() {
                   Object.entries(indeksDDR).forEach(([navn, serie]) => { indeksMaxDDR[navn] = serie.length > 0 ? Math.min(...serie.map(d => d.dd)) : 0; });
 
                   return (
-                    <div>
+                    <div data-rapport-slide="snapshot-charts">
                       <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Portefølje-avkastning — standardbilder</h2>
                       <div className="space-y-6">
                         {rapPerioder.map(({ label, years }) => {
@@ -5619,7 +5499,7 @@ export default function PensumPrognoseModell() {
                   if (aksjeProdRap.length === 0) return null;
 
                   return (
-                    <div>
+                    <div data-rapport-slide="eksponering">
                       <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Aggregert porteføljeeksponering</h2>
                       <p className="text-xs text-gray-500 mb-4">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -5653,7 +5533,7 @@ export default function PensumPrognoseModell() {
                 })()}
 
                 {/* === VERDIUTVIKLING (STACKED BAR) === */}
-                <div>
+                <div data-rapport-slide="verdiutvikling">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling per aktivaklasse</h2>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={verdiutvikling} barCategoryGap="40%">
@@ -5668,7 +5548,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === DETALJERT VERDIUTVIKLING === */}
-                <div>
+                <div data-rapport-slide="verdi-tabell">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Detaljert verdiutvikling</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
@@ -5693,7 +5573,7 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* === DISCLAIMER === */}
-                <div className="text-xs text-gray-500 border-t border-gray-200 pt-6">
+                <div data-rapport-slide="disclaimer" className="text-xs text-gray-500 border-t border-gray-200 pt-6">
                   <p className="font-semibold mb-2">Viktig informasjon</p>
                   <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
                 </div>
