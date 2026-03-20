@@ -4098,7 +4098,7 @@ export default function PensumPrognoseModell() {
                                 <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                   tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={['dataMin - 2', 'dataMax + 2']} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
@@ -5164,11 +5164,11 @@ export default function PensumPrognoseModell() {
                   {/* Porteføljefordeling */}
                   <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
                     <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-5">
                       <div className="shrink-0">
-                        <ResponsiveContainer width={200} height={200}>
+                        <ResponsiveContainer width={180} height={180}>
                           <PieChart>
-                            <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                            <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={45} outerRadius={78} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
                               {valgteProdukterRapport.map((p, idx) => (
                                 <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
                               ))}
@@ -5177,12 +5177,12 @@ export default function PensumPrognoseModell() {
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="space-y-2 flex-1">
+                      <div className="space-y-2 flex-1 min-w-0">
                         {valgteProdukterRapport.map((p, idx) => (
                           <div key={p.id} className="flex items-center gap-2.5 text-sm">
-                            <div className="w-3 h-3 rounded" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
-                            <span className="flex-1 truncate text-gray-700">{p.navn}</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
+                            <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                            <span className="flex-1 text-gray-700" style={{ whiteSpace: 'nowrap' }}>{p.navn}</span>
+                            <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
                           </div>
                         ))}
                       </div>
@@ -5493,7 +5493,7 @@ export default function PensumPrognoseModell() {
                                     <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                       tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                       interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={['dataMin - 2', 'dataMax + 2']} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                       labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                       formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
