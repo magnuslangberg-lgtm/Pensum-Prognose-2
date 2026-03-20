@@ -1781,6 +1781,8 @@ export default function PensumPrognoseModell() {
 
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
+        { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
+        { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
         { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
         { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
         { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
@@ -5159,6 +5161,171 @@ export default function PensumPrognoseModell() {
 
               <div className="p-8 space-y-8">
 
+                {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
+                <div data-rapport-slide="utgangspunkt" className="space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Utgangspunkt og investeringsmandat</h2>
+                    <div className="h-0.5 mt-2" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Forutsetninger */}
+                    <div className="rounded-xl border border-gray-200 bg-white p-6">
+                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Forutsetninger</h3>
+                      <div className="space-y-0">
+                        {[
+                          { label: 'Samlet oppgitt formue', value: formatCurrency(totalKapital) },
+                          { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
+                          { label: 'Risikoprofil', value: risikoprofil },
+                          { label: 'Tidshorisont', value: horisont + ' år' },
+                          { label: 'Målsetting', value: vektetAvkastning.toFixed(1) + '% p.a.' },
+                          { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
+                        ].map((row, i) => (
+                          <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
+                            <span className="text-sm text-gray-500">{row.label}</span>
+                            <span className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{row.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">Skillet mellom samlet formue og investerbar kapital er viktig. I forslaget modelleres kapitalen som faktisk settes i arbeid.</p>
+                      </div>
+                    </div>
+
+                    {/* Porteføljelogikk */}
+                    <div className="rounded-xl border border-gray-200 bg-white p-6">
+                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljelogikk</h3>
+                      <div className="space-y-5">
+                        {[
+                          { num: '1', title: 'Bygg robust kjerne', desc: 'Kjerneporteføljen gir bred global eksponering og fungerer som hovedmotor i verdiskapingen.', color: PENSUM_COLORS.darkBlue },
+                          { num: '2', title: 'Stabiliser totalen', desc: 'Rentedelen skal bidra med løpende yield og dempe svingningene relativt til aksjedelen.', color: PENSUM_COLORS.teal },
+                          { num: '3', title: 'Bruk satellitter selektivt', desc: 'Norge, energi og mer spisset global allokering brukes for å øke potensialet for meravkastning.', color: PENSUM_COLORS.salmon },
+                        ].map((step) => (
+                          <div key={step.num} className="flex gap-3">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: step.color }}>{step.num}</div>
+                            <div>
+                              <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{step.title}</p>
+                              <p className="text-xs text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Rådgivers vurdering */}
+                    <div className="rounded-xl p-6 text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                      <h3 className="text-lg font-bold mb-4">Rådgivers vurdering</h3>
+                      <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                        Forslaget er satt sammen for å kombinere robust kjerneeksponering med utvalgte satellitter.
+                        Løsningene er valgt for å utfylle hverandre på tvers av geografi, aktivaklasse og investeringsstil.
+                      </p>
+                      <div className="space-y-3">
+                        {[
+                          { color: PENSUM_COLORS.lightBlue, text: 'Bred global basiseksponering som hovedmotor for langsiktig verdiskaping' },
+                          { color: PENSUM_COLORS.teal, text: 'Rentedel som stabiliserende buffer og bærer av løpende kontantstrøm' },
+                          { color: PENSUM_COLORS.salmon, text: 'Selektive satellitter for tydeligere aktive valg og høyere meravkastningspotensial' },
+                        ].map((punkt, i) => (
+                          <div key={i} className="flex items-start gap-2.5">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: punkt.color }}></div>
+                            <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.8)' }}>{punkt.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* === HVORDAN PORTEFØLJEN ER BYGGET === */}
+                <div data-rapport-slide="byggesteiner" className="space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan porteføljen er bygget</h2>
+                    <div className="h-0.5 mt-2" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                  </div>
+
+                  {(() => {
+                    // Klassifiser produkter i byggesteiner
+                    const kjerne = valgteProdukterRapport.filter(p => {
+                      const cat = produktRapportMeta?.[p.id]?.category;
+                      return cat === 'equity-core' || cat === 'balanced';
+                    });
+                    const stabilisator = valgteProdukterRapport.filter(p => {
+                      const cat = produktRapportMeta?.[p.id]?.category;
+                      return cat === 'fixed-income' || cat === 'fixed-income-specialist';
+                    });
+                    const satellitter = valgteProdukterRapport.filter(p => {
+                      const cat = produktRapportMeta?.[p.id]?.category;
+                      return cat === 'equity-satellite' || cat === 'equity-nordic' || cat === 'equity-thematic' || cat === 'equity-sector';
+                    });
+
+                    const kjerneVekt = kjerne.reduce((s, p) => s + p.vekt, 0);
+                    const stabVekt = stabilisator.reduce((s, p) => s + p.vekt, 0);
+                    const satVekt = satellitter.reduce((s, p) => s + p.vekt, 0);
+
+                    const byggesteiner = [
+                      {
+                        type: 'KJERNE',
+                        vekt: kjerneVekt,
+                        produkter: kjerne,
+                        color: PENSUM_COLORS.darkBlue,
+                        borderColor: PENSUM_COLORS.lightBlue,
+                        tittel: kjerne.map(p => p.navn?.replace('Pensum ', '')).join(', ') || 'Kjerneeksponering',
+                        beskrivelse: 'Bred global aksjeeksponering med aktiv fondsseleksjon. Denne byggesteinen skal bære hoveddelen av aksjedelens langsiktige verdiskaping.',
+                        bidrag: ['Global basiseksponering', 'God forvalterdiversifisering', 'Tydelig rolle som hovedmotor']
+                      },
+                      {
+                        type: 'STABILISATOR',
+                        vekt: stabVekt,
+                        produkter: stabilisator,
+                        color: PENSUM_COLORS.teal,
+                        borderColor: PENSUM_COLORS.teal,
+                        tittel: stabilisator.map(p => p.navn?.replace('Pensum ', '')).join(', ') || 'Rentedel',
+                        beskrivelse: 'Rentedelen skal bidra med løpende kontantstrøm og lavere volatilitet enn aksjer. Den fungerer som buffer i totalporteføljen.',
+                        bidrag: ['Forv. yield ' + (stabilisator.length > 0 ? (stabilisator.reduce((s, p) => s + (p.produkt?.forventetYield || 0) * p.vekt, 0) / Math.max(stabVekt, 1)).toFixed(1) : '0') + '%', 'Lavere svingninger enn aksjer', 'Demper total porteføljerisiko']
+                      },
+                      {
+                        type: 'SATELLITTER',
+                        vekt: satVekt,
+                        produkter: satellitter,
+                        color: PENSUM_COLORS.salmon,
+                        borderColor: PENSUM_COLORS.salmon,
+                        tittel: satellitter.map(p => p.navn?.replace('Pensum ', '')).join(', ') || 'Satellitter',
+                        beskrivelse: 'Selektive tilleggsmandater brukes for å øke aktiv andel, styrke norske idéer og utnytte spesifikke markedsmuligheter.',
+                        bidrag: ['Meravkastningspotensial', 'Norsk eksponering og lokal innsikt', 'Tematisk diversifisering']
+                      }
+                    ].filter(b => b.vekt > 0);
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {byggesteiner.map((b) => (
+                          <div key={b.type} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                            <div className="w-full h-1" style={{ backgroundColor: b.borderColor }}></div>
+                            <div className="p-5">
+                              <div className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white mb-3" style={{ backgroundColor: b.color }}>{b.type}</div>
+                              <div className="flex items-baseline gap-2 mb-3">
+                                <span className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{b.vekt.toFixed(1)}%</span>
+                                <span className="text-sm text-gray-400">av porteføljen</span>
+                              </div>
+                              <p className="text-sm font-bold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{b.tittel}</p>
+                              <p className="text-xs text-gray-500 leading-relaxed mb-4">{b.beskrivelse}</p>
+                              <div className="border-t border-gray-100 pt-3">
+                                <p className="text-xs font-semibold text-gray-400 mb-2">Dette skal byggesteinen bidra med</p>
+                                <div className="space-y-2">
+                                  {b.bidrag.map((punkt, i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: b.color }}></div>
+                                      <span className="text-xs text-gray-600">{punkt}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
                 <div data-rapport-slide="allokering" className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Porteføljefordeling */}
@@ -5699,7 +5866,7 @@ export default function PensumPrognoseModell() {
                         <div className="flex items-center gap-3">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: pColor }}></div>
                           <div>
-                            <h3 className="text-lg font-bold text-white">{meta.slideTitle || p.navn}</h3>
+                            <h3 className="text-lg font-bold text-white">{p.navn}{meta.slideTitle ? ` — ${meta.slideTitle}` : ''}</h3>
                             {meta.slideSubtitle && <p className="text-xs text-blue-200 mt-0.5">{meta.slideSubtitle}</p>}
                           </div>
                         </div>
