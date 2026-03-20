@@ -4025,24 +4025,24 @@ export default function PensumPrognoseModell() {
                   const sorterteDatoer = Array.from(alleDatoer).sort();
                   const chartData = sorterteDatoer.map(dato => {
                     const punkt = { dato };
-                    // Vektet portefølje
-                    let vektetVerdi = 0; let totalProdVekt = 0;
+                    // Vektet portefølje — prosentvis avkastning fra start
+                    let vektetPct = 0; let totalProdVekt = 0;
                     valgteProdukterIds.forEach(id => {
                       const pm = produktMaps[id];
                       if (pm) {
                         const verdi = pm.dMap.get(dato);
                         if (verdi !== undefined && pm.startVerdi) {
-                          const indeksert = (verdi / pm.startVerdi) * 100;
+                          const pctReturn = ((verdi / pm.startVerdi) - 1) * 100;
                           const allok = pensumAllokering.find(a => a.id === id);
-                          if (allok) { vektetVerdi += indeksert * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
+                          if (allok) { vektetPct += pctReturn * (allok.vekt / totalVektSnap); totalProdVekt += allok.vekt / totalVektSnap; }
                         }
                       }
                     });
-                    if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
-                    // Indekser
+                    if (totalProdVekt > 0) punkt['portefolje'] = vektetPct / totalProdVekt;
+                    // Indekser — prosentvis avkastning fra start
                     Object.entries(indeksMaps).forEach(([navn, im]) => {
                       const verdi = im.dMap.get(dato);
-                      if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                      if (verdi !== undefined) punkt[navn] = ((verdi / im.startVerdi) - 1) * 100;
                     });
                     return punkt;
                   });
@@ -4089,20 +4089,20 @@ export default function PensumPrognoseModell() {
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                           <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
                           </div>
                           <div className="p-5">
                             <ResponsiveContainer width="100%" height={300}>
-                              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
-                                  interval={Math.max(1, Math.floor(chartData.length / 20))} />
-                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                  interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => (v >= 0 ? '+' : '') + v.toFixed(0) + '%'} domain={['dataMin - 2', 'dataMax + 2']} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                                  labelFormatter={formatHistorikkEtikett}
-                                  formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
-                                <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                  labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                 <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
                                 {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
                                   <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
@@ -4274,10 +4274,10 @@ export default function PensumPrognoseModell() {
                             <ResponsiveContainer width="100%" height={280}>
                               <ComposedChart data={ddChartData} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
-                                <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                  tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(ddChartData.length / 10))} />
-                                <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
                                 <Tooltip
                                   contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                   labelFormatter={formatHistorikkEtikett}
@@ -5333,22 +5333,22 @@ export default function PensumPrognoseModell() {
                     const sorterteDatoer = Array.from(alleDatoer).sort();
                     const chartData = sorterteDatoer.map(dato => {
                       const punkt = { dato };
-                      let vektetVerdi = 0; let totalProdVekt = 0;
+                      let vektetPct = 0; let totalProdVekt = 0;
                       rapValgteProdIds.forEach(id => {
                         const pm = produktMaps[id];
                         if (pm) {
                           const verdi = pm.dMap.get(dato);
                           if (verdi !== undefined && pm.startVerdi) {
-                            const indeksert = (verdi / pm.startVerdi) * 100;
+                            const pctReturn = ((verdi / pm.startVerdi) - 1) * 100;
                             const allok = pensumAllokering.find(a => a.id === id);
-                            if (allok) { vektetVerdi += indeksert * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
+                            if (allok) { vektetPct += pctReturn * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
                           }
                         }
                       });
-                      if (totalProdVekt > 0) punkt['portefolje'] = vektetVerdi / totalProdVekt;
+                      if (totalProdVekt > 0) punkt['portefolje'] = vektetPct / totalProdVekt;
                       Object.entries(indeksMaps).forEach(([navn, im]) => {
                         const verdi = im.dMap.get(dato);
-                        if (verdi !== undefined) punkt[navn] = (verdi / im.startVerdi) * 100;
+                        if (verdi !== undefined) punkt[navn] = ((verdi / im.startVerdi) - 1) * 100;
                       });
                       return punkt;
                     });
@@ -5460,20 +5460,20 @@ export default function PensumPrognoseModell() {
                           return (
                             <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                               <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — indeksert til 100</h4>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
                               </div>
                               <div className="p-5">
                                 <ResponsiveContainer width="100%" height={280}>
-                                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                    <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                      tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const m = p.getMonth()+1; const d = p.getDate(); if (d <= 5 && (m === 3 || m === 6 || m === 9 || m === 12)) return `${String(m).padStart(2,'0')}.${p.getFullYear()}`; return ''; }}
-                                      interval={Math.max(1, Math.floor(chartData.length / 20))} />
-                                    <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(0)} domain={['dataMin - 3', 'dataMax + 3']} />
+                                    <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                      tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                      interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => (v >= 0 ? '+' : '') + v.toFixed(0) + '%'} domain={['dataMin - 2', 'dataMax + 2']} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                                      labelFormatter={formatHistorikkEtikett}
-                                      formatter={(v, name) => [v.toFixed(1), name === 'Din portefølje' ? 'Din portefølje' : name]} />
-                                    <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                      labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
+                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                    <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                     <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
                                     {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => (
                                       <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
@@ -5526,10 +5526,10 @@ export default function PensumPrognoseModell() {
                               <ResponsiveContainer width="100%" height={260}>
                                 <ComposedChart data={ddChartDataR} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
                                   <CartesianGrid strokeDasharray="3 3" stroke="#FEE2E2" />
-                                  <XAxis dataKey="dato" tick={{ fontSize: 9, fill: '#6B7280' }}
-                                    tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}.${p.getFullYear()}`; }}
+                                  <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                    tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                     interval={Math.max(1, Math.floor(ddChartDataR.length / 10))} />
-                                  <YAxis tick={{ fontSize: 9, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
+                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1) + '%'} domain={['dataMin - 1', 0]} />
                                   <Tooltip
                                     contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                     labelFormatter={formatHistorikkEtikett}
