@@ -1361,6 +1361,196 @@ export default function PensumPrognoseModell() {
 
     '<div class="section"><h2>Detaljert verdiutvikling</h2><table class="detail-table"><thead>' + verdiTableHeader + '</thead><tbody>' + verdiTableRows + '</tbody></table></div>' +
 
+    // === Avkastning- og risikografer (SVG) ===
+    (() => {
+      const produkterMedHist = pensumAllokering.filter(a => a.vekt > 0 && produktHistorikk[a.id]).sort((a,b) => b.vekt - a.vekt);
+      if (produkterMedHist.length === 0) return '';
+
+      // 1/3/5-års avkastning horisontale søyler
+      const barData = produkterMedHist.map(a => {
+        const s1 = beregnProduktStatistikk(produktHistorikk[a.id], start1y);
+        const s3 = beregnProduktStatistikk(produktHistorikk[a.id], start3y);
+        const s5 = beregnProduktStatistikk(produktHistorikk[a.id], start5y);
+        return { id: a.id, navn: produktNavnRapport[a.id] || a.navn, s1: s1?.totalAvkastning, s3: s3?.aarligAvkastning, s5: s5?.aarligAvkastning, dd: s5?.maxDrawdown };
+      });
+
+      const allVals = barData.flatMap(d => [d.s1, d.s3, d.s5].filter(v => erGyldigTall(v)));
+      const maxAbs = Math.max(Math.abs(Math.min(...allVals, 0)), Math.max(...allVals, 1));
+      const chartW = 700, rowH = 28, labelW = 140, barAreaW = chartW - labelW - 60;
+      const chartH = barData.length * rowH * 3 + 60;
+      const periods = [
+        { key: 's1', label: '1 år', color: PENSUM_COLORS.lightBlue },
+        { key: 's3', label: '3 år p.a.', color: PENSUM_COLORS.darkBlue },
+        { key: 's5', label: '5 år p.a.', color: PENSUM_COLORS.teal },
+      ];
+      let returnSvg = '<svg width="100%" viewBox="0 0 ' + chartW + ' ' + chartH + '" style="font-family:sans-serif">';
+      // Legend
+      returnSvg += periods.map((p, i) => '<rect x="' + (labelW + i * 120) + '" y="6" width="12" height="12" rx="2" fill="' + p.color + '"/><text x="' + (labelW + i * 120 + 16) + '" y="16" font-size="10" fill="#4B5563">' + p.label + '</text>').join('');
+      // Zero line
+      const zeroX = labelW + (barAreaW / 2);
+      returnSvg += '<line x1="' + zeroX + '" y1="28" x2="' + zeroX + '" y2="' + chartH + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+
+      barData.forEach((prod, pi) => {
+        const groupY = 32 + pi * rowH * 3;
+        returnSvg += '<text x="' + (labelW - 6) + '" y="' + (groupY + rowH * 1.5) + '" text-anchor="end" font-size="10" font-weight="600" fill="#1B3A5F">' + prod.navn + '</text>';
+        periods.forEach((period, ti) => {
+          const val = prod[period.key];
+          const y = groupY + ti * rowH;
+          if (erGyldigTall(val)) {
+            const barW = Math.abs(val / maxAbs) * (barAreaW / 2);
+            const bx = val >= 0 ? zeroX : zeroX - barW;
+            returnSvg += '<rect x="' + bx + '" y="' + (y + 4) + '" width="' + barW + '" height="' + (rowH - 8) + '" rx="3" fill="' + period.color + '" opacity="0.85"/>';
+            const txtX = val >= 0 ? bx + barW + 4 : bx - 4;
+            const anchor = val >= 0 ? 'start' : 'end';
+            returnSvg += '<text x="' + txtX + '" y="' + (y + rowH / 2 + 3) + '" text-anchor="' + anchor + '" font-size="9" font-weight="600" fill="' + (val >= 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon) + '">' + (val >= 0 ? '+' : '') + val.toFixed(1) + '%</text>';
+          } else {
+            returnSvg += '<text x="' + (zeroX + 6) + '" y="' + (y + rowH / 2 + 3) + '" font-size="9" fill="#9CA3AF">—</text>';
+          }
+        });
+        if (pi < barData.length - 1) returnSvg += '<line x1="' + labelW + '" y1="' + (groupY + rowH * 3 - 2) + '" x2="' + (chartW - 10) + '" y2="' + (groupY + rowH * 3 - 2) + '" stroke="#E2E8F0" stroke-width="0.5"/>';
+      });
+      returnSvg += '</svg>';
+
+      // Max Drawdown diagram
+      const ddVals = barData.filter(d => erGyldigTall(d.dd));
+      let ddSvg = '';
+      if (ddVals.length > 0) {
+        const ddH = ddVals.length * 36 + 30;
+        const ddMaxAbs = Math.max(...ddVals.map(d => Math.abs(d.dd)), 1);
+        ddSvg = '<svg width="100%" viewBox="0 0 ' + chartW + ' ' + ddH + '" style="font-family:sans-serif">';
+        ddSvg += '<text x="' + labelW + '" y="16" font-size="10" fill="#4B5563" font-weight="500">Maks drawdown (5 år)</text>';
+        ddVals.forEach((d, i) => {
+          const y = 26 + i * 36;
+          const barW = (Math.abs(d.dd) / ddMaxAbs) * (barAreaW * 0.6);
+          ddSvg += '<text x="' + (labelW - 6) + '" y="' + (y + 16) + '" text-anchor="end" font-size="10" fill="#1B3A5F">' + d.navn + '</text>';
+          ddSvg += '<rect x="' + labelW + '" y="' + (y + 4) + '" width="' + barW + '" height="22" rx="3" fill="' + PENSUM_COLORS.salmon + '" opacity="0.7"/>';
+          ddSvg += '<text x="' + (labelW + barW + 6) + '" y="' + (y + 18) + '" font-size="10" font-weight="600" fill="' + PENSUM_COLORS.salmon + '">' + d.dd.toFixed(1) + '%</text>';
+        });
+        ddSvg += '</svg>';
+      }
+
+      return '<div class="section" style="page-break-before:always"><h2>Avkastning og risiko per produkt</h2>' +
+        '<div style="background:#FAFAFA;border-radius:8px;padding:16px;margin-bottom:12px">' + returnSvg + '</div>' +
+        (ddSvg ? '<div style="background:#FAFAFA;border-radius:8px;padding:16px">' + ddSvg + '</div>' : '') +
+        '</div>';
+    })() +
+
+    // === Produktark (kundeark) per valgt mandat ===
+    (() => {
+      const produkterForArk = pensumAllokering.filter(a => a.vekt > 0).sort((a,b) => b.vekt - a.vekt);
+      if (produkterForArk.length === 0) return '';
+
+      const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+      const produktArkHTML = produkterForArk.map((allok, arkIdx) => {
+        const produkt = alleProdukt.find(p => p.id === allok.id);
+        const meta = produktRapportMeta?.[allok.id] || {};
+        const eksp = produktEksponering?.[allok.id] || {};
+        const hist = produktHistorikk?.[allok.id];
+        const s1 = hist ? beregnProduktStatistikk(hist, start1y) : null;
+        const s3 = hist ? beregnProduktStatistikk(hist, start3y) : null;
+        const s5 = hist ? beregnProduktStatistikk(hist, start5y) : null;
+        const fullStats = hist ? beregnProduktStatistikk(hist, new Date(2000, 0, 1)) : null;
+        const fAvk = produkt?.forventetAvkastning ?? meta.expectedReturn;
+        const fYield = produkt?.forventetYield ?? meta.expectedYield;
+        const fargeIdx = arkIdx % produktFargerHTML.length;
+
+        // KPI stripe
+        const kpiItems = [
+          { label: 'Vekt', value: allok.vekt.toFixed(1) + '%', cls: '' },
+          { label: 'Forv. avk.', value: erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—', cls: 'green' },
+          { label: 'Forv. yield', value: erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—', cls: 'teal' },
+          { label: 'Volatilitet', value: s5 ? s5.standardavvik.toFixed(1) + '%' : '—', cls: '' },
+          { label: 'Sharpe', value: s5 ? s5.sharpe.toFixed(2) : '—', cls: s5 && s5.sharpe >= 1 ? 'green' : '' },
+          { label: 'Maks DD', value: s5 ? s5.maxDrawdown.toFixed(1) + '%' : '—', cls: '' },
+        ];
+        const kpiStripe = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0">' +
+          kpiItems.map(k => '<div style="background:white;border:1px solid #E2E8F0;border-radius:8px;padding:10px 6px;text-align:center"><div style="font-size:8px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px">' + k.label + '</div><div style="font-size:15px;font-weight:700;margin-top:3px;color:' + (k.cls === 'green' ? PENSUM_COLORS.teal : k.cls === 'teal' ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue) + '">' + k.value + '</div></div>').join('') +
+          '</div>';
+
+        // Avkastning tabell
+        const fmtRet = (v) => erGyldigTall(v) ? '<span style="color:' + (v >= 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon) + ';font-weight:600">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span>' : '—';
+        const retTable = '<table style="width:100%;margin:8px 0"><thead><tr style="background:#F8FAFC"><th style="padding:6px;font-size:10px;text-align:left">Periode</th><th style="padding:6px;font-size:10px;text-align:right">Avkastning</th><th style="padding:6px;font-size:10px;text-align:right">Volatilitet</th><th style="padding:6px;font-size:10px;text-align:right">Sharpe</th></tr></thead><tbody>' +
+          '<tr><td style="padding:5px;font-size:10px">1 år</td><td style="padding:5px;font-size:10px;text-align:right">' + fmtRet(s1?.totalAvkastning) + '</td><td style="padding:5px;font-size:10px;text-align:right;color:#4B5563">' + (s1 ? s1.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:5px;font-size:10px;text-align:right">' + (s1 ? s1.sharpe.toFixed(2) : '—') + '</td></tr>' +
+          '<tr style="background:#F8FAFC"><td style="padding:5px;font-size:10px">3 år p.a.</td><td style="padding:5px;font-size:10px;text-align:right">' + fmtRet(s3?.aarligAvkastning) + '</td><td style="padding:5px;font-size:10px;text-align:right;color:#4B5563">' + (s3 ? s3.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:5px;font-size:10px;text-align:right">' + (s3 ? s3.sharpe.toFixed(2) : '—') + '</td></tr>' +
+          '<tr><td style="padding:5px;font-size:10px">5 år p.a.</td><td style="padding:5px;font-size:10px;text-align:right">' + fmtRet(s5?.aarligAvkastning) + '</td><td style="padding:5px;font-size:10px;text-align:right;color:#4B5563">' + (s5 ? s5.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:5px;font-size:10px;text-align:right">' + (s5 ? s5.sharpe.toFixed(2) : '—') + '</td></tr>' +
+          '<tr style="background:#F8FAFC"><td style="padding:5px;font-size:10px">Siden oppstart</td><td style="padding:5px;font-size:10px;text-align:right">' + fmtRet(fullStats?.avkSidenOppstart) + '</td><td style="padding:5px;font-size:10px;text-align:right;color:#4B5563">' + (fullStats ? fullStats.standardavvik.toFixed(1) + '%' : '—') + '</td><td style="padding:5px;font-size:10px;text-align:right">' + (fullStats ? fullStats.sharpe.toFixed(2) : '—') + '</td></tr>' +
+          '</tbody></table>';
+
+        // Eksponering: sektorer + regioner som bar chart
+        const renderExpBars = (title, data, color) => {
+          if (!Array.isArray(data) || data.length === 0) return '';
+          const maxW = Math.max(...data.map(d => d.vekt || 0), 1);
+          return '<div style="margin:6px 0"><div style="font-size:10px;font-weight:600;color:' + PENSUM_COLORS.darkBlue + ';margin-bottom:6px">' + title + '</div>' +
+            data.slice(0, 8).map(d => {
+              const bw = Math.max(2, (d.vekt / maxW) * 100);
+              return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><span style="width:80px;font-size:9px;text-align:right;color:#4B5563;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (d.navn || '—') + '</span><div style="flex:1;background:#F1F5F9;border-radius:3px;height:14px;overflow:hidden"><div style="height:100%;border-radius:3px;background:' + color + ';width:' + bw + '%"></div></div><span style="font-size:9px;font-weight:600;color:' + PENSUM_COLORS.darkBlue + ';width:35px;text-align:right">' + (d.vekt || 0).toFixed(1) + '%</span></div>';
+            }).join('') + '</div>';
+        };
+
+        // Underliggende investeringer tabell
+        const underlying = Array.isArray(eksp.underliggende) ? eksp.underliggende : [];
+        const underlyingTable = underlying.length > 0 ?
+          '<div style="margin:8px 0"><div style="font-size:10px;font-weight:600;color:' + PENSUM_COLORS.darkBlue + ';margin-bottom:6px">Underliggende investeringer</div>' +
+          '<table style="width:100%"><thead><tr style="background:' + PENSUM_COLORS.darkBlue + '"><th style="padding:5px 8px;font-size:9px;color:white;text-align:left">Investering</th><th style="padding:5px 8px;font-size:9px;color:white;text-align:right">Vekt</th></tr></thead><tbody>' +
+          underlying.slice(0, 10).map((u, i) => '<tr style="background:' + (i % 2 === 0 ? '#fff' : '#F8FAFC') + '"><td style="padding:4px 8px;font-size:9px">' + (u.navn || '—') + '</td><td style="padding:4px 8px;font-size:9px;text-align:right;font-weight:600;color:' + PENSUM_COLORS.darkBlue + '">' + (u.vekt || 0).toFixed(1) + '%</td></tr>').join('') +
+          '</tbody></table></div>' : '';
+
+        // Historical return bars (mini SVG)
+        const yearReturns = [
+          { label: '2026 YTD', val: produkt?.aar2026 },
+          { label: '2025', val: produkt?.aar2025 },
+          { label: '2024', val: produkt?.aar2024 },
+          { label: '2023', val: produkt?.aar2023 },
+          { label: '2022', val: produkt?.aar2022 },
+        ].filter(y => erGyldigTall(y.val));
+        let yearBarSvg = '';
+        if (yearReturns.length > 0) {
+          const yrMax = Math.max(...yearReturns.map(y => Math.abs(y.val)), 1);
+          const yrH = yearReturns.length * 28 + 10;
+          yearBarSvg = '<div style="margin:8px 0"><div style="font-size:10px;font-weight:600;color:' + PENSUM_COLORS.darkBlue + ';margin-bottom:4px">Kalenderårsavkastning</div>';
+          yearBarSvg += '<svg width="100%" viewBox="0 0 350 ' + yrH + '" style="font-family:sans-serif">';
+          const yrZero = 80 + (350 - 80 - 40) / 2;
+          yearBarSvg += '<line x1="' + yrZero + '" y1="0" x2="' + yrZero + '" y2="' + yrH + '" stroke="#CBD5E1" stroke-width="0.5" stroke-dasharray="2,2"/>';
+          yearReturns.forEach((yr, i) => {
+            const y = 4 + i * 28;
+            const barW = (Math.abs(yr.val) / yrMax) * ((350 - 80 - 40) / 2);
+            const bx = yr.val >= 0 ? yrZero : yrZero - barW;
+            const col = yr.val >= 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon;
+            yearBarSvg += '<text x="74" y="' + (y + 15) + '" text-anchor="end" font-size="9" fill="#4B5563">' + yr.label + '</text>';
+            yearBarSvg += '<rect x="' + bx + '" y="' + (y + 3) + '" width="' + barW + '" height="18" rx="2" fill="' + col + '" opacity="0.8"/>';
+            yearBarSvg += '<text x="' + (yr.val >= 0 ? bx + barW + 4 : bx - 4) + '" y="' + (y + 15) + '" text-anchor="' + (yr.val >= 0 ? 'start' : 'end') + '" font-size="9" font-weight="600" fill="' + col + '">' + (yr.val >= 0 ? '+' : '') + yr.val.toFixed(1) + '%</text>';
+          });
+          yearBarSvg += '</svg></div>';
+        }
+
+        return '<div style="page-break-before:always;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin-bottom:20px;background:white">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + produktFargerHTML[fargeIdx] + '"></span><h2 style="font-size:16px;font-weight:700;color:' + PENSUM_COLORS.darkBlue + ';margin:0;border:none;padding:0">' + (meta.slideTitle || produkt?.navn || allok.navn) + '</h2></div>' +
+          '<div style="font-size:11px;color:#6B7280;margin-bottom:8px">' + (meta.slideSubtitle || '') + '</div>' +
+          kpiStripe +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+            '<div>' +
+              '<div style="font-size:10px;color:#6B7280;margin-bottom:2px"><strong style="color:' + PENSUM_COLORS.darkBlue + '">Rolle:</strong> ' + (meta.role || '—') + '</div>' +
+              '<div style="font-size:10px;color:#6B7280;margin-bottom:2px"><strong style="color:' + PENSUM_COLORS.darkBlue + '">Benchmark:</strong> ' + (meta.benchmark || '—') + '</div>' +
+              '<div style="font-size:10px;color:#6B7280;margin-bottom:2px"><strong style="color:' + PENSUM_COLORS.darkBlue + '">Pitch:</strong> ' + (meta.pitch || '—') + '</div>' +
+              '<div style="font-size:10px;color:#6B7280;margin-bottom:6px"><strong style="color:' + PENSUM_COLORS.darkBlue + '">Risiko:</strong> ' + (meta.riskText || '—') + '</div>' +
+              retTable +
+              yearBarSvg +
+            '</div>' +
+            '<div>' +
+              renderExpBars('Sektorer', eksp.sektorer, PENSUM_COLORS.lightBlue) +
+              renderExpBars('Regioner', eksp.regioner, PENSUM_COLORS.teal) +
+              underlyingTable +
+            '</div>' +
+          '</div>' +
+          (eksp.disclaimer ? '<div style="font-size:8px;color:#9CA3AF;margin-top:8px;padding:6px;background:#F8FAFC;border-radius:4px">' + eksp.disclaimer + '</div>' : '') +
+        '</div>';
+      }).join('');
+
+      return '<div class="section" style="page-break-before:always"><h2>Produktark – valgte Pensum-løsninger</h2>' +
+        '<p style="font-size:11px;color:#6B7280;margin-bottom:16px">Detaljert oversikt over hvert valgt produkt med rolle, eksponering, nøkkeltall og historisk utvikling.</p>' +
+        produktArkHTML + '</div>';
+    })() +
+
     '<div class="disclaimer"><strong>Viktig informasjon:</strong> Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med ' + RAPPORT_DATO + '.</div></div><div class="footer"><img src="' + PENSUM_LOGO + '" alt="Pensum" class="footer-logo"><div>Frøyas gate 15, 0273 Oslo · +47 23 89 68 44 · pensumgroup.no</div></div></div></body></html>';
 
     return html;
