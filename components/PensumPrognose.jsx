@@ -518,10 +518,10 @@ export default function PensumPrognoseModell() {
     });
     
     return [
-      { name: 'Aksjer', value: aksjeVekt, color: PENSUM_COLORS.darkBlue },
-      { name: 'Renter', value: renteVekt, color: PENSUM_COLORS.salmon },
-      { name: 'Alternativer', value: alternativVekt, color: PENSUM_COLORS.teal },
-      { name: 'Blandet', value: blandetVekt, color: PENSUM_COLORS.gold }
+      { name: 'Aksjer', value: parseFloat(aksjeVekt.toFixed(1)), color: PENSUM_COLORS.darkBlue },
+      { name: 'Renter', value: parseFloat(renteVekt.toFixed(1)), color: PENSUM_COLORS.salmon },
+      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal },
+      { name: 'Blandet', value: parseFloat(blandetVekt.toFixed(1)), color: PENSUM_COLORS.gold }
     ];
   }, [pensumAllokering, pensumProdukter]);
 
@@ -2224,7 +2224,7 @@ export default function PensumPrognoseModell() {
               <div className="space-y-3">
                 {/* Standard — rapport-basert */}
                 <button
-                  onClick={() => { setPdfModal(false); setActiveTab('rapport'); setTimeout(() => handleGenerateRapportPPTX(), 300); }}
+                  onClick={async () => { setActiveTab('rapport'); await new Promise(r => setTimeout(r, 500)); await handleGenerateRapportPPTX(); setPdfModal(false); }}
                   disabled={pdfLoading || rapportPptxLoading}
                   className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
                   <div className="flex items-start justify-between">
@@ -2241,7 +2241,7 @@ export default function PensumPrognoseModell() {
 
                 {/* Utvidet — gammel detaljert versjon */}
                 <button
-                  onClick={handleGeneratePresentation}
+                  onClick={async () => { await handleGeneratePresentation(); setPdfModal(false); }}
                   disabled={pdfLoading || rapportPptxLoading}
                   className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
                   <div className="flex items-start justify-between">
@@ -3203,10 +3203,7 @@ export default function PensumPrognoseModell() {
                             <div className="space-y-1">
                               {pensumProdukter.alternative.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
                                 <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'alternative')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
-                                  <div>
-                                    <span>{produkt.navn}</span>
-                                    <span className="text-xs text-amber-600 ml-2">12% p.a.</span>
-                                  </div>
+                                  <span>{produkt.navn}</span>
                                   <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                                 </button>
                               ))}
@@ -5972,26 +5969,14 @@ export default function PensumPrognoseModell() {
 
             {/* === NEDLASTING === */}
             <div className="flex flex-col items-center gap-4 no-print">
-              <div className="flex gap-4">
-                <button onClick={handleDownloadHTML} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  Last ned HTML-rapport
-                </button>
-                <button onClick={handleGenerateRapportPPTX} disabled={rapportPptxLoading} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: rapportPptxLoading ? '#6B7280' : PENSUM_COLORS.salmon }}>
-                  {rapportPptxLoading ? (
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                  )}
-                  {rapportPptxLoading ? 'Genererer...' : 'Last ned PowerPoint'}
-                </button>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4 max-w-lg text-center">
-                <p className="text-sm text-gray-700 font-medium mb-1">Lagre som PDF:</p>
-                <p className="text-xs text-gray-600">1. Last ned HTML-rapporten og åpne den i nettleseren</p>
-                <p className="text-xs text-gray-600">2. Trykk <span className="font-mono bg-gray-200 px-1 rounded">Ctrl+P</span> (Windows) eller <span className="font-mono bg-gray-200 px-1 rounded">Cmd+P</span> (Mac)</p>
-                <p className="text-xs text-gray-600">3. Velg "Lagre som PDF" som skriver</p>
-              </div>
+              <button onClick={handleGenerateRapportPPTX} disabled={rapportPptxLoading} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: rapportPptxLoading ? '#6B7280' : PENSUM_COLORS.salmon }}>
+                {rapportPptxLoading ? (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                )}
+                {rapportPptxLoading ? 'Genererer PowerPoint...' : 'Last ned PowerPoint'}
+              </button>
             </div>
           </div>
           );
