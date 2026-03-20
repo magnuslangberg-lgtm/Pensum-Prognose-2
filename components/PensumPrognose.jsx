@@ -5148,13 +5148,15 @@ export default function PensumPrognoseModell() {
                   </div>
 
                   {/* Bottom: KPI strip */}
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Investert beløp</div><div className="text-lg font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. avkastning</div><div className="text-lg font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. yield</div><div className="text-lg font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Aksje / Rente</div><div className="text-lg font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Likviditet</div><div className="text-lg font-bold text-white mt-1">{pensumLikviditet.likvid.toFixed(0)}% likvid</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Sluttverdi</div><div className="text-lg font-bold text-green-300 mt-1">{formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)}</div></div>
+                  <div className="grid grid-cols-3 gap-6 pt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Investert beløp</div><div className="text-xl font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. avkastning</div><div className="text-xl font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. yield</div><div className="text-xl font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6 pt-4">
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Aksje / Rente</div><div className="text-xl font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Likviditet</div><div className="text-xl font-bold text-white mt-1">{pensumLikviditet.likvid.toFixed(0)}% likvid</div></div>
+                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Sluttverdi</div><div className="text-xl font-bold text-green-300 mt-1">{formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)}</div></div>
                   </div>
                 </div>
               </div>
@@ -5185,9 +5187,6 @@ export default function PensumPrognoseModell() {
                             <span className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{row.value}</span>
                           </div>
                         ))}
-                      </div>
-                      <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                        <p className="text-[11px] text-gray-500 leading-relaxed">Skillet mellom samlet formue og investerbar kapital er viktig. I forslaget modelleres kapitalen som faktisk settes i arbeid.</p>
                       </div>
                     </div>
 
