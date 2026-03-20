@@ -55,6 +55,7 @@ export default function PensumPrognoseModell() {
   const [dashboardProdukter, setDashboardProdukter] = useState(['basis', 'global-core-active', 'global-edge', 'global-hoyrente', 'nordisk-hoyrente', 'norge-a', 'energy-a', 'banking-d', 'financial-d']);
   const [sammenligningPeriodeScen, setSammenligningPeriodeScen] = useState('max');
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [rapportPptxLoading, setRapportPptxLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
@@ -1753,6 +1754,239 @@ export default function PensumPrognoseModell() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleGenerateRapportPPTX = async () => {
+    setRapportPptxLoading(true);
+    try {
+      // Build snapshot chart data for 1/3/5yr periods
+      const rapValgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+      const rapTotalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+      const RAP_INDEKSER = {
+        'MSCI World': { feedKey: 'msci-world' },
+        'Oslo Børs': { feedKey: 'oslo-bors' },
+        'Norske Statsobl.': { feedKey: 'norske-statsobl' },
+      };
+
+      const buildSnapForPPTX = (periodYears) => {
+        const startDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periodYears, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+        const alleDatoer = new Set();
+        const produktMaps = {};
+        rapValgteProdIds.forEach(id => {
+          const hist = produktHistorikk[id];
+          if (hist?.data) {
+            const dMap = new Map();
+            hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+            produktMaps[id] = { dMap, startVerdi: finnStartVerdiVedPeriode(hist.data, startDato) };
+          }
+        });
+        const indeksMaps = {};
+        Object.entries(RAP_INDEKSER).forEach(([navn, cfg]) => {
+          const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+          if (hist?.data) {
+            const dMap = new Map();
+            hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= startDato && erGyldigTall(d.verdi)) { alleDatoer.add(d.dato); dMap.set(d.dato, d.verdi); } });
+            const sv = finnStartVerdiVedPeriode(hist.data, startDato);
+            if (sv) indeksMaps[navn] = { dMap, startVerdi: sv };
+          }
+        });
+        const sorterteDatoer = Array.from(alleDatoer).sort();
+        // Sample to ~60 points for PPTX
+        const sampleRate = Math.max(1, Math.floor(sorterteDatoer.length / 60));
+        const sampledDatoer = sorterteDatoer.filter((_, i) => i % sampleRate === 0 || i === sorterteDatoer.length - 1);
+        const labelInterval = Math.max(1, Math.floor(sampledDatoer.length / 12));
+        const labels = sampledDatoer.map((d, i) => i % labelInterval === 0 ? d : '');
+
+        // Build series: portfolio + indices
+        const portValues = sampledDatoer.map(dato => {
+          let vektetVerdi = 0; let totalProdVekt = 0;
+          rapValgteProdIds.forEach(id => {
+            const pm = produktMaps[id];
+            if (pm) {
+              const verdi = pm.dMap.get(dato);
+              if (verdi !== undefined && pm.startVerdi) {
+                const indeksert = (verdi / pm.startVerdi) * 100;
+                const allok = pensumAllokering.find(a => a.id === id);
+                if (allok) { vektetVerdi += indeksert * (allok.vekt / rapTotalVekt); totalProdVekt += allok.vekt / rapTotalVekt; }
+              }
+            }
+          });
+          return totalProdVekt > 0 ? vektetVerdi / totalProdVekt : null;
+        });
+
+        // Portfolio return
+        let portAvk = 0;
+        rapValgteProdIds.forEach(id => {
+          const hist = produktHistorikk[id];
+          if (hist?.data && hist.data.length >= 2) {
+            const sv = finnStartVerdiVedPeriode(hist.data, startDato);
+            const ev = hist.data[hist.data.length - 1].verdi;
+            if (sv) { const avk = ((ev / sv) - 1) * 100; const allok = pensumAllokering.find(a => a.id === id); if (allok) portAvk += avk * (allok.vekt / rapTotalVekt); }
+          }
+        });
+
+        const series = [{ name: 'Din portefølje', values: portValues, avkastning: portAvk }];
+        Object.entries(indeksMaps).forEach(([navn, im]) => {
+          const vals = sampledDatoer.map(dato => { const v = im.dMap.get(dato); return v !== undefined ? (v / im.startVerdi) * 100 : null; });
+          const sorted = Array.from(im.dMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+          const avk = sorted.length >= 2 ? ((sorted[sorted.length - 1][1] / im.startVerdi) - 1) * 100 : 0;
+          series.push({ name: navn, values: vals, avkastning: avk });
+        });
+
+        return { label: periodYears === 1 ? '1 år' : periodYears === 3 ? '3 år' : '5 år', labels, series };
+      };
+
+      const snapshotCharts = [1, 3, 5].map(y => buildSnapForPPTX(y)).filter(s => s.labels.length >= 2);
+
+      // Build drawdown chart data
+      const ddStartDato = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+      const portDagligDD = {};
+      const allePortDatoerDD = new Set();
+      rapValgteProdIds.forEach(id => {
+        const hist = produktHistorikk?.[id];
+        if (!hist?.data?.length) return;
+        portDagligDD[id] = {};
+        hist.data.forEach(d => { const dt = parseHistorikkDato(d.dato); if (dt && dt >= ddStartDato && erGyldigTall(d.verdi)) { allePortDatoerDD.add(d.dato); portDagligDD[id][d.dato] = d.verdi; } });
+      });
+      const portDDSorted = Array.from(allePortDatoerDD).sort();
+      const portStartDD = {};
+      rapValgteProdIds.forEach(id => { if (portDagligDD[id]) { const f = portDDSorted.find(d => portDagligDD[id][d] !== undefined); if (f) portStartDD[id] = portDagligDD[id][f]; } });
+      const portVektetDD = portDDSorted.map(dato => {
+        let vektet = 0; let totV = 0;
+        rapValgteProdIds.forEach(id => {
+          const v = portDagligDD[id]?.[dato]; const sv = portStartDD[id];
+          if (v !== undefined && sv) { const allok = pensumAllokering.find(a => a.id === id); if (allok) { vektet += (v / sv) * (allok.vekt / rapTotalVekt); totV += allok.vekt / rapTotalVekt; } }
+        });
+        return { dato, verdi: totV > 0 ? vektet / totV : null };
+      }).filter(d => d.verdi !== null);
+      let ppk = 0;
+      const portDDSerie = portVektetDD.map(d => { if (d.verdi > ppk) ppk = d.verdi; return { dato: d.dato, dd: ppk > 0 ? parseFloat((((d.verdi - ppk) / ppk) * 100).toFixed(2)) : 0 }; });
+
+      const INDEKS_DD_KEYS = { 'MSCI World': 'msci-world', 'Oslo Børs': 'oslo-bors' };
+      const indeksDDSeries = {};
+      Object.entries(INDEKS_DD_KEYS).forEach(([navn, feedKey]) => {
+        const hist = DATAFEED_INDEKS_HISTORIKK?.[feedKey];
+        if (!hist?.data) return;
+        const filtrert = hist.data.filter(d => { const dt = parseHistorikkDato(d.dato); return dt && dt >= ddStartDato && erGyldigTall(d.verdi); });
+        if (filtrert.length < 2) return;
+        let peak = filtrert[0].verdi;
+        indeksDDSeries[navn] = filtrert.map(d => { if (d.verdi > peak) peak = d.verdi; return { dato: d.dato, dd: peak > 0 ? parseFloat((((d.verdi - peak) / peak) * 100).toFixed(2)) : 0 }; });
+      });
+
+      // Merge into sampled drawdown chart
+      const allDDDatoer = new Set();
+      portDDSerie.forEach(d => allDDDatoer.add(d.dato));
+      Object.values(indeksDDSeries).forEach(s => s.forEach(d => allDDDatoer.add(d.dato)));
+      const ddAllSorted = Array.from(allDDDatoer).sort();
+      const ddSampleRate = Math.max(1, Math.floor(ddAllSorted.length / 100));
+      const ddSampled = ddAllSorted.filter((_, i) => i % ddSampleRate === 0 || i === ddAllSorted.length - 1);
+      const ddLabelInt = Math.max(1, Math.floor(ddSampled.length / 12));
+      const ddLabels = ddSampled.map((d, i) => i % ddLabelInt === 0 ? d : '');
+
+      const portDDMap = {}; portDDSerie.forEach(d => { portDDMap[d.dato] = d.dd; });
+      const ddSeriesArr = [{ name: 'Din portefølje', values: ddSampled.map(d => portDDMap[d] ?? null), maxDD: portDDSerie.length > 0 ? Math.min(...portDDSerie.map(d => d.dd)) : 0 }];
+      Object.entries(indeksDDSeries).forEach(([navn, serie]) => {
+        const m = {}; serie.forEach(d => { m[d.dato] = d.dd; });
+        ddSeriesArr.push({ name: navn, values: ddSampled.map(d => m[d] ?? null), maxDD: serie.length > 0 ? Math.min(...serie.map(d => d.dd)) : 0 });
+      });
+
+      const drawdownChart = ddSampled.length >= 5 ? { labels: ddLabels, series: ddSeriesArr } : null;
+
+      // Aggregated exposure
+      const alleProduktFlat = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+      const aksjeProdRap = pensumAllokering.filter(a => {
+        if (a.vekt <= 0) return false;
+        const p = alleProduktFlat.find(pp => pp.id === a.id);
+        if (p?.aktivatype === 'rente') return false;
+        if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
+        return true;
+      });
+      const totalAksjeVektRap = aksjeProdRap.reduce((s, a) => s + a.vekt, 0) || 1;
+      const aggregerRap = (key) => {
+        const sumMap = {};
+        aksjeProdRap.forEach(a => {
+          const eks = produktEksponering?.[a.id]?.[key];
+          if (!eks) return;
+          const relVekt = a.vekt / totalAksjeVektRap;
+          eks.forEach(row => { if (!sumMap[row.navn]) sumMap[row.navn] = 0; sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt; });
+        });
+        return Object.entries(sumMap).map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) })).sort((a, b) => b.vekt - a.vekt).slice(0, 10);
+      };
+      const aggregertEksponering = aksjeProdRap.length > 0 ? {
+        regioner: aggregerRap('regioner'),
+        sektorer: aggregerRap('sektorer'),
+        stil: aggregerRap('stil'),
+        beskrivelse: `Aksjedelen: ${aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}`
+      } : null;
+
+      // Build the PPTX payload (reuse same structure as handleGeneratePresentation)
+      const produktMap = alleProduktFlat.reduce((acc, p) => { if (p?.id) acc[p.id] = p; return acc; }, {});
+      const valgteIds = rapValgteProdIds;
+      const historikkTilEksport = valgteIds.reduce((acc, id) => {
+        const hist = produktHistorikk?.[id];
+        if (!hist || !Array.isArray(hist.data)) return acc;
+        acc[id] = { ...hist, data: hist.data.slice(-120) };
+        return acc;
+      }, {});
+      const pensumProdukterTilEksport = valgteIds.map(id => produktMap[id]).filter(Boolean).map(p => ({
+        id: p.id, navn: p.navn, aar2026: p.aar2026, aar2025: p.aar2025, aar2024: p.aar2024, aar2023: p.aar2023, aar2022: p.aar2022,
+        ...(produktRapportMeta?.[p.id] || {})
+      }));
+
+      const investerbarKapital = investertBelop !== null ? investertBelop : totalKapital;
+      const payload = {
+        rapportMode: true,
+        snapshotCharts,
+        drawdownChart,
+        aggregertEksponering,
+        kundeNavn: kundeNavn || 'Investor',
+        totalKapital: investerbarKapital,
+        totalFormue: totalKapital,
+        investerbarKapital,
+        risikoProfil: risikoprofil,
+        horisont,
+        vektetAvkastning,
+        allokering: aktiveAktiva.map(a => ({ ...a, belop: ((a.vekt || 0) / 100) * investerbarKapital })),
+        produkterIBruk: valgteIds,
+        pensumProdukter: pensumProdukterTilEksport,
+        pensumAllokering: pensumAllokering.filter(p => valgteIds.includes(p.id)),
+        produktEksponering: valgteIds.reduce((acc, id) => { if (produktEksponering?.[id]) acc[id] = produktEksponering[id]; return acc; }, {}),
+        produktHistorikk: historikkTilEksport,
+        kundeinfo: { totalFormue: totalKapital, investerbarKapital, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde },
+        eksponering: { sektorer: aggregertPensumEksponering?.sektorer || [], regioner: aggregertPensumEksponering?.regioner || [] },
+        historiskPortefolje: beregnPensumHistorikk,
+        pensumForventetAvkastning,
+        pensumLikviditet,
+        aktivafordeling: pensumAktivafordeling,
+        scenarioParams,
+        scenarioData: [],
+        verdiutvikling
+      };
+
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        let melding = await response.text();
+        try { const parsed = JSON.parse(melding); if (parsed?.error) melding = parsed.error; } catch (_) {}
+        throw new Error(melding || 'Ukjent feil fra server.');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Pensum_Kunderapport_${(kundeNavn || 'Kunde').replace(/\s+/g, '_')}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Feil ved generering av PowerPoint: ' + err.message);
+    } finally {
+      setRapportPptxLoading(false);
+    }
   };
 
   // Kostnadsanalyse - beregn "break-even" avkastning og formuesutvikling uten investering
@@ -5475,13 +5709,23 @@ export default function PensumPrognoseModell() {
 
             {/* === NEDLASTING === */}
             <div className="flex flex-col items-center gap-4 no-print">
-              <button onClick={handleDownloadHTML} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Last ned rapport
-              </button>
-              <div className="bg-blue-50 rounded-lg p-4 max-w-md text-center">
+              <div className="flex gap-4">
+                <button onClick={handleDownloadHTML} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  Last ned HTML-rapport
+                </button>
+                <button onClick={handleGenerateRapportPPTX} disabled={rapportPptxLoading} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: rapportPptxLoading ? '#6B7280' : PENSUM_COLORS.salmon }}>
+                  {rapportPptxLoading ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                  )}
+                  {rapportPptxLoading ? 'Genererer...' : 'Last ned PowerPoint'}
+                </button>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4 max-w-lg text-center">
                 <p className="text-sm text-gray-700 font-medium mb-1">Lagre som PDF:</p>
-                <p className="text-xs text-gray-600">1. Last ned filen og åpne den i nettleseren</p>
+                <p className="text-xs text-gray-600">1. Last ned HTML-rapporten og åpne den i nettleseren</p>
                 <p className="text-xs text-gray-600">2. Trykk <span className="font-mono bg-gray-200 px-1 rounded">Ctrl+P</span> (Windows) eller <span className="font-mono bg-gray-200 px-1 rounded">Cmd+P</span> (Mac)</p>
                 <p className="text-xs text-gray-600">3. Velg "Lagre som PDF" som skriver</p>
               </div>

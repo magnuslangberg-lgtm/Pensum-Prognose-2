@@ -414,7 +414,11 @@ function normalizePayload(payload = {}) {
     scenarioParams,
     verdiutvikling,
     pensumForventetAvkastning,
-    pensumLikviditet
+    pensumLikviditet,
+    rapportMode: !!payload.rapportMode,
+    snapshotCharts: payload.snapshotCharts || [],
+    drawdownChart: payload.drawdownChart || null,
+    aggregertEksponering: payload.aggregertEksponering || null
   };
 }
 
@@ -1009,8 +1013,98 @@ function buildDeck(payload = {}) {
     }
   }
 
-  // 7 Scenarioanalyse
-  if (d.scenarioData.length > 0) {
+  // 7 Rapport-modus: indeksert avkastning + drawdown, ellers scenarioanalyse
+  if (d.rapportMode && d.snapshotCharts.length > 0) {
+    // Indexed performance slides (1yr, 3yr, 5yr)
+    const SNAP_CHART_COLORS = [COLORS.navy, COLORS.blue, COLORS.salmon, COLORS.muted];
+    d.snapshotCharts.forEach((snap) => {
+      if (!snap.labels || snap.labels.length < 2) return;
+      const sl = pptx.addSlide();
+      addChrome(sl, page++, `Siste ${snap.label}`);
+      addTitle(sl, `Porteføljeavkastning — siste ${snap.label}`, 'Indeksert til 100 ved periodens start, sammenlignet med referanseindekser');
+
+      // Return summary boxes
+      const serieNames = snap.series.map(s => s.name);
+      const boxW = Math.min(3.0, 11.4 / serieNames.length);
+      snap.series.forEach((serie, si) => {
+        const avk = serie.avkastning;
+        const isPort = serie.name === 'Din portefølje';
+        const bx = 0.95 + si * (boxW + 0.15);
+        const bgColor = isPort ? COLORS.navy : COLORS.softBlue;
+        const txtColor = isPort ? COLORS.white : COLORS.navy;
+        const valColor = avk >= 0 ? (isPort ? '86EFAC' : COLORS.green) : COLORS.danger;
+        sl.addShape('roundRect', { x: bx, y: 1.85, w: boxW, h: 0.75, rectRadius: 0.06, fill: { color: bgColor }, line: { color: isPort ? COLORS.navy : COLORS.line, pt: 1 } });
+        sl.addText(serie.name, { x: bx, y: 1.9, w: boxW, h: 0.18, fontSize: 8, color: isPort ? '93C5FD' : COLORS.muted, align: 'center', bold: true });
+        sl.addText(`${avk >= 0 ? '+' : ''}${avk.toFixed(1)}%`, { x: bx, y: 2.12, w: boxW, h: 0.28, fontSize: 16, color: valColor, align: 'center', bold: true });
+      });
+
+      // Line chart
+      const chartSeries = snap.series.map((serie) => ({
+        name: serie.name,
+        labels: snap.labels,
+        values: serie.values,
+      }));
+      sl.addChart('line', chartSeries, {
+        x: 0.65, y: 2.85, w: 11.7, h: 3.9,
+        showLegend: true, legendPos: 'b', legendFontSize: 8,
+        showTitle: false, lineSize: 2, lineSmooth: false, showValue: false,
+        catAxisLabelFontSize: 7, catAxisLabelColor: COLORS.muted,
+        catAxisOrientation: 'minMax',
+        valAxisLabelFontSize: 8, valAxisLabelColor: COLORS.muted, valAxisNumFmt: '0',
+        catGridLine: { style: 'none' },
+        valGridLine: { color: COLORS.line, style: 'dash', size: 0.5 },
+        chartColors: snap.series.map((_, i) => SNAP_CHART_COLORS[i % SNAP_CHART_COLORS.length]),
+        plotArea: { fill: { color: COLORS.white }, border: { color: COLORS.line, pt: 0.5 } },
+      });
+    });
+
+    // Drawdown slide
+    if (d.drawdownChart && d.drawdownChart.labels && d.drawdownChart.labels.length >= 5) {
+      const ddSlide = pptx.addSlide();
+      addChrome(ddSlide, page++, 'Nedsiderisiko');
+      addTitle(ddSlide, 'Nedsiderisiko — siste 5 år', 'Drawdown fra løpende toppverdi (0% = all-time high i perioden)');
+
+      // Max drawdown summary boxes
+      const DD_COLORS = [COLORS.teal, COLORS.navy, COLORS.salmon];
+      d.drawdownChart.series.forEach((serie, si) => {
+        const bx = 0.95 + si * 3.2;
+        const isPort = serie.name === 'Din portefølje';
+        ddSlide.addShape('roundRect', { x: bx, y: 1.85, w: 2.8, h: 0.65, rectRadius: 0.06, fill: { color: isPort ? COLORS.softRed : COLORS.light }, line: { color: isPort ? 'FCA5A5' : COLORS.line, pt: 1 } });
+        ddSlide.addText(serie.name, { x: bx, y: 1.88, w: 2.8, h: 0.16, fontSize: 8, color: COLORS.muted, align: 'center', bold: true });
+        ddSlide.addText(`${serie.maxDD.toFixed(1)}%`, { x: bx, y: 2.08, w: 2.8, h: 0.25, fontSize: 16, color: COLORS.danger, align: 'center', bold: true });
+      });
+
+      const ddChartSeries = d.drawdownChart.series.map((serie) => ({
+        name: serie.name,
+        labels: d.drawdownChart.labels,
+        values: serie.values,
+      }));
+      ddSlide.addChart('line', ddChartSeries, {
+        x: 0.65, y: 2.75, w: 11.7, h: 4.0,
+        showLegend: true, legendPos: 'b', legendFontSize: 8,
+        showTitle: false, lineSize: 2, lineSmooth: false, showValue: false,
+        catAxisLabelFontSize: 7, catAxisLabelColor: COLORS.muted,
+        valAxisLabelFontSize: 8, valAxisLabelColor: COLORS.muted, valAxisNumFmt: '0.0"%"',
+        catGridLine: { style: 'none' },
+        valGridLine: { color: COLORS.line, style: 'dash', size: 0.5 },
+        chartColors: d.drawdownChart.series.map((_, i) => DD_COLORS[i % DD_COLORS.length]),
+        plotArea: { fill: { color: COLORS.white }, border: { color: COLORS.line, pt: 0.5 } },
+      });
+    }
+
+    // Aggregated exposure slide (rapport mode)
+    if (d.aggregertEksponering) {
+      const ae = d.aggregertEksponering;
+      if ((ae.regioner && ae.regioner.length > 0) || (ae.sektorer && ae.sektorer.length > 0)) {
+        const aeSlide = pptx.addSlide();
+        addChrome(aeSlide, page++, 'Porteføljeeksponering');
+        addTitle(aeSlide, 'Aggregert porteføljeeksponering', ae.beskrivelse || 'Vektet eksponering for den samlede porteføljen');
+        if (ae.regioner && ae.regioner.length > 0) addBarRows(aeSlide, 'Regioner', ae.regioner, 0.95, 1.95, 5.6, 2.4, COLORS.teal);
+        if (ae.sektorer && ae.sektorer.length > 0) addBarRows(aeSlide, 'Sektorer', ae.sektorer, 6.8, 1.95, 5.55, 2.4, COLORS.blue);
+        if (ae.stil && ae.stil.length > 0) addBarRows(aeSlide, 'Stil', ae.stil, 0.95, 4.6, 5.6, 2.0, COLORS.gold);
+      }
+    }
+  } else if (d.scenarioData.length > 0) {
     const s = pptx.addSlide();
     addChrome(s, page++, 'Scenarioanalyse');
     addTitle(s, `Scenarioanalyse — ${d.horisont} års horisont`, 'Forventet, optimistisk og pessimistisk utvikling');
