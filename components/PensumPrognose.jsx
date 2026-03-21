@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { BarChart, Bar, ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
@@ -69,8 +69,12 @@ export default function PensumPrognoseModell() {
   const [eksterneFond, setEksterneFond] = useState(null);
   const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
   const [fondSok, setFondSok] = useState('');
+  const [fondSokDebounced, setFondSokDebounced] = useState('');
+  const fondSokTimerRef = useRef(null);
   const [fondKategoriFilter, setFondKategoriFilter] = useState('');
   const [valgteFond, setValgteFond] = useState([]);
+  const [visPensumIFondComp, setVisPensumIFondComp] = useState([]);
+  const [visPortefoljeIFondComp, setVisPortefoljeIFondComp] = useState(false);
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
@@ -122,6 +126,14 @@ export default function PensumPrognoseModell() {
   const [adminMelding, setAdminMelding] = useState('');
   const [adminBrukere, setAdminBrukere] = useState(null);
   const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
+
+  // Debounce fond search to avoid lag on each keystroke
+  const handleFondSokChange = useCallback((e) => {
+    const val = e.target.value;
+    setFondSok(val);
+    if (fondSokTimerRef.current) clearTimeout(fondSokTimerRef.current);
+    fondSokTimerRef.current = setTimeout(() => setFondSokDebounced(val), 250);
+  }, []);
 
   const storageGet = async (key) => {
     if (typeof window === 'undefined') return null;
@@ -3835,244 +3847,6 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
-                {/* Interaktiv historikkgraf */}
-                <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                    <h4 className="text-lg font-semibold text-white">Historisk utvikling - Pensum-løsninger</h4>
-                    <div className="flex items-center gap-2">
-                      {['1y', '3y', '5y', 'max'].map(periode => (
-                        <button
-                          key={periode}
-                          onClick={() => setHistorikkPeriode(periode)}
-                          className={"px-3 py-1 rounded text-xs font-medium transition-colors " + (historikkPeriode === periode ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}
-                        >
-                          {periode === '1y' ? '1 år' : periode === '3y' ? '3 år' : periode === '5y' ? '5 år' : 'Maks'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    {/* Produktvelger */}
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {Object.keys(produktHistorikk).map(produktId => {
-                        const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
-                        const erValgt = valgteProdukterHistorikk.includes(produktId);
-                        const farger = {
-                          'global-core-active': PENSUM_COLORS.navy,
-                          'global-edge': PENSUM_COLORS.lightBlue,
-                          'basis': PENSUM_COLORS.salmon,
-                          'global-hoyrente': PENSUM_COLORS.teal,
-                          'nordisk-hoyrente': PENSUM_COLORS.purple,
-                          'norge-a': PENSUM_COLORS.red,
-                          'energy-a': PENSUM_COLORS.gold,
-                          'banking-d': PENSUM_COLORS.midBlue,
-                          'financial-d': PENSUM_COLORS.gray
-                        };
-                        return (
-                          <button
-                            key={produktId}
-                            onClick={() => {
-                              if (erValgt) {
-                                setValgteProdukterHistorikk(prev => prev.filter(id => id !== produktId));
-                              } else {
-                                setValgteProdukterHistorikk(prev => [...prev, produktId]);
-                              }
-                            }}
-                            className={"px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all " + (erValgt ? "text-white" : "bg-white hover:bg-gray-50")}
-                            style={{ 
-                              borderColor: farger[produktId] || '#999',
-                              backgroundColor: erValgt ? farger[produktId] : undefined,
-                              color: erValgt ? 'white' : farger[produktId]
-                            }}
-                          >
-                            {produktInfo?.navn?.replace('Pensum ', '') || produktId}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Graf */}
-                    <div className="h-80">
-                      {(() => {
-                        // Filtrer data basert på periode
-                        const periodeFilter = {
-                          '1y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          '3y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          '5y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          'max': new Date(2015, 0, 1)
-                        };
-                        const startDato = periodeFilter[historikkPeriode];
-                        
-                        // Bygg data for grafen med daglige datapunkter
-                        const chartData = [];
-                        const alleDatoer = new Set();
-                        const produktDataMap = {};
-
-                        valgteProdukterHistorikk.forEach(produktId => {
-                          const hist = produktHistorikk[produktId];
-                          if (hist && hist.data) {
-                            const dataMap = new Map();
-                            hist.data.forEach(d => {
-                              const dato = parseHistorikkDato(d.dato);
-                              if (dato && dato >= startDato) {
-                                alleDatoer.add(d.dato);
-                                dataMap.set(d.dato, d.verdi);
-                              }
-                            });
-                            const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                            produktDataMap[produktId] = { dataMap, startVerdi };
-                          }
-                        });
-
-                        const sorterteDatoer = Array.from(alleDatoer).sort();
-
-                        sorterteDatoer.forEach(dato => {
-                          const punkt = { dato };
-                          valgteProdukterHistorikk.forEach(produktId => {
-                            const pm = produktDataMap[produktId];
-                            if (pm) {
-                              const verdi = pm.dataMap.get(dato);
-                              if (verdi !== undefined) {
-                                punkt[produktId] = ((verdi / pm.startVerdi) - 1) * 100;
-                              }
-                            }
-                          });
-                          chartData.push(punkt);
-                        });
-                        
-                        const farger = {
-                          'global-core-active': PENSUM_COLORS.navy,
-                          'global-edge': PENSUM_COLORS.lightBlue,
-                          'basis': PENSUM_COLORS.salmon,
-                          'global-hoyrente': PENSUM_COLORS.teal,
-                          'nordisk-hoyrente': PENSUM_COLORS.purple,
-                          'norge-a': PENSUM_COLORS.red,
-                          'energy-a': PENSUM_COLORS.gold,
-                          'banking-d': PENSUM_COLORS.midBlue,
-                          'financial-d': PENSUM_COLORS.gray
-                        };
-                        
-                        if (chartData.length === 0 || valgteProdukterHistorikk.length === 0) {
-                          return (
-                            <div className="h-full flex items-center justify-center text-gray-500">
-                              Velg produkter for å se historisk utvikling
-                            </div>
-                          );
-                        }
-                        
-                        return (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis
-                                dataKey="dato"
-                                tick={{ fontSize: 10, fill: '#6B7280' }}
-                                tickFormatter={(dato) => {
-                                  const parsed = parseHistorikkDato(dato);
-                                  if (!parsed) return '';
-                                  const m = parsed.getMonth() + 1;
-                                  const d = parsed.getDate();
-                                  if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}`;
-                                  return '';
-                                }}
-                                interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 10, fill: '#6B7280' }}
-                                tickFormatter={(val) => val.toFixed(1).replace('.', ',') + '%'}
-                                domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                labelFormatter={(dato) => formatHistorikkEtikett(dato)}
-                                formatter={(value, name) => {
-                                  const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === name);
-                                  return [value.toFixed(1).replace('.', ',') + '%', produktInfo?.navn?.replace('Pensum ', '') || name];
-                                }}
-                              />
-                              <Legend 
-                                verticalAlign="bottom"
-                                height={36}
-                                formatter={(value) => {
-                                  const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === value);
-                                  return produktInfo?.navn?.replace('Pensum ', '') || value;
-                                }}
-                              />
-                              <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
-                              {valgteProdukterHistorikk.map(produktId => (
-                                <Line
-                                  key={produktId}
-                                  type="monotone"
-                                  dataKey={produktId}
-                                  stroke={farger[produktId] || '#999'}
-                                  strokeWidth={1.8}
-                                  dot={false}
-                                  activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
-                                />
-                              ))}
-                            </LineChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
-                    </div>
-                    
-                    {/* Avkastningstabell for valgt periode */}
-                    {valgteProdukterHistorikk.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                        {valgteProdukterHistorikk.map(produktId => {
-                          const hist = produktHistorikk[produktId];
-                          const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
-                          const farger = {
-                            'global-core-active': PENSUM_COLORS.navy,
-                            'global-edge': PENSUM_COLORS.lightBlue,
-                            'basis': PENSUM_COLORS.salmon,
-                            'global-hoyrente': PENSUM_COLORS.teal,
-                            'nordisk-hoyrente': PENSUM_COLORS.purple,
-                            'norge-a': PENSUM_COLORS.red,
-                            'energy-a': PENSUM_COLORS.gold
-                          };
-                          
-                          if (!hist || !hist.data || hist.data.length < 2) return null;
-                          
-                          // Beregn avkastning for valgt periode
-                          const periodeFilter = {
-                            '1y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            '3y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            '5y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            'max': new Date(2015, 0, 1)
-                          };
-                          const startDato = periodeFilter[historikkPeriode];
-                          
-                          const sluttVerdi = hist.data[hist.data.length - 1].verdi;
-                          const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                          const avkastning = ((sluttVerdi / startVerdi) - 1) * 100;
-                          
-                          return (
-                            <div key={produktId} className="p-3 rounded-lg border-2" style={{ borderColor: farger[produktId] }}>
-                              <p className="text-xs font-medium truncate" style={{ color: farger[produktId] }}>
-                                {produktInfo?.navn?.replace('Pensum ', '')}
-                              </p>
-                              <p className={"text-lg font-bold " + (avkastning >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                {avkastning >= 0 ? '+' : ''}{avkastning.toFixed(1)}%
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {historikkPeriode === '1y' ? 'Siste 1 år' : historikkPeriode === '3y' ? 'Siste 3 år' : historikkPeriode === '5y' ? 'Siste 5 år' : 'Total'}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {/* Disclaimer */}
-                    <div className="mt-4 text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-                      <strong>Viktig informasjon om avkastning:</strong> Historikk viser prosentvis avkastning fra start av valgt periode.
-                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes daglig ut fra kursendringer mellom daglige datapunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon.
-                      Historisk avkastning er ingen garanti for fremtidig avkastning.
-                    </div>
-                  </div>
-                </div>
-
                 {/* Tabell med alle produkter */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -5362,7 +5136,7 @@ export default function PensumPrognoseModell() {
                 const kategorier = eksterneFond ? [...new Set(eksterneFond.map(f => f.cat).filter(Boolean))].sort() : [];
 
                 // Filter and search funds
-                const sokLower = fondSok.toLowerCase().trim();
+                const sokLower = fondSokDebounced.toLowerCase().trim();
                 const filtrerteFond = eksterneFond ? eksterneFond.filter(f => {
                   if (fondKategoriFilter && f.cat !== fondKategoriFilter) return false;
                   if (sokLower.length < 2) return false;
@@ -5371,16 +5145,70 @@ export default function PensumPrognoseModell() {
 
                 // Pensum products for comparison
                 const pensumProdListe = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer];
-                const pensumIPortefolje = pensumAllokering.filter(a => a.vekt > 0).map(a => {
-                  const p = pensumProdListe.find(pr => pr.id === a.id);
-                  return p ? { ...p, vekt: a.vekt } : null;
+
+                // Map Pensum products to fond-like format for chart data
+                const PENSUM_FOND_FARGER = {
+                  'basis': PENSUM_COLORS.salmon, 'financial-d': PENSUM_COLORS.gray,
+                  'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue,
+                  'energy-a': PENSUM_COLORS.gold, 'global-hoyrente': PENSUM_COLORS.teal,
+                  'banking-d': PENSUM_COLORS.midBlue, 'nordisk-hoyrente': PENSUM_COLORS.purple,
+                  'norge-a': PENSUM_COLORS.red
+                };
+
+                // Beregn periodeavkastning fra historikk for et Pensum-produkt
+                const beregnPensumPeriodeAvk = (produktId, periodeKey) => {
+                  const hist = produktHistorikk?.[produktId];
+                  if (!hist?.data?.length) return null;
+                  const now = RAPPORT_DATO_OBJEKT;
+                  let startDato;
+                  if (periodeKey === 'r1m') startDato = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                  else if (periodeKey === 'r3m') startDato = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                  else if (periodeKey === 'r6m') startDato = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                  else if (periodeKey === 'rytd') startDato = new Date(now.getFullYear(), 0, 1);
+                  else if (periodeKey === 'r1y') startDato = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                  else if (periodeKey === 'r3y') startDato = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+                  else if (periodeKey === 'r5y') startDato = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+                  else if (periodeKey === 'r10y') startDato = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+                  else return null;
+                  const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+                  const sluttVerdi = hist.data[hist.data.length - 1]?.verdi;
+                  if (!startVerdi || !sluttVerdi) return null;
+                  const totalReturn = ((sluttVerdi / startVerdi) - 1) * 100;
+                  // Annualiser for perioder >= 3 år
+                  if (periodeKey === 'r3y' || periodeKey === 'r5y' || periodeKey === 'r10y') {
+                    const years = periodeKey === 'r3y' ? 3 : periodeKey === 'r5y' ? 5 : 10;
+                    return parseFloat(((Math.pow(sluttVerdi / startVerdi, 1 / years) - 1) * 100).toFixed(2));
+                  }
+                  return parseFloat(totalReturn.toFixed(2));
+                };
+
+                // Beregn vektet porteføljeavkastning for en periode
+                const beregnPortefoljeAvk = (periodeKey) => {
+                  const vektede = pensumAllokering.filter(a => a.vekt > 0);
+                  if (vektede.length === 0) return null;
+                  const totalVekt = vektede.reduce((s, a) => s + a.vekt, 0) || 1;
+                  let vektetAvk = 0; let harData = false;
+                  vektede.forEach(a => {
+                    const avk = beregnPensumPeriodeAvk(a.id, periodeKey);
+                    if (avk !== null) { vektetAvk += avk * (a.vekt / totalVekt); harData = true; }
+                  });
+                  return harData ? parseFloat(vektetAvk.toFixed(2)) : null;
+                };
+
+                // Samlet liste av alle serier å vise i grafene
+                const pensumValgte = visPensumIFondComp.map(id => {
+                  const p = pensumProdListe.find(pr => pr.id === id);
+                  return p ? { id, navn: p.navn, farge: PENSUM_FOND_FARGER[id] || '#999' } : null;
                 }).filter(Boolean);
+                const harPortefolje = visPortefoljeIFondComp && pensumAllokering.some(a => a.vekt > 0);
 
                 // Build comparison data
                 const FOND_FARGER = [PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.lightBlue, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.navy, PENSUM_COLORS.red, PENSUM_COLORS.midBlue];
 
+                const harNoeAVise = valgteFond.length > 0 || pensumValgte.length > 0 || harPortefolje;
+
                 const byggAvkastningsdata = () => {
-                  if (valgteFond.length === 0) return [];
+                  if (!harNoeAVise) return [];
                   const perioder = [
                     { key: 'r1m', label: '1 mnd' },
                     { key: 'r3m', label: '3 mnd' },
@@ -5393,32 +5221,58 @@ export default function PensumPrognoseModell() {
                   ];
                   return perioder.map(p => {
                     const punkt = { periode: p.label };
-                    valgteFond.forEach((f, i) => {
+                    valgteFond.forEach((f) => {
                       if (f[p.key] !== undefined) punkt[f.n] = parseFloat(f[p.key].toFixed(2));
                     });
-                    // Add Pensum portfolio products
-                    pensumIPortefolje.forEach(pp => {
-                      const mappedKey = { r1m: null, r3m: null, r6m: null, rytd: null, r1y: null, r3y: null, r5y: null, r10y: null };
-                      // Map from Pensum product annual data where available
-                      if (p.key === 'rytd' && pp.aar2026 !== undefined) punkt[pp.navn] = parseFloat(Number(pp.aar2026).toFixed(2));
+                    // Pensum-produkter
+                    pensumValgte.forEach(({ id, navn }) => {
+                      const avk = beregnPensumPeriodeAvk(id, p.key);
+                      if (avk !== null) punkt[navn] = avk;
                     });
+                    // Vektet portefølje
+                    if (harPortefolje) {
+                      const avk = beregnPortefoljeAvk(p.key);
+                      if (avk !== null) punkt['Din portefølje'] = avk;
+                    }
                     return punkt;
                   });
                 };
 
                 const byggAarsdata = () => {
-                  if (valgteFond.length === 0) return [];
+                  if (!harNoeAVise) return [];
                   const aar = [
                     { key: 'a19', label: '2019' }, { key: 'a20', label: '2020' },
                     { key: 'a21', label: '2021' }, { key: 'a22', label: '2022' },
                     { key: 'a23', label: '2023' }, { key: 'a24', label: '2024' },
                     { key: 'a25', label: '2025' },
                   ];
+                  const pensumAarMap = { a22: 'aar2022', a23: 'aar2023', a24: 'aar2024', a25: 'aar2025' };
                   return aar.map(a => {
                     const punkt = { periode: a.label };
                     valgteFond.forEach(f => {
                       if (f[a.key] !== undefined) punkt[f.n] = parseFloat(f[a.key].toFixed(2));
                     });
+                    // Pensum-produkter kalenderår
+                    const pensumFelt = pensumAarMap[a.key];
+                    if (pensumFelt) {
+                      pensumValgte.forEach(({ id, navn }) => {
+                        const p = pensumProdListe.find(pr => pr.id === id);
+                        const v = p ? hentAarsverdiForProdukt(p, pensumFelt, Number(a.label)) : null;
+                        if (Number.isFinite(v)) punkt[navn] = parseFloat(v.toFixed(2));
+                      });
+                      // Vektet portefølje kalenderår
+                      if (harPortefolje) {
+                        const vektede = pensumAllokering.filter(al => al.vekt > 0);
+                        const totalVekt = vektede.reduce((s, al) => s + al.vekt, 0) || 1;
+                        let vektet = 0; let harV = false;
+                        vektede.forEach(al => {
+                          const pp = pensumProdListe.find(pr => pr.id === al.id);
+                          const v = pp ? hentAarsverdiForProdukt(pp, pensumFelt, Number(a.label)) : null;
+                          if (Number.isFinite(v)) { vektet += v * (al.vekt / totalVekt); harV = true; }
+                        });
+                        if (harV) punkt['Din portefølje'] = parseFloat(vektet.toFixed(2));
+                      }
+                    }
                     return punkt;
                   });
                 };
@@ -5464,7 +5318,17 @@ export default function PensumPrognoseModell() {
                 const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdata() : null;
                 const sektorData = fondSammenligningVisning === 'sektor' ? byggSektordata() : null;
                 const regionData = fondSammenligningVisning === 'region' ? byggRegiondata() : null;
+                // Alle serienavn og farger for grafene
                 const fondNavn = valgteFond.map(f => f.n);
+                const pensumNavn = pensumValgte.map(p => p.navn);
+                const portNavn = harPortefolje ? ['Din portefølje'] : [];
+                const alleSerieNavn = [...fondNavn, ...pensumNavn, ...portNavn];
+                const getSerieColor = (name, idx) => {
+                  if (name === 'Din portefølje') return '#1B3A5F';
+                  const pensumMatch = pensumValgte.find(p => p.navn === name);
+                  if (pensumMatch) return pensumMatch.farge;
+                  return FOND_FARGER[idx % FOND_FARGER.length];
+                };
 
                 return (
                   <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -5478,7 +5342,7 @@ export default function PensumPrognoseModell() {
                         <div className="flex-1 relative">
                           <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           <input
-                            type="text" value={fondSok} onChange={e => setFondSok(e.target.value)}
+                            type="text" value={fondSok} onChange={handleFondSokChange}
                             placeholder={eksterneFondLoading ? 'Laster fond...' : 'Søk på fondsnavn, ISIN eller forvalter...'}
                             disabled={eksterneFondLoading}
                             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none"
@@ -5545,6 +5409,38 @@ export default function PensumPrognoseModell() {
                         </div>
                       )}
 
+                      {/* Pensum-løsninger og portefølje som sammenlignbare */}
+                      <div className="mb-4 p-4 rounded-lg border border-gray-100" style={{ backgroundColor: '#FAFBFC' }}>
+                        <div className="mb-3">
+                          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Din portefølje</div>
+                          <button
+                            onClick={() => setVisPortefoljeIFondComp(prev => !prev)}
+                            className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all " + (visPortefoljeIFondComp ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
+                            style={visPortefoljeIFondComp ? { backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' } : { color: '#1B3A5F' }}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: visPortefoljeIFondComp ? 'white' : '#1B3A5F' }}></span>
+                            Din portefølje (vektet)
+                          </button>
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums enkeltløsninger</div>
+                          <div className="flex flex-wrap gap-2">
+                            {pensumProdListe.map(p => {
+                              const aktiv = visPensumIFondComp.includes(p.id);
+                              const farge = PENSUM_FOND_FARGER[p.id] || '#999';
+                              return (
+                                <button key={p.id}
+                                  onClick={() => setVisPensumIFondComp(prev => aktiv ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                                  className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
+                                  style={aktiv ? { backgroundColor: farge, borderColor: farge } : {}}>
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : farge }}></span>
+                                  {p.navn.replace('Pensum ', '')}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Valgte fond chips */}
                       {valgteFond.length > 0 && (
                         <div className="mb-5">
@@ -5567,7 +5463,7 @@ export default function PensumPrognoseModell() {
                       )}
 
                       {/* Visningsvalg tabs */}
-                      {valgteFond.length > 0 && (
+                      {harNoeAVise && (
                         <>
                           <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
                             {[
@@ -5595,8 +5491,8 @@ export default function PensumPrognoseModell() {
                                   formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
                                 <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                                 <ReferenceLine y={0} stroke="#9CA3AF" />
-                                {fondNavn.map((n, i) => (
-                                  <Bar key={n} dataKey={n} fill={FOND_FARGER[i % FOND_FARGER.length]} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                                {alleSerieNavn.map((n, i) => (
+                                  <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
                                 ))}
                               </BarChart>
                             </ResponsiveContainer>
@@ -5613,8 +5509,8 @@ export default function PensumPrognoseModell() {
                                   formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
                                 <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                                 <ReferenceLine y={0} stroke="#9CA3AF" />
-                                {fondNavn.map((n, i) => (
-                                  <Bar key={n} dataKey={n} fill={FOND_FARGER[i % FOND_FARGER.length]} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                                {alleSerieNavn.map((n, i) => (
+                                  <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
                                 ))}
                               </BarChart>
                             </ResponsiveContainer>
@@ -5630,8 +5526,8 @@ export default function PensumPrognoseModell() {
                                 <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                                   formatter={(v) => [`${v.toFixed(1)}%`]} />
                                 <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                                {fondNavn.map((n, i) => (
-                                  <Bar key={n} dataKey={n} fill={FOND_FARGER[i % FOND_FARGER.length]} radius={[0, 3, 3, 0]} maxBarSize={20} />
+                                {alleSerieNavn.map((n, i) => (
+                                  <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
                                 ))}
                               </BarChart>
                             </ResponsiveContainer>
@@ -5647,8 +5543,8 @@ export default function PensumPrognoseModell() {
                                 <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                                   formatter={(v) => [`${v.toFixed(1)}%`]} />
                                 <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                                {fondNavn.map((n, i) => (
-                                  <Bar key={n} dataKey={n} fill={FOND_FARGER[i % FOND_FARGER.length]} radius={[0, 3, 3, 0]} maxBarSize={20} />
+                                {alleSerieNavn.map((n, i) => (
+                                  <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
                                 ))}
                               </BarChart>
                             </ResponsiveContainer>
@@ -5708,7 +5604,7 @@ export default function PensumPrognoseModell() {
                       )}
 
                       {/* Empty state */}
-                      {valgteFond.length === 0 && !eksterneFondLoading && (
+                      {!harNoeAVise && !eksterneFondLoading && (
                         <div className="h-48 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
                           <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           <p className="text-sm">Søk og velg fond for å sammenligne</p>
