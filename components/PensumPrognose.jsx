@@ -4751,7 +4751,7 @@ export default function PensumPrognoseModell() {
             const p = pensumProdListe.find(pr => pr.id === id);
             return p ? { id, navn: p.navn, farge: PENSUM_FOND_FARGER[id] || '#999' } : null;
           }).filter(Boolean);
-          const harPortefolje = visPortefoljeIFondComp && pensumAllokering.some(a => a.vekt > 0);
+          const harPortefolje = visPortefoljeScen && pensumAllokering.some(a => a.vekt > 0);
 
           const harNoeAVise = valgteFond.length > 0 || pensumValgte.length > 0 || harPortefolje;
           const harFondEllerKonk = valgteFond.length > 0 || harKonkurrentPortefolje;
@@ -4930,6 +4930,69 @@ export default function PensumPrognoseModell() {
             const indeksCfgTab = INDEKS_CONFIG[name];
             if (indeksCfgTab) return indeksCfgTab.farge;
             return FOND_FARGER[idx % FOND_FARGER.length];
+          };
+
+          // Beregn nøkkeltall (risikometrikker) fra månedlige sammenligningsdata
+          const byggNokkeltall = () => {
+            if (sammenligningsData.length < 3) return [];
+            return alleSerieNavnTab.map(navn => {
+              // Hent verdier fra sammenligningsdata
+              const verdier = sammenligningsData
+                .map(d => d[navn])
+                .filter(v => v !== undefined && v !== null);
+              if (verdier.length < 3) return null;
+
+              // Beregn månedlige avkastninger (differanser i indekserte verdier)
+              const maanedligAvk = [];
+              for (let i = 1; i < verdier.length; i++) {
+                maanedligAvk.push(verdier[i] - verdier[i - 1]);
+              }
+              if (maanedligAvk.length === 0) return null;
+
+              // Total avkastning
+              const totalAvk = verdier[verdier.length - 1];
+
+              // Annualisert avkastning
+              const antallAar = maanedligAvk.length / 12;
+              const annualisert = antallAar >= 1
+                ? ((Math.pow(1 + totalAvk / 100, 1 / antallAar) - 1) * 100)
+                : totalAvk;
+
+              // Volatilitet (annualisert standardavvik)
+              const gjennomsnitt = maanedligAvk.reduce((s, v) => s + v, 0) / maanedligAvk.length;
+              const varians = maanedligAvk.reduce((s, v) => s + Math.pow(v - gjennomsnitt, 2), 0) / maanedligAvk.length;
+              const maanedligVol = Math.sqrt(varians);
+              const annualVol = maanedligVol * Math.sqrt(12);
+
+              // Sharpe ratio (risikofri rente ~ 3%)
+              const risikofriRente = 3;
+              const sharpe = annualVol > 0 ? (annualisert - risikofriRente) / annualVol : 0;
+
+              // Max drawdown
+              let maxDD = 0;
+              let peak = verdier[0];
+              for (let i = 1; i < verdier.length; i++) {
+                if (verdier[i] > peak) peak = verdier[i];
+                const dd = peak > 0 ? ((verdier[i] - peak) / (100 + peak)) * 100 : 0;
+                if (dd < maxDD) maxDD = dd;
+              }
+
+              // Beste/verste måned
+              const besteMaaned = Math.max(...maanedligAvk);
+              const versteMaaned = Math.min(...maanedligAvk);
+
+              return {
+                navn,
+                farge: getSerieColor(navn, alleSerieNavnTab.indexOf(navn)),
+                totalAvk: parseFloat(totalAvk.toFixed(2)),
+                annualisert: parseFloat(annualisert.toFixed(2)),
+                volatilitet: parseFloat(annualVol.toFixed(2)),
+                sharpe: parseFloat(sharpe.toFixed(2)),
+                maxDrawdown: parseFloat(maxDD.toFixed(2)),
+                besteMaaned: parseFloat(besteMaaned.toFixed(2)),
+                versteMaaned: parseFloat(versteMaaned.toFixed(2)),
+              };
+            }).filter(Boolean);
           };
 
           const alleNavn2 = Object.keys(PENSUM_AARLIG);
@@ -5194,9 +5257,24 @@ export default function PensumPrognoseModell() {
                           tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                           interval={Math.max(1, Math.floor(sammenligningsData.length / 12))} />
                         <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
-                        <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                          labelFormatter={(d) => formatHistorikkEtikett(d)}
-                          formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
+                        <Tooltip content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
+                              <div className="font-semibold text-gray-500 mb-1.5 pb-1.5 border-b border-gray-100">{formatHistorikkEtikett(label)}</div>
+                              {sortert.map(p => (
+                                <div key={p.name} className="flex items-center gap-2 py-0.5">
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }}></span>
+                                  <span className="text-gray-600 flex-1">{p.name}</span>
+                                  <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
+                                    {p.value >= 0 ? '+' : ''}{p.value.toFixed(1).replace('.', ',')}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }} />
                         <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                         <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                         {alleSammenligningsNavn.map(n => {
@@ -5223,6 +5301,7 @@ export default function PensumPrognoseModell() {
                   {(harFondEllerKonk || harNoeAVise || valgteIndekserScen.length > 0) && (() => {
                     const avkData = fondSammenligningVisning === 'avkastning' ? byggAvkastningsdataMedKonk() : null;
                     const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdataMedKonk() : null;
+                    const nokkeltallData = fondSammenligningVisning === 'nokkeltall' ? byggNokkeltall() : null;
                     const sektorData = fondSammenligningVisning === 'sektor' ? byggSektordata() : null;
                     const regionData = fondSammenligningVisning === 'region' ? byggRegiondata() : null;
                     return (
@@ -5231,6 +5310,7 @@ export default function PensumPrognoseModell() {
                           {[
                             { key: 'avkastning', label: 'Periodeavkastning' },
                             { key: 'kalenderaar', label: 'Kalenderår' },
+                            { key: 'nokkeltall', label: 'Nøkkeltall' },
                             ...(valgteFond.length > 0 ? [
                               { key: 'sektor', label: 'Sektorfordeling' },
                               { key: 'region', label: 'Landfordeling' },
@@ -5251,8 +5331,24 @@ export default function PensumPrognoseModell() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
                               <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
-                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
+                              <Tooltip content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null;
+                                const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
+                                return (
+                                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
+                                    <div className="font-semibold text-gray-500 mb-1.5 pb-1.5 border-b border-gray-100">{label}</div>
+                                    {sortert.map(p => (
+                                      <div key={p.name} className="flex items-center gap-2 py-0.5">
+                                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
+                                        <span className="text-gray-600 flex-1">{p.name}</span>
+                                        <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
+                                          {p.value >= 0 ? '+' : ''}{p.value.toFixed(2).replace('.', ',')}%
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }} />
                               <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                               <ReferenceLine y={0} stroke="#9CA3AF" />
                               {alleSerieNavnTab.map((n, i) => (
@@ -5269,8 +5365,24 @@ export default function PensumPrognoseModell() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
                               <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
-                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
+                              <Tooltip content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null;
+                                const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
+                                return (
+                                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
+                                    <div className="font-semibold text-gray-500 mb-1.5 pb-1.5 border-b border-gray-100">{label}</div>
+                                    {sortert.map(p => (
+                                      <div key={p.name} className="flex items-center gap-2 py-0.5">
+                                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
+                                        <span className="text-gray-600 flex-1">{p.name}</span>
+                                        <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
+                                          {p.value >= 0 ? '+' : ''}{p.value.toFixed(2).replace('.', ',')}%
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }} />
                               <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                               <ReferenceLine y={0} stroke="#9CA3AF" />
                               {alleSerieNavnTab.map((n, i) => (
@@ -5279,6 +5391,81 @@ export default function PensumPrognoseModell() {
                             </BarChart>
                           </ResponsiveContainer>
                         )}
+
+                        {/* Nøkkeltall — risikometrikker */}
+                        {fondSammenligningVisning === 'nokkeltall' && nokkeltallData && nokkeltallData.length > 0 && (() => {
+                          const metrikker = [
+                            { key: 'totalAvk', label: 'Total avkastning', suffix: '%', desc: 'Indeksert avkastning i valgt periode' },
+                            { key: 'annualisert', label: 'Annualisert avk.', suffix: '% p.a.', desc: 'Geometrisk gjennomsnittlig årlig avkastning' },
+                            { key: 'volatilitet', label: 'Volatilitet', suffix: '%', desc: 'Annualisert standardavvik for månedlig avkastning' },
+                            { key: 'sharpe', label: 'Sharpe ratio', suffix: '', desc: 'Risikojustert avkastning (rf = 3%)' },
+                            { key: 'maxDrawdown', label: 'Maks nedgang', suffix: '%', desc: 'Største fall fra topp til bunn' },
+                            { key: 'besteMaaned', label: 'Beste måned', suffix: 'pp', desc: 'Høyeste månedlige endring' },
+                            { key: 'versteMaaned', label: 'Verste måned', suffix: 'pp', desc: 'Laveste månedlige endring' },
+                          ];
+                          // Find best value per metric for highlighting
+                          const bestVerdier = {};
+                          metrikker.forEach(m => {
+                            const vals = nokkeltallData.map(d => d[m.key]).filter(v => v !== null);
+                            if (m.key === 'maxDrawdown' || m.key === 'versteMaaned') {
+                              bestVerdier[m.key] = Math.max(...vals); // Closest to 0 is best
+                            } else {
+                              bestVerdier[m.key] = Math.max(...vals);
+                            }
+                          });
+                          return (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                                    <th className="py-3 px-4 text-left text-white font-semibold sticky left-0 z-10 min-w-[160px]" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Metrikk</th>
+                                    {nokkeltallData.map(d => (
+                                      <th key={d.navn} className="py-3 px-3 text-center font-semibold min-w-[100px]" style={{ color: 'white' }}>
+                                        <div className="flex flex-col items-center gap-1">
+                                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: d.farge }}></span>
+                                          <span className="max-w-[120px] truncate" title={d.navn}>{d.navn}</span>
+                                        </div>
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {metrikker.map((m, mIdx) => (
+                                    <tr key={m.key} className={mIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'}>
+                                      <td className={"py-3 px-4 font-medium sticky left-0 z-10 " + (mIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50')} style={{ color: PENSUM_COLORS.darkBlue }}>
+                                        <div>{m.label}</div>
+                                        <div className="text-[10px] text-gray-400 font-normal mt-0.5">{m.desc}</div>
+                                      </td>
+                                      {nokkeltallData.map(d => {
+                                        const val = d[m.key];
+                                        const erBest = val === bestVerdier[m.key] && nokkeltallData.length > 1;
+                                        const erNegativ = val < 0;
+                                        return (
+                                          <td key={d.navn} className="py-3 px-3 text-center tabular-nums">
+                                            <span className={
+                                              "inline-flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-semibold " +
+                                              (erBest ? "ring-2 ring-offset-1 " : "") +
+                                              (m.key === 'sharpe'
+                                                ? (val >= 1 ? 'bg-green-50 text-green-700' : val >= 0.5 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-600')
+                                                : m.key === 'maxDrawdown' || m.key === 'versteMaaned'
+                                                  ? (val >= -5 ? 'bg-green-50 text-green-700' : val >= -15 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-600')
+                                                  : (erNegativ ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'))
+                                            } style={erBest ? { ringColor: d.farge, '--tw-ring-color': d.farge } : {}}>
+                                              {m.key === 'sharpe' ? val.toFixed(2) : (val >= 0 && m.key !== 'maxDrawdown' ? '+' : '') + val.toFixed(1).replace('.', ',') + m.suffix}
+                                            </span>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <div className="mt-3 text-[10px] text-gray-400 px-1">
+                                Beregnet fra månedlige datapunkter i valgt periode. Sharpe ratio bruker risikofri rente på 3%. Volatilitet er annualisert standardavvik.
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Sektorfordeling */}
                         {fondSammenligningVisning === 'sektor' && sektorData && sektorData.length > 0 && (
