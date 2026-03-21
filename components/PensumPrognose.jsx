@@ -5368,9 +5368,9 @@ export default function PensumPrognoseModell() {
                         {/* Periodeavkastning bar chart */}
                         {fondSammenligningVisning === 'avkastning' && avkData && (
                           <ResponsiveContainer width="100%" height={380}>
-                            <BarChart data={avkData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                            <BarChart data={avkData} margin={{ top: 20, right: 10, left: 0, bottom: 30 }} barCategoryGap="30%" barGap={3}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} />
                               <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
                               <Tooltip content={({ active, payload, label }) => {
                                 if (!active || !payload?.length) return null;
@@ -5393,7 +5393,10 @@ export default function PensumPrognoseModell() {
                               <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                               <ReferenceLine y={0} stroke="#9CA3AF" />
                               {alleSerieNavnTab.map((n, i) => (
-                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={28} stroke="#fff" strokeWidth={1} label={({ x, y, width, value }) => {
+                                  if (value === undefined || value === null) return null;
+                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1)}%</text>;
+                                }} />
                               ))}
                             </BarChart>
                           </ResponsiveContainer>
@@ -5402,9 +5405,9 @@ export default function PensumPrognoseModell() {
                         {/* Kalenderårsavkastning */}
                         {fondSammenligningVisning === 'kalenderaar' && aarsData && (
                           <ResponsiveContainer width="100%" height={380}>
-                            <BarChart data={aarsData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                            <BarChart data={aarsData} margin={{ top: 20, right: 10, left: 0, bottom: 30 }} barCategoryGap="25%" barGap={3}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} />
                               <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
                               <Tooltip content={({ active, payload, label }) => {
                                 if (!active || !payload?.length) return null;
@@ -5427,7 +5430,10 @@ export default function PensumPrognoseModell() {
                               <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                               <ReferenceLine y={0} stroke="#9CA3AF" />
                               {alleSerieNavnTab.map((n, i) => (
-                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={28} stroke="#fff" strokeWidth={1} label={({ x, y, width, value }) => {
+                                  if (value === undefined || value === null) return null;
+                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1)}%</text>;
+                                }} />
                               ))}
                             </BarChart>
                           </ResponsiveContainer>
