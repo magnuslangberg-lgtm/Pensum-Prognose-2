@@ -103,6 +103,9 @@ export default function PensumPrognoseModell() {
     { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'folgebrev', label: 'Personlig følgebrev', aktiv: false, posisjon: 'etter-cover' },
+    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
+    { id: 'neste-steg', label: 'Neste steg', aktiv: false, posisjon: 'foer-disclaimer' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
 
@@ -128,7 +131,18 @@ export default function PensumPrognoseModell() {
     'kommunikasjon': 'Oversikt over Pensums kommunikasjonskanaler: investeringskommentar, månedsrapport, konferanse, podcast og TV',
     'rapportering': 'Pensums rapporteringsløsning med BankID-innlogging, porteføljeoversikt og skatterapportering',
     'honorarstruktur': 'Transparent honorarstruktur med priser for investeringsrådgivning og diskresjonær forvaltning',
+    'folgebrev': 'Personlig brev til kunden med sammendrag av porteføljeforslaget og nøkkeltall',
+    'markedssyn': 'Pensums markedssyn med makrobilde, risikobilde og mulighetsbilde — oppdateres månedlig',
+    'neste-steg': 'Veien videre med steg-for-steg prosess og kontaktinfo for din rådgiver',
   };
+
+  // Markedssyn - oppdateres månedlig via admin
+  const [markedssynData, setMarkedssynData] = useState({
+    periode: 'mars 2026',
+    makro: 'Global vekst holder seg moderat positiv, men med økt usikkerhet rundt geopolitikk og handelspolitikk. Vi forventer at sentralbankene fortsetter en gradvis lettelsessyklus, som støtter både aksje- og kredittmarkeder.',
+    risiko: 'Volatiliteten har vært tiltagende. Vi tilnærmer oss dette ved å diversifisere bredt, holde en betydelig rentedel som buffer, og velge fond med dokumentert lavere nedsiderisiko enn bredt marked.',
+    muligheter: 'Norske aksjer handles fortsatt med rabatt mot globale indekser. Aktive satellitter med eksponering mot nordiske industriselskaper og global high yield gir attraktiv risikojustert avkastning i dagens marked.',
+  });
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -330,6 +344,11 @@ export default function PensumPrognoseModell() {
             dynamiskeSider: lagret?.dynamiskeSider || '6-13',
             filDataUrl: ''
           }));
+        }
+
+        const markedssynValue = await storageGet('pensum_admin_markedssyn');
+        if (markedssynValue) {
+          setMarkedssynData(JSON.parse(markedssynValue));
         }
       } catch (e) {
         console.log('Kunne ikke laste admin-data:', e);
@@ -730,7 +749,7 @@ export default function PensumPrognoseModell() {
   }, []);
 
   // Registrer ny bruker
-  const registrerBruker = useCallback(async (registrerNavn, registrerEpost, registrerPin) => {
+  const registrerBruker = useCallback(async (registrerNavn, registrerEpost, registrerPin, ekstraFelter = {}) => {
     setAuthFeilmelding('');
 
     if (!registrerEpost || !registrerEpost.includes('@')) {
@@ -755,7 +774,7 @@ export default function PensumPrognoseModell() {
         const resp = await fetch('/api/brukere', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ epost: epostNormalisert, pin: registrerPin, navn: registrerNavn })
+          body: JSON.stringify({ epost: epostNormalisert, pin: registrerPin, navn: registrerNavn, telefon: ekstraFelter.telefon || '', tittel: ekstraFelter.tittel || 'Investeringsrådgiver' })
         });
         if (resp.status === 409) {
           setAuthFeilmelding('Denne e-postadressen er allerede registrert');
@@ -784,6 +803,9 @@ export default function PensumPrognoseModell() {
           epost: epostNormalisert,
           pin: registrerPin,
           navn: registrerNavn,
+          telefon: ekstraFelter.telefon || '',
+          tittel: ekstraFelter.tittel || 'Investeringsrådgiver',
+          bilde: '',
           opprettet: new Date().toISOString()
         };
 
@@ -877,6 +899,41 @@ export default function PensumPrognoseModell() {
     setBruker(null);
     setRadgiver('');
   }, []);
+
+  const [visProfilPanel, setVisProfilPanel] = useState(false);
+
+  // Oppdater brukerprofil (bilde, telefon, tittel)
+  const oppdaterBrukerProfil = useCallback(async (felt, verdi) => {
+    if (!bruker) return;
+    const oppdatertBruker = { ...bruker, [felt]: verdi };
+    setBruker(oppdatertBruker);
+    await storageSet('pensum_aktiv_bruker', JSON.stringify(oppdatertBruker));
+    // Update server too
+    try {
+      await fetch('/api/brukere', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ epost: bruker.epost, [felt]: verdi })
+      });
+    } catch (e) {
+      console.log('Kunne ikke oppdatere bruker på server:', e);
+    }
+  }, [bruker]);
+
+  // Håndter bildeopplasting for rådgiver
+  const handleBildeUpload = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500000) {
+      alert('Bildet er for stort. Maks 500KB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      oppdaterBrukerProfil('bilde', ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  }, [oppdaterBrukerProfil]);
 
   // Intern lagringsfunksjon (etter autentisering)
   const lagreKundeEtterAuth = useCallback(async () => {
@@ -1470,10 +1527,148 @@ export default function PensumPrognoseModell() {
           </div>
         );
 
+      case 'folgebrev': {
+        const aksjeAndel = pensumAllokering.filter(a => a.vekt > 0).reduce((sum, a) => {
+          const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+          const prod = alle.find(p => p.id === a.id);
+          if (prod && (prod.kategori === 'enkeltfond' || prod.kategori === 'fondsportefoljer')) return sum + a.vekt;
+          return sum;
+        }, 0);
+        const renteAndel = 100 - aksjeAndel;
+        const antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
+        const sluttverdi = pensumPrognose.length > 0 ? pensumPrognose[pensumPrognose.length - 1].verdi : 0;
+        return (
+          <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
+            <div className="grid grid-cols-3 gap-8">
+              <div className="col-span-2 space-y-5">
+                <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || 'Investor'},</h2>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Forslaget tar utgangspunkt i {formatCurrency(effektivtInvestertBelop)}, en {risikoprofil.toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
+                </p>
+                <div className="pt-4">
+                  <p className="text-sm text-gray-600">Med vennlig hilsen</p>
+                  <p className="text-sm font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
+                  <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                </div>
+              </div>
+              <div>
+                <div className="rounded-lg p-5 space-y-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <h3 className="text-sm font-bold tracking-wider uppercase" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h3>
+                  {[
+                    { label: 'Forventet avkastning', verdi: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
+                    { label: 'Forventet yield', verdi: erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '% p.a.' : '—' },
+                    { label: 'Aksjeandel', verdi: Math.round(aksjeAndel) + '%' },
+                    { label: 'Renteandel', verdi: Math.round(renteAndel) + '%' },
+                    { label: 'Antall produkter', verdi: String(antallProdukter) },
+                    { label: `Sluttverdi (${horisont} år)`, verdi: sluttverdi > 1000000 ? (sluttverdi / 1000000).toFixed(1) + ' MNOK' : formatCurrency(sluttverdi) },
+                  ].map((kpi, i) => (
+                    <div key={i}>
+                      <p className="text-[10px] text-gray-400">{kpi.label}</p>
+                      <p className="text-lg font-bold text-white">{kpi.verdi}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      case 'markedssyn':
+        return (
+          <div data-rapport-slide="markedssyn" className="space-y-5 page-break-before">
+            <div>
+              <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Markedssyn og kontekst</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+              <p className="text-sm text-gray-500 italic mt-2">Hvorfor dette forslaget passer til dagens markedsbilde</p>
+            </div>
+            <div className="grid grid-cols-3 gap-5">
+              {[
+                { tittel: 'Makrobildet', ikon: 'M4.5 12.75l6 6 9-13.5', tekst: markedssynData.makro },
+                { tittel: 'Risikobildet', ikon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', tekst: markedssynData.risiko },
+                { tittel: 'Mulighetsbilde', ikon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', tekst: markedssynData.muligheter },
+              ].map((blokk, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E0F2F1' }}>
+                      <svg className="w-4 h-4" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={blokk.ikon} /></svg>
+                    </div>
+                    <h3 className="font-bold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{blokk.tittel}</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">{blokk.tekst}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 italic">Markedssynet reflekterer Pensums vurdering per {markedssynData.periode} og kan endres uten forvarsel.</p>
+          </div>
+        );
+
+      case 'neste-steg':
+        return (
+          <div data-rapport-slide="neste-steg" className="page-break-before" style={{ backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px', padding: '32px' }}>
+            <div>
+              <h2 className="text-3xl font-bold text-white">Neste steg</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+              <p className="text-sm mt-2" style={{ color: PENSUM_COLORS.lightBlue }}>Vi tar gjerne en oppfølgingssamtale for å gå gjennom forslaget i detalj.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-8 mt-8">
+              <div className="col-span-2 space-y-6">
+                {[
+                  { nr: '1', tittel: 'Gjennomgang av forslaget', tekst: 'Vi går gjennom porteføljeforslaget sammen, justerer allokering og produktvalg etter dine ønsker og prioriteringer.' },
+                  { nr: '2', tittel: 'Formaliteter og signering', tekst: 'Etter enighet signerer vi investeringsavtale og rådgivningsmandat. KYC-skjema fylles ut digitalt — tar under 10 minutter.' },
+                  { nr: '3', tittel: 'Porteføljen implementeres', tekst: 'Vi setter opp porteføljen og gjennomfører alle transaksjoner. Du får tilgang til løpende rapportering fra dag én.' },
+                ].map((steg, i) => (
+                  <div key={i} className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                      <span className="text-white font-bold text-sm">{steg.nr}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{steg.tittel}</h4>
+                      <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>{steg.tekst}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="rounded-lg border p-5 text-center" style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  {bruker?.bilde ? (
+                    <img src={bruker.bilde} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2" style={{ borderColor: PENSUM_COLORS.teal }} />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      <svg className="w-8 h-8" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                  )}
+                  <p className="text-[10px] uppercase tracking-widest" style={{ color: PENSUM_COLORS.teal }}>Din rådgiver</p>
+                  <p className="text-white font-bold mt-1">{radgiver || 'Rådgiver'}</p>
+                  <p className="text-xs" style={{ color: '#94A3B8' }}>{bruker?.tittel || 'Investeringsrådgiver'}</p>
+                  {bruker?.telefon && (
+                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white">
+                      <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                      <span>{bruker.telefon}</span>
+                    </div>
+                  )}
+                  {bruker?.epost && (
+                    <div className="flex items-center justify-center gap-2 mt-2 text-xs text-white">
+                      <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      <span>{bruker.epost}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
-  }, []);
+  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, effektivtInvestertBelop, pensumForventetAvkastning, vektetYield, pensumAllokering, pensumProdukter, pensumPrognose, markedssynData, formatCurrency, erGyldigTall]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
@@ -2794,14 +2989,70 @@ export default function PensumPrognoseModell() {
           <div className="flex items-center gap-4">
             {/* Bruker-info */}
             {bruker ? (
-              <div className="flex items-center gap-2 text-sm">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <div className="relative flex items-center gap-2 text-sm">
+                <button onClick={() => setVisProfilPanel(!visProfilPanel)} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                  {bruker.bilde ? (
+                    <img src={bruker.bilde} alt="" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  )}
                   <span className="text-green-700 font-medium">{bruker.navn}</span>
-                </div>
+                  <svg className={"w-3 h-3 text-green-600 transition-transform " + (visProfilPanel ? 'rotate-180' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
                 <button onClick={loggUtBruker} className="text-gray-400 hover:text-gray-600" title="Logg ut">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
+                {visProfilPanel && (
+                  <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#F8FAFB' }}>
+                      <p className="text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Min profil</p>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {/* Profilbilde */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          {bruker.bilde ? (
+                            <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-gray-500 block mb-1">Profilbilde (maks 500KB)</label>
+                          <input type="file" accept="image/*" onChange={handleBildeUpload} className="text-xs w-full" />
+                        </div>
+                      </div>
+                      {/* Telefon */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-0.5">Telefon</label>
+                        <input
+                          type="tel"
+                          value={bruker.telefon || ''}
+                          onChange={(e) => oppdaterBrukerProfil('telefon', e.target.value)}
+                          placeholder="+47 XXX XX XXX"
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                        />
+                      </div>
+                      {/* Tittel */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-0.5">Tittel</label>
+                        <select
+                          value={bruker.tittel || 'Investeringsrådgiver'}
+                          onChange={(e) => oppdaterBrukerProfil('tittel', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                        >
+                          <option value="Investeringsrådgiver">Investeringsrådgiver</option>
+                          <option value="Senior investeringsrådgiver">Senior investeringsrådgiver</option>
+                          <option value="Partner">Partner</option>
+                          <option value="Porteføljeforvalter">Porteføljeforvalter</option>
+                        </select>
+                      </div>
+                      <p className="text-[10px] text-gray-400">E-post: {bruker.epost}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <button 
@@ -7458,9 +7709,18 @@ export default function PensumPrognoseModell() {
                 {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
 
                 {/* === DISCLAIMER === */}
-                <div data-rapport-slide="disclaimer" className="text-xs text-gray-500 border-t border-gray-200 pt-6">
-                  <p className="font-semibold mb-2">Viktig informasjon</p>
-                  <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
+                <div data-rapport-slide="disclaimer" className="page-break-before pt-10 pb-6">
+                  <div className="flex flex-col items-center mb-8">
+                    <img src={PENSUM_LOGO} alt="Pensum" className="h-12 opacity-30 mb-2" />
+                    <p className="text-xs tracking-[0.3em] uppercase font-light" style={{ color: '#B0B8C4' }}>P E N S U M</p>
+                    <p className="text-[10px] tracking-[0.2em] uppercase font-light" style={{ color: '#C0C8D4' }}>A S S E T &nbsp; M A N A G E M E N T</p>
+                  </div>
+                  <div className="border-t border-gray-200 pt-6 space-y-4 text-xs text-gray-500 leading-relaxed">
+                    <h3 className="font-bold text-sm text-gray-700">Viktig informasjon</h3>
+                    <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
+                    <p>Pensum Asset Management AS er regulert av Finanstilsynet og innehar konsesjon som verdipapirforetak. Investeringsrådgivning gis i henhold til verdipapirhandelloven. Kostnader og gebyrer kan påvirke netto avkastning. For fullstendig informasjon om risiko, kostnader og vilkår, se Pensums nøkkelinformasjonsdokumenter (KID) og prospekter som er tilgjengelige på forespørsel.</p>
+                    <p>Dette dokumentet utgjør ikke et tilbud om kjøp eller salg av finansielle instrumenter, men er ment som beslutningsgrunnlag for diskusjon mellom rådgiver og kunde.</p>
+                  </div>
                 </div>
               </div>
 
@@ -8092,6 +8352,63 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* Reset til standard */}
+                {/* Markedssyn-redigering */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                    <h3 className="text-lg font-semibold text-white">Markedssyn og kontekst</h3>
+                    <p className="text-xs text-white opacity-70 mt-1">Oppdater månedlig — vises i tilleggsmodulen «Markedssyn og kontekst»</p>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Periode</label>
+                      <input
+                        type="text"
+                        value={markedssynData.periode}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, periode: e.target.value }))}
+                        placeholder="mars 2026"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Makrobildet</label>
+                      <textarea
+                        value={markedssynData.makro}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, makro: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Risikobildet</label>
+                      <textarea
+                        value={markedssynData.risiko}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, risiko: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mulighetsbilde</label>
+                      <textarea
+                        value={markedssynData.muligheter}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, muligheter: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await storageSet('pensum_admin_markedssyn', JSON.stringify(markedssynData));
+                        setAdminMelding('Markedssyn lagret.');
+                      }}
+                      className="px-6 py-2 text-white rounded-lg font-medium hover:opacity-90"
+                      style={{ backgroundColor: PENSUM_COLORS.teal }}
+                    >
+                      Lagre markedssyn
+                    </button>
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
                     <h3 className="text-lg font-semibold text-white">Tilbakestill data</h3>
