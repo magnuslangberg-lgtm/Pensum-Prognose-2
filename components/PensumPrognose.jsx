@@ -75,6 +75,8 @@ export default function PensumPrognoseModell() {
   const [valgteFond, setValgteFond] = useState([]);
   const [visPensumIFondComp, setVisPensumIFondComp] = useState([]);
   const [visPortefoljeIFondComp, setVisPortefoljeIFondComp] = useState(false);
+  const [fondVekter, setFondVekter] = useState({}); // { isin: vekt } for konkurranseportefølje
+  const [visKonkurrentPortefolje, setVisKonkurrentPortefolje] = useState(false);
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
@@ -5314,17 +5316,209 @@ export default function PensumPrognoseModell() {
                   }).filter(p => Object.keys(p).length > 1);
                 };
 
-                const avkData = fondSammenligningVisning === 'avkastning' ? byggAvkastningsdata() : null;
-                const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdata() : null;
+                // Konkurranseportefølje — vektet avkastning fra valgte fond
+                const harKonkurrentPortefolje = visKonkurrentPortefolje && valgteFond.length > 0 && valgteFond.some(f => (fondVekter[f.isin] || 0) > 0);
+                const konkurrentTotalVekt = valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0) || 1;
+
+                const beregnKonkurrentAvk = (periodeKey) => {
+                  if (!harKonkurrentPortefolje) return null;
+                  let vektet = 0; let harData = false;
+                  valgteFond.forEach(f => {
+                    const v = fondVekter[f.isin] || 0;
+                    if (v > 0 && f[periodeKey] !== undefined) {
+                      vektet += f[periodeKey] * (v / konkurrentTotalVekt);
+                      harData = true;
+                    }
+                  });
+                  return harData ? parseFloat(vektet.toFixed(2)) : null;
+                };
+
+                // Legg til konkurranseportefølje i avkastningsdata
+                const opprinneligByggAvkData = byggAvkastningsdata;
+                const byggAvkastningsdataMedKonk = () => {
+                  const data = opprinneligByggAvkData();
+                  if (harKonkurrentPortefolje) {
+                    const periodeKeys = ['r1m', 'r3m', 'r6m', 'rytd', 'r1y', 'r3y', 'r5y', 'r10y'];
+                    data.forEach((punkt, i) => {
+                      const avk = beregnKonkurrentAvk(periodeKeys[i]);
+                      if (avk !== null) punkt['Konkurrentportefølje'] = avk;
+                    });
+                  }
+                  return data;
+                };
+
+                // Legg til konkurranseportefølje i årsdata
+                const opprinneligByggAarsData = byggAarsdata;
+                const byggAarsdataMedKonk = () => {
+                  const data = opprinneligByggAarsData();
+                  if (harKonkurrentPortefolje) {
+                    const aarKeys = ['a19', 'a20', 'a21', 'a22', 'a23', 'a24', 'a25'];
+                    data.forEach((punkt, i) => {
+                      let vektet = 0; let harV = false;
+                      valgteFond.forEach(f => {
+                        const v = fondVekter[f.isin] || 0;
+                        if (v > 0 && f[aarKeys[i]] !== undefined) {
+                          vektet += f[aarKeys[i]] * (v / konkurrentTotalVekt);
+                          harV = true;
+                        }
+                      });
+                      if (harV) punkt['Konkurrentportefølje'] = parseFloat(vektet.toFixed(2));
+                    });
+                  }
+                  return data;
+                };
+
+                // Bygg historisk indeksert graf fra kalenderårsavkastning
+                const byggHistoriskGrafData = () => {
+                  if (!harNoeAVise && !harKonkurrentPortefolje) return [];
+                  const aar = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+                  const aarKeys = { 2015: 'a15', 2016: 'a16', 2017: 'a17', 2018: 'a18', 2019: 'a19', 2020: 'a20', 2021: 'a21', 2022: 'a22', 2023: 'a23', 2024: 'a24', 2025: 'a25' };
+                  const pensumAarMap = { 2022: 'aar2022', 2023: 'aar2023', 2024: 'aar2024', 2025: 'aar2025' };
+                  const serier = {};
+
+                  // Eksterne fond
+                  valgteFond.forEach(f => {
+                    let kumulativ = 100;
+                    const serie = [{ aar: aar[0] - 1, verdi: 100 }];
+                    aar.forEach(a => {
+                      const ret = f[aarKeys[a]];
+                      if (ret !== undefined) {
+                        kumulativ *= (1 + ret / 100);
+                        serie.push({ aar: a, verdi: parseFloat(kumulativ.toFixed(2)) });
+                      }
+                    });
+                    if (serie.length > 1) serier[f.n] = serie;
+                  });
+
+                  // Pensum-produkter
+                  pensumValgte.forEach(({ id, navn }) => {
+                    // Bruk daglig historikk via månedsslutt for Pensum-produkter (høyere oppløsning)
+                    const hist = produktHistorikk?.[id];
+                    if (hist?.data?.length) {
+                      const maanedlig = byggMaanedssluttSerie(hist.data);
+                      const startVerdi = maanedlig[0]?.verdi;
+                      if (startVerdi > 0) {
+                        serier[navn] = maanedlig.map(d => {
+                          const parsed = parseHistorikkDato(d.dato);
+                          return { aar: parsed ? parsed.getFullYear() + parsed.getMonth() / 12 : 0, verdi: parseFloat(((d.verdi / startVerdi) * 100).toFixed(2)), dato: d.dato };
+                        });
+                      }
+                    }
+                  });
+
+                  // Din portefølje (fra Pensum-historikk)
+                  if (harPortefolje) {
+                    const vektede = pensumAllokering.filter(a => a.vekt > 0);
+                    const totVekt = vektede.reduce((s, a) => s + a.vekt, 0) || 1;
+                    const produktMaanedSerier = {};
+                    const alleDatoer = new Set();
+                    vektede.forEach(a => {
+                      const hist = produktHistorikk?.[a.id];
+                      if (hist?.data?.length) {
+                        const maanedlig = byggMaanedssluttSerie(hist.data);
+                        if (maanedlig.length > 0) {
+                          const sv = maanedlig[0].verdi;
+                          produktMaanedSerier[a.id] = {};
+                          maanedlig.forEach(d => { alleDatoer.add(d.dato); produktMaanedSerier[a.id][d.dato] = sv > 0 ? d.verdi / sv : 1; });
+                        }
+                      }
+                    });
+                    const sortDatoer = Array.from(alleDatoer).sort();
+                    const portSerie = sortDatoer.map(dato => {
+                      let vektet = 0; let totPV = 0;
+                      vektede.forEach(a => {
+                        const v = produktMaanedSerier[a.id]?.[dato];
+                        if (v !== undefined) { vektet += v * (a.vekt / totVekt); totPV += a.vekt / totVekt; }
+                      });
+                      if (totPV <= 0) return null;
+                      const parsed = parseHistorikkDato(dato);
+                      return { aar: parsed ? parsed.getFullYear() + parsed.getMonth() / 12 : 0, verdi: parseFloat(((vektet / totPV) * 100).toFixed(2)), dato };
+                    }).filter(Boolean);
+                    if (portSerie.length > 0) serier['Din portefølje'] = portSerie;
+                  }
+
+                  // Konkurranseportefølje (fra kalenderårsavkastning)
+                  if (harKonkurrentPortefolje) {
+                    let kumulativ = 100;
+                    const serie = [{ aar: aar[0] - 1, verdi: 100 }];
+                    aar.forEach(a => {
+                      let vektet = 0; let harV = false;
+                      valgteFond.forEach(f => {
+                        const v = fondVekter[f.isin] || 0;
+                        if (v > 0 && f[aarKeys[a]] !== undefined) {
+                          vektet += f[aarKeys[a]] * (v / konkurrentTotalVekt);
+                          harV = true;
+                        }
+                      });
+                      if (harV) {
+                        kumulativ *= (1 + vektet / 100);
+                        serie.push({ aar: a, verdi: parseFloat(kumulativ.toFixed(2)) });
+                      }
+                    });
+                    if (serie.length > 1) serier['Konkurrentportefølje'] = serie;
+                  }
+
+                  // Samle alle datapunkter: for serier med dato bruker vi dato, ellers aar
+                  // Konverter alt til en felles tidsakse basert på dato eller årstall
+                  const harMaanedlig = Object.values(serier).some(s => s[0]?.dato);
+                  if (harMaanedlig) {
+                    // Bruk datobaserte serier der de finnes, ellers interpoler årsbaserte ved år-slutt
+                    const alleDatoer = new Set();
+                    Object.values(serier).forEach(s => s.forEach(d => { if (d.dato) alleDatoer.add(d.dato); }));
+                    // For årsbaserte serier, lag syntetiske datopunkter ved slutten av året
+                    Object.entries(serier).forEach(([navn, s]) => {
+                      if (!s[0]?.dato) {
+                        s.forEach(d => { alleDatoer.add(d.aar + '-12-31'); });
+                      }
+                    });
+                    const sortDatoer = Array.from(alleDatoer).sort();
+                    // Bygg lookup per serie
+                    const serieLookup = {};
+                    Object.entries(serier).forEach(([navn, s]) => {
+                      serieLookup[navn] = {};
+                      if (s[0]?.dato) {
+                        s.forEach(d => { serieLookup[navn][d.dato] = d.verdi; });
+                      } else {
+                        s.forEach(d => { serieLookup[navn][d.aar + '-12-31'] = d.verdi; });
+                      }
+                    });
+                    return sortDatoer.map(dato => {
+                      const punkt = { dato };
+                      Object.entries(serieLookup).forEach(([navn, lookup]) => {
+                        if (lookup[dato] !== undefined) punkt[navn] = lookup[dato];
+                      });
+                      return punkt;
+                    }).filter(p => Object.keys(p).length > 1);
+                  } else {
+                    // Kun årsbaserte serier
+                    const alleAar = new Set();
+                    Object.values(serier).forEach(s => s.forEach(d => alleAar.add(d.aar)));
+                    return Array.from(alleAar).sort((a, b) => a - b).map(a => {
+                      const punkt = { dato: String(a) };
+                      Object.entries(serier).forEach(([navn, s]) => {
+                        const match = s.find(d => d.aar === a);
+                        if (match) punkt[navn] = match.verdi;
+                      });
+                      return punkt;
+                    }).filter(p => Object.keys(p).length > 1);
+                  }
+                };
+
+                const harNoeAViseMedKonk = harNoeAVise || harKonkurrentPortefolje;
+                const avkData = fondSammenligningVisning === 'avkastning' ? byggAvkastningsdataMedKonk() : null;
+                const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdataMedKonk() : null;
                 const sektorData = fondSammenligningVisning === 'sektor' ? byggSektordata() : null;
                 const regionData = fondSammenligningVisning === 'region' ? byggRegiondata() : null;
+                const grafData = fondSammenligningVisning === 'historiskgraf' ? byggHistoriskGrafData() : null;
                 // Alle serienavn og farger for grafene
                 const fondNavn = valgteFond.map(f => f.n);
                 const pensumNavn = pensumValgte.map(p => p.navn);
                 const portNavn = harPortefolje ? ['Din portefølje'] : [];
-                const alleSerieNavn = [...fondNavn, ...pensumNavn, ...portNavn];
+                const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
+                const alleSerieNavn = [...fondNavn, ...pensumNavn, ...portNavn, ...konkNavn];
                 const getSerieColor = (name, idx) => {
                   if (name === 'Din portefølje') return '#1B3A5F';
+                  if (name === 'Konkurrentportefølje') return '#D97706';
                   const pensumMatch = pensumValgte.find(p => p.navn === name);
                   if (pensumMatch) return pensumMatch.farge;
                   return FOND_FARGER[idx % FOND_FARGER.length];
@@ -5441,11 +5635,11 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
 
-                      {/* Valgte fond chips */}
+                      {/* Valgte fond chips + konkurranseportefølje */}
                       {valgteFond.length > 0 && (
                         <div className="mb-5">
                           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Valgte fond ({valgteFond.length}/8)</div>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 mb-3">
                             {valgteFond.map((f, i) => (
                               <div key={f.isin || f.n} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
                                 style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}>
@@ -5455,18 +5649,71 @@ export default function PensumPrognoseModell() {
                                   className="ml-1 hover:bg-white/20 rounded-full w-4 h-4 flex items-center justify-center text-white/80 hover:text-white">×</button>
                               </div>
                             ))}
-                            <button onClick={() => setValgteFond([])} className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50">
+                            <button onClick={() => { setValgteFond([]); setFondVekter({}); }} className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50">
                               Fjern alle
                             </button>
+                          </div>
+
+                          {/* Konkurranseportefølje — vekt per fond */}
+                          <div className="p-4 rounded-lg border border-amber-200 bg-amber-50/50">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#D97706' }}>Bygg konkurranseportefølje</div>
+                                <p className="text-xs text-gray-500 mt-0.5">Sett vekter på fondene for å sammenligne en konkurrentportefølje mot din</p>
+                              </div>
+                              <button
+                                onClick={() => setVisKonkurrentPortefolje(prev => !prev)}
+                                className={"px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all " + (visKonkurrentPortefolje ? "text-white border-transparent" : "border-amber-300 hover:border-amber-500")}
+                                style={visKonkurrentPortefolje ? { backgroundColor: '#D97706', borderColor: '#D97706' } : { color: '#D97706' }}>
+                                {visKonkurrentPortefolje ? 'Aktiv' : 'Aktiver'}
+                              </button>
+                            </div>
+                            {visKonkurrentPortefolje && (
+                              <div className="space-y-2">
+                                {valgteFond.map((f, i) => (
+                                  <div key={f.isin} className="flex items-center gap-3">
+                                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}></span>
+                                    <span className="text-xs text-gray-700 flex-1 truncate">{f.n}</span>
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number" min="0" max="100" step="5"
+                                        value={fondVekter[f.isin] || ''}
+                                        onChange={e => setFondVekter(prev => ({ ...prev, [f.isin]: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                                        placeholder="0"
+                                        className="w-16 px-2 py-1 text-xs text-right border border-gray-200 rounded focus:ring-1 focus:ring-amber-300 focus:border-amber-400 outline-none"
+                                      />
+                                      <span className="text-xs text-gray-400">%</span>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="flex items-center justify-between pt-2 border-t border-amber-200">
+                                  <span className="text-xs font-semibold text-gray-600">Total vekt:</span>
+                                  <span className={"text-xs font-bold " + (Math.abs(valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0) - 100) < 1 ? 'text-green-600' : 'text-amber-600')}>
+                                    {valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0)}%
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const perFond = Math.round(100 / valgteFond.length);
+                                    const nyeVekter = {};
+                                    valgteFond.forEach((f, i) => { nyeVekter[f.isin] = i === valgteFond.length - 1 ? 100 - perFond * (valgteFond.length - 1) : perFond; });
+                                    setFondVekter(nyeVekter);
+                                  }}
+                                  className="text-xs text-amber-700 hover:text-amber-900 underline">
+                                  Fordel likt
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
 
                       {/* Visningsvalg tabs */}
-                      {harNoeAVise && (
+                      {harNoeAViseMedKonk && (
                         <>
                           <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
                             {[
+                              { key: 'historiskgraf', label: 'Historisk graf' },
                               { key: 'avkastning', label: 'Periodeavkastning' },
                               { key: 'kalenderaar', label: 'Kalenderår' },
                               { key: 'sektor', label: 'Sektorfordeling' },
@@ -5479,6 +5726,51 @@ export default function PensumPrognoseModell() {
                               </button>
                             ))}
                           </div>
+
+                          {/* Historisk graf — indeksert linjediagram */}
+                          {fondSammenligningVisning === 'historiskgraf' && grafData && grafData.length > 0 && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-3">Indeksert utvikling (100 = startpunkt). Eksterne fond: kalenderårsdata. Pensum-løsninger: månedlige datapunkter.</p>
+                              <ResponsiveContainer width="100%" height={420}>
+                                <LineChart data={grafData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                  <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                    tickFormatter={(d) => {
+                                      if (!d) return '';
+                                      // Håndter både dato-strenger og rene årstall
+                                      if (d.length === 4 || !d.includes('-')) return d;
+                                      const p = parseHistorikkDato(d);
+                                      if (!p) return d;
+                                      return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`;
+                                    }}
+                                    interval={Math.max(1, Math.floor(grafData.length / 14))} />
+                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} domain={['dataMin - 5', 'dataMax + 5']} />
+                                  <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                    labelFormatter={(d) => {
+                                      if (!d || d.length <= 4) return d;
+                                      return formatHistorikkEtikett(d);
+                                    }}
+                                    formatter={(v, n) => [v?.toFixed(1), n]} />
+                                  <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                                  <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" label={{ value: 'Start', position: 'right', fontSize: 10, fill: '#9CA3AF' }} />
+                                  {alleSerieNavn.map((n, i) => {
+                                    const erPort = n === 'Din portefølje';
+                                    const erKonk = n === 'Konkurrentportefølje';
+                                    return (
+                                      <Line key={n} type="monotone" dataKey={n} stroke={getSerieColor(n, i)}
+                                        strokeWidth={erPort || erKonk ? 3 : 2} dot={false} activeDot={{ r: erPort || erKonk ? 5 : 4 }}
+                                        strokeDasharray={erKonk ? '6 3' : undefined} connectNulls />
+                                    );
+                                  })}
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          )}
+                          {fondSammenligningVisning === 'historiskgraf' && (!grafData || grafData.length === 0) && (
+                            <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
+                              Velg fond, Pensum-løsninger eller portefølje for å se historisk utvikling
+                            </div>
+                          )}
 
                           {/* Periodeavkastning bar chart */}
                           {fondSammenligningVisning === 'avkastning' && avkData && (
@@ -5604,7 +5896,7 @@ export default function PensumPrognoseModell() {
                       )}
 
                       {/* Empty state */}
-                      {!harNoeAVise && !eksterneFondLoading && (
+                      {!harNoeAViseMedKonk && !eksterneFondLoading && (
                         <div className="h-48 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
                           <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           <p className="text-sm">Søk og velg fond for å sammenligne</p>
