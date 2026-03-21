@@ -80,6 +80,26 @@ export default function PensumPrognoseModell() {
   const [skjulEnkeltfond, setSkjulEnkeltfond] = useState(false); // skjul individuelle fond-linjer
   const [visFondssammenligning, setVisFondssammenligning] = useState(false); // collapsible external fund search
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
+
+  // Valgfrie tilleggsmoduler for investeringsforslaget
+  const [rapportModuler, setRapportModuler] = useState([
+    // Standard-sider (alltid synlige, ikke fjernbare)
+    { id: 'cover', label: 'Forside', standard: true, aktiv: true },
+    { id: 'utgangspunkt', label: 'Utgangspunkt og mandat', standard: true, aktiv: true },
+    { id: 'byggesteiner', label: 'Hvordan porteføljen er bygget', standard: true, aktiv: true },
+    { id: 'allokering', label: 'Allokering & sammensetning', standard: true, aktiv: true },
+    { id: 'historisk', label: 'Historisk avkastning', standard: true, aktiv: true },
+    { id: 'snapshot-charts', label: 'Snapshot-grafer', standard: true, aktiv: true },
+    { id: 'eksponering', label: 'Eksponering', standard: true, aktiv: true },
+    { id: 'verdiutvikling', label: 'Verdiutvikling', standard: true, aktiv: true },
+    { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
+    { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
+  ]);
+  const [tilleggsmoduler, setTilleggsmoduler] = useState([
+    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: null },
+    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: null },
+  ]);
+  const [visModulPanel, setVisModulPanel] = useState(false);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -1806,6 +1826,13 @@ export default function PensumPrognoseModell() {
         wide: true,
       }));
 
+      // Bygg tilleggsmodul-grupper for aktive moduler
+      const aktiveTilleggsmoduler = tilleggsmoduler.filter(m => m.aktiv).map(m => ({
+        name: m.label,
+        selectors: [m.id],
+        wide: true,
+      }));
+
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
@@ -1816,6 +1843,7 @@ export default function PensumPrognoseModell() {
         { name: 'Eksponering', selectors: ['eksponering'], wide: true },
         { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
         ...faktaarkGroups,
+        ...aktiveTilleggsmoduler,
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
@@ -6947,6 +6975,163 @@ export default function PensumPrognoseModell() {
                   );
                 })}
 
+                {/* === TILLEGGSMODUL: BESKATNING === */}
+                {tilleggsmoduler.find(m => m.id === 'beskatning')?.aktiv && (
+                  <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
+                        <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                      </div>
+                      <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="p-3 text-left w-[120px]" style={{ backgroundColor: '#F8F9FA' }}></th>
+                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>PRIVAT EIE</th>
+                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESPAREKONTO (ASK)</th>
+                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESELSKAP</th>
+                          </tr>
+                          <tr>
+                            <th className="p-2" style={{ backgroundColor: '#F8F9FA' }}></th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t border-gray-200">
+                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Norske aksjer, EU/EOS aksjer, Aksjefond registrert i Norge/EU/EOS</td>
+                            <td className="p-3 text-xs text-gray-700">37,84 % skatt pa gevinster etter fradrag for skjermingsrente**. Ikke fradrag for skjermingsrente ved tap</td>
+                            <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
+                            <td className="p-3 text-xs text-gray-700">Ingen lopende beskatning. Ved realisasjon av avtalen samme beskatning som aksjer i privat eie.</td>
+                            <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
+                            <td className="p-3 text-xs text-gray-700">Ikke skatt pa gevinst, ikke fradrag for tap. 3% av utbytter beskattes med 22% (3%x22%=0,66%)</td>
+                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                          </tr>
+                          <tr className="border-t border-gray-200" style={{ backgroundColor: '#FAFBFC' }}>
+                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F3F4F6' }}>Aksjer utenfor EU/EOS, Aksjefond registrert utenfor Norge/EU/EOS</td>
+                            <td className="p-3 text-xs text-gray-700">Samme som over</td>
+                            <td className="p-3 text-xs text-gray-700">Samme som over</td>
+                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster og utbytter, fradrag ved tap</td>
+                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                          </tr>
+                          <tr className="border-t border-gray-200">
+                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Rentefond / Obligasjoner</td>
+                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag for tap</td>
+                            <td className="p-3 text-xs text-gray-700">100% av markedsverdi beskattes med inntil 1,0%</td>
+                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag ved tap</td>
+                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                          </tr>
+                          <tr className="border-t-2 border-gray-300" style={{ backgroundColor: '#F3F4F6' }}>
+                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>**) Skjermingsrente</td>
+                            <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
+                            <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
+                            <td colSpan={2} className="p-3 text-xs text-gray-700">Nei</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex justify-between items-start text-[10px] text-gray-400 pt-2">
+                      <div>
+                        <p style={{ color: PENSUM_COLORS.salmon }}>*For formuer overstigende 20 millioner NOK er beskatningen 1,1 %.</p>
+                        <p style={{ color: PENSUM_COLORS.salmon }}>**) Basert pa estimat for renteniva et i 2025.</p>
+                      </div>
+                      <div className="text-right italic max-w-sm">
+                        <p>Informasjonen om beskatning er av generell karakter og utgjor ikke individuell skatteradgivning. Skatteregler kan endres og vil avhenge av kundens konkrete forhold.</p>
+                        <p className="mt-1">Kilder: Skattesatser 2025 - regjeringen.no / norgesbank.no</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* === TILLEGGSMODUL: AKSJEMARKEDET – HISTORISK UTVIKLING === */}
+                {tilleggsmoduler.find(m => m.id === 'markedshistorikk')?.aktiv && (
+                  <div data-rapport-slide="markedshistorikk" className="space-y-4 page-break-before">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
+                        <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                      </div>
+                      <div className="text-right">
+                        <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60 ml-auto" />
+                        <p className="text-[10px] text-gray-400 mt-1 max-w-[260px]">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <h3 className="text-sm font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Arlig aksjeavkastning og fall gjennom aret</h3>
+                      <p className="text-[10px] text-gray-500 mb-4">MSCI AC World fall gjennom aret vs. kalenderarsavkastning. Til tross for gjennomsnittlige fall gjennom aret pa -15% (median: -11%), er den arlige avkastningen positiv i 26 av 37 (70%) ar</p>
+                      {(() => {
+                        const msciData = [
+                          { aar: "'88", avk: 21, fall: -8 }, { aar: "'89", avk: 15, fall: -7 },
+                          { aar: "'90", avk: -19, fall: -26 }, { aar: "'91", avk: 17, fall: -7 },
+                          { aar: "'92", avk: -7, fall: -11 }, { aar: "'93", avk: 22, fall: -6 },
+                          { aar: "'94", avk: 3, fall: -8 }, { aar: "'95", avk: 17, fall: -4 },
+                          { aar: "'96", avk: 11, fall: -11 }, { aar: "'97", avk: 13, fall: -7 },
+                          { aar: "'98", avk: 20, fall: -21 }, { aar: "'99", avk: 25, fall: -14 },
+                          { aar: "'00", avk: -15, fall: -20 }, { aar: "'01", avk: -17, fall: -32 },
+                          { aar: "'02", avk: -21, fall: -31 }, { aar: "'03", avk: 32, fall: -7 },
+                          { aar: "'04", avk: 13, fall: -9 }, { aar: "'05", avk: 9, fall: -9 },
+                          { aar: "'06", avk: 19, fall: -13 }, { aar: "'07", avk: 10, fall: -11 },
+                          { aar: "'08", avk: -44, fall: -53 }, { aar: "'09", avk: 32, fall: -27 },
+                          { aar: "'10", avk: 10, fall: -16 }, { aar: "'11", avk: -9, fall: -24 },
+                          { aar: "'12", avk: 13, fall: -14 }, { aar: "'13", avk: 20.3, fall: -9 },
+                          { aar: "'14", avk: 2.1, fall: -10 }, { aar: "'15", avk: -4, fall: -16 },
+                          { aar: "'16", avk: 6, fall: -12 }, { aar: "'17", avk: 22, fall: -4 },
+                          { aar: "'18", avk: -11, fall: -21 }, { aar: "'19", avk: 24, fall: -2 },
+                          { aar: "'20", avk: 14, fall: -34 }, { aar: "'21", avk: 10, fall: -6 },
+                          { aar: "'22", avk: -20, fall: -27 }, { aar: "'23", avk: 20, fall: -8.3 },
+                          { aar: "'24", avk: 16, fall: -8.5 }, { aar: "'25*", avk: 17.1, fall: -16.3 },
+                        ];
+                        return (
+                          <ResponsiveContainer width="100%" height={320}>
+                            <ComposedChart data={msciData} barCategoryGap="15%">
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                              <XAxis dataKey="aar" tick={{ fontSize: 9, fill: '#6B7280' }} interval={0} angle={0} />
+                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} domain={[-60, 40]} />
+                              <Tooltip content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null;
+                                const avkVal = payload.find(p => p.dataKey === 'avk');
+                                const fallVal = payload.find(p => p.dataKey === 'fall');
+                                return (
+                                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
+                                    <div className="font-semibold text-gray-700 mb-1">{label}</div>
+                                    {avkVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B0B0B0' }}></span><span>Arsavkastning:</span><span className={"font-bold " + (avkVal.value >= 0 ? 'text-green-700' : 'text-red-600')}>{avkVal.value}%</span></div>}
+                                    {fallVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#2E5B5E' }}></span><span>Arsfall:</span><span className="font-bold text-red-600">{fallVal.value}%</span></div>}
+                                  </div>
+                                );
+                              }} />
+                              <ReferenceLine y={0} stroke="#9CA3AF" />
+                              <Bar dataKey="avk" name="Kalenderarsavkastning" fill="#B0B0B0" radius={[2, 2, 0, 0]} maxBarSize={22}>
+                                {msciData.map((d, i) => (
+                                  <Cell key={i} fill={d.aar === "'25*" ? PENSUM_COLORS.teal : '#B0B0B0'} />
+                                ))}
+                              </Bar>
+                              <Line type="monotone" dataKey="fall" name="Fall gjennom aret" stroke="#2E5B5E" strokeWidth={0} dot={{ r: 4, fill: '#2E5B5E', strokeWidth: 0 }} />
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="text-[10px] text-gray-400 leading-relaxed">
+                      <p>Kilde: FactSet, MSCI, J.P. Morgan Asset Management. Avkastningstallene er kursavkastning basert pa MSCI World-indeksen malt i amerikanske dollar. Intrarsfallet er det storste fallet fra topp til bunn i lopet av det aktuelle aret. Historisk avkastning er ingen palitelig indikator for navarende og fremtidige resultater. Dataene gjenspeiler sist tilgjengelige informasjon per 30.09.2025.</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* === DISCLAIMER === */}
                 <div data-rapport-slide="disclaimer" className="text-xs text-gray-500 border-t border-gray-200 pt-6">
                   <p className="font-semibold mb-2">Viktig informasjon</p>
@@ -6960,6 +7145,76 @@ export default function PensumPrognoseModell() {
                 <span className="mx-3 text-gray-300">|</span><span className="text-gray-500">pensumgroup.no</span>
                 <span className="mx-3 text-gray-300">|</span><span className="text-gray-500">+47 23 89 68 44</span>
               </div>
+            </div>
+
+            {/* === TILLEGGSMODULER PANEL === */}
+            <div className="no-print">
+              <button
+                onClick={() => setVisModulPanel(!visModulPanel)}
+                className="w-full flex items-center justify-between px-6 py-4 rounded-xl border-2 border-dashed transition-all hover:border-solid"
+                style={{ borderColor: visModulPanel ? PENSUM_COLORS.darkBlue : '#CBD5E1', backgroundColor: visModulPanel ? '#F0F4F8' : 'white' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Tilleggsmoduler</span>
+                    <p className="text-xs text-gray-400">Legg til valgfrie sider i forslaget</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {tilleggsmoduler.filter(m => m.aktiv).length > 0 && (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full text-white" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                      {tilleggsmoduler.filter(m => m.aktiv).length} aktiv
+                    </span>
+                  )}
+                  <svg className={"w-5 h-5 transition-transform " + (visModulPanel ? "rotate-180" : "")} style={{ color: PENSUM_COLORS.darkBlue }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </button>
+
+              {visModulPanel && (
+                <div className="mt-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="px-5 py-3 border-b border-gray-100" style={{ backgroundColor: '#F8FAFB' }}>
+                    <p className="text-xs text-gray-500">Velg tilleggsmoduler som skal inkluderes i forslaget. Aktive moduler vises i forslaget over og inkluderes i PowerPoint-eksporten.</p>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {tilleggsmoduler.map((modul, idx) => (
+                      <div key={modul.id} className={"flex items-center gap-4 px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
+                        <button
+                          onClick={() => {
+                            setTilleggsmoduler(prev => prev.map(m =>
+                              m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
+                            ));
+                          }}
+                          className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
+                          style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
+                          <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
+                            {modul.aktiv && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {modul.id === 'beskatning' && 'Oversikt over beskatning av aksjer og fond for privat eie, ASK og aksjeselskap'}
+                            {modul.id === 'markedshistorikk' && 'MSCI AC World arsavkastning og intraarsfall siden 1988 — viser at markedet historisk har vaert positivt i 70% av arene'}
+                          </p>
+                        </div>
+                        {modul.aktiv && (
+                          <div className="flex-shrink-0">
+                            <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-5 py-3 border-t border-gray-100 text-[10px] text-gray-400" style={{ backgroundColor: '#FAFBFC' }}>
+                    Flere moduler kommer — ta kontakt for onsker og forslag.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* === NEDLASTING === */}
