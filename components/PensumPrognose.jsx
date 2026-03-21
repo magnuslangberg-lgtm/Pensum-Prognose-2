@@ -2520,15 +2520,17 @@ export default function PensumPrognoseModell() {
 
       const SLIDE_W = 13.33;
       const SLIDE_H = 7.5;
-      const MARGIN = 0.3;
+      const MARGIN = 0.45;
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
-      const CONTENT_H = SLIDE_H - 2 * MARGIN;
+      const CONTENT_H = SLIDE_H - 2 * MARGIN - 0.35; // leave room for footer
+      const SLIDE_BG = PENSUM_COLORS.darkBlue.replace('#', '');
 
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
         const bgColor = opts.bgColor || '#ffffff';
-        const padding = opts.noPadding ? '0' : '28px 36px';
+        const padding = opts.noPadding ? '0' : '32px 40px';
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
+        const borderRadius = opts.noPadding ? '' : 'border-radius:12px;';
+        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};${borderRadius}`;
         const clone = element.cloneNode(true);
         // Ensure SVG charts inside are fully visible
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
@@ -2552,7 +2554,21 @@ export default function PensumPrognoseModell() {
         }
       };
 
-      const addImageSlide = (imgData, imgAspectRaw) => {
+      const addSlideFooter = (slide) => {
+        // Subtle branded footer bar
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: SLIDE_H - 0.35, w: SLIDE_W, h: 0.35,
+          fill: { color: '011C33' },
+        });
+        slide.addText('PENSUM ASSET MANAGEMENT', {
+          x: MARGIN, y: SLIDE_H - 0.32, w: CONTENT_W, h: 0.28,
+          fontSize: 7, color: '6B8CAA', fontFace: 'Arial',
+          align: 'left', valign: 'middle',
+          charSpacing: 3,
+        });
+      };
+
+      const addImageSlide = (imgData, imgAspectRaw, opts = {}) => {
         const imgAspect = imgAspectRaw;
         const slideAspect = CONTENT_W / CONTENT_H;
         let imgW, imgH;
@@ -2564,10 +2580,19 @@ export default function PensumPrognoseModell() {
           imgW = CONTENT_H * imgAspect;
         }
         const imgX = (SLIDE_W - imgW) / 2;
-        const imgY = (SLIDE_H - imgH) / 2;
+        // Top-align content with margin instead of centering vertically
+        const imgY = MARGIN;
         const slide = pptx.addSlide();
-        slide.background = { color: 'FFFFFF' };
+        slide.background = { color: SLIDE_BG };
+
+        // Add a subtle accent line at the top
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: 0, w: SLIDE_W, h: 0.04,
+          fill: { color: PENSUM_COLORS.salmon.replace('#', '') },
+        });
+
         slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
+        addSlideFooter(slide);
       };
 
       for (let gi = 0; gi < slideGroups.length; gi++) {
@@ -2613,15 +2638,20 @@ export default function PensumPrognoseModell() {
           await new Promise(r => { img.onload = r; img.src = imgData; });
           // Cover fills the entire slide
           const slide = pptx.addSlide();
-          slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
+          slide.background = { color: SLIDE_BG };
           slide.addImage({ data: imgData, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H, sizing: { type: 'contain', w: SLIDE_W, h: SLIDE_H } });
+          // Add subtle accent line at bottom
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: SLIDE_H - 0.04, w: SLIDE_W, h: 0.04,
+            fill: { color: PENSUM_COLORS.salmon.replace('#', '') },
+          });
           continue;
         }
 
         // Create a temporary wrapper to render all group elements together
         const renderWidth = group.wide ? 1400 : 1120;
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:white;padding:28px 36px;`;
+        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:32px 40px;border-radius:12px;`;
         elements.forEach(el => {
           const clone = el.cloneNode(true);
           clone.style.marginBottom = '20px';
@@ -6944,7 +6974,7 @@ export default function PensumPrognoseModell() {
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
                           { label: 'Risikoprofil', value: risikoprofil },
                           { label: 'Tidshorisont', value: horisont + ' år' },
-                          { label: 'Målsetting', value: vektetAvkastning.toFixed(1) + '% p.a.' },
+                          { label: 'Målsetting', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
                           { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
                         ].map((row, i) => (
                           <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
