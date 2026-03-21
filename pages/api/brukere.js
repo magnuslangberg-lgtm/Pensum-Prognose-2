@@ -34,7 +34,7 @@ export default function handler(req, res) {
 
   if (req.method === 'POST') {
     // Register new user
-    const { epost, pin, navn } = req.body;
+    const { epost, pin, navn, telefon, tittel } = req.body;
     if (!epost || !pin || !navn) {
       return res.status(400).json({ error: 'Mangler påkrevde felt' });
     }
@@ -50,6 +50,9 @@ export default function handler(req, res) {
       epost: epostNormalisert,
       pin,
       navn,
+      telefon: telefon || '',
+      tittel: tittel || 'Investeringsrådgiver',
+      bilde: '',
       opprettet: new Date().toISOString()
     };
 

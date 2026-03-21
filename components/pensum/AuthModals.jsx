@@ -83,10 +83,12 @@ export function RegisterModal({ onClose, onSwitchToLogin, onRegister, authFeilme
   const [navn, setNavn] = useState('');
   const [epost, setEpost] = useState('');
   const [pin, setPin] = useState('');
+  const [telefon, setTelefon] = useState('');
+  const [tittel, setTittel] = useState('Investeringsrådgiver');
 
   const handleRegister = useCallback(() => {
-    onRegister(navn, epost, pin);
-  }, [navn, epost, pin, onRegister]);
+    onRegister(navn, epost, pin, { telefon, tittel });
+  }, [navn, epost, pin, telefon, tittel, onRegister]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -121,6 +123,29 @@ export function RegisterModal({ onClose, onSwitchToLogin, onRegister, authFeilme
                 placeholder="din@epost.no"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+              <input
+                type="tel"
+                value={telefon}
+                onChange={(e) => setTelefon(e.target.value)}
+                placeholder="+47 XXX XX XXX"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tittel</label>
+              <select
+                value={tittel}
+                onChange={(e) => setTittel(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="Investeringsrådgiver">Investeringsrådgiver</option>
+                <option value="Senior investeringsrådgiver">Senior investeringsrådgiver</option>
+                <option value="Partner">Partner</option>
+                <option value="Porteføljeforvalter">Porteføljeforvalter</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Velg PIN-kode (minst 4 tegn)</label>

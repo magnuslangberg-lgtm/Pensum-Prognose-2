@@ -52,38 +52,59 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
+  const itemColor = ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] || '#888';
+  const pctFilled = Math.min(100, Math.max(0, dragVekt));
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-      <div className="flex items-center gap-2 min-w-0" style={{ width: '160px' }}>
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] }}></div>
+    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-gray-100 hover:bg-gray-50/50 transition-all">
+      {/* Name */}
+      <div className="flex items-center gap-2.5 min-w-0" style={{ width: '140px' }}>
+        <div className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm" style={{ backgroundColor: itemColor }}></div>
         <span className="font-medium text-sm truncate" style={{ color: PENSUM_COLORS.darkBlue }}>{item.navn}</span>
       </div>
+      {/* Slider area */}
       <div className="flex items-center gap-2 flex-1">
-        <button onClick={() => updateAllokeringVekt(index, Math.max(0, (item.vekt || 0) - 0.5))} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100 flex-shrink-0 text-sm">−</button>
-        <input
-          type="range" min="0" max="100" step="0.5"
-          value={dragVekt}
-          onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
-          onMouseUp={commitDragVekt}
-          onTouchEnd={commitDragVekt}
-          className="w-36 accent-blue-700 flex-shrink-0"
-        />
-        <input
-          type="number" min="0" max="100" step="0.5"
-          value={dragVekt}
-          onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
-          onBlur={commitDragVekt}
-          className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right flex-shrink-0"
-        />
-        <span className="text-sm text-gray-500 flex-shrink-0">%</span>
-        <button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100 flex-shrink-0 text-sm">+</button>
+        <button onClick={() => updateAllokeringVekt(index, Math.max(0, (item.vekt || 0) - 0.5))} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 hover:bg-white flex-shrink-0 flex items-center justify-center text-sm font-medium transition-colors">−</button>
+        {/* Custom styled slider track */}
+        <div className="flex-1 relative h-8 flex items-center" style={{ minWidth: '120px' }}>
+          <div className="absolute inset-x-0 h-2 rounded-full bg-gray-100"></div>
+          <div className="absolute left-0 h-2 rounded-full transition-all" style={{ width: pctFilled + '%', backgroundColor: itemColor, opacity: 0.3 }}></div>
+          <input
+            type="range" min="0" max="100" step="0.5"
+            value={dragVekt}
+            onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
+            onMouseUp={commitDragVekt}
+            onTouchEnd={commitDragVekt}
+            className="absolute inset-x-0 w-full h-8 opacity-0 cursor-pointer z-10"
+          />
+          <div
+            className="absolute w-4 h-4 rounded-full shadow-md border-2 border-white transition-all pointer-events-none z-20"
+            style={{ left: `calc(${pctFilled}% - 8px)`, backgroundColor: itemColor }}
+          ></div>
+        </div>
+        {/* Percentage input */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden flex-shrink-0 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+          <input
+            type="number" min="0" max="100" step="0.5"
+            value={dragVekt}
+            onChange={(e) => setDragVekt(parseFloat(e.target.value) || 0)}
+            onBlur={commitDragVekt}
+            className="w-14 py-1.5 px-2 text-sm text-right font-semibold border-none outline-none bg-transparent"
+            style={{ color: PENSUM_COLORS.darkBlue }}
+          />
+          <span className="text-xs text-gray-400 pr-2">%</span>
+        </div>
+        <button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) + 0.5)} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 hover:bg-white flex-shrink-0 flex items-center justify-center text-sm font-medium transition-colors">+</button>
       </div>
-      <div className="text-xs text-gray-500 text-right flex-shrink-0" style={{ width: '90px' }}>
+      {/* Amount */}
+      <div className="text-xs text-gray-500 text-right flex-shrink-0 tabular-nums" style={{ width: '90px' }}>
         {formatCurrency((item.vekt / 100) * effektivtInvestertBelop)}
       </div>
+      {/* Expected return */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        <input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} disabled={avkastningLaast} className={"w-16 text-center text-sm border border-gray-200 rounded py-1 px-1" + (avkastningLaast ? " bg-gray-100 text-gray-400 cursor-not-allowed" : "")} title={avkastningLaast ? "Avkastningsraten er låst av admin" : ""} />
-        <span className="text-xs text-gray-400">%</span>
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+          <input type="number" step="0.5" value={item.avkastning} onChange={(e) => updateAllokeringAvkastning(index, e.target.value)} disabled={avkastningLaast} className={"w-14 py-1.5 px-2 text-sm text-center font-medium border-none outline-none bg-transparent" + (avkastningLaast ? " text-gray-400 cursor-not-allowed" : "")} style={!avkastningLaast ? { color: PENSUM_COLORS.darkBlue } : {}} title={avkastningLaast ? "Avkastningsraten er låst av admin" : ""} />
+          <span className="text-xs text-gray-400 pr-2">%</span>
+        </div>
       </div>
     </div>
   );
@@ -103,17 +124,18 @@ export function SammenligningRow({ item, index, updateSammenligningVekt, updateS
 
 export function KategoriHeaderRow({ kategori, isExpanded, onToggle }) {
   if (!kategori || kategori.items.length <= 1) return null;
+  const katColor = CATEGORY_COLORS[kategori.kategori] || PENSUM_COLORS.darkBlue;
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors" onClick={onToggle}>
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-all hover:shadow-sm" onClick={onToggle} style={{ backgroundColor: isExpanded ? '#F0F4F8' : '#F8F9FA' }}>
+      <div className="flex items-center gap-2.5">
         <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[kategori.kategori] }}></div>
+        <div className="w-3 h-3 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: katColor }}></div>
         <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{kategori.navn}</span>
       </div>
-      <div className="flex items-center gap-3 text-sm">
-        <span className="font-semibold text-right" style={{ color: PENSUM_COLORS.darkBlue, width: '60px' }}>{formatPercent(kategori.vekt)}</span>
-        <span className="text-gray-500 text-right text-xs" style={{ width: '90px' }}>{formatCurrency(kategori.belop)}</span>
-        <span className="text-right" style={{ color: PENSUM_COLORS.darkBlue, width: '60px' }}>{formatPercent(kategori.avkastning)}</span>
+      <div className="flex items-center gap-4 text-sm">
+        <span className="font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue, width: '50px', textAlign: 'right' }}>{formatPercent(kategori.vekt)}</span>
+        <span className="text-gray-400 text-xs tabular-nums" style={{ width: '90px', textAlign: 'right' }}>{formatCurrency(kategori.belop)}</span>
+        <span className="font-medium tabular-nums" style={{ color: PENSUM_COLORS.teal, width: '50px', textAlign: 'right' }}>{formatPercent(kategori.avkastning)}</span>
       </div>
     </div>
   );

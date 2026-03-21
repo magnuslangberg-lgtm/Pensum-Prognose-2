@@ -25,6 +25,7 @@ export default function PensumPrognoseModell() {
   const [ventPaaRegistrering, setVentPaaRegistrering] = useState(false); // Venter på registrering før lagring
 
   const [kundeNavn, setKundeNavn] = useState('');
+  const [kundeSelskap, setKundeSelskap] = useState('');
   const [risikoprofil, setRisikoprofil] = useState('Moderat');
   const [horisont, setHorisont] = useState(10);
   const [localHorisont, setLocalHorisont] = useState('10');
@@ -60,6 +61,7 @@ export default function PensumPrognoseModell() {
   const [portCompVisProdukter, setPortCompVisProdukter] = useState([]);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [rapportPptxLoading, setRapportPptxLoading] = useState(false);
+  const [rapportPptxProgress, setRapportPptxProgress] = useState('');
   const [pdfModal, setPdfModal] = useState(false);
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
@@ -102,6 +104,9 @@ export default function PensumPrognoseModell() {
     { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'folgebrev', label: 'Personlig følgebrev', aktiv: false, posisjon: 'etter-cover' },
+    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
+    { id: 'neste-steg', label: 'Neste steg', aktiv: false, posisjon: 'foer-disclaimer' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
 
@@ -127,7 +132,18 @@ export default function PensumPrognoseModell() {
     'kommunikasjon': 'Oversikt over Pensums kommunikasjonskanaler: investeringskommentar, månedsrapport, konferanse, podcast og TV',
     'rapportering': 'Pensums rapporteringsløsning med BankID-innlogging, porteføljeoversikt og skatterapportering',
     'honorarstruktur': 'Transparent honorarstruktur med priser for investeringsrådgivning og diskresjonær forvaltning',
+    'folgebrev': 'Personlig brev til kunden med sammendrag av porteføljeforslaget og nøkkeltall',
+    'markedssyn': 'Pensums markedssyn med makrobilde, risikobilde og mulighetsbilde — oppdateres månedlig',
+    'neste-steg': 'Veien videre med steg-for-steg prosess og kontaktinfo for din rådgiver',
   };
+
+  // Markedssyn - oppdateres månedlig via admin
+  const [markedssynData, setMarkedssynData] = useState({
+    periode: 'mars 2026',
+    makro: 'Global vekst holder seg moderat positiv, men med økt usikkerhet rundt geopolitikk og handelspolitikk. Vi forventer at sentralbankene fortsetter en gradvis lettelsessyklus, som støtter både aksje- og kredittmarkeder.',
+    risiko: 'Volatiliteten har vært tiltagende. Vi tilnærmer oss dette ved å diversifisere bredt, holde en betydelig rentedel som buffer, og velge fond med dokumentert lavere nedsiderisiko enn bredt marked.',
+    muligheter: 'Norske aksjer handles fortsatt med rabatt mot globale indekser. Aktive satellitter med eksponering mot nordiske industriselskaper og global high yield gir attraktiv risikojustert avkastning i dagens marked.',
+  });
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -329,6 +345,11 @@ export default function PensumPrognoseModell() {
             dynamiskeSider: lagret?.dynamiskeSider || '6-13',
             filDataUrl: ''
           }));
+        }
+
+        const markedssynValue = await storageGet('pensum_admin_markedssyn');
+        if (markedssynValue) {
+          setMarkedssynData(JSON.parse(markedssynValue));
         }
       } catch (e) {
         console.log('Kunne ikke laste admin-data:', e);
@@ -670,6 +691,7 @@ export default function PensumPrognoseModell() {
   const getKundeData = useCallback(() => ({
     id: aktivKundeId || Date.now().toString(),
     kundeNavn,
+    kundeSelskap,
     radgiver,
     dato,
     risikoprofil,
@@ -681,12 +703,13 @@ export default function PensumPrognoseModell() {
     allokering,
     scenarioParams,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
     setAktivKundeId(data.id);
     setKundeNavn(data.kundeNavn || '');
+    setKundeSelskap(data.kundeSelskap || '');
     setDato(data.dato || new Date().toISOString().split('T')[0]);
     setRisikoprofil(data.risikoprofil || 'Moderat');
     setHorisont(data.horisont || 10);
@@ -729,7 +752,7 @@ export default function PensumPrognoseModell() {
   }, []);
 
   // Registrer ny bruker
-  const registrerBruker = useCallback(async (registrerNavn, registrerEpost, registrerPin) => {
+  const registrerBruker = useCallback(async (registrerNavn, registrerEpost, registrerPin, ekstraFelter = {}) => {
     setAuthFeilmelding('');
 
     if (!registrerEpost || !registrerEpost.includes('@')) {
@@ -754,7 +777,7 @@ export default function PensumPrognoseModell() {
         const resp = await fetch('/api/brukere', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ epost: epostNormalisert, pin: registrerPin, navn: registrerNavn })
+          body: JSON.stringify({ epost: epostNormalisert, pin: registrerPin, navn: registrerNavn, telefon: ekstraFelter.telefon || '', tittel: ekstraFelter.tittel || 'Investeringsrådgiver' })
         });
         if (resp.status === 409) {
           setAuthFeilmelding('Denne e-postadressen er allerede registrert');
@@ -783,6 +806,9 @@ export default function PensumPrognoseModell() {
           epost: epostNormalisert,
           pin: registrerPin,
           navn: registrerNavn,
+          telefon: ekstraFelter.telefon || '',
+          tittel: ekstraFelter.tittel || 'Investeringsrådgiver',
+          bilde: '',
           opprettet: new Date().toISOString()
         };
 
@@ -876,6 +902,41 @@ export default function PensumPrognoseModell() {
     setBruker(null);
     setRadgiver('');
   }, []);
+
+  const [visProfilPanel, setVisProfilPanel] = useState(false);
+
+  // Oppdater brukerprofil (bilde, telefon, tittel)
+  const oppdaterBrukerProfil = useCallback(async (felt, verdi) => {
+    if (!bruker) return;
+    const oppdatertBruker = { ...bruker, [felt]: verdi };
+    setBruker(oppdatertBruker);
+    await storageSet('pensum_aktiv_bruker', JSON.stringify(oppdatertBruker));
+    // Update server too
+    try {
+      await fetch('/api/brukere', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ epost: bruker.epost, [felt]: verdi })
+      });
+    } catch (e) {
+      console.log('Kunne ikke oppdatere bruker på server:', e);
+    }
+  }, [bruker]);
+
+  // Håndter bildeopplasting for rådgiver
+  const handleBildeUpload = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500000) {
+      alert('Bildet er for stort. Maks 500KB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      oppdaterBrukerProfil('bilde', ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  }, [oppdaterBrukerProfil]);
 
   // Intern lagringsfunksjon (etter autentisering)
   const lagreKundeEtterAuth = useCallback(async () => {
@@ -1316,14 +1377,311 @@ export default function PensumPrognoseModell() {
           </div>
         );
 
+      case 'beskatning':
+        return (
+          <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th className="p-3 text-left w-[120px]" style={{ backgroundColor: '#F8F9FA' }}></th>
+                    <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>PRIVAT EIE</th>
+                    <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESPAREKONTO (ASK)</th>
+                    <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESELSKAP</th>
+                  </tr>
+                  <tr>
+                    <th className="p-2" style={{ backgroundColor: '#F8F9FA' }}></th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
+                    <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-gray-200">
+                    <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Norske aksjer, EU/EOS aksjer, Aksjefond registrert i Norge/EU/EOS</td>
+                    <td className="p-3 text-xs text-gray-700">37,84 % skatt pa gevinster etter fradrag for skjermingsrente**. Ikke fradrag for skjermingsrente ved tap</td>
+                    <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
+                    <td className="p-3 text-xs text-gray-700">Ingen lopende beskatning. Ved realisasjon av avtalen samme beskatning som aksjer i privat eie.</td>
+                    <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
+                    <td className="p-3 text-xs text-gray-700">Ikke skatt pa gevinst, ikke fradrag for tap. 3% av utbytter beskattes med 22% (3%x22%=0,66%)</td>
+                    <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                  </tr>
+                  <tr className="border-t border-gray-200" style={{ backgroundColor: '#FAFBFC' }}>
+                    <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F3F4F6' }}>Aksjer utenfor EU/EOS, Aksjefond registrert utenfor Norge/EU/EOS</td>
+                    <td className="p-3 text-xs text-gray-700">Samme som over</td>
+                    <td className="p-3 text-xs text-gray-700">Samme som over</td>
+                    <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                    <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                    <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster og utbytter, fradrag ved tap</td>
+                    <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                  </tr>
+                  <tr className="border-t border-gray-200">
+                    <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Rentefond / Obligasjoner</td>
+                    <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag for tap</td>
+                    <td className="p-3 text-xs text-gray-700">100% av markedsverdi beskattes med inntil 1,0%</td>
+                    <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                    <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
+                    <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag ved tap</td>
+                    <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
+                  </tr>
+                  <tr className="border-t-2 border-gray-300" style={{ backgroundColor: '#F3F4F6' }}>
+                    <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>**) Skjermingsrente</td>
+                    <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
+                    <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
+                    <td colSpan={2} className="p-3 text-xs text-gray-700">Nei</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-between items-start text-[10px] text-gray-400 pt-2">
+              <div>
+                <p style={{ color: PENSUM_COLORS.salmon }}>*For formuer overstigende 20 millioner NOK er beskatningen 1,1 %.</p>
+                <p style={{ color: PENSUM_COLORS.salmon }}>**) Basert pa estimat for renteniva et i 2025.</p>
+              </div>
+              <div className="text-right italic max-w-sm">
+                <p>Informasjonen om beskatning er av generell karakter og utgjor ikke individuell skatteradgivning. Skatteregler kan endres og vil avhenge av kundens konkrete forhold.</p>
+                <p className="mt-1">Kilder: Skattesatser 2025 - regjeringen.no / norgesbank.no</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'markedshistorikk':
+        return (
+          <div data-rapport-slide="markedshistorikk" className="space-y-4 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <div className="text-right">
+                <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60 ml-auto" />
+                <p className="text-[10px] text-gray-400 mt-1 max-w-[260px]">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-5">
+              <h3 className="text-sm font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Arlig aksjeavkastning og fall gjennom aret</h3>
+              <p className="text-[10px] text-gray-500 mb-4">MSCI AC World fall gjennom aret vs. kalenderarsavkastning. Til tross for gjennomsnittlige fall gjennom aret pa -15% (median: -11%), er den arlige avkastningen positiv i 26 av 37 (70%) ar</p>
+              {(() => {
+                const msciData = [
+                  { aar: "'88", avk: 21, fall: -8 }, { aar: "'89", avk: 15, fall: -7 },
+                  { aar: "'90", avk: -19, fall: -26 }, { aar: "'91", avk: 17, fall: -7 },
+                  { aar: "'92", avk: -7, fall: -11 }, { aar: "'93", avk: 22, fall: -6 },
+                  { aar: "'94", avk: 3, fall: -8 }, { aar: "'95", avk: 17, fall: -4 },
+                  { aar: "'96", avk: 11, fall: -11 }, { aar: "'97", avk: 13, fall: -7 },
+                  { aar: "'98", avk: 20, fall: -21 }, { aar: "'99", avk: 25, fall: -14 },
+                  { aar: "'00", avk: -15, fall: -20 }, { aar: "'01", avk: -17, fall: -32 },
+                  { aar: "'02", avk: -21, fall: -31 }, { aar: "'03", avk: 32, fall: -7 },
+                  { aar: "'04", avk: 13, fall: -9 }, { aar: "'05", avk: 9, fall: -9 },
+                  { aar: "'06", avk: 19, fall: -13 }, { aar: "'07", avk: 10, fall: -11 },
+                  { aar: "'08", avk: -44, fall: -53 }, { aar: "'09", avk: 32, fall: -27 },
+                  { aar: "'10", avk: 10, fall: -16 }, { aar: "'11", avk: -9, fall: -24 },
+                  { aar: "'12", avk: 13, fall: -14 }, { aar: "'13", avk: 20.3, fall: -9 },
+                  { aar: "'14", avk: 2.1, fall: -10 }, { aar: "'15", avk: -4, fall: -16 },
+                  { aar: "'16", avk: 6, fall: -12 }, { aar: "'17", avk: 22, fall: -4 },
+                  { aar: "'18", avk: -11, fall: -21 }, { aar: "'19", avk: 24, fall: -2 },
+                  { aar: "'20", avk: 14, fall: -34 }, { aar: "'21", avk: 10, fall: -6 },
+                  { aar: "'22", avk: -20, fall: -27 }, { aar: "'23", avk: 20, fall: -8.3 },
+                  { aar: "'24", avk: 16, fall: -8.5 }, { aar: "'25*", avk: 17.1, fall: -16.3 },
+                ];
+                return (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <ComposedChart data={msciData} barCategoryGap="15%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                      <XAxis dataKey="aar" tick={{ fontSize: 9, fill: '#6B7280' }} interval={0} angle={0} />
+                      <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} domain={[-60, 40]} />
+                      <Tooltip content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        const avkVal = payload.find(p => p.dataKey === 'avk');
+                        const fallVal = payload.find(p => p.dataKey === 'fall');
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
+                            <div className="font-semibold text-gray-700 mb-1">{label}</div>
+                            {avkVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B0B0B0' }}></span><span>Arsavkastning:</span><span className={"font-bold " + (avkVal.value >= 0 ? 'text-green-700' : 'text-red-600')}>{avkVal.value}%</span></div>}
+                            {fallVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#2E5B5E' }}></span><span>Arsfall:</span><span className="font-bold text-red-600">{fallVal.value}%</span></div>}
+                          </div>
+                        );
+                      }} />
+                      <ReferenceLine y={0} stroke="#9CA3AF" />
+                      <Bar dataKey="avk" name="Kalenderarsavkastning" fill="#B0B0B0" radius={[2, 2, 0, 0]} maxBarSize={22}>
+                        {msciData.map((d, i) => (
+                          <Cell key={i} fill={d.aar === "'25*" ? PENSUM_COLORS.teal : '#B0B0B0'} />
+                        ))}
+                      </Bar>
+                      <Line type="monotone" dataKey="fall" name="Fall gjennom aret" stroke="#2E5B5E" strokeWidth={0} dot={{ r: 4, fill: '#2E5B5E', strokeWidth: 0 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+            </div>
+            <div className="text-[10px] text-gray-400 leading-relaxed">
+              <p>Kilde: FactSet, MSCI, J.P. Morgan Asset Management. Avkastningstallene er kursavkastning basert pa MSCI World-indeksen malt i amerikanske dollar. Intrarsfallet er det storste fallet fra topp til bunn i lopet av det aktuelle aret. Historisk avkastning er ingen palitelig indikator for navarende og fremtidige resultater. Dataene gjenspeiler sist tilgjengelige informasjon per 30.09.2025.</p>
+            </div>
+          </div>
+        );
+
+      case 'folgebrev': {
+        const _effektivtBelop = investertBelop !== null ? investertBelop : totalKapital;
+        const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+        const aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
+        const renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
+        const antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
+        const sluttverdi = pensumPrognose.length > 0 ? pensumPrognose[pensumPrognose.length - 1].verdi : 0;
+        // Beregn vektet yield inline
+        let _yieldSum = 0, _yieldTotal = 0;
+        pensumAllokering.filter(a => a.vekt > 0).forEach(a => {
+          const prod = alleProd.find(p => p.id === a.id);
+          const meta = produktRapportMeta?.[a.id];
+          const y = meta?.forventetYield ?? prod?.forventetYield;
+          if (erGyldigTall(y)) { _yieldSum += y * a.vekt; _yieldTotal += a.vekt; }
+        });
+        const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
+        return (
+          <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
+            <div className="grid grid-cols-3 gap-8">
+              <div className="col-span-2 space-y-5">
+                <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop)}, en {risikoprofil.toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
+                </p>
+                <div className="pt-4">
+                  <p className="text-sm text-gray-600">Med vennlig hilsen</p>
+                  <p className="text-sm font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
+                  <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                </div>
+              </div>
+              <div>
+                <div className="rounded-lg p-5 space-y-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <h3 className="text-sm font-bold tracking-wider uppercase" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h3>
+                  {[
+                    { label: 'Forventet avkastning', verdi: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
+                    { label: 'Forventet yield', verdi: erGyldigTall(_vektetYield) ? _vektetYield.toFixed(1) + '% p.a.' : '—' },
+                    { label: 'Aksjeandel', verdi: Math.round(aksjeAndel) + '%' },
+                    { label: 'Renteandel', verdi: Math.round(renteAndel) + '%' },
+                    { label: 'Antall produkter', verdi: String(antallProdukter) },
+                    { label: `Sluttverdi (${horisont} år)`, verdi: sluttverdi > 1000000 ? (sluttverdi / 1000000).toFixed(1) + ' MNOK' : formatCurrency(sluttverdi) },
+                  ].map((kpi, i) => (
+                    <div key={i}>
+                      <p className="text-[10px] text-gray-400">{kpi.label}</p>
+                      <p className="text-lg font-bold text-white">{kpi.verdi}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      case 'markedssyn':
+        return (
+          <div data-rapport-slide="markedssyn" className="space-y-5 page-break-before">
+            <div>
+              <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Markedssyn og kontekst</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+              <p className="text-sm text-gray-500 italic mt-2">Hvorfor dette forslaget passer til dagens markedsbilde</p>
+            </div>
+            <div className="grid grid-cols-3 gap-5">
+              {[
+                { tittel: 'Makrobildet', ikon: 'M4.5 12.75l6 6 9-13.5', tekst: markedssynData.makro },
+                { tittel: 'Risikobildet', ikon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', tekst: markedssynData.risiko },
+                { tittel: 'Mulighetsbilde', ikon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', tekst: markedssynData.muligheter },
+              ].map((blokk, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E0F2F1' }}>
+                      <svg className="w-4 h-4" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={blokk.ikon} /></svg>
+                    </div>
+                    <h3 className="font-bold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{blokk.tittel}</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">{blokk.tekst}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 italic">Markedssynet reflekterer Pensums vurdering per {markedssynData.periode} og kan endres uten forvarsel.</p>
+          </div>
+        );
+
+      case 'neste-steg':
+        return (
+          <div data-rapport-slide="neste-steg" className="page-break-before" style={{ backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px', padding: '32px' }}>
+            <div>
+              <h2 className="text-3xl font-bold text-white">Neste steg</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+              <p className="text-sm mt-2" style={{ color: PENSUM_COLORS.lightBlue }}>Vi tar gjerne en oppfølgingssamtale for å gå gjennom forslaget i detalj.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-8 mt-8">
+              <div className="col-span-2 space-y-6">
+                {[
+                  { nr: '1', tittel: 'Gjennomgang av forslaget', tekst: 'Vi går gjennom porteføljeforslaget sammen, justerer allokering og produktvalg etter dine ønsker og prioriteringer.' },
+                  { nr: '2', tittel: 'Formaliteter og signering', tekst: 'Etter enighet signerer vi investeringsavtale og rådgivningsmandat. KYC-skjema fylles ut digitalt — tar under 10 minutter.' },
+                  { nr: '3', tittel: 'Porteføljen implementeres', tekst: 'Vi setter opp porteføljen og gjennomfører alle transaksjoner. Du får tilgang til løpende rapportering fra dag én.' },
+                ].map((steg, i) => (
+                  <div key={i} className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                      <span className="text-white font-bold text-sm">{steg.nr}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{steg.tittel}</h4>
+                      <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>{steg.tekst}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="rounded-lg border p-5 text-center" style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  {bruker?.bilde ? (
+                    <img src={bruker.bilde} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2" style={{ borderColor: PENSUM_COLORS.teal }} />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      <svg className="w-8 h-8" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                  )}
+                  <p className="text-[10px] uppercase tracking-widest" style={{ color: PENSUM_COLORS.teal }}>Din rådgiver</p>
+                  <p className="text-white font-bold mt-1">{radgiver || 'Rådgiver'}</p>
+                  <p className="text-xs" style={{ color: '#94A3B8' }}>{bruker?.tittel || 'Investeringsrådgiver'}</p>
+                  {bruker?.telefon && (
+                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white">
+                      <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                      <span>{bruker.telefon}</span>
+                    </div>
+                  )}
+                  {bruker?.epost && (
+                    <div className="flex items-center justify-center gap-2 mt-2 text-xs text-white">
+                      <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      <span>{bruker.epost}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
-  }, []);
+  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
-    const aktiveModuler = tilleggsmoduler.filter(m => m.aktiv && m.posisjon === posisjon && m.id !== 'beskatning' && m.id !== 'markedshistorikk');
+    const aktiveModuler = tilleggsmoduler.filter(m => m.aktiv && m.posisjon === posisjon);
     if (aktiveModuler.length === 0) return null;
     return aktiveModuler.map(m => (
       <React.Fragment key={m.id}>
@@ -1946,7 +2304,7 @@ export default function PensumPrognoseModell() {
 
       const investerbarKapital = investertBelop !== null ? investertBelop : totalKapital;
       const payload = {
-        kundeNavn: kundeNavn || 'Investor',
+        kundeNavn: kundeNavn || kundeSelskap || 'Investor',
         totalKapital: investerbarKapital,
         totalFormue: totalKapital,
         investerbarKapital,
@@ -2103,6 +2461,7 @@ export default function PensumPrognoseModell() {
 
   const handleGenerateRapportPPTX = async () => {
     setRapportPptxLoading(true);
+    setRapportPptxProgress('Laster biblioteker...');
     try {
       const html2canvas = (await import('html2canvas')).default;
       const PptxGenJS = (await import('pptxgenjs')).default;
@@ -2124,24 +2483,31 @@ export default function PensumPrognoseModell() {
         wide: true,
       }));
 
-      // Bygg tilleggsmodul-grupper for aktive moduler
-      const aktiveTilleggsmoduler = tilleggsmoduler.filter(m => m.aktiv).map(m => ({
-        name: m.label,
-        selectors: [m.id],
-        wide: true,
-      }));
+      // Bygg tilleggsmodul-grupper for aktive moduler, innsatt på riktig posisjon
+      const tilleggsmodulGruppe = (posisjon) => tilleggsmoduler
+        .filter(m => m.aktiv && m.posisjon === posisjon)
+        .map(m => ({ name: m.label, selectors: [m.id], wide: true }));
 
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
+        ...tilleggsmodulGruppe('etter-cover'),
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
+        ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
+        ...tilleggsmodulGruppe('etter-byggesteiner'),
         { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
+        ...tilleggsmodulGruppe('etter-allokering'),
         { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
+        ...tilleggsmodulGruppe('etter-historisk'),
         { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
+        ...tilleggsmodulGruppe('etter-snapshot'),
         { name: 'Eksponering', selectors: ['eksponering'], wide: true },
+        ...tilleggsmodulGruppe('etter-eksponering'),
         { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
+        ...tilleggsmodulGruppe('etter-verdiutvikling'),
         ...faktaarkGroups,
-        ...aktiveTilleggsmoduler,
+        ...tilleggsmodulGruppe('etter-faktaark'),
+        ...tilleggsmodulGruppe('foer-disclaimer'),
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
@@ -2150,7 +2516,7 @@ export default function PensumPrognoseModell() {
       pptx.author = 'Pensum Asset Management';
       pptx.company = 'Pensum Asset Management';
       pptx.subject = 'Kunderapport';
-      pptx.title = `Kunderapport ${kundeNavn || 'Investor'}`;
+      pptx.title = `Kunderapport ${kundeNavn || kundeSelskap || 'Investor'}`;
 
       const SLIDE_W = 13.33;
       const SLIDE_H = 7.5;
@@ -2204,7 +2570,9 @@ export default function PensumPrognoseModell() {
         slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
       };
 
-      for (const group of slideGroups) {
+      for (let gi = 0; gi < slideGroups.length; gi++) {
+        const group = slideGroups[gi];
+        setRapportPptxProgress(`Genererer side ${gi + 1} av ${slideGroups.length}: ${group.name === 'snapshot-charts-split' ? 'Snapshot-grafer' : group.name}...`);
         if (group.name === 'snapshot-charts-split') {
           // Split: find individual chart cards within snapshot-charts
           const snapSection = container.querySelector('[data-rapport-slide="snapshot-charts"]');
@@ -2287,6 +2655,7 @@ export default function PensumPrognoseModell() {
       }
 
       // Download
+      setRapportPptxProgress('Pakker PowerPoint-fil...');
       const blob = await pptx.write({ outputType: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -2300,6 +2669,7 @@ export default function PensumPrognoseModell() {
       alert('Feil ved generering av PowerPoint: ' + err.message);
     } finally {
       setRapportPptxLoading(false);
+      setRapportPptxProgress('');
     }
   };
 
@@ -2635,14 +3005,70 @@ export default function PensumPrognoseModell() {
           <div className="flex items-center gap-4">
             {/* Bruker-info */}
             {bruker ? (
-              <div className="flex items-center gap-2 text-sm">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <div className="relative flex items-center gap-2 text-sm">
+                <button onClick={() => setVisProfilPanel(!visProfilPanel)} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                  {bruker.bilde ? (
+                    <img src={bruker.bilde} alt="" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  )}
                   <span className="text-green-700 font-medium">{bruker.navn}</span>
-                </div>
+                  <svg className={"w-3 h-3 text-green-600 transition-transform " + (visProfilPanel ? 'rotate-180' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
                 <button onClick={loggUtBruker} className="text-gray-400 hover:text-gray-600" title="Logg ut">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
+                {visProfilPanel && (
+                  <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#F8FAFB' }}>
+                      <p className="text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Min profil</p>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {/* Profilbilde */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          {bruker.bilde ? (
+                            <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-gray-500 block mb-1">Profilbilde (maks 500KB)</label>
+                          <input type="file" accept="image/*" onChange={handleBildeUpload} className="text-xs w-full" />
+                        </div>
+                      </div>
+                      {/* Telefon */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-0.5">Telefon</label>
+                        <input
+                          type="tel"
+                          value={bruker.telefon || ''}
+                          onChange={(e) => oppdaterBrukerProfil('telefon', e.target.value)}
+                          placeholder="+47 XXX XX XXX"
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                        />
+                      </div>
+                      {/* Tittel */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 block mb-0.5">Tittel</label>
+                        <select
+                          value={bruker.tittel || 'Investeringsrådgiver'}
+                          onChange={(e) => oppdaterBrukerProfil('tittel', e.target.value)}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
+                        >
+                          <option value="Investeringsrådgiver">Investeringsrådgiver</option>
+                          <option value="Senior investeringsrådgiver">Senior investeringsrådgiver</option>
+                          <option value="Partner">Partner</option>
+                          <option value="Porteføljeforvalter">Porteføljeforvalter</option>
+                        </select>
+                      </div>
+                      <p className="text-[10px] text-gray-400">E-post: {bruker.epost}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <button 
@@ -2767,33 +3193,75 @@ export default function PensumPrognoseModell() {
         {activeTab === 'input' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Kundeinformasjon</h3></div>
-              <div className="p-6">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Kundenavn</label>
-                  <input type="text" defaultValue={kundeNavn} onBlur={(e) => setKundeNavn(e.target.value)} placeholder="Skriv inn kundenavn" className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Risikoprofil</label>
-                  <select value={risikoprofil} onChange={(e) => setRisikoprofil(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4">
-                    <option>Defensiv</option><option>Moderat</option><option>Dynamisk</option><option>Offensiv</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">{RISK_PROFILES[risikoprofil].aksjer}% aksjer, {RISK_PROFILES[risikoprofil].renter}% renter</p>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringshorisont</label>
-                  <div className="relative">
-                    <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-12" />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">år</span>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Kundeinformasjon</h3>
+                {bruker && <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-blue-200">{bruker.tittel || 'Rådgiver'}: {bruker.navn}</span>}
+              </div>
+              <div className="p-6 space-y-5">
+                {/* Kunde-identifikasjon */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investor</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <input type="text" defaultValue={kundeNavn} onBlur={(e) => setKundeNavn(e.target.value)} placeholder="Navn på investor" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <span className="text-[10px] text-gray-400 mt-0.5 block">Personnavn eller kontaktperson</span>
+                    </div>
+                    <div>
+                      <input type="text" defaultValue={kundeSelskap} onBlur={(e) => setKundeSelskap(e.target.value)} placeholder="Selskap / organisasjon (valgfritt)" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <span className="text-[10px] text-gray-400 mt-0.5 block">Investeringsselskap, AS, stiftelse e.l.</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rådgiver</label>
-                  <input type="text" defaultValue={radgiver} onBlur={(e) => setRadgiver(e.target.value)} placeholder="Navn på rådgiver" className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
+
+                {/* Risikoprofil - som visuelle knapper */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Risikoprofil</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].map(profil => (
+                      <button
+                        key={profil}
+                        onClick={() => setRisikoprofil(profil)}
+                        className={"rounded-lg py-3 px-2 text-center transition-all border-2 " + (risikoprofil === profil ? 'shadow-md' : 'border-gray-100 hover:border-gray-200')}
+                        style={risikoprofil === profil ? { borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' } : {}}
+                      >
+                        <span className={"block text-sm font-semibold " + (risikoprofil === profil ? '' : 'text-gray-500')} style={risikoprofil === profil ? { color: PENSUM_COLORS.darkBlue } : {}}>{profil}</span>
+                        <span className="block text-[10px] text-gray-400 mt-0.5">{RISK_PROFILES[profil].aksjer}/{RISK_PROFILES[profil].renter}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{RISK_PROFILES[risikoprofil].aksjer}% aksjer · {RISK_PROFILES[risikoprofil].renter}% renter</p>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Dato</label>
-                  <input type="date" value={dato} onChange={(e) => setDato(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
+
+                {/* Horisont - som slider + tall */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringshorisont</label>
+                  <div className="relative">
+                    <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">år</span>
+                  </div>
+                </div>
+
+                {/* Rådgiver og dato */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rådgiver</label>
+                    <input type="text" defaultValue={radgiver} onBlur={(e) => setRadgiver(e.target.value)} placeholder="Navn på rådgiver" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Dato</label>
+                    <input type="date" value={dato} onChange={(e) => setDato(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                  </div>
+                </div>
+
+                {/* Investert beløp (valgfritt override) */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>
+                    Investert beløp
+                  </label>
+                  <div className="relative">
+                    <input type="text" value={investertBelop !== null ? formatNumber(investertBelop) : ''} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) ? null : v); }} onFocus={(e) => { if (investertBelop !== null) e.target.value = investertBelop.toString(); }} onBlur={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) || v === 0 ? null : v); }} placeholder={formatCurrency(totalKapital) + ' (fra kapitaloversikt)'} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">kr</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2951,27 +3419,19 @@ export default function PensumPrognoseModell() {
                     </div>
                   )}
                   <div className="p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                      <div className="flex items-center text-xs flex-1">
-                        <span className="text-gray-500">Aktivaklasse</span>
-                        <span className="text-gray-400 flex-1 text-center">Vekting</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Vekting</span>
-                          <span className="text-gray-400 text-right" style={{ width: '90px' }}>Beløp</span>
-                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Forv. avk.</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-3 mb-5">
                       <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                          <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5" />
-                          Auto 100%
+                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
+                          <span>Auto 100%</span>
                         </label>
-                        <button onClick={normaliserAllokeringTil100} className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50">
+                        <button onClick={normaliserAllokeringTil100} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors">
                           Juster til 100%
                         </button>
-                        <span className={"text-sm px-3 py-1 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                          Total: {formatPercent(totalVekt)}
-                        </span>
+                      </div>
+                      <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
+                        <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
+                        {formatPercent(totalVekt)}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -2990,7 +3450,7 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
               <div className="xl:col-span-2">
-                <div className="grid grid-cols-1 gap-4">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-5 grid grid-cols-1 gap-4">
                   {/* Porteføljesammensetning - donut chart with side legend */}
                   <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
                     <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</h4>
@@ -6453,7 +6913,7 @@ export default function PensumPrognoseModell() {
                   <div className="flex-1 flex flex-col justify-center py-8">
                     <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: PENSUM_COLORS.salmon }}>Kunderapport</div>
                     <h1 className="text-4xl font-bold text-white mb-2" style={{ lineHeight: '1.15' }}>Investeringsforslag</h1>
-                    <p className="text-lg text-blue-200 mt-1">{kundeNavn || 'Investor'}</p>
+                    <p className="text-lg text-blue-200 mt-1">{kundeNavn ? <>{kundeNavn}{kundeSelskap ? <span className="text-sm text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</> : (kundeSelskap || 'Investor')}</p>
 
                     <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Rådgiver</span><p className="text-sm font-semibold text-white mt-0.5">{radgiver || '—'}</p></div>
@@ -6461,24 +6921,12 @@ export default function PensumPrognoseModell() {
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Horisont</span><p className="text-sm font-semibold text-white mt-0.5">{horisont} år</p></div>
                     </div>
                   </div>
-
-                  {/* Bottom: KPI strip */}
-                  <div className="grid grid-cols-3 gap-6 pt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Investert beløp</div><div className="text-xl font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. avkastning</div><div className="text-xl font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. yield</div><div className="text-xl font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6 pt-4">
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Aksje / Rente</div><div className="text-xl font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Likviditet</div><div className="text-xl font-bold text-white mt-1">{pensumLikviditet.likvid.toFixed(0)}% likvid</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Sluttverdi</div><div className="text-xl font-bold text-green-300 mt-1">{formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)}</div></div>
-                  </div>
                 </div>
               </div>
 
-              {renderTilleggsmodulerVedPosisjon('etter-cover')}
-
               <div className="p-8 space-y-8">
+
+                {renderTilleggsmodulerVedPosisjon('etter-cover')}
 
                 {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
                 <div data-rapport-slide="utgangspunkt" className="space-y-5">
@@ -7296,169 +7744,19 @@ export default function PensumPrognoseModell() {
 
                 {renderTilleggsmodulerVedPosisjon('etter-faktaark')}
 
-                {/* === TILLEGGSMODUL: BESKATNING === */}
-                {tilleggsmoduler.find(m => m.id === 'beskatning')?.aktiv && (
-                  <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
-                        <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                      </div>
-                      <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr>
-                            <th className="p-3 text-left w-[120px]" style={{ backgroundColor: '#F8F9FA' }}></th>
-                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>PRIVAT EIE</th>
-                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESPAREKONTO (ASK)</th>
-                            <th colSpan={2} className="p-3 text-center font-bold text-sm tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>AKSJESELSKAP</th>
-                          </tr>
-                          <tr>
-                            <th className="p-2" style={{ backgroundColor: '#F8F9FA' }}></th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue*</th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Gevinst/tap</th>
-                            <th className="p-2 text-center text-xs font-semibold text-white rounded-t" style={{ backgroundColor: PENSUM_COLORS.lightBlue }}>Formue</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-t border-gray-200">
-                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Norske aksjer, EU/EOS aksjer, Aksjefond registrert i Norge/EU/EOS</td>
-                            <td className="p-3 text-xs text-gray-700">37,84 % skatt pa gevinster etter fradrag for skjermingsrente**. Ikke fradrag for skjermingsrente ved tap</td>
-                            <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
-                            <td className="p-3 text-xs text-gray-700">Ingen lopende beskatning. Ved realisasjon av avtalen samme beskatning som aksjer i privat eie.</td>
-                            <td className="p-3 text-xs text-gray-700">80% av markedsverdi beskattes med inntil 1,0%</td>
-                            <td className="p-3 text-xs text-gray-700">Ikke skatt pa gevinst, ikke fradrag for tap. 3% av utbytter beskattes med 22% (3%x22%=0,66%)</td>
-                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
-                          </tr>
-                          <tr className="border-t border-gray-200" style={{ backgroundColor: '#FAFBFC' }}>
-                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F3F4F6' }}>Aksjer utenfor EU/EOS, Aksjefond registrert utenfor Norge/EU/EOS</td>
-                            <td className="p-3 text-xs text-gray-700">Samme som over</td>
-                            <td className="p-3 text-xs text-gray-700">Samme som over</td>
-                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
-                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
-                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster og utbytter, fradrag ved tap</td>
-                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
-                          </tr>
-                          <tr className="border-t border-gray-200">
-                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F8F9FA' }}>Rentefond / Obligasjoner</td>
-                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag for tap</td>
-                            <td className="p-3 text-xs text-gray-700">100% av markedsverdi beskattes med inntil 1,0%</td>
-                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
-                            <td className="p-3 text-xs text-gray-500">Kan ikke benyttes pa ASK</td>
-                            <td className="p-3 text-xs text-gray-700">22% skatt pa gevinster. Fradrag ved tap</td>
-                            <td className="p-3 text-xs text-gray-700">Selskaper betaler ikke formuesskatt</td>
-                          </tr>
-                          <tr className="border-t-2 border-gray-300" style={{ backgroundColor: '#F3F4F6' }}>
-                            <td className="p-3 font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>**) Skjermingsrente</td>
-                            <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
-                            <td colSpan={2} className="p-3 text-xs text-gray-700">Ja. Ca 3,9 %</td>
-                            <td colSpan={2} className="p-3 text-xs text-gray-700">Nei</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="flex justify-between items-start text-[10px] text-gray-400 pt-2">
-                      <div>
-                        <p style={{ color: PENSUM_COLORS.salmon }}>*For formuer overstigende 20 millioner NOK er beskatningen 1,1 %.</p>
-                        <p style={{ color: PENSUM_COLORS.salmon }}>**) Basert pa estimat for renteniva et i 2025.</p>
-                      </div>
-                      <div className="text-right italic max-w-sm">
-                        <p>Informasjonen om beskatning er av generell karakter og utgjor ikke individuell skatteradgivning. Skatteregler kan endres og vil avhenge av kundens konkrete forhold.</p>
-                        <p className="mt-1">Kilder: Skattesatser 2025 - regjeringen.no / norgesbank.no</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* === TILLEGGSMODUL: AKSJEMARKEDET – HISTORISK UTVIKLING === */}
-                {tilleggsmoduler.find(m => m.id === 'markedshistorikk')?.aktiv && (
-                  <div data-rapport-slide="markedshistorikk" className="space-y-4 page-break-before">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
-                        <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                      </div>
-                      <div className="text-right">
-                        <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60 ml-auto" />
-                        <p className="text-[10px] text-gray-400 mt-1 max-w-[260px]">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 rounded-lg p-5">
-                      <h3 className="text-sm font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Arlig aksjeavkastning og fall gjennom aret</h3>
-                      <p className="text-[10px] text-gray-500 mb-4">MSCI AC World fall gjennom aret vs. kalenderarsavkastning. Til tross for gjennomsnittlige fall gjennom aret pa -15% (median: -11%), er den arlige avkastningen positiv i 26 av 37 (70%) ar</p>
-                      {(() => {
-                        const msciData = [
-                          { aar: "'88", avk: 21, fall: -8 }, { aar: "'89", avk: 15, fall: -7 },
-                          { aar: "'90", avk: -19, fall: -26 }, { aar: "'91", avk: 17, fall: -7 },
-                          { aar: "'92", avk: -7, fall: -11 }, { aar: "'93", avk: 22, fall: -6 },
-                          { aar: "'94", avk: 3, fall: -8 }, { aar: "'95", avk: 17, fall: -4 },
-                          { aar: "'96", avk: 11, fall: -11 }, { aar: "'97", avk: 13, fall: -7 },
-                          { aar: "'98", avk: 20, fall: -21 }, { aar: "'99", avk: 25, fall: -14 },
-                          { aar: "'00", avk: -15, fall: -20 }, { aar: "'01", avk: -17, fall: -32 },
-                          { aar: "'02", avk: -21, fall: -31 }, { aar: "'03", avk: 32, fall: -7 },
-                          { aar: "'04", avk: 13, fall: -9 }, { aar: "'05", avk: 9, fall: -9 },
-                          { aar: "'06", avk: 19, fall: -13 }, { aar: "'07", avk: 10, fall: -11 },
-                          { aar: "'08", avk: -44, fall: -53 }, { aar: "'09", avk: 32, fall: -27 },
-                          { aar: "'10", avk: 10, fall: -16 }, { aar: "'11", avk: -9, fall: -24 },
-                          { aar: "'12", avk: 13, fall: -14 }, { aar: "'13", avk: 20.3, fall: -9 },
-                          { aar: "'14", avk: 2.1, fall: -10 }, { aar: "'15", avk: -4, fall: -16 },
-                          { aar: "'16", avk: 6, fall: -12 }, { aar: "'17", avk: 22, fall: -4 },
-                          { aar: "'18", avk: -11, fall: -21 }, { aar: "'19", avk: 24, fall: -2 },
-                          { aar: "'20", avk: 14, fall: -34 }, { aar: "'21", avk: 10, fall: -6 },
-                          { aar: "'22", avk: -20, fall: -27 }, { aar: "'23", avk: 20, fall: -8.3 },
-                          { aar: "'24", avk: 16, fall: -8.5 }, { aar: "'25*", avk: 17.1, fall: -16.3 },
-                        ];
-                        return (
-                          <ResponsiveContainer width="100%" height={320}>
-                            <ComposedChart data={msciData} barCategoryGap="15%">
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                              <XAxis dataKey="aar" tick={{ fontSize: 9, fill: '#6B7280' }} interval={0} angle={0} />
-                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} domain={[-60, 40]} />
-                              <Tooltip content={({ active, payload, label }) => {
-                                if (!active || !payload?.length) return null;
-                                const avkVal = payload.find(p => p.dataKey === 'avk');
-                                const fallVal = payload.find(p => p.dataKey === 'fall');
-                                return (
-                                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
-                                    <div className="font-semibold text-gray-700 mb-1">{label}</div>
-                                    {avkVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B0B0B0' }}></span><span>Arsavkastning:</span><span className={"font-bold " + (avkVal.value >= 0 ? 'text-green-700' : 'text-red-600')}>{avkVal.value}%</span></div>}
-                                    {fallVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#2E5B5E' }}></span><span>Arsfall:</span><span className="font-bold text-red-600">{fallVal.value}%</span></div>}
-                                  </div>
-                                );
-                              }} />
-                              <ReferenceLine y={0} stroke="#9CA3AF" />
-                              <Bar dataKey="avk" name="Kalenderarsavkastning" fill="#B0B0B0" radius={[2, 2, 0, 0]} maxBarSize={22}>
-                                {msciData.map((d, i) => (
-                                  <Cell key={i} fill={d.aar === "'25*" ? PENSUM_COLORS.teal : '#B0B0B0'} />
-                                ))}
-                              </Bar>
-                              <Line type="monotone" dataKey="fall" name="Fall gjennom aret" stroke="#2E5B5E" strokeWidth={0} dot={{ r: 4, fill: '#2E5B5E', strokeWidth: 0 }} />
-                            </ComposedChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
-                    </div>
-
-                    <div className="text-[10px] text-gray-400 leading-relaxed">
-                      <p>Kilde: FactSet, MSCI, J.P. Morgan Asset Management. Avkastningstallene er kursavkastning basert pa MSCI World-indeksen malt i amerikanske dollar. Intrarsfallet er det storste fallet fra topp til bunn i lopet av det aktuelle aret. Historisk avkastning er ingen palitelig indikator for navarende og fremtidige resultater. Dataene gjenspeiler sist tilgjengelige informasjon per 30.09.2025.</p>
-                    </div>
-                  </div>
-                )}
-
                 {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
 
                 {/* === DISCLAIMER === */}
-                <div data-rapport-slide="disclaimer" className="text-xs text-gray-500 border-t border-gray-200 pt-6">
-                  <p className="font-semibold mb-2">Viktig informasjon</p>
-                  <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
+                <div data-rapport-slide="disclaimer" className="page-break-before pt-16 pb-6">
+                  <div className="flex justify-center mb-12">
+                    <img src={PENSUM_LOGO} alt="Pensum Asset Management" className="h-16" style={{ opacity: 0.2 }} />
+                  </div>
+                  <div className="border-t border-gray-200 pt-8 space-y-5 text-sm text-gray-500 leading-relaxed max-w-3xl mx-auto">
+                    <h3 className="font-bold text-base text-gray-700">Viktig informasjon</h3>
+                    <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
+                    <p>Pensum Asset Management AS er regulert av Finanstilsynet og innehar konsesjon som verdipapirforetak. Investeringsrådgivning gis i henhold til verdipapirhandelloven. Kostnader og gebyrer kan påvirke netto avkastning. For fullstendig informasjon om risiko, kostnader og vilkår, se Pensums nøkkelinformasjonsdokumenter (KID) og prospekter som er tilgjengelige på forespørsel.</p>
+                    <p>Dette dokumentet utgjør ikke et tilbud om kjøp eller salg av finansielle instrumenter, men er ment som beslutningsgrunnlag for diskusjon mellom rådgiver og kunde.</p>
+                  </div>
                 </div>
               </div>
 
@@ -7503,7 +7801,40 @@ export default function PensumPrognoseModell() {
                   <div className="divide-y divide-gray-100">
                     {tilleggsmoduler.map((modul, idx) => (
                       <div key={modul.id} className={"px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          {/* Rekkefølge-knapper */}
+                          <div className="flex flex-col gap-0.5 flex-shrink-0">
+                            <button
+                              disabled={idx === 0}
+                              onClick={() => {
+                                setTilleggsmoduler(prev => {
+                                  const ny = [...prev];
+                                  [ny[idx - 1], ny[idx]] = [ny[idx], ny[idx - 1]];
+                                  return ny;
+                                });
+                              }}
+                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                              title="Flytt opp"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                            </button>
+                            <span className="text-[9px] text-gray-400 text-center font-mono leading-none">{idx + 1}</span>
+                            <button
+                              disabled={idx === tilleggsmoduler.length - 1}
+                              onClick={() => {
+                                setTilleggsmoduler(prev => {
+                                  const ny = [...prev];
+                                  [ny[idx], ny[idx + 1]] = [ny[idx + 1], ny[idx]];
+                                  return ny;
+                                });
+                              }}
+                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === tilleggsmoduler.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                              title="Flytt ned"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                          </div>
+                          {/* Av/på toggle */}
                           <button
                             onClick={() => {
                               setTilleggsmoduler(prev => prev.map(m =>
@@ -7531,8 +7862,8 @@ export default function PensumPrognoseModell() {
                             </div>
                           )}
                         </div>
-                        {modul.aktiv && modul.id !== 'beskatning' && modul.id !== 'markedshistorikk' && (
-                          <div className="mt-2 ml-14">
+                        {modul.aktiv && (
+                          <div className="mt-2 ml-20">
                             <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
                             <select
                               value={modul.posisjon || 'foer-disclaimer'}
@@ -7554,7 +7885,7 @@ export default function PensumPrognoseModell() {
                     ))}
                   </div>
                   <div className="px-5 py-3 border-t border-gray-100 text-[10px] text-gray-400" style={{ backgroundColor: '#FAFBFC' }}>
-                    Flere moduler kommer — ta kontakt for onsker og forslag.
+                    Bruk pilene til venstre for a endre rekkefølgen pa modulene. Moduler med samme plassering vises i den rekkefølgen de star i listen.
                   </div>
                 </div>
               )}
@@ -7570,6 +7901,15 @@ export default function PensumPrognoseModell() {
                 )}
                 {rapportPptxLoading ? 'Genererer PowerPoint...' : 'Last ned PowerPoint'}
               </button>
+              {rapportPptxLoading && (
+                <div className="text-center space-y-2 max-w-sm">
+                  <div className="w-64 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full animate-pulse" style={{ backgroundColor: PENSUM_COLORS.teal, width: '60%', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                  </div>
+                  <p className="text-xs text-gray-500">{rapportPptxProgress}</p>
+                  <p className="text-[10px] text-gray-400">Dette kan ta 10-20 sekunder avhengig av antall sider</p>
+                </div>
+              )}
             </div>
           </div>
           );
@@ -8048,6 +8388,63 @@ export default function PensumPrognoseModell() {
                 </div>
 
                 {/* Reset til standard */}
+                {/* Markedssyn-redigering */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                    <h3 className="text-lg font-semibold text-white">Markedssyn og kontekst</h3>
+                    <p className="text-xs text-white opacity-70 mt-1">Oppdater månedlig — vises i tilleggsmodulen «Markedssyn og kontekst»</p>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Periode</label>
+                      <input
+                        type="text"
+                        value={markedssynData.periode}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, periode: e.target.value }))}
+                        placeholder="mars 2026"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Makrobildet</label>
+                      <textarea
+                        value={markedssynData.makro}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, makro: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Risikobildet</label>
+                      <textarea
+                        value={markedssynData.risiko}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, risiko: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mulighetsbilde</label>
+                      <textarea
+                        value={markedssynData.muligheter}
+                        onChange={(e) => setMarkedssynData(prev => ({ ...prev, muligheter: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await storageSet('pensum_admin_markedssyn', JSON.stringify(markedssynData));
+                        setAdminMelding('Markedssyn lagret.');
+                      }}
+                      className="px-6 py-2 text-white rounded-lg font-medium hover:opacity-90"
+                      style={{ backgroundColor: PENSUM_COLORS.teal }}
+                    >
+                      Lagre markedssyn
+                    </button>
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
                     <h3 className="text-lg font-semibold text-white">Tilbakestill data</h3>
