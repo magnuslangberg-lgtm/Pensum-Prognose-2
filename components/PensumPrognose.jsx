@@ -25,6 +25,7 @@ export default function PensumPrognoseModell() {
   const [ventPaaRegistrering, setVentPaaRegistrering] = useState(false); // Venter på registrering før lagring
 
   const [kundeNavn, setKundeNavn] = useState('');
+  const [kundeSelskap, setKundeSelskap] = useState('');
   const [risikoprofil, setRisikoprofil] = useState('Moderat');
   const [horisont, setHorisont] = useState(10);
   const [localHorisont, setLocalHorisont] = useState('10');
@@ -690,6 +691,7 @@ export default function PensumPrognoseModell() {
   const getKundeData = useCallback(() => ({
     id: aktivKundeId || Date.now().toString(),
     kundeNavn,
+    kundeSelskap,
     radgiver,
     dato,
     risikoprofil,
@@ -701,12 +703,13 @@ export default function PensumPrognoseModell() {
     allokering,
     scenarioParams,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
     setAktivKundeId(data.id);
     setKundeNavn(data.kundeNavn || '');
+    setKundeSelskap(data.kundeSelskap || '');
     setDato(data.dato || new Date().toISOString().split('T')[0]);
     setRisikoprofil(data.risikoprofil || 'Moderat');
     setHorisont(data.horisont || 10);
@@ -3187,33 +3190,85 @@ export default function PensumPrognoseModell() {
         {activeTab === 'input' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Kundeinformasjon</h3></div>
-              <div className="p-6">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Kundenavn</label>
-                  <input type="text" defaultValue={kundeNavn} onBlur={(e) => setKundeNavn(e.target.value)} placeholder="Skriv inn kundenavn" className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Risikoprofil</label>
-                  <select value={risikoprofil} onChange={(e) => setRisikoprofil(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4">
-                    <option>Defensiv</option><option>Moderat</option><option>Dynamisk</option><option>Offensiv</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">{RISK_PROFILES[risikoprofil].aksjer}% aksjer, {RISK_PROFILES[risikoprofil].renter}% renter</p>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringshorisont</label>
-                  <div className="relative">
-                    <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-12" />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">år</span>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Kundeinformasjon</h3>
+                {bruker && <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-blue-200">{bruker.tittel || 'Rådgiver'}: {bruker.navn}</span>}
+              </div>
+              <div className="p-6 space-y-5">
+                {/* Kunde-identifikasjon */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investor</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <input type="text" defaultValue={kundeNavn} onBlur={(e) => setKundeNavn(e.target.value)} placeholder="Navn på investor" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <span className="text-[10px] text-gray-400 mt-0.5 block">Personnavn eller kontaktperson</span>
+                    </div>
+                    <div>
+                      <input type="text" defaultValue={kundeSelskap} onBlur={(e) => setKundeSelskap(e.target.value)} placeholder="Selskap / organisasjon (valgfritt)" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <span className="text-[10px] text-gray-400 mt-0.5 block">Investeringsselskap, AS, stiftelse e.l.</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rådgiver</label>
-                  <input type="text" defaultValue={radgiver} onBlur={(e) => setRadgiver(e.target.value)} placeholder="Navn på rådgiver" className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
+
+                {/* Risikoprofil - som visuelle knapper */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Risikoprofil</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].map(profil => (
+                      <button
+                        key={profil}
+                        onClick={() => setRisikoprofil(profil)}
+                        className={"rounded-lg py-3 px-2 text-center transition-all border-2 " + (risikoprofil === profil ? 'shadow-md' : 'border-gray-100 hover:border-gray-200')}
+                        style={risikoprofil === profil ? { borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' } : {}}
+                      >
+                        <span className={"block text-sm font-semibold " + (risikoprofil === profil ? '' : 'text-gray-500')} style={risikoprofil === profil ? { color: PENSUM_COLORS.darkBlue } : {}}>{profil}</span>
+                        <span className="block text-[10px] text-gray-400 mt-0.5">{RISK_PROFILES[profil].aksjer}/{RISK_PROFILES[profil].renter}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{RISK_PROFILES[risikoprofil].aksjer}% aksjer · {RISK_PROFILES[risikoprofil].renter}% renter</p>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Dato</label>
-                  <input type="date" value={dato} onChange={(e) => setDato(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4" />
+
+                {/* Horisont - som slider + tall */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringshorisont</label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range" min="1" max="30" step="1"
+                      value={horisont}
+                      onChange={(e) => { setHorisont(parseInt(e.target.value)); setLocalHorisont(e.target.value); }}
+                      className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                      style={{ accentColor: PENSUM_COLORS.darkBlue }}
+                    />
+                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
+                      <span className="text-xs text-gray-400">år</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rådgiver og dato */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rådgiver</label>
+                    <input type="text" defaultValue={radgiver} onBlur={(e) => setRadgiver(e.target.value)} placeholder="Navn på rådgiver" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Dato</label>
+                    <input type="date" value={dato} onChange={(e) => setDato(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                  </div>
+                </div>
+
+                {/* Investert beløp (valgfritt override) */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>
+                    Investert beløp
+                    <span className="text-[10px] font-normal text-gray-400 normal-case ml-2">Overstyrer total kapital i forslaget</span>
+                  </label>
+                  <div className="relative">
+                    <input type="text" value={investertBelop !== null ? formatNumber(investertBelop) : ''} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) ? null : v); }} onFocus={(e) => { if (investertBelop !== null) e.target.value = investertBelop.toString(); }} onBlur={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) || v === 0 ? null : v); }} placeholder={formatCurrency(totalKapital) + ' (fra kapitaloversikt)'} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">kr</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3371,27 +3426,19 @@ export default function PensumPrognoseModell() {
                     </div>
                   )}
                   <div className="p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                      <div className="flex items-center text-xs flex-1">
-                        <span className="text-gray-500">Aktivaklasse</span>
-                        <span className="text-gray-400 flex-1 text-center">Vekting</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Vekting</span>
-                          <span className="text-gray-400 text-right" style={{ width: '90px' }}>Beløp</span>
-                          <span className="text-gray-400 text-right" style={{ width: '60px' }}>Forv. avk.</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-3 mb-5">
                       <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                          <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5" />
-                          Auto 100%
+                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input type="checkbox" checked={autoRebalanserAllokering} onChange={(e) => setAutoRebalanserAllokering(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
+                          <span>Auto 100%</span>
                         </label>
-                        <button onClick={normaliserAllokeringTil100} className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50">
+                        <button onClick={normaliserAllokeringTil100} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors">
                           Juster til 100%
                         </button>
-                        <span className={"text-sm px-3 py-1 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                          Total: {formatPercent(totalVekt)}
-                        </span>
+                      </div>
+                      <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
+                        <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
+                        {formatPercent(totalVekt)}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -6873,7 +6920,7 @@ export default function PensumPrognoseModell() {
                   <div className="flex-1 flex flex-col justify-center py-8">
                     <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: PENSUM_COLORS.salmon }}>Kunderapport</div>
                     <h1 className="text-4xl font-bold text-white mb-2" style={{ lineHeight: '1.15' }}>Investeringsforslag</h1>
-                    <p className="text-lg text-blue-200 mt-1">{kundeNavn || 'Investor'}</p>
+                    <p className="text-lg text-blue-200 mt-1">{kundeNavn || 'Investor'}{kundeSelskap ? <span className="text-sm text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</p>
 
                     <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Rådgiver</span><p className="text-sm font-semibold text-white mt-0.5">{radgiver || '—'}</p></div>
