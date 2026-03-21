@@ -2487,24 +2487,31 @@ export default function PensumPrognoseModell() {
         wide: true,
       }));
 
-      // Bygg tilleggsmodul-grupper for aktive moduler
-      const aktiveTilleggsmoduler = tilleggsmoduler.filter(m => m.aktiv).map(m => ({
-        name: m.label,
-        selectors: [m.id],
-        wide: true,
-      }));
+      // Bygg tilleggsmodul-grupper for aktive moduler, innsatt på riktig posisjon
+      const tilleggsmodulGruppe = (posisjon) => tilleggsmoduler
+        .filter(m => m.aktiv && m.posisjon === posisjon)
+        .map(m => ({ name: m.label, selectors: [m.id], wide: true }));
 
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
+        ...tilleggsmodulGruppe('etter-cover'),
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
+        ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
+        ...tilleggsmodulGruppe('etter-byggesteiner'),
         { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
+        ...tilleggsmodulGruppe('etter-allokering'),
         { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
+        ...tilleggsmodulGruppe('etter-historisk'),
         { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
+        ...tilleggsmodulGruppe('etter-snapshot'),
         { name: 'Eksponering', selectors: ['eksponering'], wide: true },
+        ...tilleggsmodulGruppe('etter-eksponering'),
         { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
+        ...tilleggsmodulGruppe('etter-verdiutvikling'),
         ...faktaarkGroups,
-        ...aktiveTilleggsmoduler,
+        ...tilleggsmodulGruppe('etter-faktaark'),
+        ...tilleggsmodulGruppe('foer-disclaimer'),
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
@@ -6928,24 +6935,12 @@ export default function PensumPrognoseModell() {
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Horisont</span><p className="text-sm font-semibold text-white mt-0.5">{horisont} år</p></div>
                     </div>
                   </div>
-
-                  {/* Bottom: KPI strip */}
-                  <div className="grid grid-cols-3 gap-6 pt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Investert beløp</div><div className="text-xl font-bold text-white mt-1">{formatCurrency(effektivtInvestertBelop)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. avkastning</div><div className="text-xl font-bold text-green-300 mt-1">{formatPercent(pensumForventetAvkastning)}</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Forv. yield</div><div className="text-xl font-bold text-teal-300 mt-1">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '%' : '—'}</div></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6 pt-4">
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Aksje / Rente</div><div className="text-xl font-bold text-white mt-1">{pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0}% / {pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0}%</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Likviditet</div><div className="text-xl font-bold text-white mt-1">{pensumLikviditet.likvid.toFixed(0)}% likvid</div></div>
-                    <div className="text-center"><div className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Sluttverdi</div><div className="text-xl font-bold text-green-300 mt-1">{formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)}</div></div>
-                  </div>
                 </div>
               </div>
 
-              {renderTilleggsmodulerVedPosisjon('etter-cover')}
-
               <div className="p-8 space-y-8">
+
+                {renderTilleggsmodulerVedPosisjon('etter-cover')}
 
                 {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
                 <div data-rapport-slide="utgangspunkt" className="space-y-5">
