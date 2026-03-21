@@ -7719,14 +7719,12 @@ export default function PensumPrognoseModell() {
                 {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
 
                 {/* === DISCLAIMER === */}
-                <div data-rapport-slide="disclaimer" className="page-break-before pt-10 pb-6">
-                  <div className="flex flex-col items-center mb-8">
-                    <img src={PENSUM_LOGO} alt="Pensum" className="h-12 opacity-30 mb-2" />
-                    <p className="text-xs tracking-[0.3em] uppercase font-light" style={{ color: '#B0B8C4' }}>P E N S U M</p>
-                    <p className="text-[10px] tracking-[0.2em] uppercase font-light" style={{ color: '#C0C8D4' }}>A S S E T &nbsp; M A N A G E M E N T</p>
+                <div data-rapport-slide="disclaimer" className="page-break-before pt-16 pb-6">
+                  <div className="flex justify-center mb-12">
+                    <img src={PENSUM_LOGO} alt="Pensum Asset Management" className="h-16" style={{ opacity: 0.2 }} />
                   </div>
-                  <div className="border-t border-gray-200 pt-6 space-y-4 text-xs text-gray-500 leading-relaxed">
-                    <h3 className="font-bold text-sm text-gray-700">Viktig informasjon</h3>
+                  <div className="border-t border-gray-200 pt-8 space-y-5 text-sm text-gray-500 leading-relaxed max-w-3xl mx-auto">
+                    <h3 className="font-bold text-base text-gray-700">Viktig informasjon</h3>
                     <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
                     <p>Pensum Asset Management AS er regulert av Finanstilsynet og innehar konsesjon som verdipapirforetak. Investeringsrådgivning gis i henhold til verdipapirhandelloven. Kostnader og gebyrer kan påvirke netto avkastning. For fullstendig informasjon om risiko, kostnader og vilkår, se Pensums nøkkelinformasjonsdokumenter (KID) og prospekter som er tilgjengelige på forespørsel.</p>
                     <p>Dette dokumentet utgjør ikke et tilbud om kjøp eller salg av finansielle instrumenter, men er ment som beslutningsgrunnlag for diskusjon mellom rådgiver og kunde.</p>
