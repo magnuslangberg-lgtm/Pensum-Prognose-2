@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { BarChart, Bar, ComposedChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
@@ -54,6 +54,10 @@ export default function PensumPrognoseModell() {
   const [dashboardPeriode, setDashboardPeriode] = useState('5y');
   const [dashboardProdukter, setDashboardProdukter] = useState(['basis', 'global-core-active', 'global-edge', 'global-hoyrente', 'nordisk-hoyrente', 'norge-a', 'energy-a', 'banking-d', 'financial-d']);
   const [sammenligningPeriodeScen, setSammenligningPeriodeScen] = useState('max');
+  // Porteføljebygging — sammenligning mot benchmarks
+  const [portCompPeriode, setPortCompPeriode] = useState('3Å');
+  const [portCompIndekser, setPortCompIndekser] = useState(['MSCI World', 'Oslo Børs']);
+  const [portCompVisProdukter, setPortCompVisProdukter] = useState([]);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [rapportPptxLoading, setRapportPptxLoading] = useState(false);
   const [pdfModal, setPdfModal] = useState(false);
@@ -61,6 +65,21 @@ export default function PensumPrognoseModell() {
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
   const [valgteIndekserScen, setValgteIndekserScen] = useState(['MSCI World', 'Oslo Børs', 'Norske Statsobl.']);
   const [visPortefoljeScen, setVisPortefoljeScen] = useState(true);
+  // Fondssammenligning
+  const [eksterneFond, setEksterneFond] = useState(null);
+  const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
+  const [fondSok, setFondSok] = useState('');
+  const [fondSokDebounced, setFondSokDebounced] = useState('');
+  const fondSokTimerRef = useRef(null);
+  const [fondKategoriFilter, setFondKategoriFilter] = useState('');
+  const [valgteFond, setValgteFond] = useState([]);
+  const [visPensumIFondComp, setVisPensumIFondComp] = useState([]);
+  const [visPortefoljeIFondComp, setVisPortefoljeIFondComp] = useState(false);
+  const [fondVekter, setFondVekter] = useState({}); // { isin: vekt } for konkurranseportefølje
+  const [visKonkurrentPortefolje, setVisKonkurrentPortefolje] = useState(false);
+  const [skjulEnkeltfond, setSkjulEnkeltfond] = useState(false); // skjul individuelle fond-linjer
+  const [visFondssammenligning, setVisFondssammenligning] = useState(false); // collapsible external fund search
+  const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -111,6 +130,14 @@ export default function PensumPrognoseModell() {
   const [adminMelding, setAdminMelding] = useState('');
   const [adminBrukere, setAdminBrukere] = useState(null);
   const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
+
+  // Debounce fond search to avoid lag on each keystroke
+  const handleFondSokChange = useCallback((e) => {
+    const val = e.target.value;
+    setFondSok(val);
+    if (fondSokTimerRef.current) clearTimeout(fondSokTimerRef.current);
+    fondSokTimerRef.current = setTimeout(() => setFondSokDebounced(val), 250);
+  }, []);
 
   const storageGet = async (key) => {
     if (typeof window === 'undefined') return null;
@@ -3541,6 +3568,262 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
+            {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
+            {(() => {
+              const PORT_COMP_INDEKS_CONFIG = {
+                'MSCI World': { farge: PENSUM_COLORS.lightBlue, feedKey: 'msci-world' },
+                'Oslo Børs': { farge: PENSUM_COLORS.navy, feedKey: 'oslo-bors' },
+                'MSCI ACWI': { farge: PENSUM_COLORS.salmon, feedKey: 'msci-acwi' },
+                'S&P 500': { farge: PENSUM_COLORS.teal, feedKey: 'sp500' },
+                'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
+                'MSCI EM': { farge: PENSUM_COLORS.purple, feedKey: 'msci-em' },
+                'Norske Statsobl.': { farge: PENSUM_COLORS.gray, feedKey: 'norske-statsobl' },
+              };
+
+              const PORT_COMP_PROD_CONFIG = [
+                { label: 'Basis', id: 'basis', farge: PENSUM_COLORS.salmon },
+                { label: 'Fin. Opp.', id: 'financial-d', farge: PENSUM_COLORS.gray },
+                { label: 'Global Core Active', id: 'global-core-active', farge: PENSUM_COLORS.navy },
+                { label: 'Global Edge', id: 'global-edge', farge: PENSUM_COLORS.lightBlue },
+                { label: 'Global Energy', id: 'energy-a', farge: PENSUM_COLORS.gold },
+                { label: 'Global Høyrente', id: 'global-hoyrente', farge: PENSUM_COLORS.teal },
+                { label: 'Nordic Banking', id: 'banking-d', farge: PENSUM_COLORS.midBlue },
+                { label: 'Nordisk Høyrente', id: 'nordisk-hoyrente', farge: PENSUM_COLORS.purple },
+                { label: 'Norske Aksjer', id: 'norge-a', farge: PENSUM_COLORS.red }
+              ];
+
+              // Beregn startdato fra periodevalg
+              const compStartDato = (() => {
+                const now = RAPPORT_DATO_OBJEKT;
+                const p = portCompPeriode;
+                if (p === '1M') return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                if (p === '3M') return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                if (p === '6M') return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                if (p === 'YTD') return new Date(now.getFullYear(), 0, 1);
+                if (p === '1Å') return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                if (p === '3Å') return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+                if (p === '5Å') return new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+                return new Date(2015, 0, 1);
+              })();
+
+              // Bygg sammenligningsdata
+              const byggPortCompData = () => {
+                const serieMap = {};
+
+                // 1. Vektet portefølje fra pensumAllokering
+                const valgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                const totalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+                if (valgteProdIds.length > 0) {
+                  const produktSerier = {};
+                  valgteProdIds.forEach(id => {
+                    const hist = produktHistorikk?.[id];
+                    if (!hist?.data?.length) return;
+                    const maanedlig = byggMaanedssluttSerie(hist.data);
+                    const filtrert = maanedlig.filter(d => {
+                      const dato = parseHistorikkDato(d.dato);
+                      return dato && dato >= compStartDato;
+                    });
+                    if (filtrert.length > 0) {
+                      const startVerdi = filtrert[0].verdi;
+                      produktSerier[id] = {};
+                      filtrert.forEach(d => {
+                        produktSerier[id][d.dato] = startVerdi > 0 ? ((d.verdi / startVerdi) - 1) * 100 : 0;
+                      });
+                    }
+                  });
+                  const portDatoer = new Set();
+                  Object.values(produktSerier).forEach(map => Object.keys(map).forEach(d => portDatoer.add(d)));
+                  const portSortert = Array.from(portDatoer).sort();
+                  const portSerie = [];
+                  portSortert.forEach(dato => {
+                    let vektetVerdi = 0; let totalProdVekt = 0;
+                    valgteProdIds.forEach(id => {
+                      if (produktSerier[id]?.[dato] !== undefined) {
+                        const allok = pensumAllokering.find(a => a.id === id);
+                        if (allok) {
+                          vektetVerdi += produktSerier[id][dato] * (allok.vekt / totalVekt);
+                          totalProdVekt += allok.vekt / totalVekt;
+                        }
+                      }
+                    });
+                    if (totalProdVekt > 0) {
+                      portSerie.push({ dato, indeksert: parseFloat((vektetVerdi / totalProdVekt).toFixed(2)) });
+                    }
+                  });
+                  if (portSerie.length > 0) serieMap['Din portefølje'] = portSerie;
+                }
+
+                // 2. Referanseindekser
+                portCompIndekser.forEach(n => {
+                  const cfg = PORT_COMP_INDEKS_CONFIG[n];
+                  if (!cfg) return;
+                  const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                  if (!hist?.data?.length) return;
+                  const maanedlig = byggMaanedssluttSerie(hist.data);
+                  const filtrert = maanedlig.filter(d => {
+                    const dato = parseHistorikkDato(d.dato);
+                    return dato && dato >= compStartDato;
+                  });
+                  if (filtrert.length > 0) {
+                    const startVerdi = filtrert[0].verdi;
+                    serieMap[n] = filtrert.map(d => ({
+                      dato: d.dato,
+                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
+                    }));
+                  }
+                });
+
+                // 3. Valgfrie enkeltprodukter
+                portCompVisProdukter.forEach(label => {
+                  const cfg = PORT_COMP_PROD_CONFIG.find(c => c.label === label);
+                  if (!cfg) return;
+                  const hist = produktHistorikk?.[cfg.id];
+                  if (!hist?.data?.length) return;
+                  const maanedlig = byggMaanedssluttSerie(hist.data);
+                  const filtrert = maanedlig.filter(d => {
+                    const dato = parseHistorikkDato(d.dato);
+                    return dato && dato >= compStartDato;
+                  });
+                  if (filtrert.length > 0) {
+                    const startVerdi = filtrert[0].verdi;
+                    serieMap[label] = filtrert.map(d => ({
+                      dato: d.dato,
+                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
+                    }));
+                  }
+                });
+
+                // Samle alle datoer
+                const alleDatoer = new Set();
+                Object.values(serieMap).forEach(serie => serie.forEach(d => alleDatoer.add(d.dato)));
+                const sorterteDatoer = Array.from(alleDatoer).sort();
+                return sorterteDatoer.map(dato => {
+                  const punkt = { dato };
+                  Object.entries(serieMap).forEach(([n, serie]) => {
+                    const match = serie.find(d => d.dato === dato);
+                    if (match) punkt[n] = match.indeksert;
+                  });
+                  return punkt;
+                });
+              };
+
+              const compData = byggPortCompData();
+              const alleCompNavn = [
+                ...(pensumAllokering.some(a => a.vekt > 0) ? ['Din portefølje'] : []),
+                ...portCompIndekser,
+                ...portCompVisProdukter
+              ];
+
+              const getFarge = (n) => {
+                if (n === 'Din portefølje') return '#1B3A5F';
+                if (PORT_COMP_INDEKS_CONFIG[n]) return PORT_COMP_INDEKS_CONFIG[n].farge;
+                const prod = PORT_COMP_PROD_CONFIG.find(c => c.label === n);
+                return prod?.farge || '#999';
+              };
+
+              return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-5">
+                    <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sammenlign portefølje mot benchmarks</h3>
+                    <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt — din vektede portefølje vs. referanseindekser</p>
+
+                    {/* Periodeknapper */}
+                    <div className="flex items-center gap-2 mb-4">
+                      {['1M','3M','6M','YTD','1Å','3Å','5Å','Maks'].map(p => {
+                        const key = p === 'Maks' ? 'max' : p;
+                        return (
+                          <button key={p} onClick={() => setPortCompPeriode(key)}
+                            className={"px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors " + (portCompPeriode === key ? "text-white border-transparent" : "border-gray-200 text-gray-600 hover:bg-gray-50")}
+                            style={portCompPeriode === key ? { backgroundColor: PENSUM_COLORS.darkBlue } : {}}>
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Din portefølje indikator */}
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Din portefølje</div>
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 text-white w-fit"
+                        style={{ backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' }}>
+                        <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
+                        Din portefølje (vektet)
+                      </div>
+                    </div>
+
+                    {/* Referanseindekser */}
+                    <div className="mb-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Referanseindekser</div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(PORT_COMP_INDEKS_CONFIG).map(([n, cfg]) => {
+                          const aktiv = portCompIndekser.includes(n);
+                          return (
+                            <button key={n}
+                              onClick={() => setPortCompIndekser(prev => aktiv ? prev.filter(x => x !== n) : [...prev, n])}
+                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
+                              style={aktiv ? { backgroundColor: cfg.farge, borderColor: cfg.farge } : {}}>
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : cfg.farge }}></span>
+                              {n}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Pensums enkeltløsninger */}
+                    <div className="mb-5">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums enkeltløsninger</div>
+                      <div className="flex flex-wrap gap-2">
+                        {PORT_COMP_PROD_CONFIG.map(({ label, farge }) => {
+                          const aktiv = portCompVisProdukter.includes(label);
+                          return (
+                            <button key={label}
+                              onClick={() => setPortCompVisProdukter(prev => aktiv ? prev.filter(x => x !== label) : [...prev, label])}
+                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
+                              style={aktiv ? { backgroundColor: farge, borderColor: farge } : {}}>
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : farge }}></span>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Linjegraf */}
+                    {alleCompNavn.length > 0 && compData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={380}>
+                        <LineChart data={compData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                            tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
+                            interval={Math.max(1, Math.floor(compData.length / 12))} />
+                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
+                          <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                            labelFormatter={(d) => formatHistorikkEtikett(d)}
+                            formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
+                          <Legend verticalAlign="bottom" height={36} />
+                          <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
+                          {alleCompNavn.map(n => {
+                            const erPortefolje = n === 'Din portefølje';
+                            const erIndeks = !!PORT_COMP_INDEKS_CONFIG[n];
+                            return (
+                              <Line key={n} type="monotone" dataKey={n} stroke={getFarge(n)}
+                                strokeWidth={erPortefolje ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje ? 5 : 4 }}
+                                strokeDasharray={erIndeks ? '4 3' : undefined} connectNulls />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
+                        {pensumAllokering.some(a => a.vekt > 0) ? 'Velg indekser eller fond for å se sammenligning' : 'Legg til produkter med vekt i porteføljen for å se sammenligning'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Historisk avkastning */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
@@ -3565,244 +3848,6 @@ export default function PensumPrognoseModell() {
                         </p>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* Interaktiv historikkgraf */}
-                <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                    <h4 className="text-lg font-semibold text-white">Historisk utvikling - Pensum-løsninger</h4>
-                    <div className="flex items-center gap-2">
-                      {['1y', '3y', '5y', 'max'].map(periode => (
-                        <button
-                          key={periode}
-                          onClick={() => setHistorikkPeriode(periode)}
-                          className={"px-3 py-1 rounded text-xs font-medium transition-colors " + (historikkPeriode === periode ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}
-                        >
-                          {periode === '1y' ? '1 år' : periode === '3y' ? '3 år' : periode === '5y' ? '5 år' : 'Maks'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    {/* Produktvelger */}
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {Object.keys(produktHistorikk).map(produktId => {
-                        const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
-                        const erValgt = valgteProdukterHistorikk.includes(produktId);
-                        const farger = {
-                          'global-core-active': PENSUM_COLORS.navy,
-                          'global-edge': PENSUM_COLORS.lightBlue,
-                          'basis': PENSUM_COLORS.salmon,
-                          'global-hoyrente': PENSUM_COLORS.teal,
-                          'nordisk-hoyrente': PENSUM_COLORS.purple,
-                          'norge-a': PENSUM_COLORS.red,
-                          'energy-a': PENSUM_COLORS.gold,
-                          'banking-d': PENSUM_COLORS.midBlue,
-                          'financial-d': PENSUM_COLORS.gray
-                        };
-                        return (
-                          <button
-                            key={produktId}
-                            onClick={() => {
-                              if (erValgt) {
-                                setValgteProdukterHistorikk(prev => prev.filter(id => id !== produktId));
-                              } else {
-                                setValgteProdukterHistorikk(prev => [...prev, produktId]);
-                              }
-                            }}
-                            className={"px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all " + (erValgt ? "text-white" : "bg-white hover:bg-gray-50")}
-                            style={{ 
-                              borderColor: farger[produktId] || '#999',
-                              backgroundColor: erValgt ? farger[produktId] : undefined,
-                              color: erValgt ? 'white' : farger[produktId]
-                            }}
-                          >
-                            {produktInfo?.navn?.replace('Pensum ', '') || produktId}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Graf */}
-                    <div className="h-80">
-                      {(() => {
-                        // Filtrer data basert på periode
-                        const periodeFilter = {
-                          '1y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          '3y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          '5y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                          'max': new Date(2015, 0, 1)
-                        };
-                        const startDato = periodeFilter[historikkPeriode];
-                        
-                        // Bygg data for grafen med daglige datapunkter
-                        const chartData = [];
-                        const alleDatoer = new Set();
-                        const produktDataMap = {};
-
-                        valgteProdukterHistorikk.forEach(produktId => {
-                          const hist = produktHistorikk[produktId];
-                          if (hist && hist.data) {
-                            const dataMap = new Map();
-                            hist.data.forEach(d => {
-                              const dato = parseHistorikkDato(d.dato);
-                              if (dato && dato >= startDato) {
-                                alleDatoer.add(d.dato);
-                                dataMap.set(d.dato, d.verdi);
-                              }
-                            });
-                            const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                            produktDataMap[produktId] = { dataMap, startVerdi };
-                          }
-                        });
-
-                        const sorterteDatoer = Array.from(alleDatoer).sort();
-
-                        sorterteDatoer.forEach(dato => {
-                          const punkt = { dato };
-                          valgteProdukterHistorikk.forEach(produktId => {
-                            const pm = produktDataMap[produktId];
-                            if (pm) {
-                              const verdi = pm.dataMap.get(dato);
-                              if (verdi !== undefined) {
-                                punkt[produktId] = ((verdi / pm.startVerdi) - 1) * 100;
-                              }
-                            }
-                          });
-                          chartData.push(punkt);
-                        });
-                        
-                        const farger = {
-                          'global-core-active': PENSUM_COLORS.navy,
-                          'global-edge': PENSUM_COLORS.lightBlue,
-                          'basis': PENSUM_COLORS.salmon,
-                          'global-hoyrente': PENSUM_COLORS.teal,
-                          'nordisk-hoyrente': PENSUM_COLORS.purple,
-                          'norge-a': PENSUM_COLORS.red,
-                          'energy-a': PENSUM_COLORS.gold,
-                          'banking-d': PENSUM_COLORS.midBlue,
-                          'financial-d': PENSUM_COLORS.gray
-                        };
-                        
-                        if (chartData.length === 0 || valgteProdukterHistorikk.length === 0) {
-                          return (
-                            <div className="h-full flex items-center justify-center text-gray-500">
-                              Velg produkter for å se historisk utvikling
-                            </div>
-                          );
-                        }
-                        
-                        return (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis
-                                dataKey="dato"
-                                tick={{ fontSize: 10, fill: '#6B7280' }}
-                                tickFormatter={(dato) => {
-                                  const parsed = parseHistorikkDato(dato);
-                                  if (!parsed) return '';
-                                  const m = parsed.getMonth() + 1;
-                                  const d = parsed.getDate();
-                                  if (d <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2, '0')}/${String(parsed.getFullYear()).slice(2)}`;
-                                  return '';
-                                }}
-                                interval={Math.max(1, Math.floor(sorterteDatoer.length / 12))}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 10, fill: '#6B7280' }}
-                                tickFormatter={(val) => val.toFixed(1).replace('.', ',') + '%'}
-                                domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                labelFormatter={(dato) => formatHistorikkEtikett(dato)}
-                                formatter={(value, name) => {
-                                  const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === name);
-                                  return [value.toFixed(1).replace('.', ',') + '%', produktInfo?.navn?.replace('Pensum ', '') || name];
-                                }}
-                              />
-                              <Legend 
-                                verticalAlign="bottom"
-                                height={36}
-                                formatter={(value) => {
-                                  const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === value);
-                                  return produktInfo?.navn?.replace('Pensum ', '') || value;
-                                }}
-                              />
-                              <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
-                              {valgteProdukterHistorikk.map(produktId => (
-                                <Line
-                                  key={produktId}
-                                  type="monotone"
-                                  dataKey={produktId}
-                                  stroke={farger[produktId] || '#999'}
-                                  strokeWidth={1.8}
-                                  dot={false}
-                                  activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
-                                />
-                              ))}
-                            </LineChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
-                    </div>
-                    
-                    {/* Avkastningstabell for valgt periode */}
-                    {valgteProdukterHistorikk.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                        {valgteProdukterHistorikk.map(produktId => {
-                          const hist = produktHistorikk[produktId];
-                          const produktInfo = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].find(p => p.id === produktId);
-                          const farger = {
-                            'global-core-active': PENSUM_COLORS.navy,
-                            'global-edge': PENSUM_COLORS.lightBlue,
-                            'basis': PENSUM_COLORS.salmon,
-                            'global-hoyrente': PENSUM_COLORS.teal,
-                            'nordisk-hoyrente': PENSUM_COLORS.purple,
-                            'norge-a': PENSUM_COLORS.red,
-                            'energy-a': PENSUM_COLORS.gold
-                          };
-                          
-                          if (!hist || !hist.data || hist.data.length < 2) return null;
-                          
-                          // Beregn avkastning for valgt periode
-                          const periodeFilter = {
-                            '1y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            '3y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            '5y': new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1),
-                            'max': new Date(2015, 0, 1)
-                          };
-                          const startDato = periodeFilter[historikkPeriode];
-                          
-                          const sluttVerdi = hist.data[hist.data.length - 1].verdi;
-                          const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
-                          const avkastning = ((sluttVerdi / startVerdi) - 1) * 100;
-                          
-                          return (
-                            <div key={produktId} className="p-3 rounded-lg border-2" style={{ borderColor: farger[produktId] }}>
-                              <p className="text-xs font-medium truncate" style={{ color: farger[produktId] }}>
-                                {produktInfo?.navn?.replace('Pensum ', '')}
-                              </p>
-                              <p className={"text-lg font-bold " + (avkastning >= 0 ? 'text-green-600' : 'text-red-600')}>
-                                {avkastning >= 0 ? '+' : ''}{avkastning.toFixed(1)}%
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {historikkPeriode === '1y' ? 'Siste 1 år' : historikkPeriode === '3y' ? 'Siste 3 år' : historikkPeriode === '5y' ? 'Siste 5 år' : 'Total'}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {/* Disclaimer */}
-                    <div className="mt-4 text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-                      <strong>Viktig informasjon om avkastning:</strong> Historikk viser prosentvis avkastning fra start av valgt periode.
-                      Historikk er oppdatert til og med {RAPPORT_DATO} (2026 vises som YTD). Avkastning beregnes daglig ut fra kursendringer mellom daglige datapunkter i tidsseriene. Kilde: {DATAFEED_KILDE}. For flere produkter er historikk før oppstart estimert - se produktdetaljer for mer informasjon.
-                      Historisk avkastning er ingen garanti for fremtidig avkastning.
-                    </div>
                   </div>
                 </div>
 
@@ -4404,10 +4449,53 @@ export default function PensumPrognoseModell() {
             return new Date(2015, 0, 1); // max
           })();
 
-          // Bygg sammenligningsdata fra månedlige historikkpunkter
+          // FOND_FARGER for external fund colors
+          const FOND_FARGER = [PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.lightBlue, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.navy, PENSUM_COLORS.red, PENSUM_COLORS.midBlue];
+
+          // Lazy-load external fund data
+          const lastEksterneFond = async () => {
+            if (eksterneFond || eksterneFondLoading) return;
+            setEksterneFondLoading(true);
+            try {
+              const res = await fetch('/data/eksterne-fond.json');
+              const data = await res.json();
+              setEksterneFond(data);
+            } catch (e) {
+              console.error('Kunne ikke laste eksterne fond:', e);
+            }
+            setEksterneFondLoading(false);
+          };
+
+          // Get unique categories for fond search
+          const kategorier = eksterneFond ? [...new Set(eksterneFond.map(f => f.cat).filter(Boolean))].sort() : [];
+
+          // Filter and search funds
+          const sokLower = fondSokDebounced.toLowerCase().trim();
+          const filtrerteFond = eksterneFond ? eksterneFond.filter(f => {
+            if (fondKategoriFilter && f.cat !== fondKategoriFilter) return false;
+            if (sokLower.length < 2) return false;
+            return (f.n?.toLowerCase().includes(sokLower) || f.isin?.toLowerCase().includes(sokLower) || f.mgr?.toLowerCase().includes(sokLower));
+          }).slice(0, 50) : [];
+
+          // Pensum products for comparison (used in secondary tabs)
+          const pensumProdListe = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer];
+          const PENSUM_FOND_FARGER = {
+            'basis': PENSUM_COLORS.salmon, 'financial-d': PENSUM_COLORS.gray,
+            'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue,
+            'energy-a': PENSUM_COLORS.gold, 'global-hoyrente': PENSUM_COLORS.teal,
+            'banking-d': PENSUM_COLORS.midBlue, 'nordisk-hoyrente': PENSUM_COLORS.purple,
+            'norge-a': PENSUM_COLORS.red
+          };
+
+          // Competitor portfolio helpers
+          const harKonkurrentPortefolje = visKonkurrentPortefolje && valgteFond.length > 0 && valgteFond.some(f => (fondVekter[f.isin] || 0) > 0);
+          const konkurrentTotalVekt = valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0) || 1;
+
+          // Bygg sammenligningsdata fra månedlige historikkpunkter + external funds + competitor
           const byggSammenligningsdata = () => {
             const alleNavn = [...valgtePensumScen, ...valgteIndekserScen];
-            if (alleNavn.length === 0 && !visPortefoljeScen) return [];
+            const harEksterneFond = valgteFond.length > 0 && !skjulEnkeltfond;
+            if (alleNavn.length === 0 && !visPortefoljeScen && !harEksterneFond && !harKonkurrentPortefolje) return [];
 
             // Samle månedlige serier per serie-navn
             const serieMap = {};
@@ -4485,6 +4573,81 @@ export default function PensumPrognoseModell() {
               }
             }
 
+            // External funds — build yearly series from annual returns (a15-a25), then filter by periodeStartDato
+            if (harEksterneFond) {
+              const aar = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+              const aarKeys = { 2015: 'a15', 2016: 'a16', 2017: 'a17', 2018: 'a18', 2019: 'a19', 2020: 'a20', 2021: 'a21', 2022: 'a22', 2023: 'a23', 2024: 'a24', 2025: 'a25' };
+              valgteFond.forEach(f => {
+                let kumulativ = 100;
+                const rawSerie = [{ dato: '2014-12-31', verdi: 100 }];
+                aar.forEach(a => {
+                  const ret = f[aarKeys[a]];
+                  if (ret !== undefined) {
+                    kumulativ *= (1 + ret / 100);
+                    rawSerie.push({ dato: `${a}-12-31`, verdi: kumulativ });
+                  }
+                });
+                // Filter by periodeStartDato and convert to % from start
+                const filtrert = rawSerie.filter(d => {
+                  const parsed = parseHistorikkDato(d.dato);
+                  return parsed && parsed >= periodeStartDato;
+                });
+                if (filtrert.length > 1) {
+                  const startV = filtrert[0].verdi;
+                  serieMap[f.n] = filtrert.map(d => ({
+                    dato: d.dato,
+                    indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
+                  }));
+                } else if (rawSerie.length > 1) {
+                  // If period filter is too tight, show all available data
+                  const startV = rawSerie[0].verdi;
+                  serieMap[f.n] = rawSerie.map(d => ({
+                    dato: d.dato,
+                    indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
+                  }));
+                }
+              });
+            }
+
+            // Competitor portfolio — weighted annual returns from selected funds
+            if (harKonkurrentPortefolje) {
+              const aar = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+              const aarKeys = { 2015: 'a15', 2016: 'a16', 2017: 'a17', 2018: 'a18', 2019: 'a19', 2020: 'a20', 2021: 'a21', 2022: 'a22', 2023: 'a23', 2024: 'a24', 2025: 'a25' };
+              let kumulativ = 100;
+              const rawSerie = [{ dato: '2014-12-31', verdi: 100 }];
+              aar.forEach(a => {
+                let vektet = 0; let harV = false;
+                valgteFond.forEach(f => {
+                  const v = fondVekter[f.isin] || 0;
+                  if (v > 0 && f[aarKeys[a]] !== undefined) {
+                    vektet += f[aarKeys[a]] * (v / konkurrentTotalVekt);
+                    harV = true;
+                  }
+                });
+                if (harV) {
+                  kumulativ *= (1 + vektet / 100);
+                  rawSerie.push({ dato: `${a}-12-31`, verdi: kumulativ });
+                }
+              });
+              const filtrert = rawSerie.filter(d => {
+                const parsed = parseHistorikkDato(d.dato);
+                return parsed && parsed >= periodeStartDato;
+              });
+              if (filtrert.length > 1) {
+                const startV = filtrert[0].verdi;
+                serieMap['Konkurrentportefølje'] = filtrert.map(d => ({
+                  dato: d.dato,
+                  indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
+                }));
+              } else if (rawSerie.length > 1) {
+                const startV = rawSerie[0].verdi;
+                serieMap['Konkurrentportefølje'] = rawSerie.map(d => ({
+                  dato: d.dato,
+                  indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
+                }));
+              }
+            }
+
             // Samle alle unike datoer
             const alleDatoer = new Set();
             Object.values(serieMap).forEach(serie => serie.forEach(d => alleDatoer.add(d.dato)));
@@ -4502,7 +4665,272 @@ export default function PensumPrognoseModell() {
           };
 
           const sammenligningsData = byggSammenligningsdata();
-          const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Din portefølje'] : []), ...valgtePensumScen, ...valgteIndekserScen];
+          // Build list of all series names for chart
+          const visbareFondNavn = (valgteFond.length > 0 && !skjulEnkeltfond) ? valgteFond.map(f => f.n) : [];
+          const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
+          const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Din portefølje'] : []), ...valgtePensumScen, ...valgteIndekserScen, ...visbareFondNavn, ...konkNavn];
+
+          // Color function for merged chart
+          const getLineFarge = (name) => {
+            if (name === 'Din portefølje') return PENSUM_COLORS.navy;
+            if (name === 'Konkurrentportefølje') return '#D97706';
+            const pensumCfg = PENSUM_SCEN_CONFIG.find(c => c.label === name);
+            if (pensumCfg) return PENSUM_AARLIG[name]?.farge || '#333';
+            const indeksCfg = INDEKS_CONFIG[name];
+            if (indeksCfg) return REFERANSE_DATA[name]?.farge || '#666';
+            // External fund
+            const fondIdx = valgteFond.findIndex(f => f.n === name);
+            if (fondIdx >= 0) return FOND_FARGER[fondIdx % FOND_FARGER.length];
+            return '#999';
+          };
+
+          // Helper functions for secondary tabs (periodeavkastning, kalenderår, sektor, land, detaljer)
+          const beregnPensumPeriodeAvk = (produktId, periodeKey) => {
+            const hist = produktHistorikk?.[produktId];
+            if (!hist?.data?.length) return null;
+            const now = RAPPORT_DATO_OBJEKT;
+            let startDato;
+            if (periodeKey === 'r1m') startDato = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            else if (periodeKey === 'r3m') startDato = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            else if (periodeKey === 'r6m') startDato = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+            else if (periodeKey === 'rytd') startDato = new Date(now.getFullYear(), 0, 1);
+            else if (periodeKey === 'r1y') startDato = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r3y') startDato = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r5y') startDato = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r10y') startDato = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+            else return null;
+            const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
+            const sluttVerdi = hist.data[hist.data.length - 1]?.verdi;
+            if (!startVerdi || !sluttVerdi) return null;
+            const totalReturn = ((sluttVerdi / startVerdi) - 1) * 100;
+            if (periodeKey === 'r3y' || periodeKey === 'r5y' || periodeKey === 'r10y') {
+              const years = periodeKey === 'r3y' ? 3 : periodeKey === 'r5y' ? 5 : 10;
+              return parseFloat(((Math.pow(sluttVerdi / startVerdi, 1 / years) - 1) * 100).toFixed(2));
+            }
+            return parseFloat(totalReturn.toFixed(2));
+          };
+
+          const beregnIndeksPeriodeAvk = (feedKey, periodeKey) => {
+            const indeks = DATAFEED_INDEKS_HISTORIKK?.[feedKey];
+            if (!indeks?.data?.length) return null;
+            const now = RAPPORT_DATO_OBJEKT;
+            let startDato;
+            if (periodeKey === 'r1m') startDato = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            else if (periodeKey === 'r3m') startDato = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            else if (periodeKey === 'r6m') startDato = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+            else if (periodeKey === 'rytd') startDato = new Date(now.getFullYear(), 0, 1);
+            else if (periodeKey === 'r1y') startDato = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r3y') startDato = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r5y') startDato = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r10y') startDato = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+            else return null;
+            const startVerdi = finnStartVerdiVedPeriode(indeks.data, startDato);
+            const sluttVerdi = indeks.data[indeks.data.length - 1]?.verdi;
+            if (!startVerdi || !sluttVerdi) return null;
+            const totalReturn = ((sluttVerdi / startVerdi) - 1) * 100;
+            if (periodeKey === 'r3y' || periodeKey === 'r5y' || periodeKey === 'r10y') {
+              const years = periodeKey === 'r3y' ? 3 : periodeKey === 'r5y' ? 5 : 10;
+              return parseFloat(((Math.pow(sluttVerdi / startVerdi, 1 / years) - 1) * 100).toFixed(2));
+            }
+            return parseFloat(totalReturn.toFixed(2));
+          };
+
+          const beregnPortefoljeAvk = (periodeKey) => {
+            const vektede = pensumAllokering.filter(a => a.vekt > 0);
+            if (vektede.length === 0) return null;
+            const totalVekt = vektede.reduce((s, a) => s + a.vekt, 0) || 1;
+            let vektetAvk = 0; let harData = false;
+            vektede.forEach(a => {
+              const avk = beregnPensumPeriodeAvk(a.id, periodeKey);
+              if (avk !== null) { vektetAvk += avk * (a.vekt / totalVekt); harData = true; }
+            });
+            return harData ? parseFloat(vektetAvk.toFixed(2)) : null;
+          };
+
+          const pensumValgte = visPensumIFondComp.map(id => {
+            const p = pensumProdListe.find(pr => pr.id === id);
+            return p ? { id, navn: p.navn, farge: PENSUM_FOND_FARGER[id] || '#999' } : null;
+          }).filter(Boolean);
+          const harPortefolje = visPortefoljeIFondComp && pensumAllokering.some(a => a.vekt > 0);
+
+          const harNoeAVise = valgteFond.length > 0 || pensumValgte.length > 0 || harPortefolje;
+          const harFondEllerKonk = valgteFond.length > 0 || harKonkurrentPortefolje;
+          const harNoeAViseMedKonk = harNoeAVise || harKonkurrentPortefolje;
+
+          const beregnKonkurrentAvk = (periodeKey) => {
+            if (!harKonkurrentPortefolje) return null;
+            let vektet = 0; let harData = false;
+            valgteFond.forEach(f => {
+              const v = fondVekter[f.isin] || 0;
+              if (v > 0 && f[periodeKey] !== undefined) {
+                vektet += f[periodeKey] * (v / konkurrentTotalVekt);
+                harData = true;
+              }
+            });
+            return harData ? parseFloat(vektet.toFixed(2)) : null;
+          };
+
+          const byggAvkastningsdata = () => {
+            if (!harNoeAVise && valgteIndekserScen.length === 0) return [];
+            const perioder = [
+              { key: 'r1m', label: '1 mnd' }, { key: 'r3m', label: '3 mnd' },
+              { key: 'r6m', label: '6 mnd' }, { key: 'rytd', label: 'YTD' },
+              { key: 'r1y', label: '1 år' }, { key: 'r3y', label: '3 år p.a.' },
+              { key: 'r5y', label: '5 år p.a.' }, { key: 'r10y', label: '10 år p.a.' },
+            ];
+            return perioder.map(p => {
+              const punkt = { periode: p.label };
+              valgteFond.forEach((f) => {
+                if (f[p.key] !== undefined) punkt[f.n] = parseFloat(f[p.key].toFixed(2));
+              });
+              pensumValgte.forEach(({ id, navn }) => {
+                const avk = beregnPensumPeriodeAvk(id, p.key);
+                if (avk !== null) punkt[navn] = avk;
+              });
+              valgteIndekserScen.forEach(indeksNavn => {
+                const cfg = INDEKS_CONFIG[indeksNavn];
+                if (cfg) {
+                  const avk = beregnIndeksPeriodeAvk(cfg.feedKey, p.key);
+                  if (avk !== null) punkt[indeksNavn] = avk;
+                }
+              });
+              if (harPortefolje) {
+                const avk = beregnPortefoljeAvk(p.key);
+                if (avk !== null) punkt['Din portefølje'] = avk;
+              }
+              return punkt;
+            });
+          };
+
+          const byggAvkastningsdataMedKonk = () => {
+            const data = byggAvkastningsdata();
+            if (harKonkurrentPortefolje) {
+              const periodeKeys = ['r1m', 'r3m', 'r6m', 'rytd', 'r1y', 'r3y', 'r5y', 'r10y'];
+              data.forEach((punkt, i) => {
+                const avk = beregnKonkurrentAvk(periodeKeys[i]);
+                if (avk !== null) punkt['Konkurrentportefølje'] = avk;
+              });
+            }
+            return data;
+          };
+
+          const byggAarsdata = () => {
+            if (!harNoeAVise && valgteIndekserScen.length === 0) return [];
+            const aar = [
+              { key: 'a19', label: '2019' }, { key: 'a20', label: '2020' },
+              { key: 'a21', label: '2021' }, { key: 'a22', label: '2022' },
+              { key: 'a23', label: '2023' }, { key: 'a24', label: '2024' },
+              { key: 'a25', label: '2025' },
+            ];
+            const pensumAarMap = { a22: 'aar2022', a23: 'aar2023', a24: 'aar2024', a25: 'aar2025' };
+            return aar.map(a => {
+              const punkt = { periode: a.label };
+              valgteFond.forEach(f => {
+                if (f[a.key] !== undefined) punkt[f.n] = parseFloat(f[a.key].toFixed(2));
+              });
+              const pensumFelt = pensumAarMap[a.key];
+              if (pensumFelt) {
+                pensumValgte.forEach(({ id, navn }) => {
+                  const p = pensumProdListe.find(pr => pr.id === id);
+                  const v = p ? hentAarsverdiForProdukt(p, pensumFelt, Number(a.label)) : null;
+                  if (Number.isFinite(v)) punkt[navn] = parseFloat(v.toFixed(2));
+                });
+                if (harPortefolje) {
+                  const vektede = pensumAllokering.filter(al => al.vekt > 0);
+                  const totalVekt = vektede.reduce((s, al) => s + al.vekt, 0) || 1;
+                  let vektet = 0; let harV = false;
+                  vektede.forEach(al => {
+                    const pp = pensumProdListe.find(pr => pr.id === al.id);
+                    const v = pp ? hentAarsverdiForProdukt(pp, pensumFelt, Number(a.label)) : null;
+                    if (Number.isFinite(v)) { vektet += v * (al.vekt / totalVekt); harV = true; }
+                  });
+                  if (harV) punkt['Din portefølje'] = parseFloat(vektet.toFixed(2));
+                }
+              }
+              // Indeksavkastninger
+              valgteIndekserScen.forEach(indeksNavn => {
+                const rd = REFERANSE_DATA[indeksNavn];
+                if (rd?.data?.[Number(a.label)] !== null && rd?.data?.[Number(a.label)] !== undefined) {
+                  punkt[indeksNavn] = rd.data[Number(a.label)];
+                }
+              });
+              return punkt;
+            });
+          };
+
+          const byggAarsdataMedKonk = () => {
+            const data = byggAarsdata();
+            if (harKonkurrentPortefolje) {
+              const aarKeys = ['a19', 'a20', 'a21', 'a22', 'a23', 'a24', 'a25'];
+              data.forEach((punkt, i) => {
+                let vektet = 0; let harV = false;
+                valgteFond.forEach(f => {
+                  const v = fondVekter[f.isin] || 0;
+                  if (v > 0 && f[aarKeys[i]] !== undefined) {
+                    vektet += f[aarKeys[i]] * (v / konkurrentTotalVekt);
+                    harV = true;
+                  }
+                });
+                if (harV) punkt['Konkurrentportefølje'] = parseFloat(vektet.toFixed(2));
+              });
+            }
+            return data;
+          };
+
+          const byggSektordata = () => {
+            if (valgteFond.length === 0) return [];
+            const sektorer = [
+              { key: 'sTech', label: 'Teknologi' }, { key: 'sFin', label: 'Finans' },
+              { key: 'sHlt', label: 'Helse' }, { key: 'sInd', label: 'Industri' },
+              { key: 'sCyc', label: 'Syklisk konsum' }, { key: 'sDef', label: 'Defensivt konsum' },
+              { key: 'sEng', label: 'Energi' }, { key: 'sComm', label: 'Kommunikasjon' },
+              { key: 'sMat', label: 'Materialer' }, { key: 'sRE', label: 'Eiendom' },
+              { key: 'sUtil', label: 'Kraftforsyning' },
+            ];
+            return sektorer.map(s => {
+              const punkt = { sektor: s.label };
+              valgteFond.forEach(f => {
+                if (f[s.key]) punkt[f.n] = parseFloat(f[s.key].toFixed(1));
+              });
+              return punkt;
+            }).filter(p => Object.keys(p).length > 1);
+          };
+
+          const byggRegiondata = () => {
+            if (valgteFond.length === 0) return [];
+            const regioner = [
+              { key: 'cUS', label: 'USA' }, { key: 'cUK', label: 'Storbritannia' },
+              { key: 'cJP', label: 'Japan' }, { key: 'cDE', label: 'Tyskland' },
+              { key: 'cFR', label: 'Frankrike' }, { key: 'cNO', label: 'Norge' },
+              { key: 'cSE', label: 'Sverige' }, { key: 'cDK', label: 'Danmark' },
+              { key: 'cCN', label: 'Kina' },
+            ];
+            return regioner.map(r => {
+              const punkt = { region: r.label };
+              valgteFond.forEach(f => {
+                if (f[r.key]) punkt[f.n] = parseFloat(f[r.key].toFixed(1));
+              });
+              return punkt;
+            }).filter(p => Object.keys(p).length > 1);
+          };
+
+          // Secondary tab data
+          const fondNavn = valgteFond.map(f => f.n);
+          const pensumNavn = pensumValgte.map(p => p.navn);
+          const portNavn = harPortefolje ? ['Din portefølje'] : [];
+          const konkNavnTab = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
+          const visbareFondNavnTab = skjulEnkeltfond && harKonkurrentPortefolje ? [] : fondNavn;
+          const indeksNavnTab = [...valgteIndekserScen];
+          const alleSerieNavnTab = [...portNavn, ...pensumNavn, ...indeksNavnTab, ...visbareFondNavnTab, ...konkNavnTab];
+          const getSerieColor = (name, idx) => {
+            if (name === 'Din portefølje') return PENSUM_COLORS.navy;
+            if (name === 'Konkurrentportefølje') return '#D97706';
+            const pensumMatch = pensumValgte.find(p => p.navn === name);
+            if (pensumMatch) return pensumMatch.farge;
+            const indeksCfgTab = INDEKS_CONFIG[name];
+            if (indeksCfgTab) return indeksCfgTab.farge;
+            return FOND_FARGER[idx % FOND_FARGER.length];
+          };
 
           const alleNavn2 = Object.keys(PENSUM_AARLIG);
           const alleIndeksNavn = Object.keys(REFERANSE_DATA);
@@ -4535,8 +4963,8 @@ export default function PensumPrognoseModell() {
                     <button
                       onClick={() => setVisPortefoljeScen(prev => !prev)}
                       className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visPortefoljeScen ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
-                      style={visPortefoljeScen ? { backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' } : { color: '#1B3A5F' }}>
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visPortefoljeScen ? 'white' : '#1B3A5F' }}></span>
+                      style={visPortefoljeScen ? { backgroundColor: PENSUM_COLORS.navy, borderColor: PENSUM_COLORS.navy } : { color: PENSUM_COLORS.navy }}>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visPortefoljeScen ? 'white' : PENSUM_COLORS.navy }}></span>
                       Din portefølje (vektet)
                     </button>
                   </div>
@@ -4579,9 +5007,187 @@ export default function PensumPrognoseModell() {
                     </div>
                   </div>
 
-                  {/* Linjegraf (månedlig data) */}
+                  {/* Collapsible Fondssammenligning section */}
+                  <div className="mb-5">
+                    <button
+                      onClick={() => {
+                        const nyVerdi = !visFondssammenligning;
+                        setVisFondssammenligning(nyVerdi);
+                        if (nyVerdi) lastEksterneFond();
+                      }}
+                      className={"flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border-2 transition-all w-full justify-between " + (visFondssammenligning ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white hover:border-gray-300")}
+                      style={{ color: PENSUM_COLORS.darkBlue }}>
+                      <span className="flex items-center gap-2">
+                        <svg className={"w-4 h-4 transition-transform " + (visFondssammenligning ? "rotate-90" : "")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        Fondssammenligning — legg til eksterne fond
+                      </span>
+                      {valgteFond.length > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 font-bold">{valgteFond.length} fond valgt</span>
+                      )}
+                    </button>
+
+                    {visFondssammenligning && (
+                      <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-4">
+                        {/* Søk og filter */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <div className="flex-1 relative">
+                            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <input
+                              type="text" value={fondSok} onChange={handleFondSokChange}
+                              placeholder={eksterneFondLoading ? 'Laster fond...' : 'Søk på fondsnavn, ISIN eller forvalter...'}
+                              disabled={eksterneFondLoading}
+                              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none bg-white"
+                            />
+                            {eksterneFondLoading && <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>}
+                          </div>
+                          <select value={fondKategoriFilter} onChange={e => setFondKategoriFilter(e.target.value)}
+                            className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white min-w-[200px]">
+                            <option value="">Alle kategorier</option>
+                            {kategorier.map(k => <option key={k} value={k}>{k}</option>)}
+                          </select>
+                        </div>
+
+                        {/* Søkeresultater */}
+                        {sokLower.length >= 2 && (
+                          <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-lg bg-white">
+                            {filtrerteFond.length === 0 ? (
+                              <div className="p-4 text-sm text-gray-400 text-center">Ingen fond funnet</div>
+                            ) : (
+                              <table className="w-full text-xs">
+                                <thead className="bg-gray-50 sticky top-0">
+                                  <tr>
+                                    <th className="py-2 px-3 text-left font-semibold text-gray-600">Fond</th>
+                                    <th className="py-2 px-3 text-left font-semibold text-gray-600">Kategori</th>
+                                    <th className="py-2 px-3 text-right font-semibold text-gray-600">1 år</th>
+                                    <th className="py-2 px-3 text-right font-semibold text-gray-600">3 år p.a.</th>
+                                    <th className="py-2 px-3 text-right font-semibold text-gray-600">5 år p.a.</th>
+                                    <th className="py-2 px-3 text-center font-semibold text-gray-600">Legg til</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {filtrerteFond.map(f => {
+                                    const alleredeValgt = valgteFond.some(v => v.isin === f.isin);
+                                    return (
+                                      <tr key={f.isin || f.n} className="border-t border-gray-50 hover:bg-blue-50/50">
+                                        <td className="py-2 px-3">
+                                          <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.n}</div>
+                                          <div className="text-gray-400">{f.isin}</div>
+                                        </td>
+                                        <td className="py-2 px-3 text-gray-500">{f.cat}</td>
+                                        <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r1y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
+                                          {f.r1y !== undefined ? `${f.r1y > 0 ? '+' : ''}${f.r1y.toFixed(1)}%` : '\u2014'}
+                                        </td>
+                                        <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r3y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
+                                          {f.r3y !== undefined ? `${f.r3y > 0 ? '+' : ''}${f.r3y.toFixed(1)}%` : '\u2014'}
+                                        </td>
+                                        <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r5y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
+                                          {f.r5y !== undefined ? `${f.r5y > 0 ? '+' : ''}${f.r5y.toFixed(1)}%` : '\u2014'}
+                                        </td>
+                                        <td className="py-2 px-3 text-center">
+                                          <button
+                                            onClick={() => !alleredeValgt && valgteFond.length < 8 && setValgteFond(prev => [...prev, f])}
+                                            disabled={alleredeValgt || valgteFond.length >= 8}
+                                            className={"px-2 py-1 rounded text-xs font-semibold transition-colors " + (alleredeValgt ? "bg-gray-100 text-gray-400" : "bg-blue-50 text-blue-600 hover:bg-blue-100")}>
+                                            {alleredeValgt ? 'Valgt' : '+ Legg til'}
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Valgte fond chips + konkurranseportefølje */}
+                        {valgteFond.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Valgte fond ({valgteFond.length}/8)</div>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {valgteFond.map((f, i) => (
+                                <div key={f.isin || f.n} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                                  style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}>
+                                  <span className="w-2 h-2 rounded-full bg-white/50"></span>
+                                  <span className="max-w-[200px] truncate">{f.n}</span>
+                                  <button onClick={() => setValgteFond(prev => prev.filter(v => v.isin !== f.isin))}
+                                    className="ml-1 hover:bg-white/20 rounded-full w-4 h-4 flex items-center justify-center text-white/80 hover:text-white">&times;</button>
+                                </div>
+                              ))}
+                              <button onClick={() => { setValgteFond([]); setFondVekter({}); }} className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50">
+                                Fjern alle
+                              </button>
+                            </div>
+
+                            {/* Konkurranseportefølje — vekt per fond */}
+                            <div className="p-4 rounded-lg border border-amber-200 bg-amber-50/50">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#D97706' }}>Bygg konkurranseportefølje</div>
+                                  <p className="text-xs text-gray-500 mt-0.5">Sett vekter på fondene for å sammenligne en konkurrentportefølje mot din</p>
+                                </div>
+                                <button
+                                  onClick={() => setVisKonkurrentPortefolje(prev => !prev)}
+                                  className={"px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all " + (visKonkurrentPortefolje ? "text-white border-transparent" : "border-amber-300 hover:border-amber-500")}
+                                  style={visKonkurrentPortefolje ? { backgroundColor: '#D97706', borderColor: '#D97706' } : { color: '#D97706' }}>
+                                  {visKonkurrentPortefolje ? 'Aktiv' : 'Aktiver'}
+                                </button>
+                              </div>
+                              {visKonkurrentPortefolje && (
+                                <div className="space-y-2">
+                                  {valgteFond.map((f, i) => (
+                                    <div key={f.isin} className="flex items-center gap-3">
+                                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}></span>
+                                      <span className="text-xs text-gray-700 flex-1 truncate">{f.n}</span>
+                                      <div className="flex items-center gap-1">
+                                        <input
+                                          type="number" min="0" max="100" step="5"
+                                          value={fondVekter[f.isin] || ''}
+                                          onChange={e => setFondVekter(prev => ({ ...prev, [f.isin]: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                                          placeholder="0"
+                                          className="w-16 px-2 py-1 text-xs text-right border border-gray-200 rounded focus:ring-1 focus:ring-amber-300 focus:border-amber-400 outline-none"
+                                        />
+                                        <span className="text-xs text-gray-400">%</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="flex items-center justify-between pt-2 border-t border-amber-200">
+                                    <span className="text-xs font-semibold text-gray-600">Total vekt:</span>
+                                    <span className={"text-xs font-bold " + (Math.abs(valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0) - 100) < 1 ? 'text-green-600' : 'text-amber-600')}>
+                                      {valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0)}%
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const perFond = Math.round(100 / valgteFond.length);
+                                      const nyeVekter = {};
+                                      valgteFond.forEach((f, i) => { nyeVekter[f.isin] = i === valgteFond.length - 1 ? 100 - perFond * (valgteFond.length - 1) : perFond; });
+                                      setFondVekter(nyeVekter);
+                                    }}
+                                    className="text-xs text-amber-700 hover:text-amber-900 underline">
+                                    Fordel likt
+                                  </button>
+                                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                                    <input type="checkbox" checked={skjulEnkeltfond} onChange={e => setSkjulEnkeltfond(e.target.checked)}
+                                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+                                    <span className="text-xs text-gray-600">Skjul enkeltfond i grafene (vis kun porteføljene)</span>
+                                  </label>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-400">
+                          Kilde: Morningstar. Avkastning oppgitt i NOK. Data oppdatert per februar 2026. ~{eksterneFond?.length || 0} fond tilgjengelig.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Linjegraf (combined: Pensum + indekser + external funds + competitor) */}
                   {alleSammenligningsNavn.length > 0 && sammenligningsData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={380}>
+                    <ResponsiveContainer width="100%" height={420}>
                       <LineChart data={sammenligningsData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                         <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
@@ -4591,16 +5197,18 @@ export default function PensumPrognoseModell() {
                         <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                           labelFormatter={(d) => formatHistorikkEtikett(d)}
                           formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
-                        <Legend verticalAlign="bottom" height={36} />
+                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
                         <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                         {alleSammenligningsNavn.map(n => {
                           const erPortefolje = n === 'Din portefølje';
-                          const farge = erPortefolje ? '#1B3A5F' : (PENSUM_AARLIG[n]?.farge || REFERANSE_DATA[n]?.farge || '#999');
+                          const erKonk = n === 'Konkurrentportefølje';
                           const erIndeks = !!REFERANSE_DATA[n];
+                          const erEksternFond = valgteFond.some(f => f.n === n);
+                          const farge = getLineFarge(n);
                           return (
                             <Line key={n} type="monotone" dataKey={n} stroke={farge}
-                              strokeWidth={erPortefolje ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje ? 5 : 4 }}
-                              strokeDasharray={erIndeks ? '4 3' : undefined} connectNulls />
+                              strokeWidth={erPortefolje || erKonk ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje || erKonk ? 5 : 4 }}
+                              strokeDasharray={erIndeks || erKonk ? '4 3' : undefined} connectNulls />
                           );
                         })}
                       </LineChart>
@@ -4610,6 +5218,155 @@ export default function PensumPrognoseModell() {
                       Velg fond og/eller indekser for å se sammenligning
                     </div>
                   )}
+
+                  {/* Secondary tabs — visible when any comparison data is active */}
+                  {(harFondEllerKonk || harNoeAVise || valgteIndekserScen.length > 0) && (() => {
+                    const avkData = fondSammenligningVisning === 'avkastning' ? byggAvkastningsdataMedKonk() : null;
+                    const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdataMedKonk() : null;
+                    const sektorData = fondSammenligningVisning === 'sektor' ? byggSektordata() : null;
+                    const regionData = fondSammenligningVisning === 'region' ? byggRegiondata() : null;
+                    return (
+                      <div className="mt-6 pt-5 border-t border-gray-100">
+                        <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
+                          {[
+                            { key: 'avkastning', label: 'Periodeavkastning' },
+                            { key: 'kalenderaar', label: 'Kalenderår' },
+                            ...(valgteFond.length > 0 ? [
+                              { key: 'sektor', label: 'Sektorfordeling' },
+                              { key: 'region', label: 'Landfordeling' },
+                              { key: 'detaljer', label: 'Fondsdetaljer' },
+                            ] : []),
+                          ].map(v => (
+                            <button key={v.key} onClick={() => setFondSammenligningVisning(v.key)}
+                              className={"flex-1 px-3 py-2 rounded-md text-xs font-semibold transition-colors " + (fondSammenligningVisning === v.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+                              {v.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Periodeavkastning bar chart */}
+                        {fondSammenligningVisning === 'avkastning' && avkData && (
+                          <ResponsiveContainer width="100%" height={380}>
+                            <BarChart data={avkData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
+                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                              <ReferenceLine y={0} stroke="#9CA3AF" />
+                              {alleSerieNavnTab.map((n, i) => (
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                              ))}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+
+                        {/* Kalenderårsavkastning */}
+                        {fondSammenligningVisning === 'kalenderaar' && aarsData && (
+                          <ResponsiveContainer width="100%" height={380}>
+                            <BarChart data={aarsData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                              <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                formatter={(v) => [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`]} />
+                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                              <ReferenceLine y={0} stroke="#9CA3AF" />
+                              {alleSerieNavnTab.map((n, i) => (
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={40} />
+                              ))}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+
+                        {/* Sektorfordeling */}
+                        {fondSammenligningVisning === 'sektor' && sektorData && sektorData.length > 0 && (
+                          <ResponsiveContainer width="100%" height={Math.max(300, sektorData.length * 40)}>
+                            <BarChart data={sektorData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                              <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <YAxis type="category" dataKey="sektor" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
+                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                formatter={(v) => [`${v.toFixed(1)}%`]} />
+                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                              {alleSerieNavnTab.map((n, i) => (
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
+                              ))}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+
+                        {/* Landfordeling */}
+                        {fondSammenligningVisning === 'region' && regionData && regionData.length > 0 && (
+                          <ResponsiveContainer width="100%" height={Math.max(300, regionData.length * 40)}>
+                            <BarChart data={regionData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                              <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <YAxis type="category" dataKey="region" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
+                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                formatter={(v) => [`${v.toFixed(1)}%`]} />
+                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                              {alleSerieNavnTab.map((n, i) => (
+                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
+                              ))}
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+
+                        {/* Fondsdetaljer tabell */}
+                        {fondSammenligningVisning === 'detaljer' && valgteFond.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-gray-50">
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600 sticky left-0 bg-gray-50 z-10 min-w-[180px]">Fond</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">Kategori</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">Valuta</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">ISIN</th>
+                                  <th className="py-2.5 px-3 text-right font-semibold text-gray-600">AUM (USD)</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">Oppstart</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">Referanseindeks</th>
+                                  <th className="py-2.5 px-3 text-left font-semibold text-gray-600">SFDR</th>
+                                  <th className="py-2.5 px-3 text-right font-semibold text-gray-600">Std.avvik 3 år</th>
+                                  <th className="py-2.5 px-3 text-right font-semibold text-gray-600">Stil</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {valgteFond.map((f, i) => (
+                                  <tr key={f.isin || f.n} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                                    <td className={"py-2 px-3 font-medium sticky left-0 z-10 " + (i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50')}>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}></span>
+                                        <span style={{ color: PENSUM_COLORS.darkBlue }}>{f.n}</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-3 text-gray-600">{f.cat || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-600">{f.cur || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-500 font-mono">{f.isin || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 tabular-nums">{f.aum ? `$${(f.aum / 1e6).toFixed(0)}M` : '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-600">{f.inc || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-500 max-w-[200px] truncate" title={f.bench}>{f.bench || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-600">{f.sfdr?.replace('SFDR Product', '').replace('EET ', '').trim() || '\u2014'}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 tabular-nums">{f.sd3y ? `${f.sd3y.toFixed(1)}%` : '\u2014'}</td>
+                                    <td className="py-2 px-3 text-gray-600">
+                                      {f.stVal || f.stCore || f.stGro ? (
+                                        <div className="flex gap-1">
+                                          {f.stVal ? <span className="text-[10px] px-1 py-0.5 rounded bg-blue-50 text-blue-600">V {f.stVal.toFixed(0)}%</span> : null}
+                                          {f.stCore ? <span className="text-[10px] px-1 py-0.5 rounded bg-gray-100 text-gray-600">C {f.stCore.toFixed(0)}%</span> : null}
+                                          {f.stGro ? <span className="text-[10px] px-1 py-0.5 rounded bg-green-50 text-green-600">G {f.stGro.toFixed(0)}%</span> : null}
+                                        </div>
+                                      ) : '\u2014'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -5073,6 +5830,7 @@ export default function PensumPrognoseModell() {
                   </>
                 );
               })()}
+
             </div>
           );
         })()}
