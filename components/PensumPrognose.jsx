@@ -1562,8 +1562,21 @@ export default function PensumPrognoseModell() {
                 </p>
                 <div className="pt-4">
                   <p className="text-sm text-gray-600">Med vennlig hilsen</p>
-                  <p className="text-sm font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
-                  <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                  <div className="flex items-center gap-4 mt-3">
+                    {bruker?.bilde ? (
+                      <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <svg className="w-7 h-7" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
+                      <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                      {bruker?.telefon && <p className="text-xs text-gray-500 mt-1">{bruker.telefon}</p>}
+                      {bruker?.epost && <p className="text-xs text-gray-500">{bruker.epost}</p>}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div>
@@ -1677,7 +1690,7 @@ export default function PensumPrognoseModell() {
       default:
         return null;
     }
-  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
