@@ -77,6 +77,8 @@ export default function PensumPrognoseModell() {
   const [visPortefoljeIFondComp, setVisPortefoljeIFondComp] = useState(false);
   const [fondVekter, setFondVekter] = useState({}); // { isin: vekt } for konkurranseportefølje
   const [visKonkurrentPortefolje, setVisKonkurrentPortefolje] = useState(false);
+  const [skjulEnkeltfond, setSkjulEnkeltfond] = useState(false); // skjul individuelle fond-linjer
+  const [grafHorisont, setGrafHorisont] = useState('max'); // '1', '3', '5', '10', 'max'
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
@@ -5515,7 +5517,8 @@ export default function PensumPrognoseModell() {
                 const pensumNavn = pensumValgte.map(p => p.navn);
                 const portNavn = harPortefolje ? ['Din portefølje'] : [];
                 const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
-                const alleSerieNavn = [...fondNavn, ...pensumNavn, ...portNavn, ...konkNavn];
+                const visbareFondNavn = skjulEnkeltfond && harKonkurrentPortefolje ? [] : fondNavn;
+                const alleSerieNavn = [...visbareFondNavn, ...pensumNavn, ...portNavn, ...konkNavn];
                 const getSerieColor = (name, idx) => {
                   if (name === 'Din portefølje') return '#1B3A5F';
                   if (name === 'Konkurrentportefølje') return '#D97706';
@@ -5702,6 +5705,11 @@ export default function PensumPrognoseModell() {
                                   className="text-xs text-amber-700 hover:text-amber-900 underline">
                                   Fordel likt
                                 </button>
+                                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                                  <input type="checkbox" checked={skjulEnkeltfond} onChange={e => setSkjulEnkeltfond(e.target.checked)}
+                                    className="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+                                  <span className="text-xs text-gray-600">Skjul enkeltfond i grafene (vis kun porteføljene)</span>
+                                </label>
                               </div>
                             )}
                           </div>
@@ -5727,45 +5735,98 @@ export default function PensumPrognoseModell() {
                             ))}
                           </div>
 
-                          {/* Historisk graf — indeksert linjediagram */}
-                          {fondSammenligningVisning === 'historiskgraf' && grafData && grafData.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-500 mb-3">Indeksert utvikling (100 = startpunkt). Eksterne fond: kalenderårsdata. Pensum-løsninger: månedlige datapunkter.</p>
-                              <ResponsiveContainer width="100%" height={420}>
-                                <LineChart data={grafData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                  <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
-                                    tickFormatter={(d) => {
-                                      if (!d) return '';
-                                      // Håndter både dato-strenger og rene årstall
-                                      if (d.length === 4 || !d.includes('-')) return d;
-                                      const p = parseHistorikkDato(d);
-                                      if (!p) return d;
-                                      return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`;
-                                    }}
-                                    interval={Math.max(1, Math.floor(grafData.length / 14))} />
-                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} domain={['dataMin - 5', 'dataMax + 5']} />
-                                  <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                    labelFormatter={(d) => {
-                                      if (!d || d.length <= 4) return d;
-                                      return formatHistorikkEtikett(d);
-                                    }}
-                                    formatter={(v, n) => [v?.toFixed(1), n]} />
-                                  <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                                  <ReferenceLine y={100} stroke="#9CA3AF" strokeDasharray="5 5" label={{ value: 'Start', position: 'right', fontSize: 10, fill: '#9CA3AF' }} />
-                                  {alleSerieNavn.map((n, i) => {
-                                    const erPort = n === 'Din portefølje';
-                                    const erKonk = n === 'Konkurrentportefølje';
-                                    return (
-                                      <Line key={n} type="monotone" dataKey={n} stroke={getSerieColor(n, i)}
-                                        strokeWidth={erPort || erKonk ? 3 : 2} dot={false} activeDot={{ r: erPort || erKonk ? 5 : 4 }}
-                                        strokeDasharray={erKonk ? '6 3' : undefined} connectNulls />
-                                    );
-                                  })}
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </div>
-                          )}
+                          {/* Historisk graf — prosentvis linjediagram */}
+                          {fondSammenligningVisning === 'historiskgraf' && grafData && grafData.length > 0 && (() => {
+                            // Filtrer data basert på tidshorisont
+                            const filtrerGrafData = () => {
+                              if (grafHorisont === 'max') return grafData;
+                              const aarTilbake = parseInt(grafHorisont);
+                              const cutoff = new Date();
+                              cutoff.setFullYear(cutoff.getFullYear() - aarTilbake);
+                              const cutoffStr = cutoff.toISOString().slice(0, 10);
+                              // For årsbaserte serier, bruk årstall
+                              const cutoffAar = cutoff.getFullYear();
+                              return grafData.filter(d => {
+                                if (!d.dato) return false;
+                                if (d.dato.length === 4 || !d.dato.includes('-')) return parseInt(d.dato) >= cutoffAar;
+                                return d.dato >= cutoffStr;
+                              });
+                            };
+                            const filtrerteData = filtrerGrafData();
+                            if (filtrerteData.length === 0) return (
+                              <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
+                                Ingen data for valgt tidshorisont
+                              </div>
+                            );
+
+                            // Konverter til prosent (0% = startpunkt) — rebase til første datapunkt i filtrert utvalg
+                            const foerstePunkt = filtrerteData[0];
+                            const prosData = filtrerteData.map(d => {
+                              const punkt = { dato: d.dato };
+                              alleSerieNavn.forEach(n => {
+                                if (d[n] !== undefined && foerstePunkt[n] !== undefined && foerstePunkt[n] !== 0) {
+                                  punkt[n] = parseFloat(((d[n] / foerstePunkt[n] - 1) * 100).toFixed(2));
+                                } else if (d[n] !== undefined) {
+                                  punkt[n] = d[n] - 100; // fallback
+                                }
+                              });
+                              return punkt;
+                            });
+
+                            return (
+                              <div>
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-xs text-gray-500">Prosentvis avkastning fra valgt startpunkt. Eksterne fond: kalenderårsdata. Pensum-løsninger: månedlige datapunkter.</p>
+                                  <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
+                                    {[
+                                      { key: '1', label: '1 år' },
+                                      { key: '3', label: '3 år' },
+                                      { key: '5', label: '5 år' },
+                                      { key: '10', label: '10 år' },
+                                      { key: 'max', label: 'Maks' },
+                                    ].map(h => (
+                                      <button key={h.key} onClick={() => setGrafHorisont(h.key)}
+                                        className={"px-2.5 py-1 rounded-md text-xs font-semibold transition-colors " + (grafHorisont === h.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+                                        {h.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <ResponsiveContainer width="100%" height={420}>
+                                  <LineChart data={prosData} margin={{ top: 10, right: 30, left: 10, bottom: 30 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                    <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                                      tickFormatter={(d) => {
+                                        if (!d) return '';
+                                        if (d.length === 4 || !d.includes('-')) return d;
+                                        const p = parseHistorikkDato(d);
+                                        if (!p) return d;
+                                        return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`;
+                                      }}
+                                      interval={Math.max(1, Math.floor(prosData.length / 14))} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v > 0 ? '+' : ''}${v}%`} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                                      labelFormatter={(d) => {
+                                        if (!d || d.length <= 4) return d;
+                                        return formatHistorikkEtikett(d);
+                                      }}
+                                      formatter={(v, n) => [`${v > 0 ? '+' : ''}${v?.toFixed(2)}%`, n]} />
+                                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                                    <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
+                                    {alleSerieNavn.map((n, i) => {
+                                      const erPort = n === 'Din portefølje';
+                                      const erKonk = n === 'Konkurrentportefølje';
+                                      return (
+                                        <Line key={n} type="monotone" dataKey={n} stroke={getSerieColor(n, i)}
+                                          strokeWidth={erPort || erKonk ? 3 : 2} dot={false} activeDot={{ r: erPort || erKonk ? 5 : 4 }}
+                                          strokeDasharray={erKonk ? '6 3' : undefined} connectNulls />
+                                      );
+                                    })}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            );
+                          })()}
                           {fondSammenligningVisning === 'historiskgraf' && (!grafData || grafData.length === 0) && (
                             <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
                               Velg fond, Pensum-løsninger eller portefølje for å se historisk utvikling
