@@ -1533,12 +1533,8 @@ export default function PensumPrognoseModell() {
       case 'folgebrev': {
         const _effektivtBelop = investertBelop !== null ? investertBelop : totalKapital;
         const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
-        const aksjeAndel = pensumAllokering.filter(a => a.vekt > 0).reduce((sum, a) => {
-          const prod = alleProd.find(p => p.id === a.id);
-          if (prod && (prod.kategori === 'enkeltfond' || prod.kategori === 'fondsportefoljer')) return sum + a.vekt;
-          return sum;
-        }, 0);
-        const renteAndel = 100 - aksjeAndel;
+        const aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
+        const renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
         const antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
         const sluttverdi = pensumPrognose.length > 0 ? pensumPrognose[pensumPrognose.length - 1].verdi : 0;
         // Beregn vektet yield inline
@@ -1554,7 +1550,7 @@ export default function PensumPrognoseModell() {
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
             <div className="grid grid-cols-3 gap-8">
               <div className="col-span-2 space-y-5">
-                <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || 'Investor'},</h2>
+                <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
                 </p>
@@ -2308,7 +2304,7 @@ export default function PensumPrognoseModell() {
 
       const investerbarKapital = investertBelop !== null ? investertBelop : totalKapital;
       const payload = {
-        kundeNavn: kundeNavn || 'Investor',
+        kundeNavn: kundeNavn || kundeSelskap || 'Investor',
         totalKapital: investerbarKapital,
         totalFormue: totalKapital,
         investerbarKapital,
@@ -2520,7 +2516,7 @@ export default function PensumPrognoseModell() {
       pptx.author = 'Pensum Asset Management';
       pptx.company = 'Pensum Asset Management';
       pptx.subject = 'Kunderapport';
-      pptx.title = `Kunderapport ${kundeNavn || 'Investor'}`;
+      pptx.title = `Kunderapport ${kundeNavn || kundeSelskap || 'Investor'}`;
 
       const SLIDE_W = 13.33;
       const SLIDE_H = 7.5;
@@ -3239,18 +3235,9 @@ export default function PensumPrognoseModell() {
                 {/* Horisont - som slider + tall */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringshorisont</label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="range" min="1" max="30" step="1"
-                      value={horisont}
-                      onChange={(e) => { setHorisont(parseInt(e.target.value)); setLocalHorisont(e.target.value); }}
-                      className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
-                      style={{ accentColor: PENSUM_COLORS.darkBlue }}
-                    />
-                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                      <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-8 text-center text-sm font-semibold bg-transparent border-none outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
-                      <span className="text-xs text-gray-400">år</span>
-                    </div>
+                  <div className="relative">
+                    <input type="text" value={localHorisont} onChange={(e) => setLocalHorisont(e.target.value)} onBlur={() => { const v = Math.max(1, Math.min(50, parseInt(localHorisont,10)||10)); setHorisont(v); setLocalHorisont(v.toString()); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">år</span>
                   </div>
                 </div>
 
@@ -3270,7 +3257,6 @@ export default function PensumPrognoseModell() {
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>
                     Investert beløp
-                    <span className="text-[10px] font-normal text-gray-400 normal-case ml-2">Overstyrer total kapital i forslaget</span>
                   </label>
                   <div className="relative">
                     <input type="text" value={investertBelop !== null ? formatNumber(investertBelop) : ''} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) ? null : v); }} onFocus={(e) => { if (investertBelop !== null) e.target.value = investertBelop.toString(); }} onBlur={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) || v === 0 ? null : v); }} placeholder={formatCurrency(totalKapital) + ' (fra kapitaloversikt)'} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
@@ -3464,7 +3450,7 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
               <div className="xl:col-span-2">
-                <div className="grid grid-cols-1 gap-4">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-5 grid grid-cols-1 gap-4">
                   {/* Porteføljesammensetning - donut chart with side legend */}
                   <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
                     <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</h4>
@@ -6927,7 +6913,7 @@ export default function PensumPrognoseModell() {
                   <div className="flex-1 flex flex-col justify-center py-8">
                     <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: PENSUM_COLORS.salmon }}>Kunderapport</div>
                     <h1 className="text-4xl font-bold text-white mb-2" style={{ lineHeight: '1.15' }}>Investeringsforslag</h1>
-                    <p className="text-lg text-blue-200 mt-1">{kundeNavn || 'Investor'}{kundeSelskap ? <span className="text-sm text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</p>
+                    <p className="text-lg text-blue-200 mt-1">{kundeNavn ? <>{kundeNavn}{kundeSelskap ? <span className="text-sm text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</> : (kundeSelskap || 'Investor')}</p>
 
                     <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Rådgiver</span><p className="text-sm font-semibold text-white mt-0.5">{radgiver || '—'}</p></div>
