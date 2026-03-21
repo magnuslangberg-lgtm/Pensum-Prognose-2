@@ -94,8 +94,8 @@ export default function PensumPrognoseModell() {
 
   // Kostnadsanalyse - hva koster det å ikke investere?
   const [kostnadsanalyseAktiv, setKostnadsanalyseAktiv] = useState(false);
-  const [skattepliktigFormue, setSkattepliktigFormue] = useState(40000000);
-  const [aarligForbruk, setAarligForbruk] = useState(1000000);
+  const [skattepliktigFormue, setSkattepliktigFormue] = useState(10000000);
+  const [aarligForbruk, setAarligForbruk] = useState(0);
   const [inflasjon, setInflasjon] = useState(2);
   const [renteAvkastning, setRenteAvkastning] = useState(4);
 
@@ -2966,13 +2966,16 @@ export default function PensumPrognoseModell() {
 
             {/* ====== KOSTNADSANALYSE ====== */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+              <button
+                className="w-full px-6 py-4 flex items-center justify-between cursor-pointer hover:brightness-105 transition-all"
+                style={{ backgroundColor: PENSUM_COLORS.salmon }}
+                onClick={() => setKostnadsanalyseAktiv(!kostnadsanalyseAktiv)}>
                 <h3 className="text-lg font-semibold text-white">Kostnadsanalyse — Hva koster det å ikke investere?</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={kostnadsanalyseAktiv} onChange={(e) => setKostnadsanalyseAktiv(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
-                  <span className="text-sm" style={{ color: '#F5E6DF' }}>Aktiver analyse</span>
-                </label>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm" style={{ color: '#F5E6DF' }}>{kostnadsanalyseAktiv ? 'Skjul' : 'Vis'}</span>
+                  <svg className={"w-5 h-5 text-white transition-transform " + (kostnadsanalyseAktiv ? "rotate-180" : "")} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </button>
               {kostnadsanalyseAktiv && kostnadsanalyseData && (
                 <div className="p-6 space-y-6">
                   {/* Parametre */}
@@ -4878,7 +4881,11 @@ export default function PensumPrognoseModell() {
           };
 
           const byggSektordata = () => {
-            if (valgteFond.length === 0) return [];
+            // Filtrér kun fond som faktisk har sektordata
+            const fondMedSektordata = valgteFond.filter(f =>
+              f.sTech || f.sFin || f.sHlt || f.sInd || f.sCyc || f.sDef || f.sEng || f.sComm || f.sMat || f.sRE || f.sUtil
+            );
+            if (fondMedSektordata.length === 0) return [];
             const sektorer = [
               { key: 'sTech', label: 'Teknologi' }, { key: 'sFin', label: 'Finans' },
               { key: 'sHlt', label: 'Helse' }, { key: 'sInd', label: 'Industri' },
@@ -4889,15 +4896,20 @@ export default function PensumPrognoseModell() {
             ];
             return sektorer.map(s => {
               const punkt = { sektor: s.label };
-              valgteFond.forEach(f => {
-                if (f[s.key]) punkt[f.n] = parseFloat(f[s.key].toFixed(1));
+              fondMedSektordata.forEach(f => {
+                const val = f[s.key];
+                if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
               });
               return punkt;
             }).filter(p => Object.keys(p).length > 1);
           };
 
           const byggRegiondata = () => {
-            if (valgteFond.length === 0) return [];
+            // Filtrér kun fond som faktisk har regiondata
+            const fondMedRegiondata = valgteFond.filter(f =>
+              f.cUS || f.cUK || f.cJP || f.cDE || f.cFR || f.cNO || f.cSE || f.cDK || f.cCN
+            );
+            if (fondMedRegiondata.length === 0) return [];
             const regioner = [
               { key: 'cUS', label: 'USA' }, { key: 'cUK', label: 'Storbritannia' },
               { key: 'cJP', label: 'Japan' }, { key: 'cDE', label: 'Tyskland' },
@@ -4907,8 +4919,9 @@ export default function PensumPrognoseModell() {
             ];
             return regioner.map(r => {
               const punkt = { region: r.label };
-              valgteFond.forEach(f => {
-                if (f[r.key]) punkt[f.n] = parseFloat(f[r.key].toFixed(1));
+              fondMedRegiondata.forEach(f => {
+                const val = f[r.key];
+                if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
               });
               return punkt;
             }).filter(p => Object.keys(p).length > 1);
@@ -5468,38 +5481,75 @@ export default function PensumPrognoseModell() {
                         })()}
 
                         {/* Sektorfordeling */}
-                        {fondSammenligningVisning === 'sektor' && sektorData && sektorData.length > 0 && (
-                          <ResponsiveContainer width="100%" height={Math.max(300, sektorData.length * 40)}>
-                            <BarChart data={sektorData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
-                              <YAxis type="category" dataKey="sektor" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
-                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                formatter={(v) => [`${v.toFixed(1)}%`]} />
-                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                              {alleSerieNavnTab.map((n, i) => (
-                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
-                              ))}
-                            </BarChart>
-                          </ResponsiveContainer>
-                        )}
+                        {fondSammenligningVisning === 'sektor' && sektorData && sektorData.length > 0 && (() => {
+                          // Hent kun serienavn som finnes i dataene (ekskluderer porteføljer/indekser uten sektordata)
+                          const sektorSerier = [...new Set(sektorData.flatMap(d => Object.keys(d).filter(k => k !== 'sektor')))];
+                          return (
+                            <ResponsiveContainer width="100%" height={Math.max(300, sektorData.length * 40)}>
+                              <BarChart data={sektorData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                                <YAxis type="category" dataKey="sektor" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
+                                <Tooltip content={({ active, payload, label }) => {
+                                  if (!active || !payload?.length) return null;
+                                  const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
+                                  return (
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
+                                      <div className="font-semibold text-gray-500 mb-1.5 pb-1.5 border-b border-gray-100">{label}</div>
+                                      {sortert.map(p => (
+                                        <div key={p.name} className="flex items-center gap-2 py-0.5">
+                                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
+                                          <span className="text-gray-600 flex-1">{p.name}</span>
+                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1)}%</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                }} />
+                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                                {sektorSerier.map((n, i) => {
+                                  const fondIdx = valgteFond.findIndex(f => f.n === n);
+                                  return <Bar key={n} dataKey={n} fill={fondIdx >= 0 ? FOND_FARGER[fondIdx % FOND_FARGER.length] : getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />;
+                                })}
+                              </BarChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
 
                         {/* Landfordeling */}
-                        {fondSammenligningVisning === 'region' && regionData && regionData.length > 0 && (
-                          <ResponsiveContainer width="100%" height={Math.max(300, regionData.length * 40)}>
-                            <BarChart data={regionData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
-                              <YAxis type="category" dataKey="region" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
-                              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                                formatter={(v) => [`${v.toFixed(1)}%`]} />
-                              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
-                              {alleSerieNavnTab.map((n, i) => (
-                                <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />
-                              ))}
-                            </BarChart>
-                          </ResponsiveContainer>
-                        )}
+                        {fondSammenligningVisning === 'region' && regionData && regionData.length > 0 && (() => {
+                          const regionSerier = [...new Set(regionData.flatMap(d => Object.keys(d).filter(k => k !== 'region')))];
+                          return (
+                            <ResponsiveContainer width="100%" height={Math.max(300, regionData.length * 40)}>
+                              <BarChart data={regionData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                                <YAxis type="category" dataKey="region" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
+                                <Tooltip content={({ active, payload, label }) => {
+                                  if (!active || !payload?.length) return null;
+                                  const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
+                                  return (
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2.5 text-xs">
+                                      <div className="font-semibold text-gray-500 mb-1.5 pb-1.5 border-b border-gray-100">{label}</div>
+                                      {sortert.map(p => (
+                                        <div key={p.name} className="flex items-center gap-2 py-0.5">
+                                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
+                                          <span className="text-gray-600 flex-1">{p.name}</span>
+                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1)}%</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                }} />
+                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                                {regionSerier.map((n, i) => {
+                                  const fondIdx = valgteFond.findIndex(f => f.n === n);
+                                  return <Bar key={n} dataKey={n} fill={fondIdx >= 0 ? FOND_FARGER[fondIdx % FOND_FARGER.length] : getSerieColor(n, i)} radius={[0, 3, 3, 0]} maxBarSize={20} />;
+                                })}
+                              </BarChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
 
                         {/* Fondsdetaljer tabell */}
                         {fondSammenligningVisning === 'detaljer' && valgteFond.length > 0 && (
