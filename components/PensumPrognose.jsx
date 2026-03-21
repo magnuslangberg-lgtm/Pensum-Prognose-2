@@ -1528,15 +1528,25 @@ export default function PensumPrognoseModell() {
         );
 
       case 'folgebrev': {
+        const _effektivtBelop = investertBelop !== null ? investertBelop : totalKapital;
+        const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
         const aksjeAndel = pensumAllokering.filter(a => a.vekt > 0).reduce((sum, a) => {
-          const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
-          const prod = alle.find(p => p.id === a.id);
+          const prod = alleProd.find(p => p.id === a.id);
           if (prod && (prod.kategori === 'enkeltfond' || prod.kategori === 'fondsportefoljer')) return sum + a.vekt;
           return sum;
         }, 0);
         const renteAndel = 100 - aksjeAndel;
         const antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
         const sluttverdi = pensumPrognose.length > 0 ? pensumPrognose[pensumPrognose.length - 1].verdi : 0;
+        // Beregn vektet yield inline
+        let _yieldSum = 0, _yieldTotal = 0;
+        pensumAllokering.filter(a => a.vekt > 0).forEach(a => {
+          const prod = alleProd.find(p => p.id === a.id);
+          const meta = produktRapportMeta?.[a.id];
+          const y = meta?.forventetYield ?? prod?.forventetYield;
+          if (erGyldigTall(y)) { _yieldSum += y * a.vekt; _yieldTotal += a.vekt; }
+        });
+        const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
             <div className="grid grid-cols-3 gap-8">
@@ -1546,7 +1556,7 @@ export default function PensumPrognoseModell() {
                   Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Forslaget tar utgangspunkt i {formatCurrency(effektivtInvestertBelop)}, en {risikoprofil.toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                  Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop)}, en {risikoprofil.toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
@@ -1562,7 +1572,7 @@ export default function PensumPrognoseModell() {
                   <h3 className="text-sm font-bold tracking-wider uppercase" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h3>
                   {[
                     { label: 'Forventet avkastning', verdi: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
-                    { label: 'Forventet yield', verdi: erGyldigTall(vektetYield) ? vektetYield.toFixed(1) + '% p.a.' : '—' },
+                    { label: 'Forventet yield', verdi: erGyldigTall(_vektetYield) ? _vektetYield.toFixed(1) + '% p.a.' : '—' },
                     { label: 'Aksjeandel', verdi: Math.round(aksjeAndel) + '%' },
                     { label: 'Renteandel', verdi: Math.round(renteAndel) + '%' },
                     { label: 'Antall produkter', verdi: String(antallProdukter) },
@@ -1668,7 +1678,7 @@ export default function PensumPrognoseModell() {
       default:
         return null;
     }
-  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, effektivtInvestertBelop, pensumForventetAvkastning, vektetYield, pensumAllokering, pensumProdukter, pensumPrognose, markedssynData, formatCurrency, erGyldigTall]);
+  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
