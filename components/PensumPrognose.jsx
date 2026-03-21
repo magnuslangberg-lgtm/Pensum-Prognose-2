@@ -96,10 +96,38 @@ export default function PensumPrognoseModell() {
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
   const [tilleggsmoduler, setTilleggsmoduler] = useState([
-    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: null },
-    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: null },
+    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'etter-cover' },
+    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
+
+  // Posisjonsvalg for tilleggsmoduler
+  const TILLEGGSMODUL_POSISJONER = [
+    { value: 'etter-cover', label: 'Etter forside' },
+    { value: 'etter-utgangspunkt', label: 'Etter utgangspunkt' },
+    { value: 'etter-byggesteiner', label: 'Etter byggesteiner' },
+    { value: 'etter-allokering', label: 'Etter allokering' },
+    { value: 'etter-historisk', label: 'Etter historisk avkastning' },
+    { value: 'etter-snapshot', label: 'Etter snapshot-grafer' },
+    { value: 'etter-eksponering', label: 'Etter eksponering' },
+    { value: 'etter-verdiutvikling', label: 'Etter verdiutvikling' },
+    { value: 'etter-faktaark', label: 'Etter faktaark' },
+    { value: 'foer-disclaimer', label: 'Før disclaimer (standard)' },
+  ];
+
+  // Beskrivelser for tilleggsmoduler
+  const TILLEGGSMODUL_BESKRIVELSER = {
+    'beskatning': 'Oversikt over beskatning av aksjer og fond for privat eie, ASK og aksjeselskap',
+    'markedshistorikk': 'MSCI AC World arsavkastning og intraarsfall siden 1988 — viser at markedet historisk har vaert positivt i 70% av arene',
+    'om-oss': 'Presentasjon av Pensum — fire virksomhetsområder, nøkkeltall og forvaltningskapital',
+    'kommunikasjon': 'Oversikt over Pensums kommunikasjonskanaler: investeringskommentar, månedsrapport, konferanse, podcast og TV',
+    'rapportering': 'Pensums rapporteringsløsning med BankID-innlogging, porteføljeoversikt og skatterapportering',
+    'honorarstruktur': 'Transparent honorarstruktur med priser for investeringsrådgivning og diskresjonær forvaltning',
+  };
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -1033,6 +1061,276 @@ export default function PensumPrognoseModell() {
 
   const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
+
+  // Render tilleggsmodul-innhold basert på id
+  const renderTilleggsmodulInnhold = useCallback((modulId) => {
+    switch (modulId) {
+      case 'om-oss':
+        return (
+          <div data-rapport-slide="om-oss" className="space-y-6 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Pensum har røtter tilbake til 2002 og har i dag fire ulike virksomhetsområder, hvor kjernen ligger innen forvaltningstjenester.
+            </p>
+            <div className="grid grid-cols-4 gap-4">
+              {[
+                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking» markedet.', farge: PENSUM_COLORS.darkBlue },
+                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Forvaltning av aktivt forvaltede mandater, AIFer, UCITS fond, fondsporteføljer og eiendom.', farge: PENSUM_COLORS.darkBlue },
+                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder samt eksterne kunder.', farge: PENSUM_COLORS.lightBlue },
+              ].map((boks, i) => (
+                <div key={i} className="rounded-lg p-4 text-white text-sm" style={{ backgroundColor: boks.farge }}>
+                  <h4 className="font-bold text-xs uppercase tracking-wider mb-2">{boks.tittel}</h4>
+                  <p className="text-xs leading-relaxed opacity-90">{boks.tekst}</p>
+                </div>
+              ))}
+            </div>
+            <div className="h-0.5 w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+            <div className="grid grid-cols-4 gap-4">
+              {[
+                { tittel: 'Antall ansatte', verdi: '39' },
+                { tittel: 'Forvaltningskapital', verdi: 'NOK 12,3 Mrd' },
+                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%' },
+                { tittel: 'Årlig vekst inntekter', verdi: '22,1%' },
+              ].map((stat, i) => (
+                <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: '#9CA3AF', color: 'white' }}>
+                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-2">{stat.tittel}</h4>
+                  <p className="text-2xl font-bold">{stat.verdi}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'kommunikasjon':
+        return (
+          <div data-rapport-slide="kommunikasjon" className="space-y-5 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kommunikasjon & løpende oppdateringer</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Pensum tilbyr løpende kommunikasjon og oppdateringer til sine kunder gjennom flere kanaler.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { tittel: 'Ukentlig Investeringskommentar', beskrivelse: 'Markedsoppdatering og investeringskommentarer sendt ut ukentlig til alle kunder.' },
+                { tittel: 'Månedsrapport', beskrivelse: 'Detaljert månedlig rapport med porteføljeutvikling, markedsanalyse og utsikter.' },
+                { tittel: 'Pensum Konferanse', beskrivelse: 'Årlig konferanse med foredragsholdere og nettverksmuligheter for Pensums kunder.' },
+              ].map((kanal, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-4">
+                  <div className="h-24 rounded-md mb-3 flex items-center justify-center" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : i === 1 ? PENSUM_COLORS.lightBlue : '#E5E7EB' }}>
+                    <svg className="w-8 h-8 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {i === 0 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />}
+                      {i === 1 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
+                      {i === 2 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />}
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-sm mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-xs text-gray-500">{kanal.beskrivelse}</p>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {[
+                { tittel: 'Pensumpodden', beskrivelse: 'Podcast med markedskommentarer og intervjuer med investeringseksperter.' },
+                { tittel: 'Mediedekning', beskrivelse: 'Pensum er jevnlig omtalt i ledende finansmedier som DN, E24 og Finansavisen.' },
+                { tittel: 'Økonomi-nyhetene', beskrivelse: 'Pensums eksperter bidrar regelmessig med kommentarer i TV og nettmedier.' },
+                { tittel: 'Pensum TV', beskrivelse: 'Egenprodusert videoinnhold med markedsanalyser og investeringstemaer.' },
+              ].map((kanal, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-3">
+                  <div className="h-16 rounded-md mb-2 flex items-center justify-center" style={{ backgroundColor: '#F3F4F6' }}>
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-xs mb-0.5" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-[10px] text-gray-500">{kanal.beskrivelse}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'rapportering':
+        return (
+          <div data-rapport-slide="rapportering" className="space-y-5 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportering</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <ul className="space-y-3 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                    <span>BankID innlogging på egen rapporteringsside med daglig utvikling av portefølje. Tilgang til alle kundeforhold på samme område dersom flere kundeforhold.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                    <span>Rapporterer både på portefølje i Pensum samt «eksterne» porteføljer. Gir en helhetlig oversikt.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                    <span>Skatterapporering</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                    <span>Sluttsedler og oversikt over alle hendelser i porteføljen.</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg p-3 text-center border border-gray-200">
+                    <p className="text-[10px] text-gray-500 mb-1">Markedsverdi</p>
+                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Daglig oppdatert</p>
+                  </div>
+                  <div className="rounded-lg p-3 text-center border border-gray-200">
+                    <p className="text-[10px] text-gray-500 mb-1">Avkastning i kr</p>
+                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
+                  </div>
+                  <div className="rounded-lg p-3 text-center border border-gray-200">
+                    <p className="text-[10px] text-gray-500 mb-1">Avkastning %</p>
+                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <h4 className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rapporteringsfunksjoner</h4>
+                  <div className="space-y-2">
+                    {['Nettoavkastning', 'Transaksjoner', 'Allokering', 'Skatterapport', 'Sluttsedler'].map((funksjon, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <svg className="w-4 h-4 flex-shrink-0" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-xs text-gray-600">{funksjon}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'honorarstruktur':
+        return (
+          <div data-rapport-slide="honorarstruktur" className="space-y-5 page-break-before">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
+                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              </div>
+              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            </div>
+            <div className="rounded-lg p-4 text-sm text-gray-700 leading-relaxed" style={{ backgroundColor: '#F0F4F8' }}>
+              Pensum ønsker å opptre som en transparent partner ovenfor sine kunder, også hva gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter og eventuelle returprovisjoner som vi mottar har uavkortet tilbake til våre kunder.
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Komponenter i vår honorarmodell:</h3>
+              <ul className="space-y-1.5 text-xs text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                  <span>Det er ingen implementeringshonorarer utover ordinære transaksjonskostnader.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                  <span>Årlig honorar for løpende forvaltning, depot, oppgjør, oppfølging og rapportering. Ved valg av tredjeparts forvaltere tilkommer underliggende forvaltningskostnad på det enkelte fond i tillegg.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                  <span>Ved investeringer i Pensum sine internt forvaltede fond, tilkommer ingen tjenestekostnad utover kostnadene i fondene.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                  <span>Utvalgte diskresjonære mandater og fond, forvaltet av Pensum, belaster performance fee basert på meravkastning mot relevant referanseindeks.</span>
+                </li>
+              </ul>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th colSpan={3} className="p-3 text-center font-bold text-sm tracking-wider text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>HONORARSTRUKTUR PENSUM*</th>
+                  </tr>
+                  <tr className="border-b-2" style={{ borderColor: PENSUM_COLORS.darkBlue }}>
+                    <th className="p-2 text-left font-semibold" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' }}>Beløp</th>
+                    <th className="p-2 text-center font-semibold" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' }}>Investeringsrådgivning</th>
+                    <th className="p-2 text-center font-semibold" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' }}>Diskresjonær forvaltning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { belop: 'NOK 1-5 millioner', rad: '1,25% (+mva)', disk: '1,25%' },
+                    { belop: 'NOK 5-20 millioner', rad: '1,05% (+mva)', disk: '1,05%' },
+                    { belop: 'NOK 20-100 millioner', rad: '0,90% (+mva)', disk: '0,90%' },
+                    { belop: 'NOK 100 millioner +', rad: '0,75% (+mva)', disk: '0,75%' },
+                  ].map((rad, i) => (
+                    <tr key={i} className="border-t border-gray-200" style={{ backgroundColor: i % 2 === 0 ? 'white' : '#FAFBFC' }}>
+                      <td className="p-2 text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>{rad.belop}</td>
+                      <td className="p-2 text-center text-xs text-gray-700">{rad.rad}</td>
+                      <td className="p-2 text-center text-xs text-gray-700">{rad.disk}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-gray-300">
+                    <td className="p-2 text-xs font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Performance fee</td>
+                    <td className="p-2 text-center text-xs text-gray-400"></td>
+                    <td className="p-2 text-center text-xs text-gray-700">20/80 over benchmark med «high watermark»</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto mt-3">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th colSpan={2} className="p-2 text-center font-bold text-xs tracking-wider" style={{ color: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' }}>Transaksjonsavgifter</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-gray-200">
+                    <td className="p-2 text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>Verdipapirfond</td>
+                    <td className="p-2 text-center text-xs text-gray-700">0,15% (minimum NOK 1 000,- Maksimum NOK 10 000,-)</td>
+                  </tr>
+                  <tr className="border-t border-gray-200" style={{ backgroundColor: '#FAFBFC' }}>
+                    <td className="p-2 text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>Andre verdipapirer</td>
+                    <td className="p-2 text-center text-xs text-gray-700">0,15% (minimum NOK 250,-)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="text-[10px] text-gray-400 italic mt-2">
+              <p style={{ color: PENSUM_COLORS.salmon }}>* Mer detaljert informasjon rundt honorarer fås ved henvendelse hos Pensum</p>
+              <p className="mt-1">Honorarstrukturen er presentert for informasjonsformål. Eventuelle kostnader og honorarer vil først gjelde dersom kundeforhold etableres og avtale inngås.</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  }, []);
+
+  // Render alle aktive tilleggsmoduler for en gitt posisjon
+  const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
+    const aktiveModuler = tilleggsmoduler.filter(m => m.aktiv && m.posisjon === posisjon && m.id !== 'beskatning' && m.id !== 'markedshistorikk');
+    if (aktiveModuler.length === 0) return null;
+    return aktiveModuler.map(m => (
+      <React.Fragment key={m.id}>
+        {renderTilleggsmodulInnhold(m.id)}
+      </React.Fragment>
+    ));
+  }, [tilleggsmoduler, renderTilleggsmodulInnhold]);
 
   const oppdaterSammenligningProfil = useCallback((nyProfil) => {
     setSammenligningProfil(nyProfil);
@@ -6178,6 +6476,8 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
 
+              {renderTilleggsmodulerVedPosisjon('etter-cover')}
+
               <div className="p-8 space-y-8">
 
                 {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
@@ -6249,6 +6549,8 @@ export default function PensumPrognoseModell() {
                     </div>
                   </div>
                 </div>
+
+                {renderTilleggsmodulerVedPosisjon('etter-utgangspunkt')}
 
                 {/* === HVORDAN PORTEFØLJEN ER BYGGET === */}
                 <div data-rapport-slide="byggesteiner" className="space-y-5">
@@ -6340,6 +6642,8 @@ export default function PensumPrognoseModell() {
                     );
                   })()}
                 </div>
+
+                {renderTilleggsmodulerVedPosisjon('etter-byggesteiner')}
 
                 {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
                 <div data-rapport-slide="allokering" className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -6435,6 +6739,8 @@ export default function PensumPrognoseModell() {
                     </tbody>
                   </table>
                 </div>
+
+                {renderTilleggsmodulerVedPosisjon('etter-allokering')}
 
                 {/* === HISTORISK AVKASTNING PER PRODUKT (1, 3, 5 ÅR) === */}
                 <div data-rapport-slide="historisk">
@@ -6760,6 +7066,9 @@ export default function PensumPrognoseModell() {
                   );
                 })()}
 
+                {renderTilleggsmodulerVedPosisjon('etter-historisk')}
+                {renderTilleggsmodulerVedPosisjon('etter-snapshot')}
+
                 {/* === AGGREGERT PORTEFØLJEEKSPONERING === */}
                 {(() => {
                   const aksjeProdRap = pensumAllokering.filter(a => {
@@ -6829,6 +7138,8 @@ export default function PensumPrognoseModell() {
                   );
                 })()}
 
+                {renderTilleggsmodulerVedPosisjon('etter-eksponering')}
+
                 {/* === VERDIUTVIKLING (STACKED BAR) === */}
                 <div data-rapport-slide="verdiutvikling">
                   <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling per produkt</h2>
@@ -6876,6 +7187,8 @@ export default function PensumPrognoseModell() {
                     </table>
                   </div>
                 </div>
+
+                {renderTilleggsmodulerVedPosisjon('etter-verdiutvikling')}
 
                 {/* === PRODUKTFAKTAARK === */}
                 {valgteProdukterRapport.map((p, pIdx) => {
@@ -6980,6 +7293,8 @@ export default function PensumPrognoseModell() {
                     </div>
                   );
                 })}
+
+                {renderTilleggsmodulerVedPosisjon('etter-faktaark')}
 
                 {/* === TILLEGGSMODUL: BESKATNING === */}
                 {tilleggsmoduler.find(m => m.id === 'beskatning')?.aktiv && (
@@ -7138,6 +7453,8 @@ export default function PensumPrognoseModell() {
                   </div>
                 )}
 
+                {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
+
                 {/* === DISCLAIMER === */}
                 <div data-rapport-slide="disclaimer" className="text-xs text-gray-500 border-t border-gray-200 pt-6">
                   <p className="font-semibold mb-2">Viktig informasjon</p>
@@ -7185,32 +7502,52 @@ export default function PensumPrognoseModell() {
                   </div>
                   <div className="divide-y divide-gray-100">
                     {tilleggsmoduler.map((modul, idx) => (
-                      <div key={modul.id} className={"flex items-center gap-4 px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
-                        <button
-                          onClick={() => {
-                            setTilleggsmoduler(prev => prev.map(m =>
-                              m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
-                            ));
-                          }}
-                          className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
-                          style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
-                          <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
-                            {modul.aktiv && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
-                            )}
+                      <div key={modul.id} className={"px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => {
+                              setTilleggsmoduler(prev => prev.map(m =>
+                                m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
+                              ));
+                            }}
+                            className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
+                            style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
+                            <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
+                              {modul.aktiv && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {modul.id === 'beskatning' && 'Oversikt over beskatning av aksjer og fond for privat eie, ASK og aksjeselskap'}
-                            {modul.id === 'markedshistorikk' && 'MSCI AC World arsavkastning og intraarsfall siden 1988 — viser at markedet historisk har vaert positivt i 70% av arene'}
-                          </p>
+                          {modul.aktiv && (
+                            <div className="flex-shrink-0">
+                              <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                          )}
                         </div>
-                        {modul.aktiv && (
-                          <div className="flex-shrink-0">
-                            <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                        {modul.aktiv && modul.id !== 'beskatning' && modul.id !== 'markedshistorikk' && (
+                          <div className="mt-2 ml-14">
+                            <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
+                            <select
+                              value={modul.posisjon || 'foer-disclaimer'}
+                              onChange={(e) => {
+                                setTilleggsmoduler(prev => prev.map(m =>
+                                  m.id === modul.id ? { ...m, posisjon: e.target.value } : m
+                                ));
+                              }}
+                              className="ml-2 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                              style={{ color: PENSUM_COLORS.darkBlue }}
+                            >
+                              {TILLEGGSMODUL_POSISJONER.map(pos => (
+                                <option key={pos.value} value={pos.value}>{pos.label}</option>
+                              ))}
+                            </select>
                           </div>
                         )}
                       </div>
