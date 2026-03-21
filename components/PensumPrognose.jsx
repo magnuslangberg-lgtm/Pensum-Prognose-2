@@ -4672,7 +4672,7 @@ export default function PensumPrognoseModell() {
 
           // Color function for merged chart
           const getLineFarge = (name) => {
-            if (name === 'Din portefølje') return '#1B3A5F';
+            if (name === 'Din portefølje') return PENSUM_COLORS.navy;
             if (name === 'Konkurrentportefølje') return '#D97706';
             const pensumCfg = PENSUM_SCEN_CONFIG.find(c => c.label === name);
             if (pensumCfg) return PENSUM_AARLIG[name]?.farge || '#333';
@@ -4701,6 +4701,31 @@ export default function PensumPrognoseModell() {
             else return null;
             const startVerdi = finnStartVerdiVedPeriode(hist.data, startDato);
             const sluttVerdi = hist.data[hist.data.length - 1]?.verdi;
+            if (!startVerdi || !sluttVerdi) return null;
+            const totalReturn = ((sluttVerdi / startVerdi) - 1) * 100;
+            if (periodeKey === 'r3y' || periodeKey === 'r5y' || periodeKey === 'r10y') {
+              const years = periodeKey === 'r3y' ? 3 : periodeKey === 'r5y' ? 5 : 10;
+              return parseFloat(((Math.pow(sluttVerdi / startVerdi, 1 / years) - 1) * 100).toFixed(2));
+            }
+            return parseFloat(totalReturn.toFixed(2));
+          };
+
+          const beregnIndeksPeriodeAvk = (feedKey, periodeKey) => {
+            const indeks = DATAFEED_INDEKS_HISTORIKK?.[feedKey];
+            if (!indeks?.data?.length) return null;
+            const now = RAPPORT_DATO_OBJEKT;
+            let startDato;
+            if (periodeKey === 'r1m') startDato = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            else if (periodeKey === 'r3m') startDato = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            else if (periodeKey === 'r6m') startDato = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+            else if (periodeKey === 'rytd') startDato = new Date(now.getFullYear(), 0, 1);
+            else if (periodeKey === 'r1y') startDato = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r3y') startDato = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r5y') startDato = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+            else if (periodeKey === 'r10y') startDato = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+            else return null;
+            const startVerdi = finnStartVerdiVedPeriode(indeks.data, startDato);
+            const sluttVerdi = indeks.data[indeks.data.length - 1]?.verdi;
             if (!startVerdi || !sluttVerdi) return null;
             const totalReturn = ((sluttVerdi / startVerdi) - 1) * 100;
             if (periodeKey === 'r3y' || periodeKey === 'r5y' || periodeKey === 'r10y') {
@@ -4746,7 +4771,7 @@ export default function PensumPrognoseModell() {
           };
 
           const byggAvkastningsdata = () => {
-            if (!harNoeAVise) return [];
+            if (!harNoeAVise && valgteIndekserScen.length === 0) return [];
             const perioder = [
               { key: 'r1m', label: '1 mnd' }, { key: 'r3m', label: '3 mnd' },
               { key: 'r6m', label: '6 mnd' }, { key: 'rytd', label: 'YTD' },
@@ -4761,6 +4786,13 @@ export default function PensumPrognoseModell() {
               pensumValgte.forEach(({ id, navn }) => {
                 const avk = beregnPensumPeriodeAvk(id, p.key);
                 if (avk !== null) punkt[navn] = avk;
+              });
+              valgteIndekserScen.forEach(indeksNavn => {
+                const cfg = INDEKS_CONFIG[indeksNavn];
+                if (cfg) {
+                  const avk = beregnIndeksPeriodeAvk(cfg.feedKey, p.key);
+                  if (avk !== null) punkt[indeksNavn] = avk;
+                }
               });
               if (harPortefolje) {
                 const avk = beregnPortefoljeAvk(p.key);
@@ -4783,7 +4815,7 @@ export default function PensumPrognoseModell() {
           };
 
           const byggAarsdata = () => {
-            if (!harNoeAVise) return [];
+            if (!harNoeAVise && valgteIndekserScen.length === 0) return [];
             const aar = [
               { key: 'a19', label: '2019' }, { key: 'a20', label: '2020' },
               { key: 'a21', label: '2021' }, { key: 'a22', label: '2022' },
@@ -4815,6 +4847,13 @@ export default function PensumPrognoseModell() {
                   if (harV) punkt['Din portefølje'] = parseFloat(vektet.toFixed(2));
                 }
               }
+              // Indeksavkastninger
+              valgteIndekserScen.forEach(indeksNavn => {
+                const rd = REFERANSE_DATA[indeksNavn];
+                if (rd?.data?.[Number(a.label)] !== null && rd?.data?.[Number(a.label)] !== undefined) {
+                  punkt[indeksNavn] = rd.data[Number(a.label)];
+                }
+              });
               return punkt;
             });
           };
@@ -4881,12 +4920,15 @@ export default function PensumPrognoseModell() {
           const portNavn = harPortefolje ? ['Din portefølje'] : [];
           const konkNavnTab = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
           const visbareFondNavnTab = skjulEnkeltfond && harKonkurrentPortefolje ? [] : fondNavn;
-          const alleSerieNavnTab = [...visbareFondNavnTab, ...pensumNavn, ...portNavn, ...konkNavnTab];
+          const indeksNavnTab = [...valgteIndekserScen];
+          const alleSerieNavnTab = [...portNavn, ...pensumNavn, ...indeksNavnTab, ...visbareFondNavnTab, ...konkNavnTab];
           const getSerieColor = (name, idx) => {
-            if (name === 'Din portefølje') return '#1B3A5F';
+            if (name === 'Din portefølje') return PENSUM_COLORS.navy;
             if (name === 'Konkurrentportefølje') return '#D97706';
             const pensumMatch = pensumValgte.find(p => p.navn === name);
             if (pensumMatch) return pensumMatch.farge;
+            const indeksCfgTab = INDEKS_CONFIG[name];
+            if (indeksCfgTab) return indeksCfgTab.farge;
             return FOND_FARGER[idx % FOND_FARGER.length];
           };
 
@@ -4921,8 +4963,8 @@ export default function PensumPrognoseModell() {
                     <button
                       onClick={() => setVisPortefoljeScen(prev => !prev)}
                       className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visPortefoljeScen ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
-                      style={visPortefoljeScen ? { backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' } : { color: '#1B3A5F' }}>
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visPortefoljeScen ? 'white' : '#1B3A5F' }}></span>
+                      style={visPortefoljeScen ? { backgroundColor: PENSUM_COLORS.navy, borderColor: PENSUM_COLORS.navy } : { color: PENSUM_COLORS.navy }}>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visPortefoljeScen ? 'white' : PENSUM_COLORS.navy }}></span>
                       Din portefølje (vektet)
                     </button>
                   </div>
@@ -5177,8 +5219,8 @@ export default function PensumPrognoseModell() {
                     </div>
                   )}
 
-                  {/* Secondary tabs — only visible when external funds or competitor portfolio active */}
-                  {harFondEllerKonk && (() => {
+                  {/* Secondary tabs — visible when any comparison data is active */}
+                  {(harFondEllerKonk || harNoeAVise || valgteIndekserScen.length > 0) && (() => {
                     const avkData = fondSammenligningVisning === 'avkastning' ? byggAvkastningsdataMedKonk() : null;
                     const aarsData = fondSammenligningVisning === 'kalenderaar' ? byggAarsdataMedKonk() : null;
                     const sektorData = fondSammenligningVisning === 'sektor' ? byggSektordata() : null;
@@ -5188,10 +5230,12 @@ export default function PensumPrognoseModell() {
                         <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
                           {[
                             { key: 'avkastning', label: 'Periodeavkastning' },
-                            { key: 'kalenderaar', label: 'Kalender\u00e5r' },
-                            { key: 'sektor', label: 'Sektorfordeling' },
-                            { key: 'region', label: 'Landfordeling' },
-                            { key: 'detaljer', label: 'Fondsdetaljer' },
+                            { key: 'kalenderaar', label: 'Kalenderår' },
+                            ...(valgteFond.length > 0 ? [
+                              { key: 'sektor', label: 'Sektorfordeling' },
+                              { key: 'region', label: 'Landfordeling' },
+                              { key: 'detaljer', label: 'Fondsdetaljer' },
+                            ] : []),
                           ].map(v => (
                             <button key={v.key} onClick={() => setFondSammenligningVisning(v.key)}
                               className={"flex-1 px-3 py-2 rounded-md text-xs font-semibold transition-colors " + (fondSammenligningVisning === v.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
