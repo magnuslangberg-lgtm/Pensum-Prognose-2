@@ -2573,6 +2573,19 @@ export default function PensumPrognoseModell() {
         }
       };
 
+      // Capture logo as PNG for PPTX (webp may not be supported)
+      const logoImgData = await (async () => {
+        try {
+          const img = new Image();
+          await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = PENSUM_LOGO; });
+          const c = document.createElement('canvas');
+          c.width = img.width; c.height = img.height;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          return c.toDataURL('image/png');
+        } catch { return null; }
+      })();
+
       const addSlideFooter = (slide) => {
         // Thin dark navy bar at bottom with company name
         slide.addShape(pptx.ShapeType.rect, {
@@ -2585,6 +2598,17 @@ export default function PensumPrognoseModell() {
           align: 'left', valign: 'middle',
           charSpacing: 3,
         });
+        // Logo in top-right corner
+        if (logoImgData) {
+          slide.addImage({
+            data: logoImgData,
+            x: SLIDE_W - MARGIN - 1.2,
+            y: 0.15,
+            w: 1.2,
+            h: 0.35,
+            sizing: { type: 'contain', w: 1.2, h: 0.35 },
+          });
+        }
       };
 
       const addImageSlide = (imgData, imgAspectRaw, opts = {}) => {
@@ -3533,67 +3557,59 @@ export default function PensumPrognoseModell() {
                   </div>
 
                   {/* Likviditet og Aktiva side om side - donut style */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {/* Likviditet */}
                     <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
-                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
-                      <div className="flex items-center gap-3">
-                        <div className="shrink-0">
-                          <ResponsiveContainer width={100} height={100}>
-                            <PieChart>
-                              <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                <Cell fill={PENSUM_COLORS.darkBlue} />
-                                <Cell fill={PENSUM_COLORS.salmon} />
-                              </Pie>
-                              <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
+                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet & Aktivafordeling</h4>
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={90} height={90}>
+                              <PieChart>
+                                <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                  <Cell fill={PENSUM_COLORS.darkBlue} />
+                                  <Cell fill={PENSUM_COLORS.salmon} />
+                                </Pie>
+                                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-sm">
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
                               <span className="text-gray-600">Likvid</span>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[0].value)}</span>
                             </div>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[0].value)}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 text-sm">
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
                               <span className="text-gray-600">Illikvid</span>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[1].value)}</span>
                             </div>
-                            <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[1].value)}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Aktiva */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
-                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktiva</h4>
-                      <div className="flex items-center gap-3">
-                        <div className="shrink-0">
-                          <ResponsiveContainer width={100} height={100}>
-                            <PieChart>
-                              <Pie data={renterAksjerData} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                {renterAksjerData.map((entry) => (
-                                  <Cell key={entry.name} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="space-y-2 flex-1">
-                          {renterAksjerData.map(a => (
-                            <div key={a.name} className="flex items-center justify-between text-sm">
-                              <div className="flex items-center gap-2">
+                        <div className="h-12 w-px bg-gray-200 hidden sm:block"></div>
+                        <div className="flex items-center gap-3">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={90} height={90}>
+                              <PieChart>
+                                <Pie data={renterAksjerData} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                  {renterAksjerData.map((entry) => (
+                                    <Cell key={entry.name} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-1.5">
+                            {renterAksjerData.map(a => (
+                              <div key={a.name} className="flex items-center gap-2 text-sm">
                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
                                 <span className="text-gray-600">{a.name}</span>
+                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(a.value)}</span>
                               </div>
-                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(a.value)}</span>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -6935,31 +6951,43 @@ export default function PensumPrognoseModell() {
           <div className="space-y-6 max-w-4xl mx-auto" id="rapport-container">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               {/* === FORSIDE (cover) === */}
-              <div data-rapport-slide="cover" className="relative overflow-hidden" style={{ backgroundColor: PENSUM_COLORS.darkBlue, minHeight: '420px' }}>
-                {/* Decorative accent */}
-                <div className="absolute top-0 right-0 w-1/3 h-full opacity-10" style={{ background: `linear-gradient(135deg, ${PENSUM_COLORS.lightBlue} 0%, transparent 70%)` }}></div>
-                <div className="absolute bottom-0 left-0 w-full h-1" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
-
-                <div className="relative z-10 p-10 flex flex-col justify-between h-full" style={{ minHeight: '420px' }}>
+              <div data-rapport-slide="cover" className="relative overflow-hidden flex" style={{ backgroundColor: PENSUM_COLORS.darkBlue, minHeight: '520px' }}>
+                {/* Left: Main content area */}
+                <div className="relative z-10 flex-1 p-10 flex flex-col justify-between" style={{ minHeight: '520px' }}>
                   {/* Top: Logo */}
-                  <div className="flex items-center justify-between">
+                  <div>
                     <img src={PENSUM_LOGO} alt="Pensum" className="h-14" style={{ filter: 'brightness(0) invert(1)' }} />
-                    <div className="text-right">
-                      <div className="text-xs font-medium tracking-widest uppercase" style={{ color: PENSUM_COLORS.lightBlue }}>{formatDateEuro(dato)}</div>
-                    </div>
                   </div>
 
                   {/* Center: Title & Client */}
                   <div className="flex-1 flex flex-col justify-center py-8">
-                    <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: PENSUM_COLORS.salmon }}>Kunderapport</div>
-                    <h1 className="text-4xl font-bold text-white mb-2" style={{ lineHeight: '1.15' }}>Investeringsforslag</h1>
-                    <p className="text-lg text-blue-200 mt-1">{kundeNavn ? <>{kundeNavn}{kundeSelskap ? <span className="text-sm text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</> : (kundeSelskap || 'Investor')}</p>
+                    <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-4" style={{ color: PENSUM_COLORS.salmon }}>Kunderapport</div>
+                    <h1 className="text-4xl font-bold text-white mb-3" style={{ lineHeight: '1.15' }}>Investeringsforslag</h1>
+                    <p className="text-xl text-blue-200 mt-1">{kundeNavn ? <>{kundeNavn}{kundeSelskap ? <span className="text-base text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</> : (kundeSelskap || 'Investor')}</p>
+                  </div>
 
-                    <div className="mt-8 flex flex-wrap gap-x-10 gap-y-3">
+                  {/* Bottom: Metadata */}
+                  <div className="border-t pt-6" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <div className="flex flex-wrap gap-x-12 gap-y-3">
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Rådgiver</span><p className="text-sm font-semibold text-white mt-0.5">{radgiver || '—'}</p></div>
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Risikoprofil</span><p className="text-sm font-semibold text-white mt-0.5">{risikoprofil}</p></div>
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Horisont</span><p className="text-sm font-semibold text-white mt-0.5">{horisont} år</p></div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Right: Decorative panel */}
+                <div className="relative w-2/5 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                  {/* Decorative circles */}
+                  <div className="absolute" style={{ top: '-5%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }}></div>
+                  <div className="absolute" style={{ top: '15%', right: '5%', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }}></div>
+                  {/* Date */}
+                  <div className="absolute top-8 right-10">
+                    <div className="text-sm font-medium tracking-widest" style={{ color: PENSUM_COLORS.lightBlue }}>{formatDateEuro(dato)}</div>
+                  </div>
+                  {/* Company name */}
+                  <div className="absolute bottom-8 right-10">
+                    <div className="text-sm tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>Pensum Asset Management</div>
                   </div>
                 </div>
               </div>
