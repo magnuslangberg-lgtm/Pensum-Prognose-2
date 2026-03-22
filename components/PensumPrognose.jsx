@@ -720,7 +720,13 @@ export default function PensumPrognoseModell() {
     setKundeNavn(data.kundeNavn || '');
     setKundeSelskap(data.kundeSelskap || '');
     setDato(data.dato || new Date().toISOString().split('T')[0]);
-    setRisikoprofil(data.risikoprofil || 'Moderat');
+    const profil = data.risikoprofil || 'Moderat';
+    setRisikoprofil(profil);
+    // Synkroniser til porteføljebygger ved innlasting av kunde
+    setValgtPensumProfil(profil);
+    if (pensumStandardPortefoljer[profil]) {
+      setPensumAllokering(pensumStandardPortefoljer[profil]);
+    }
     setHorisont(data.horisont || 10);
     setLocalHorisont((data.horisont || 10).toString());
     setAksjerKunde(data.aksjerKunde || 0);
@@ -739,7 +745,7 @@ export default function PensumPrognoseModell() {
     if (data.scenarioParams) setScenarioParams(data.scenarioParams);
     setVisKundeliste(false);
     setActiveTab('input');
-  }, []);
+  }, [pensumStandardPortefoljer]);
 
   // ============ BRUKER-AUTENTISERING ============
   
@@ -1736,7 +1742,12 @@ export default function PensumPrognoseModell() {
     const brukPE = effektivVisAlternative ? peTotal : 0;
     const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
     setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, profil));
-  }, [likvideTotal, peTotal, eiendomTotal, risikoprofil, effektivVisAlternative]);
+    // Synkroniser til porteføljebygger
+    if (nyProfil && pensumStandardPortefoljer[profil]) {
+      setValgtPensumProfil(profil);
+      setPensumAllokering(pensumStandardPortefoljer[profil]);
+    }
+  }, [likvideTotal, peTotal, eiendomTotal, risikoprofil, effektivVisAlternative, pensumStandardPortefoljer]);
 
   // Oppdater allokering automatisk når checkbox for alternative endres
   useEffect(() => {
