@@ -1562,8 +1562,21 @@ export default function PensumPrognoseModell() {
                 </p>
                 <div className="pt-4">
                   <p className="text-sm text-gray-600">Med vennlig hilsen</p>
-                  <p className="text-sm font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
-                  <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                  <div className="flex items-center gap-4 mt-3">
+                    {bruker?.bilde ? (
+                      <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <svg className="w-7 h-7" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
+                      <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                      {bruker?.telefon && <p className="text-xs text-gray-500 mt-1">{bruker.telefon}</p>}
+                      {bruker?.epost && <p className="text-xs text-gray-500">{bruker.epost}</p>}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div>
@@ -1677,7 +1690,7 @@ export default function PensumPrognoseModell() {
       default:
         return null;
     }
-  }, [bruker, radgiver, kundeNavn, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, risikoprofil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
@@ -2520,9 +2533,10 @@ export default function PensumPrognoseModell() {
 
       const SLIDE_W = 13.33;
       const SLIDE_H = 7.5;
-      const MARGIN = 0.3;
+      const MARGIN = 0.4;
+      const FOOTER_H = 0.32;
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
-      const CONTENT_H = SLIDE_H - 2 * MARGIN;
+      const CONTENT_H = SLIDE_H - MARGIN - FOOTER_H - 0.1;
 
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
         const bgColor = opts.bgColor || '#ffffff';
@@ -2552,22 +2566,39 @@ export default function PensumPrognoseModell() {
         }
       };
 
+      const addSlideFooter = (slide) => {
+        // Thin dark navy bar at bottom with company name
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: SLIDE_H - FOOTER_H, w: SLIDE_W, h: FOOTER_H,
+          fill: { color: PENSUM_COLORS.darkBlue.replace('#', '') },
+        });
+        slide.addText('PENSUM ASSET MANAGEMENT', {
+          x: MARGIN, y: SLIDE_H - FOOTER_H + 0.02, w: CONTENT_W / 2, h: FOOTER_H - 0.04,
+          fontSize: 7, color: '6B8CAA', fontFace: 'Arial',
+          align: 'left', valign: 'middle',
+          charSpacing: 3,
+        });
+      };
+
       const addImageSlide = (imgData, imgAspectRaw) => {
         const imgAspect = imgAspectRaw;
         const slideAspect = CONTENT_W / CONTENT_H;
         let imgW, imgH;
         if (imgAspect > slideAspect) {
+          // Content is wider than slide area - fit to width
           imgW = CONTENT_W;
           imgH = CONTENT_W / imgAspect;
         } else {
+          // Content is taller than slide area - fit to height
           imgH = CONTENT_H;
           imgW = CONTENT_H * imgAspect;
         }
         const imgX = (SLIDE_W - imgW) / 2;
-        const imgY = (SLIDE_H - imgH) / 2;
+        const imgY = MARGIN * 0.5; // Top-align with small margin
         const slide = pptx.addSlide();
         slide.background = { color: 'FFFFFF' };
         slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
+        addSlideFooter(slide);
       };
 
       for (let gi = 0; gi < slideGroups.length; gi++) {
@@ -2611,7 +2642,6 @@ export default function PensumPrognoseModell() {
           const imgData = await captureElement(el, 1120, { bgColor: PENSUM_COLORS.darkBlue, noPadding: true });
           const img = new Image();
           await new Promise(r => { img.onload = r; img.src = imgData; });
-          // Cover fills the entire slide
           const slide = pptx.addSlide();
           slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
           slide.addImage({ data: imgData, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H, sizing: { type: 'contain', w: SLIDE_W, h: SLIDE_H } });
@@ -2621,7 +2651,7 @@ export default function PensumPrognoseModell() {
         // Create a temporary wrapper to render all group elements together
         const renderWidth = group.wide ? 1400 : 1120;
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:white;padding:28px 36px;`;
+        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
         elements.forEach(el => {
           const clone = el.cloneNode(true);
           clone.style.marginBottom = '20px';
@@ -6944,7 +6974,7 @@ export default function PensumPrognoseModell() {
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
                           { label: 'Risikoprofil', value: risikoprofil },
                           { label: 'Tidshorisont', value: horisont + ' år' },
-                          { label: 'Målsetting', value: vektetAvkastning.toFixed(1) + '% p.a.' },
+                          { label: 'Målsetting', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
                           { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
                         ].map((row, i) => (
                           <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
