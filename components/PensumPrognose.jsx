@@ -2508,15 +2508,15 @@ export default function PensumPrognoseModell() {
         ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
         ...tilleggsmodulGruppe('etter-byggesteiner'),
-        { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'] },
+        { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'], wide: true },
         ...tilleggsmodulGruppe('etter-allokering'),
-        { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'] },
+        { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'], wide: true },
         ...tilleggsmodulGruppe('etter-historisk'),
         { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
         ...tilleggsmodulGruppe('etter-snapshot'),
         { name: 'Eksponering', selectors: ['eksponering'], wide: true },
         ...tilleggsmodulGruppe('etter-eksponering'),
-        { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'] },
+        { name: 'Verdiutvikling', selectors: ['verdiutvikling', 'verdi-tabell'], wide: true },
         ...tilleggsmodulGruppe('etter-verdiutvikling'),
         ...faktaarkGroups,
         ...tilleggsmodulGruppe('etter-faktaark'),
@@ -2545,9 +2545,10 @@ export default function PensumPrognoseModell() {
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
         const clone = element.cloneNode(true);
         // Ensure SVG charts inside are fully visible
+        const chartH = opts.chartMinHeight || 280;
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
-          rc.style.minHeight = '280px';
+          rc.style.minHeight = `${chartH}px`;
         });
         wrapper.appendChild(clone);
         document.body.appendChild(wrapper);
@@ -2580,21 +2581,24 @@ export default function PensumPrognoseModell() {
         });
       };
 
-      const addImageSlide = (imgData, imgAspectRaw) => {
+      const addImageSlide = (imgData, imgAspectRaw, opts = {}) => {
         const imgAspect = imgAspectRaw;
-        const slideAspect = CONTENT_W / CONTENT_H;
+        const availH = SLIDE_H - FOOTER_H - 0.1; // max usable height above footer
+        const availW = CONTENT_W;
+        const slideAspect = availW / availH;
         let imgW, imgH;
         if (imgAspect > slideAspect) {
-          // Content is wider than slide area - fit to width
-          imgW = CONTENT_W;
-          imgH = CONTENT_W / imgAspect;
+          imgW = availW;
+          imgH = availW / imgAspect;
         } else {
-          // Content is taller than slide area - fit to height
-          imgH = CONTENT_H;
-          imgW = CONTENT_H * imgAspect;
+          imgH = availH;
+          imgW = availH * imgAspect;
         }
         const imgX = (SLIDE_W - imgW) / 2;
-        const imgY = MARGIN * 0.5; // Top-align with small margin
+        // Center vertically in available space (above footer) or top-align
+        const imgY = opts.centerV
+          ? Math.max(0.15, (availH - imgH) / 2)
+          : 0.2;
         const slide = pptx.addSlide();
         slide.background = { color: 'FFFFFF' };
         slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
@@ -2621,10 +2625,11 @@ export default function PensumPrognoseModell() {
             for (const card of chartCards) {
               // Skip the disclaimer note at the bottom (text-only, no chart)
               if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
-              const imgData = await captureElement(card, 1120);
+              // Render charts wider with taller chart area to fill the slide
+              const imgData = await captureElement(card, 1300, { chartMinHeight: 420 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
-              addImageSlide(imgData, img.width / img.height);
+              addImageSlide(imgData, img.width / img.height, { centerV: true });
             }
           }
           continue;
@@ -2678,7 +2683,7 @@ export default function PensumPrognoseModell() {
             windowWidth: renderWidth,
           });
           const imgData = canvas.toDataURL('image/png');
-          addImageSlide(imgData, canvas.width / canvas.height);
+          addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
         } finally {
           document.body.removeChild(wrapper);
         }
