@@ -1533,24 +1533,10 @@ export default function PensumPrognoseModell() {
 
       case 'folgebrev': {
         const _effektivtBelop = investertBelop !== null ? investertBelop : totalKapital;
-        const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
-        const aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
-        const renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
-        const antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
-        const sluttverdi = pensumPrognose.length > 0 ? pensumPrognose[pensumPrognose.length - 1].verdi : 0;
-        // Beregn vektet yield inline
-        let _yieldSum = 0, _yieldTotal = 0;
-        pensumAllokering.filter(a => a.vekt > 0).forEach(a => {
-          const prod = alleProd.find(p => p.id === a.id);
-          const meta = produktRapportMeta?.[a.id];
-          const y = meta?.forventetYield ?? prod?.forventetYield;
-          if (erGyldigTall(y)) { _yieldSum += y * a.vekt; _yieldTotal += a.vekt; }
-        });
-        const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
-            <div className="grid grid-cols-3 gap-8">
-              <div className="col-span-2 space-y-5">
+            <div className="max-w-3xl mx-auto">
+              <div className="space-y-5">
                 <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
@@ -1578,24 +1564,6 @@ export default function PensumPrognoseModell() {
                       {bruker?.epost && <p className="text-xs text-gray-500">{bruker.epost}</p>}
                     </div>
                   </div>
-                </div>
-              </div>
-              <div>
-                <div className="rounded-lg p-5 space-y-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <h3 className="text-sm font-bold tracking-wider uppercase" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h3>
-                  {[
-                    { label: 'Forventet avkastning', verdi: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
-                    { label: 'Forventet yield', verdi: erGyldigTall(_vektetYield) ? _vektetYield.toFixed(1) + '% p.a.' : '—' },
-                    { label: 'Aksjeandel', verdi: Math.round(aksjeAndel) + '%' },
-                    { label: 'Renteandel', verdi: Math.round(renteAndel) + '%' },
-                    { label: 'Antall produkter', verdi: String(antallProdukter) },
-                    { label: `Sluttverdi (${horisont} år)`, verdi: sluttverdi > 1000000 ? (sluttverdi / 1000000).toFixed(1) + ' MNOK' : formatCurrency(sluttverdi) },
-                  ].map((kpi, i) => (
-                    <div key={i}>
-                      <p className="text-[10px] text-gray-400">{kpi.label}</p>
-                      <p className="text-lg font-bold text-white">{kpi.verdi}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -6980,10 +6948,6 @@ export default function PensumPrognoseModell() {
                   {/* Decorative circles */}
                   <div className="absolute" style={{ top: '-5%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }}></div>
                   <div className="absolute" style={{ top: '15%', right: '5%', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }}></div>
-                  {/* Date */}
-                  <div className="absolute top-8 right-10">
-                    <div className="text-sm font-medium tracking-widest" style={{ color: PENSUM_COLORS.lightBlue }}>{formatDateEuro(dato)}</div>
-                  </div>
                   {/* Company name */}
                   <div className="absolute bottom-8 right-10">
                     <div className="text-sm tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>Pensum Asset Management</div>
