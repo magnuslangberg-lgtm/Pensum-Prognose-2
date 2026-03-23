@@ -2618,7 +2618,7 @@ export default function PensumPrognoseModell() {
           slide.addImage({
             data: logoImgData,
             x: SLIDE_W - MARGIN - 1.8,
-            y: 0.25,
+            y: 0.4,
             w: 1.8,
             h: 0.55,
             sizing: { type: 'contain', w: 1.8, h: 0.55 },
