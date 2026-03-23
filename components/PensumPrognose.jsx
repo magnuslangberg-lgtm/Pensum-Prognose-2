@@ -2592,41 +2592,48 @@ export default function PensumPrognoseModell() {
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
       const CONTENT_H = SLIDE_H - MARGIN - FOOTER_H - 0.1;
 
-      // Temporarily widen an element so Recharts re-renders charts at full width.
-      // Returns a restore function to call after capture.
-      const widenForCharts = async (element, targetWidth) => {
+      // Move an element into a wide off-screen container so Recharts re-renders
+      // at the target width, then clone and capture it. Moves element back after.
+      const captureWithResize = async (element, renderWidth = 1120, opts = {}) => {
+        const bgColor = opts.bgColor || '#ffffff';
+        const padding = opts.noPadding ? '0' : '28px 36px';
         const hasCharts = element.querySelector('.recharts-responsive-container');
-        if (!hasCharts) return null;
-        const savedStyle = element.style.cssText;
-        const parent = element.parentElement;
-        const savedParentStyle = parent ? parent.style.cssText : '';
-        if (parent) parent.style.overflow = 'visible';
-        // Position off-screen at target width so Recharts re-renders SVGs
-        // NOTE: Do NOT set visibility:hidden — it gets inherited by clones
-        element.style.position = 'fixed';
-        element.style.left = '-9999px';
-        element.style.top = '0';
-        element.style.width = `${targetWidth}px`;
-        element.style.zIndex = '-1';
-        // Wait for Recharts ResizeObserver to fire and React to re-render
-        await new Promise(r => setTimeout(r, 800));
-        return () => {
-          element.style.cssText = savedStyle;
-          if (parent) parent.style.cssText = savedParentStyle;
-        };
-      };
 
-      // Clone element and clear any positioning styles left by widenForCharts
-      const cloneClean = (element) => {
-        const clone = element.cloneNode(true);
-        // Reset positioning that widenForCharts may have set on the original
-        clone.style.position = '';
-        clone.style.left = '';
-        clone.style.top = '';
-        clone.style.zIndex = '';
-        clone.style.visibility = '';
-        clone.style.width = '';
-        return clone;
+        if (!hasCharts) {
+          // No charts — simple clone-and-capture
+          return captureElement(element, renderWidth, opts);
+        }
+
+        // Move the ORIGINAL element into a wide off-screen container
+        // so Recharts' ResizeObserver fires and re-renders at the target width.
+        const parent = element.parentNode;
+        const nextSibling = element.nextSibling;
+        const placeholder = document.createComment('pptx-placeholder');
+        parent.insertBefore(placeholder, nextSibling);
+
+        const sizer = document.createElement('div');
+        // Use the same inner width as the capture wrapper (renderWidth - padding)
+        const innerW = renderWidth - 72; // 36px padding each side
+        sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${innerW}px;z-index:-1;`;
+        document.body.appendChild(sizer);
+        sizer.appendChild(element);
+
+        // Wait for Recharts ResizeObserver to fire and React to re-render
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Now clone the properly-rendered element
+        const imgData = await captureElement(element, renderWidth, opts);
+
+        // Move element back to its original position
+        if (placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(element, placeholder);
+          placeholder.parentNode.removeChild(placeholder);
+        } else {
+          parent.appendChild(element);
+        }
+        document.body.removeChild(sizer);
+
+        return imgData;
       };
 
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
@@ -2634,7 +2641,7 @@ export default function PensumPrognoseModell() {
         const padding = opts.noPadding ? '0' : '28px 36px';
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
-        const clone = cloneClean(element);
+        const clone = element.cloneNode(true);
         const chartH = opts.chartMinHeight || 280;
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
@@ -2727,15 +2734,11 @@ export default function PensumPrognoseModell() {
           const snapSection = container.querySelector('[data-rapport-slide="snapshot-charts"]');
           if (!snapSection) continue;
 
-          // Temporarily widen so Recharts re-renders SVGs at slide width
-          const restoreSnap = await widenForCharts(snapSection, 1228);
-
           // Each .rounded-xl child inside .space-y-6 is an individual chart
           const chartCards = snapSection.querySelectorAll(':scope > div.space-y-6 > div');
           if (chartCards.length === 0) {
             // Fallback: render as one
-            const imgData = await captureElement(snapSection, 1120);
-            const canvas = document.createElement('canvas');
+            const imgData = await captureWithResize(snapSection, 1120);
             const img = new Image();
             await new Promise(r => { img.onload = r; img.src = imgData; });
             addImageSlide(imgData, img.width / img.height);
@@ -2743,14 +2746,12 @@ export default function PensumPrognoseModell() {
             for (const card of chartCards) {
               // Skip the disclaimer note at the bottom (text-only, no chart)
               if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
-              const imgData = await captureElement(card, 1300, { chartMinHeight: 400 });
+              const imgData = await captureWithResize(card, 1300, { chartMinHeight: 400 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
               addImageSlide(imgData, img.width / img.height, { centerV: true });
             }
           }
-
-          if (restoreSnap) restoreSnap();
           continue;
         }
 
@@ -2772,47 +2773,76 @@ export default function PensumPrognoseModell() {
           continue;
         }
 
-        // Widen original elements that contain charts so Recharts re-renders at slide width
-        const restoreFns = [];
-        for (const el of elements) {
-          const restore = await widenForCharts(el, 1120);
-          if (restore) restoreFns.push(restore);
-        }
-
-        // Create a temporary wrapper to render all group elements together
+        // Check if any element has charts that need resizing
+        const hasAnyCharts = elements.some(el => el.querySelector('.recharts-responsive-container'));
         const renderWidth = group.wide ? 1400 : 1120;
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
-        elements.forEach(el => {
-          const clone = cloneClean(el);
-          clone.style.marginBottom = '20px';
-          if (group.wide) {
-            // For exposure/faktaark sections, prevent text truncation
-            clone.querySelectorAll('.truncate').forEach(t => {
-              t.classList.remove('truncate');
-              t.style.overflow = 'visible';
-              t.style.textOverflow = 'unset';
-              t.style.whiteSpace = 'normal';
-            });
-          }
-          wrapper.appendChild(clone);
-        });
-        document.body.appendChild(wrapper);
-        await new Promise(r => setTimeout(r, 200));
 
-        try {
-          const canvas = await html2canvas(wrapper, {
-            scale: 2.5,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            windowWidth: renderWidth,
+        if (hasAnyCharts && elements.length === 1) {
+          // Single element with charts: use captureWithResize for proper chart sizing
+          const imgData = await captureWithResize(elements[0], renderWidth);
+          const img = new Image();
+          await new Promise(r => { img.onload = r; img.src = imgData; });
+          addImageSlide(imgData, img.width / img.height, { centerV: true });
+        } else {
+          // Multiple elements or no charts: clone-and-capture approach
+          // For chart elements, move them individually to resize first
+          const restorerMap = new Map();
+          if (hasAnyCharts) {
+            for (const el of elements) {
+              if (el.querySelector('.recharts-responsive-container')) {
+                const parent = el.parentNode;
+                const nextSibling = el.nextSibling;
+                const placeholder = document.createComment('pptx-ph');
+                parent.insertBefore(placeholder, nextSibling);
+                const sizer = document.createElement('div');
+                sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${renderWidth - 72}px;z-index:-1;`;
+                document.body.appendChild(sizer);
+                sizer.appendChild(el);
+                restorerMap.set(el, { placeholder, sizer });
+              }
+            }
+            await new Promise(r => setTimeout(r, 1000));
+          }
+
+          const wrapper = document.createElement('div');
+          wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
+          elements.forEach(el => {
+            const clone = el.cloneNode(true);
+            clone.style.marginBottom = '20px';
+            if (group.wide) {
+              clone.querySelectorAll('.truncate').forEach(t => {
+                t.classList.remove('truncate');
+                t.style.overflow = 'visible';
+                t.style.textOverflow = 'unset';
+                t.style.whiteSpace = 'normal';
+              });
+            }
+            wrapper.appendChild(clone);
           });
-          const imgData = canvas.toDataURL('image/png');
-          addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
-        } finally {
-          document.body.removeChild(wrapper);
-          restoreFns.forEach(fn => fn());
+          document.body.appendChild(wrapper);
+          await new Promise(r => setTimeout(r, 200));
+
+          try {
+            const canvas = await html2canvas(wrapper, {
+              scale: 2.5,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+              windowWidth: renderWidth,
+            });
+            const imgData = canvas.toDataURL('image/png');
+            addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
+          } finally {
+            document.body.removeChild(wrapper);
+            // Restore moved elements
+            for (const [el, { placeholder, sizer }] of restorerMap) {
+              if (placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(el, placeholder);
+                placeholder.parentNode.removeChild(placeholder);
+              }
+              document.body.removeChild(sizer);
+            }
+          }
         }
       }
 
