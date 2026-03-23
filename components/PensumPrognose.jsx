@@ -97,7 +97,7 @@ export default function PensumPrognoseModell() {
     { id: 'scenarioanalyse', label: 'Scenarioanalyse', standard: true, aktiv: true },
     { id: 'snapshot-5y', label: 'Snapshot — 5 år', standard: true, aktiv: true },
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
-    { id: 'eksponering', label: 'Eksponering', standard: true, aktiv: true },
+    { id: 'eksponering', label: 'Aggregert eksponering', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
     { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', standard: true, aktiv: true },
     { id: 'neste-steg', label: 'Neste steg', standard: true, aktiv: true },
