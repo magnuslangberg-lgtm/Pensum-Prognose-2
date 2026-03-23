@@ -2617,11 +2617,11 @@ export default function PensumPrognoseModell() {
         if (logoImgData) {
           slide.addImage({
             data: logoImgData,
-            x: SLIDE_W - MARGIN - 1.2,
-            y: 0.15,
-            w: 1.2,
-            h: 0.35,
-            sizing: { type: 'contain', w: 1.2, h: 0.35 },
+            x: SLIDE_W - MARGIN - 1.8,
+            y: 0.25,
+            w: 1.8,
+            h: 0.55,
+            sizing: { type: 'contain', w: 1.8, h: 0.55 },
           });
         }
       };
