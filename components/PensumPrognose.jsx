@@ -2603,6 +2603,17 @@ export default function PensumPrognoseModell() {
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
           rc.style.minHeight = `${chartH}px`;
+          // Resize the inner SVG to fill the container width
+          const svg = rc.querySelector('svg.recharts-surface');
+          if (svg) {
+            const origW = parseFloat(svg.getAttribute('width')) || 600;
+            const origH = parseFloat(svg.getAttribute('height')) || chartH;
+            svg.setAttribute('viewBox', `0 0 ${origW} ${origH}`);
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', `${chartH}px`);
+            svg.style.width = '100%';
+            svg.style.height = `${chartH}px`;
+          }
         });
         wrapper.appendChild(clone);
         document.body.appendChild(wrapper);
@@ -2703,7 +2714,7 @@ export default function PensumPrognoseModell() {
             for (const card of chartCards) {
               // Skip the disclaimer note at the bottom (text-only, no chart)
               if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
-              const imgData = await captureElement(card, 1300);
+              const imgData = await captureElement(card, 1300, { chartMinHeight: 400 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
               addImageSlide(imgData, img.width / img.height, { centerV: true });
