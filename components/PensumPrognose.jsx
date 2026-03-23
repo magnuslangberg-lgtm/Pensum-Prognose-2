@@ -2618,10 +2618,10 @@ export default function PensumPrognoseModell() {
           slide.addImage({
             data: logoImgData,
             x: SLIDE_W - MARGIN - 1.8,
-            y: 0.4,
+            y: 0.3,
             w: 1.8,
-            h: 0.55,
-            sizing: { type: 'contain', w: 1.8, h: 0.55 },
+            h: 0.7,
+            sizing: { type: 'contain', w: 1.8, h: 0.7 },
           });
         }
       };
