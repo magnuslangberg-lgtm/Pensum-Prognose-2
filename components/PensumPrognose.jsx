@@ -153,6 +153,7 @@ export default function PensumPrognoseModell() {
     risiko: 'Volatiliteten har vært tiltagende. Vi tilnærmer oss dette ved å diversifisere bredt, holde en betydelig rentedel som buffer, og velge fond med dokumentert lavere nedsiderisiko enn bredt marked.',
     muligheter: 'Norske aksjer handles fortsatt med rabatt mot globale indekser. Aktive satellitter med eksponering mot nordiske industriselskaper og global high yield gir attraktiv risikojustert avkastning i dagens marked.',
   });
+  const [markedssynAnalyserer, setMarkedssynAnalyserer] = useState(false);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
@@ -8500,6 +8501,67 @@ export default function PensumPrognoseModell() {
                     <p className="text-xs text-white opacity-70 mt-1">Oppdater månedlig — vises i tilleggsmodulen «Markedssyn og kontekst»</p>
                   </div>
                   <div className="p-6 space-y-4">
+                    {/* AI-opplasting */}
+                    <div className="rounded-lg border-2 border-dashed border-gray-200 p-5 hover:border-teal-300 transition-colors" style={{ backgroundColor: '#FAFBFC' }}>
+                      <div className="text-center">
+                        <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p className="text-sm font-medium text-gray-700 mb-1">Last opp slides fra forvaltningsavdelingen</p>
+                        <p className="text-xs text-gray-400 mb-3">AI kondenserer innholdet til de tre feltene under. Støtter PNG, JPG, PDF (maks 2 filer).</p>
+                        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer hover:opacity-90 transition-opacity" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                          {markedssynAnalyserer ? 'Analyserer...' : 'Velg filer og analyser'}
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            multiple
+                            className="hidden"
+                            disabled={markedssynAnalyserer}
+                            onChange={async (e) => {
+                              const files = Array.from(e.target.files || []).slice(0, 2);
+                              if (files.length === 0) return;
+                              setMarkedssynAnalyserer(true);
+                              setAdminMelding('');
+                              try {
+                                const images = await Promise.all(files.map(async (file) => {
+                                  const buf = await file.arrayBuffer();
+                                  const base64 = btoa(new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), ''));
+                                  const mediaType = file.type === 'application/pdf' ? 'application/pdf' : (file.type || 'image/png');
+                                  return { data: base64, mediaType };
+                                }));
+                                const resp = await fetch('/api/analyze-markedssyn', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ images }),
+                                });
+                                const result = await resp.json();
+                                if (!resp.ok) throw new Error(result.error || 'Analyse feilet');
+                                setMarkedssynData(prev => ({
+                                  ...prev,
+                                  makro: result.makro || prev.makro,
+                                  risiko: result.risiko || prev.risiko,
+                                  muligheter: result.muligheter || prev.muligheter,
+                                }));
+                                setAdminMelding('Markedssyn oppdatert fra slides. Gjennomgå og lagre.');
+                              } catch (err) {
+                                setAdminMelding('Feil: ' + err.message);
+                              } finally {
+                                setMarkedssynAnalyserer(false);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      {markedssynAnalyserer && (
+                        <div className="mt-3 flex items-center justify-center gap-2 text-sm" style={{ color: PENSUM_COLORS.teal }}>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                          Analyserer slides med AI...
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div><div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-gray-400">eller rediger manuelt</span></div></div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Periode</label>
                       <input
