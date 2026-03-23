@@ -2600,15 +2600,14 @@ export default function PensumPrognoseModell() {
         const savedStyle = element.style.cssText;
         const parent = element.parentElement;
         const savedParentStyle = parent ? parent.style.cssText : '';
-        // Expand parent overflow so element can be wider
         if (parent) parent.style.overflow = 'visible';
         // Position off-screen at target width so Recharts re-renders SVGs
+        // NOTE: Do NOT set visibility:hidden — it gets inherited by clones
         element.style.position = 'fixed';
         element.style.left = '-9999px';
         element.style.top = '0';
         element.style.width = `${targetWidth}px`;
         element.style.zIndex = '-1';
-        element.style.visibility = 'hidden';
         // Wait for Recharts ResizeObserver to fire and React to re-render
         await new Promise(r => setTimeout(r, 800));
         return () => {
@@ -2617,12 +2616,25 @@ export default function PensumPrognoseModell() {
         };
       };
 
+      // Clone element and clear any positioning styles left by widenForCharts
+      const cloneClean = (element) => {
+        const clone = element.cloneNode(true);
+        // Reset positioning that widenForCharts may have set on the original
+        clone.style.position = '';
+        clone.style.left = '';
+        clone.style.top = '';
+        clone.style.zIndex = '';
+        clone.style.visibility = '';
+        clone.style.width = '';
+        return clone;
+      };
+
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
         const bgColor = opts.bgColor || '#ffffff';
         const padding = opts.noPadding ? '0' : '28px 36px';
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
-        const clone = element.cloneNode(true);
+        const clone = cloneClean(element);
         const chartH = opts.chartMinHeight || 280;
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
@@ -2772,7 +2784,7 @@ export default function PensumPrognoseModell() {
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
         elements.forEach(el => {
-          const clone = el.cloneNode(true);
+          const clone = cloneClean(el);
           clone.style.marginBottom = '20px';
           if (group.wide) {
             // For exposure/faktaark sections, prevent text truncation
