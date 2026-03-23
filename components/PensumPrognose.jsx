@@ -2592,13 +2592,37 @@ export default function PensumPrognoseModell() {
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
       const CONTENT_H = SLIDE_H - MARGIN - FOOTER_H - 0.1;
 
+      // Temporarily widen an element so Recharts re-renders charts at full width.
+      // Returns a restore function to call after capture.
+      const widenForCharts = async (element, targetWidth) => {
+        const hasCharts = element.querySelector('.recharts-responsive-container');
+        if (!hasCharts) return null;
+        const savedStyle = element.style.cssText;
+        const parent = element.parentElement;
+        const savedParentStyle = parent ? parent.style.cssText : '';
+        // Expand parent overflow so element can be wider
+        if (parent) parent.style.overflow = 'visible';
+        // Position off-screen at target width so Recharts re-renders SVGs
+        element.style.position = 'fixed';
+        element.style.left = '-9999px';
+        element.style.top = '0';
+        element.style.width = `${targetWidth}px`;
+        element.style.zIndex = '-1';
+        element.style.visibility = 'hidden';
+        // Wait for Recharts ResizeObserver to fire and React to re-render
+        await new Promise(r => setTimeout(r, 800));
+        return () => {
+          element.style.cssText = savedStyle;
+          if (parent) parent.style.cssText = savedParentStyle;
+        };
+      };
+
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
         const bgColor = opts.bgColor || '#ffffff';
         const padding = opts.noPadding ? '0' : '28px 36px';
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
         const clone = element.cloneNode(true);
-        // Ensure SVG charts inside are fully visible
         const chartH = opts.chartMinHeight || 280;
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
@@ -2606,23 +2630,6 @@ export default function PensumPrognoseModell() {
         });
         wrapper.appendChild(clone);
         document.body.appendChild(wrapper);
-        // Scale Recharts charts to fill the available width using CSS transform
-        // (html2canvas supports CSS transforms; SVG viewBox manipulation does not work)
-        const innerW = wrapper.clientWidth;
-        wrapper.querySelectorAll('.recharts-responsive-container').forEach(rc => {
-          const rw = rc.querySelector('.recharts-wrapper');
-          if (!rw) return;
-          const origW = parseFloat(rw.style.width) || rc.offsetWidth || 600;
-          const origH = parseFloat(rw.style.height) || chartH;
-          if (origW >= innerW) return; // already wide enough
-          const scale = innerW / origW;
-          rw.style.transform = `scale(${scale})`;
-          rw.style.transformOrigin = 'top left';
-          // Size the responsive container to match the scaled output
-          rc.style.width = `${innerW}px`;
-          rc.style.height = `${Math.ceil(origH * scale)}px`;
-          rc.style.overflow = 'hidden';
-        });
         await new Promise(r => setTimeout(r, 200));
         try {
           const canvas = await html2canvas(wrapper, {
@@ -2707,6 +2714,10 @@ export default function PensumPrognoseModell() {
           // Split: find individual chart cards within snapshot-charts
           const snapSection = container.querySelector('[data-rapport-slide="snapshot-charts"]');
           if (!snapSection) continue;
+
+          // Temporarily widen so Recharts re-renders SVGs at slide width
+          const restoreSnap = await widenForCharts(snapSection, 1228);
+
           // Each .rounded-xl child inside .space-y-6 is an individual chart
           const chartCards = snapSection.querySelectorAll(':scope > div.space-y-6 > div');
           if (chartCards.length === 0) {
@@ -2726,6 +2737,8 @@ export default function PensumPrognoseModell() {
               addImageSlide(imgData, img.width / img.height, { centerV: true });
             }
           }
+
+          if (restoreSnap) restoreSnap();
           continue;
         }
 
@@ -2745,6 +2758,13 @@ export default function PensumPrognoseModell() {
           slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
           slide.addImage({ data: imgData, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H, sizing: { type: 'contain', w: SLIDE_W, h: SLIDE_H } });
           continue;
+        }
+
+        // Widen original elements that contain charts so Recharts re-renders at slide width
+        const restoreFns = [];
+        for (const el of elements) {
+          const restore = await widenForCharts(el, 1120);
+          if (restore) restoreFns.push(restore);
         }
 
         // Create a temporary wrapper to render all group elements together
@@ -2780,6 +2800,7 @@ export default function PensumPrognoseModell() {
           addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
         } finally {
           document.body.removeChild(wrapper);
+          restoreFns.forEach(fn => fn());
         }
       }
 
