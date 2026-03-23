@@ -2570,8 +2570,8 @@ export default function PensumPrognoseModell() {
         if (logoImgData) {
           slide.addImage({
             data: logoImgData,
-            x: SLIDE_W - MARGIN - 1.8,
-            y: 0.3,
+            x: SLIDE_W - MARGIN / 2 - 1.8,
+            y: 0.15,
             w: 1.8,
             h: 0.75,
             sizing: { type: 'contain', w: 1.8, h: 0.75 },
