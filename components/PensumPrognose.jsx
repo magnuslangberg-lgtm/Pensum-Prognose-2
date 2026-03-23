@@ -3172,22 +3172,6 @@ export default function PensumPrognoseModell() {
                   </div>
                 </button>
 
-                {/* Utvidet — gammel detaljert versjon */}
-                <button
-                  onClick={async () => { await handleGeneratePresentation(); setPdfModal(false); }}
-                  disabled={pdfLoading || rapportPptxLoading}
-                  className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.lightBlue }}>Utvidet</span>
-                        <h3 className="text-sm font-bold" style={{ color: '#0D2240' }}>Detaljert investeringsforslag</h3>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Lengre presentasjon med utfyllende produktbeskrivelser, detaljerte eksponeringsdiagrammer og utvidet rapportmetadata.</p>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  </div>
-                </button>
               </div>
 
               {(pdfLoading || rapportPptxLoading) && (
