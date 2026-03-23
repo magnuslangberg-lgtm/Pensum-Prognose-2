@@ -1585,38 +1585,30 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
 
-              {/* Right: Nøkkeltall sidebar - 1/3 width */}
+              {/* Right: Om Pensum sidebar */}
               <div className="col-span-1 flex items-start pt-2">
                 <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                   <div className="p-6 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h4>
-                    <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-widest" style={{ color: PENSUM_COLORS.gold }}>Om Pensum</h4>
+                    <p className="text-sm text-blue-100 leading-relaxed">
+                      Rådgivning og forvaltning til private og institusjonelle kunder siden 2002.
+                    </p>
+                    <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
+                      <p className="text-white mt-1"><span className="text-3xl font-bold">NOK 12,3</span> <span className="text-base text-blue-300">mrd</span></p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <div>
-                        <p className="text-[10px] text-blue-300">Forventet avkastning</p>
-                        <p className="text-lg font-bold text-white">{erGyldigTall(_baseAvk) ? _baseAvk.toFixed(1) : '—'}% p.a.</p>
-                      </div>
-                      {erGyldigTall(_vektetYield) && _vektetYield > 0 && (
-                        <div>
-                          <p className="text-[10px] text-blue-300">Forventet yield</p>
-                          <p className="text-lg font-bold text-white">{_vektetYield.toFixed(1)}% p.a.</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-[10px] text-blue-300">Aksjeandel</p>
-                        <p className="text-lg font-bold text-white">{Math.round(_aksjeAndel)}%</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Ansatte</p>
+                        <p className="text-2xl font-bold text-white mt-1">39</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-blue-300">Renteandel</p>
-                        <p className="text-lg font-bold text-white">{Math.round(_renteAndel)}%</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Vekst AUM</p>
+                        <p className="text-2xl font-bold mt-1" style={{ color: PENSUM_COLORS.teal }}>29,1%</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-blue-300">Antall produkter</p>
-                        <p className="text-lg font-bold text-white">{_antallProdukter}</p>
-                      </div>
-                      <div className="pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                        <p className="text-[10px] text-blue-300">Sluttverdi ({horisont} år)</p>
-                        <p className="text-lg font-bold text-white">{_formatSluttverdi(_sluttverdi)}</p>
-                      </div>
+                    </div>
+                    <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                      <p className="text-sm text-blue-200">Regulert av <span className="font-bold text-white">Finanstilsynet</span></p>
                     </div>
                   </div>
                 </div>
