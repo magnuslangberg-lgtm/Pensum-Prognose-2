@@ -97,7 +97,7 @@ export default function PensumPrognoseModell() {
     { id: 'scenarioanalyse', label: 'Scenarioanalyse', standard: true, aktiv: true },
     { id: 'snapshot-5y', label: 'Snapshot — 5 år', standard: true, aktiv: true },
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
-    { id: 'eksponering', label: 'Eksponering', standard: true, aktiv: true },
+    { id: 'eksponering', label: 'Aggregert eksponering', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
     { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', standard: true, aktiv: true },
     { id: 'neste-steg', label: 'Neste steg', standard: true, aktiv: true },
@@ -2555,6 +2555,7 @@ export default function PensumPrognoseModell() {
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
         ...tilleggsmodulGruppe('etter-cover'),
+        { name: 'Personlig følgebrev', selectors: ['folgebrev'] },
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
         ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
@@ -2572,6 +2573,8 @@ export default function PensumPrognoseModell() {
         ...faktaarkGroups,
         ...tilleggsmodulGruppe('etter-faktaark'),
         ...tilleggsmodulGruppe('foer-disclaimer'),
+        { name: 'Hvordan tar vi oss betalt?', selectors: ['honorarstruktur'] },
+        { name: 'Neste steg', selectors: ['neste-steg'] },
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
