@@ -1553,18 +1553,18 @@ export default function PensumPrognoseModell() {
         const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
-            <div className="grid grid-cols-3 gap-10" style={{ minHeight: '480px' }}>
-              {/* Left: Letter content - 2/3 width */}
-              <div className="col-span-2 flex flex-col justify-between">
-                <div className="space-y-5">
+            <div className="flex gap-8" style={{ minHeight: '480px' }}>
+              {/* Left: Letter content - takes up ~65% */}
+              <div className="flex-1 flex flex-col justify-between" style={{ minWidth: 0 }}>
+                <div className="space-y-6">
                   <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-base text-gray-700 leading-relaxed">
                     Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
                   </p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-base text-gray-700 leading-relaxed">
                     Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
                   </p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-base text-gray-700 leading-relaxed">
                     På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
                   </p>
                 </div>
@@ -1585,30 +1585,30 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
 
-              {/* Right: Om Pensum sidebar */}
-              <div className="col-span-1 flex items-start pt-2">
+              {/* Right: Om Pensum sidebar - narrower */}
+              <div className="flex-shrink-0" style={{ width: '280px' }}>
                 <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <div className="p-6 space-y-4">
+                  <div className="p-5 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-widest" style={{ color: PENSUM_COLORS.gold }}>Om Pensum</h4>
                     <p className="text-sm text-blue-100 leading-relaxed">
                       Rådgivning og forvaltning til private og institusjonelle kunder siden 2002.
                     </p>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
-                      <p className="text-white mt-1"><span className="text-3xl font-bold">NOK 12,3</span> <span className="text-base text-blue-300">mrd</span></p>
+                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 12,3</span> <span className="text-sm text-blue-300">mrd</span></p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Ansatte</p>
-                        <p className="text-2xl font-bold text-white mt-1">39</p>
+                        <p className="text-xl font-bold text-white mt-0.5">39</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Vekst AUM</p>
-                        <p className="text-2xl font-bold mt-1" style={{ color: PENSUM_COLORS.teal }}>29,1%</p>
+                        <p className="text-xl font-bold mt-0.5" style={{ color: PENSUM_COLORS.teal }}>29,1%</p>
                       </div>
                     </div>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                      <p className="text-sm text-blue-200">Regulert av <span className="font-bold text-white">Finanstilsynet</span></p>
+                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Regulert av <span className="font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>Finanstilsynet</span></p>
                     </div>
                   </div>
                 </div>
