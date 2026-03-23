@@ -87,6 +87,7 @@ export default function PensumPrognoseModell() {
   const [rapportModuler, setRapportModuler] = useState([
     // Standard-sider (alltid synlige, ikke fjernbare)
     { id: 'cover', label: 'Forside', standard: true, aktiv: true },
+    { id: 'folgebrev', label: 'Personlig følgebrev', standard: true, aktiv: true },
     { id: 'utgangspunkt', label: 'Utgangspunkt og mandat', standard: true, aktiv: true },
     { id: 'byggesteiner', label: 'Hvordan porteføljen er bygget', standard: true, aktiv: true },
     { id: 'allokering', label: 'Allokering & sammensetning', standard: true, aktiv: true },
@@ -96,6 +97,8 @@ export default function PensumPrognoseModell() {
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
     { id: 'eksponering', label: 'Eksponering', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
+    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', standard: true, aktiv: true },
+    { id: 'neste-steg', label: 'Neste steg', standard: true, aktiv: true },
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
   const [tilleggsmoduler, setTilleggsmoduler] = useState([
@@ -104,10 +107,7 @@ export default function PensumPrognoseModell() {
     { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'etter-cover' },
     { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'folgebrev', label: 'Personlig følgebrev', aktiv: true, posisjon: 'etter-cover' },
     { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
-    { id: 'neste-steg', label: 'Neste steg', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot' },
     { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
     { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer' },
@@ -7198,6 +7198,9 @@ export default function PensumPrognoseModell() {
 
                 {renderTilleggsmodulerVedPosisjon('etter-cover')}
 
+                {/* === PERSONLIG FØLGEBREV === */}
+                {isStandardModulAktiv('folgebrev') && renderTilleggsmodulInnhold('folgebrev')}
+
                 {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
                 {isStandardModulAktiv('utgangspunkt') && <div data-rapport-slide="utgangspunkt" className="space-y-5">
                   <div>
@@ -8061,6 +8064,12 @@ export default function PensumPrognoseModell() {
                 {renderTilleggsmodulerVedPosisjon('etter-faktaark')}
 
                 {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
+
+                {/* === HONORARSTRUKTUR === */}
+                {isStandardModulAktiv('honorarstruktur') && renderTilleggsmodulInnhold('honorarstruktur')}
+
+                {/* === NESTE STEG === */}
+                {isStandardModulAktiv('neste-steg') && renderTilleggsmodulInnhold('neste-steg')}
 
                 {/* === DISCLAIMER === */}
                 {isStandardModulAktiv('disclaimer') && <div data-rapport-slide="disclaimer" className="page-break-before pt-16 pb-6">
