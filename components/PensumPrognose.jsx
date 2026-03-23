@@ -2592,13 +2592,67 @@ export default function PensumPrognoseModell() {
       const CONTENT_W = SLIDE_W - 2 * MARGIN;
       const CONTENT_H = SLIDE_H - MARGIN - FOOTER_H - 0.1;
 
+      // Move an element into a wide off-screen container so Recharts re-renders
+      // at the target width, then clone and capture it. Moves element back after.
+      const captureWithResize = async (element, renderWidth = 1120, opts = {}) => {
+        const bgColor = opts.bgColor || '#ffffff';
+        const padding = opts.noPadding ? '0' : '28px 36px';
+        const hasCharts = element.querySelector('.recharts-responsive-container');
+
+        if (!hasCharts) {
+          // No charts — simple clone-and-capture
+          return captureElement(element, renderWidth, opts);
+        }
+
+        // Move the ORIGINAL element into a wide off-screen container
+        // so Recharts' ResizeObserver fires and re-renders at the target width.
+        const parent = element.parentNode;
+        const nextSibling = element.nextSibling;
+        const placeholder = document.createComment('pptx-placeholder');
+        parent.insertBefore(placeholder, nextSibling);
+
+        const sizer = document.createElement('div');
+        // Use the same inner width as the capture wrapper (renderWidth - padding)
+        const innerW = renderWidth - 72; // 36px padding each side
+        sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${innerW}px;z-index:-1;`;
+        document.body.appendChild(sizer);
+        // Remove overflow:hidden from element so ResponsiveContainer can detect the new width
+        const savedOverflow = element.style.overflow;
+        element.style.overflow = 'visible';
+        element.querySelectorAll('.overflow-hidden').forEach(el => { el.style.overflow = 'visible'; });
+        sizer.appendChild(element);
+
+        // Trigger resize detection: both ResizeObserver and window resize event
+        window.dispatchEvent(new Event('resize'));
+        // Wait for Recharts to re-render (longer wait for reliability)
+        await new Promise(r => setTimeout(r, 1500));
+        // Trigger again in case first didn't catch all charts
+        window.dispatchEvent(new Event('resize'));
+        await new Promise(r => setTimeout(r, 500));
+
+        // Now clone the properly-rendered element
+        const imgData = await captureElement(element, renderWidth, opts);
+
+        // Move element back to its original position and restore overflow
+        element.style.overflow = savedOverflow;
+        element.querySelectorAll('.overflow-hidden').forEach(el => { el.style.overflow = ''; });
+        if (placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(element, placeholder);
+          placeholder.parentNode.removeChild(placeholder);
+        } else {
+          parent.appendChild(element);
+        }
+        document.body.removeChild(sizer);
+
+        return imgData;
+      };
+
       const captureElement = async (element, renderWidth = 1120, opts = {}) => {
         const bgColor = opts.bgColor || '#ffffff';
         const padding = opts.noPadding ? '0' : '28px 36px';
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:${bgColor};padding:${padding};`;
         const clone = element.cloneNode(true);
-        // Ensure SVG charts inside are fully visible
         const chartH = opts.chartMinHeight || 280;
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
@@ -2690,12 +2744,12 @@ export default function PensumPrognoseModell() {
           // Split: find individual chart cards within snapshot-charts
           const snapSection = container.querySelector('[data-rapport-slide="snapshot-charts"]');
           if (!snapSection) continue;
+
           // Each .rounded-xl child inside .space-y-6 is an individual chart
           const chartCards = snapSection.querySelectorAll(':scope > div.space-y-6 > div');
           if (chartCards.length === 0) {
             // Fallback: render as one
-            const imgData = await captureElement(snapSection, 1120);
-            const canvas = document.createElement('canvas');
+            const imgData = await captureWithResize(snapSection, 1120);
             const img = new Image();
             await new Promise(r => { img.onload = r; img.src = imgData; });
             addImageSlide(imgData, img.width / img.height);
@@ -2703,7 +2757,7 @@ export default function PensumPrognoseModell() {
             for (const card of chartCards) {
               // Skip the disclaimer note at the bottom (text-only, no chart)
               if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
-              const imgData = await captureElement(card, 1300);
+              const imgData = await captureWithResize(card, 1300, { chartMinHeight: 400 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
               addImageSlide(imgData, img.width / img.height, { centerV: true });
@@ -2730,39 +2784,83 @@ export default function PensumPrognoseModell() {
           continue;
         }
 
-        // Create a temporary wrapper to render all group elements together
+        // Check if any element has charts that need resizing
+        const hasAnyCharts = elements.some(el => el.querySelector('.recharts-responsive-container'));
         const renderWidth = group.wide ? 1400 : 1120;
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
-        elements.forEach(el => {
-          const clone = el.cloneNode(true);
-          clone.style.marginBottom = '20px';
-          if (group.wide) {
-            // For exposure/faktaark sections, prevent text truncation
-            clone.querySelectorAll('.truncate').forEach(t => {
-              t.classList.remove('truncate');
-              t.style.overflow = 'visible';
-              t.style.textOverflow = 'unset';
-              t.style.whiteSpace = 'normal';
-            });
-          }
-          wrapper.appendChild(clone);
-        });
-        document.body.appendChild(wrapper);
-        await new Promise(r => setTimeout(r, 200));
 
-        try {
-          const canvas = await html2canvas(wrapper, {
-            scale: 2.5,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            windowWidth: renderWidth,
+        if (hasAnyCharts && elements.length === 1) {
+          // Single element with charts: use captureWithResize for proper chart sizing
+          const imgData = await captureWithResize(elements[0], renderWidth);
+          const img = new Image();
+          await new Promise(r => { img.onload = r; img.src = imgData; });
+          addImageSlide(imgData, img.width / img.height, { centerV: true });
+        } else {
+          // Multiple elements or no charts: clone-and-capture approach
+          // For chart elements, move them individually to resize first
+          const restorerMap = new Map();
+          if (hasAnyCharts) {
+            for (const el of elements) {
+              if (el.querySelector('.recharts-responsive-container')) {
+                const parent = el.parentNode;
+                const nextSibling = el.nextSibling;
+                const placeholder = document.createComment('pptx-ph');
+                parent.insertBefore(placeholder, nextSibling);
+                const sizer = document.createElement('div');
+                sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${renderWidth - 72}px;z-index:-1;`;
+                document.body.appendChild(sizer);
+                el.style.overflow = 'visible';
+                el.querySelectorAll('.overflow-hidden').forEach(c => { c.style.overflow = 'visible'; });
+                sizer.appendChild(el);
+                restorerMap.set(el, { placeholder, sizer });
+              }
+            }
+            window.dispatchEvent(new Event('resize'));
+            await new Promise(r => setTimeout(r, 1500));
+            window.dispatchEvent(new Event('resize'));
+            await new Promise(r => setTimeout(r, 500));
+          }
+
+          const wrapper = document.createElement('div');
+          wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${renderWidth}px;background:#ffffff;padding:28px 36px;`;
+          elements.forEach(el => {
+            const clone = el.cloneNode(true);
+            clone.style.marginBottom = '20px';
+            if (group.wide) {
+              clone.querySelectorAll('.truncate').forEach(t => {
+                t.classList.remove('truncate');
+                t.style.overflow = 'visible';
+                t.style.textOverflow = 'unset';
+                t.style.whiteSpace = 'normal';
+              });
+            }
+            wrapper.appendChild(clone);
           });
-          const imgData = canvas.toDataURL('image/png');
-          addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
-        } finally {
-          document.body.removeChild(wrapper);
+          document.body.appendChild(wrapper);
+          await new Promise(r => setTimeout(r, 200));
+
+          try {
+            const canvas = await html2canvas(wrapper, {
+              scale: 2.5,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+              windowWidth: renderWidth,
+            });
+            const imgData = canvas.toDataURL('image/png');
+            addImageSlide(imgData, canvas.width / canvas.height, { centerV: true });
+          } finally {
+            document.body.removeChild(wrapper);
+            // Restore moved elements
+            for (const [el, { placeholder, sizer }] of restorerMap) {
+              el.style.overflow = '';
+              el.querySelectorAll('.overflow-hidden').forEach(c => { c.style.overflow = ''; });
+              if (placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(el, placeholder);
+                placeholder.parentNode.removeChild(placeholder);
+              }
+              document.body.removeChild(sizer);
+            }
+          }
         }
       }
 
@@ -3074,22 +3172,6 @@ export default function PensumPrognoseModell() {
                   </div>
                 </button>
 
-                {/* Utvidet — gammel detaljert versjon */}
-                <button
-                  onClick={async () => { await handleGeneratePresentation(); setPdfModal(false); }}
-                  disabled={pdfLoading || rapportPptxLoading}
-                  className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.lightBlue }}>Utvidet</span>
-                        <h3 className="text-sm font-bold" style={{ color: '#0D2240' }}>Detaljert investeringsforslag</h3>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Lengre presentasjon med utfyllende produktbeskrivelser, detaljerte eksponeringsdiagrammer og utvidet rapportmetadata.</p>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  </div>
-                </button>
               </div>
 
               {(pdfLoading || rapportPptxLoading) && (
