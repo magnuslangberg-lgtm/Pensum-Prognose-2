@@ -5197,7 +5197,7 @@ export default function PensumPrognoseModell() {
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                           <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark</h4>
+                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark (siste {label})</h4>
                           </div>
                           <div className="p-5">
                             <ResponsiveContainer width="100%" height={300}>
@@ -7235,15 +7235,14 @@ export default function PensumPrognoseModell() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {/* Forutsetninger */}
                     <div className="rounded-xl border border-gray-200 bg-white p-6">
-                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Overordnede forutsetninger</h3>
+                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Forutsetninger</h3>
                       <div className="space-y-0">
                         {[
-                          { label: 'Formål med investeringene', value: investeringsFormaal || '—' },
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
-                          { label: 'Avkastningskrav/mål', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
-                          { label: 'Investeringshorisont', value: 'Langsiktig, ' + horisont + ' år +' },
-                          { label: 'Overordnet risikonivå', value: valgtPensumProfil },
-                          { label: 'Likviditetsbehov', value: likviditetsbehov || 'Begrenset' },
+                          { label: 'Risikoprofil', value: valgtPensumProfil },
+                          { label: 'Tidshorisont', value: horisont + ' år' },
+                          { label: 'Målsetting', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
+                          { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
                         ].map((row, i) => (
                           <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
                             <span className="text-sm text-gray-500">{row.label}</span>
@@ -7251,7 +7250,6 @@ export default function PensumPrognoseModell() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-gray-400 mt-4 italic">Opplysningene ovenfor er ikke verifisert og er ikke å anse som grunnlag for investeringsrådgivning.</p>
                     </div>
 
                     {/* Porteføljelogikk */}
@@ -7765,7 +7763,7 @@ export default function PensumPrognoseModell() {
                           return (
                             <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                               <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark</h4>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark (siste {label})</h4>
                               </div>
                               <div className="p-5">
                                 <ResponsiveContainer width="100%" height={380}>
