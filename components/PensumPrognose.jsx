@@ -1543,8 +1543,8 @@ export default function PensumPrognoseModell() {
         const _baseAvk = erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 8;
         // Yield calculation
         let _yieldSum = 0, _yieldTotal = 0;
-        pensumAllokering.forEach(a => {
-          const p = pensumProdukter.find(pp => pp.id === a.id);
+        (pensumAllokering || []).forEach(a => {
+          const p = Array.isArray(pensumProdukter) ? pensumProdukter.find(pp => pp.id === a.id) : null;
           const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
           if (erGyldigTall(y) && a.vekt > 0) { _yieldSum += y * a.vekt; _yieldTotal += a.vekt; }
         });
