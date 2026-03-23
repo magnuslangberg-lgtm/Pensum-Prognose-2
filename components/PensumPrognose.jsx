@@ -2555,6 +2555,7 @@ export default function PensumPrognoseModell() {
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
         ...tilleggsmodulGruppe('etter-cover'),
+        { name: 'Personlig følgebrev', selectors: ['folgebrev'] },
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
         ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
@@ -2572,6 +2573,8 @@ export default function PensumPrognoseModell() {
         ...faktaarkGroups,
         ...tilleggsmodulGruppe('etter-faktaark'),
         ...tilleggsmodulGruppe('foer-disclaimer'),
+        { name: 'Hvordan tar vi oss betalt?', selectors: ['honorarstruktur'] },
+        { name: 'Neste steg', selectors: ['neste-steg'] },
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
