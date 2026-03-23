@@ -1540,28 +1540,35 @@ export default function PensumPrognoseModell() {
         const _antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
         const _aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
         const _renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
+        const _baseAvk = erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 8;
+        // Yield calculation
+        let _yieldSum = 0, _yieldTotal = 0;
+        pensumAllokering.forEach(a => {
+          const p = pensumProdukter.find(pp => pp.id === a.id);
+          const y = p?.forventetYield ?? produktRapportMeta?.[a.id]?.expectedYield;
+          if (erGyldigTall(y) && a.vekt > 0) { _yieldSum += y * a.vekt; _yieldTotal += a.vekt; }
+        });
+        const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
+        const _sluttverdi = Math.round(_effektivtBelop * Math.pow(1 + _baseAvk / 100, horisont));
+        const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
-            <div>
-              <h2 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Innledning</h2>
-              <div className="h-0.5 w-24 mb-6" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-            </div>
-            <div className="grid grid-cols-5 gap-8">
-              <div className="col-span-3 space-y-4">
-                <h3 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Takk for en god samtale. Basert på dine mål og rammene vi har diskutert, har vi satt sammen et porteføljeforslag som søker å balansere langsiktig verdiskaping med ønske! stabilitet i universet.
-                </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Forslaget tar utgangspunkt i investert kapital på {formatCurrency(_effektivtBelop)}. Porteføljen er bygget rundt en robust kjerne, en rentedel som stabiliserer totalen og utvalgte satellitter som kan bidra med meravkastning.
-                </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  På de neste sidene går vi gjennom selve porteføljekonstruksjonen, produktsammensetningen og de enkelte løsningene i detalj.
-                </p>
-                <div className="pt-3">
-                  <p className="text-xs text-gray-500 italic">Notat: alle oppgitte forutsetninger, porteføljeutgift og obligasjons-vurdering.</p>
+            <div className="grid grid-cols-3 gap-10" style={{ minHeight: '480px' }}>
+              {/* Left: Letter content - 2/3 width */}
+              <div className="col-span-2 flex flex-col justify-between">
+                <div className="space-y-5">
+                  <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
+                  </p>
                 </div>
-                <div className="pt-2">
+                <div className="pt-6 mt-4 border-t border-gray-200">
                   <div className="flex items-center gap-3">
                     {bruker?.bilde ? (
                       <img src={bruker.bilde} alt="" className="w-10 h-10 rounded-full object-cover border flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
@@ -1577,34 +1584,38 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
               </div>
-              <div className="col-span-2 space-y-4">
-                <div className="rounded-lg p-5 space-y-3" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                  <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>Om forslaget</h4>
-                  <ul className="space-y-2">
-                    <li className="flex items-start gap-2 text-xs text-gray-600">
-                      <span className="mt-0.5">•</span>
-                      <span>Porteføljen er bygget for å gi en stabil vekstutvikling med global diversifisering og stabilitet.</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-xs text-gray-600">
-                      <span className="mt-0.5">•</span>
-                      <span>Inkludert er en besetning som er med {_antallProdukter} fond, fordelt {Math.round(_aksjeAndel)}% aksjer og {Math.round(_renteAndel)}% renter.</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-xs text-gray-600">
-                      <span className="mt-0.5">•</span>
-                      <span>Forslaget er rent fondsinvesteringsforeslag og gjelder kun effekten av allokering.</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="rounded-lg overflow-hidden" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <div className="p-5 space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.teal }}>Om Pensum</h4>
-                    <p className="text-xs text-blue-200 leading-relaxed">
-                      Pensum har røtter tilbake til 2002 og leverer uavhengig rådgivning og forvaltning til både private og institusjonelle kunder.
-                    </p>
-                    <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-white">NOK 12,3 <span className="text-xs font-normal text-blue-300">mrd</span></p>
-                        <p className="text-[9px] text-blue-400 uppercase tracking-wider">Forvaltningskapital</p>
+
+              {/* Right: Nøkkeltall sidebar - 1/3 width */}
+              <div className="col-span-1 flex items-start pt-2">
+                <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <div className="p-6 space-y-4">
+                    <h4 className="text-sm font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.teal }}>Nøkkeltall</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[10px] text-blue-300">Forventet avkastning</p>
+                        <p className="text-lg font-bold text-white">{erGyldigTall(_baseAvk) ? _baseAvk.toFixed(1) : '—'}% p.a.</p>
+                      </div>
+                      {erGyldigTall(_vektetYield) && _vektetYield > 0 && (
+                        <div>
+                          <p className="text-[10px] text-blue-300">Forventet yield</p>
+                          <p className="text-lg font-bold text-white">{_vektetYield.toFixed(1)}% p.a.</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[10px] text-blue-300">Aksjeandel</p>
+                        <p className="text-lg font-bold text-white">{Math.round(_aksjeAndel)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-blue-300">Renteandel</p>
+                        <p className="text-lg font-bold text-white">{Math.round(_renteAndel)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-blue-300">Antall produkter</p>
+                        <p className="text-lg font-bold text-white">{_antallProdukter}</p>
+                      </div>
+                      <div className="pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                        <p className="text-[10px] text-blue-300">Sluttverdi ({horisont} år)</p>
+                        <p className="text-lg font-bold text-white">{_formatSluttverdi(_sluttverdi)}</p>
                       </div>
                     </div>
                   </div>
@@ -1647,20 +1658,23 @@ export default function PensumPrognoseModell() {
       case 'neste-steg':
         return (
           <div data-rapport-slide="neste-steg" className="page-break-before" style={{ backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px', padding: '32px' }}>
-            <div>
+            {/* Header */}
+            <div className="mb-6">
               <h2 className="text-3xl font-bold text-white">Neste steg</h2>
               <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
               <p className="text-sm mt-2" style={{ color: PENSUM_COLORS.lightBlue }}>Vi tar gjerne en oppfølgingssamtale for å gå gjennom forslaget i detalj.</p>
             </div>
-            <div className="grid grid-cols-3 gap-8 mt-8">
-              <div className="col-span-2 space-y-6">
+
+            {/* Steps + Advisor card */}
+            <div className="grid grid-cols-3 gap-8">
+              <div className="col-span-2 space-y-5">
                 {[
                   { nr: '1', tittel: 'Gjennomgang av forslaget', tekst: 'Vi går gjennom porteføljeforslaget sammen, justerer allokering og produktvalg etter dine ønsker og prioriteringer.' },
                   { nr: '2', tittel: 'Formaliteter og signering', tekst: 'Etter enighet signerer vi investeringsavtale og rådgivningsmandat. KYC-skjema fylles ut digitalt — tar under 10 minutter.' },
                   { nr: '3', tittel: 'Porteføljen implementeres', tekst: 'Vi setter opp porteføljen og gjennomfører alle transaksjoner. Du får tilgang til løpende rapportering fra dag én.' },
                 ].map((steg, i) => (
                   <div key={i} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal }}>
                       <span className="text-white font-bold text-sm">{steg.nr}</span>
                     </div>
                     <div>
@@ -1673,28 +1687,47 @@ export default function PensumPrognoseModell() {
               <div>
                 <div className="rounded-lg border p-5 text-center" style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
                   {bruker?.bilde ? (
-                    <img src={bruker.bilde} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2" style={{ borderColor: PENSUM_COLORS.teal }} />
+                    <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover mx-auto mb-2 border-2" style={{ borderColor: PENSUM_COLORS.teal }} />
                   ) : (
-                    <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
-                      <svg className="w-8 h-8" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <div className="w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      <svg className="w-7 h-7" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                     </div>
                   )}
                   <p className="text-[10px] uppercase tracking-widest" style={{ color: PENSUM_COLORS.teal }}>Din rådgiver</p>
-                  <p className="text-white font-bold mt-1">{radgiver || 'Rådgiver'}</p>
+                  <p className="text-white font-bold mt-1 text-sm">{radgiver || 'Rådgiver'}</p>
                   <p className="text-xs" style={{ color: '#94A3B8' }}>{bruker?.tittel || 'Investeringsrådgiver'}</p>
                   {bruker?.telefon && (
-                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white">
+                    <div className="flex items-center justify-center gap-2 mt-3 text-xs text-white">
                       <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                       <span>{bruker.telefon}</span>
                     </div>
                   )}
                   {bruker?.epost && (
-                    <div className="flex items-center justify-center gap-2 mt-2 text-xs text-white">
+                    <div className="flex items-center justify-center gap-2 mt-1.5 text-xs text-white">
                       <svg className="w-3.5 h-3.5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                       <span>{bruker.epost}</span>
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Kontorer */}
+            <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PENSUM_COLORS.teal }}>Kontaktdetaljer Pensum Asset Management</h3>
+              <div className="grid grid-cols-3 gap-5">
+                {[
+                  { by: 'Oslo', adresse: 'Frøyas gate 15', postnr: '0273 Oslo', tlf: '+47 23 89 68 44' },
+                  { by: 'Fredrikstad', adresse: 'Storgaten 3', postnr: '1607 Fredrikstad', tlf: '+47 23 89 68 44' },
+                  { by: 'Stavanger', adresse: 'Løkkeveien 107 (Smedvigkvartalet)', postnr: '4007 Stavanger', tlf: '+47 23 89 68 44' },
+                ].map((kontor, i) => (
+                  <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h4 className="text-white font-bold text-sm mb-1">{kontor.by}</h4>
+                    <p className="text-xs" style={{ color: '#94A3B8' }}>{kontor.adresse}</p>
+                    <p className="text-xs" style={{ color: '#94A3B8' }}>{kontor.postnr}</p>
+                    <p className="text-xs text-white mt-1">{kontor.tlf}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
