@@ -2603,20 +2603,31 @@ export default function PensumPrognoseModell() {
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
           rc.style.minHeight = `${chartH}px`;
-          // Resize the inner SVG to fill the container width
+        });
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        // Calculate actual available width for charts inside the wrapper
+        const innerW = wrapper.clientWidth;
+        wrapper.querySelectorAll('.recharts-responsive-container').forEach(rc => {
+          // Recharts wraps chart in .recharts-wrapper with fixed inline styles
+          const rw = rc.querySelector('.recharts-wrapper');
+          if (rw) {
+            rw.style.width = `${innerW}px`;
+            rw.style.position = 'relative';
+          }
           const svg = rc.querySelector('svg.recharts-surface');
           if (svg) {
             const origW = parseFloat(svg.getAttribute('width')) || 600;
             const origH = parseFloat(svg.getAttribute('height')) || chartH;
+            // Use viewBox to scale the existing paths to fill the new width
             svg.setAttribute('viewBox', `0 0 ${origW} ${origH}`);
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', `${chartH}px`);
-            svg.style.width = '100%';
-            svg.style.height = `${chartH}px`;
+            svg.setAttribute('width', innerW);
+            svg.setAttribute('height', Math.round(origH * (innerW / origW)));
+            svg.removeAttribute('style');
+            svg.style.width = `${innerW}px`;
+            svg.style.height = `${Math.round(origH * (innerW / origW))}px`;
           }
         });
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
         await new Promise(r => setTimeout(r, 200));
         try {
           const canvas = await html2canvas(wrapper, {
