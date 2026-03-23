@@ -1533,35 +1533,75 @@ export default function PensumPrognoseModell() {
 
       case 'folgebrev': {
         const _effektivtBelop = investertBelop !== null ? investertBelop : totalKapital;
+        const _antallProdukter = pensumAllokering.filter(a => a.vekt > 0).length;
+        const _aksjeAndel = pensumAktivafordeling.find(a => a.name === 'Aksjer')?.value || 0;
+        const _renteAndel = pensumAktivafordeling.find(a => a.name === 'Renter')?.value || 0;
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
-            <div className="max-w-3xl mx-auto">
-              <div className="space-y-5">
-                <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
+            <div>
+              <h2 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Innledning</h2>
+              <div className="h-0.5 w-24 mb-6" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+            </div>
+            <div className="grid grid-cols-5 gap-8">
+              <div className="col-span-3 space-y-4">
+                <h3 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h3>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
+                  Takk for en god samtale. Basert på dine mål og rammene vi har diskutert, har vi satt sammen et porteføljeforslag som søker å balansere langsiktig verdiskaping med ønske! stabilitet i universet.
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop)}, en {valgtPensumProfil.toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                  Forslaget tar utgangspunkt i investert kapital på {formatCurrency(_effektivtBelop)}. Porteføljen er bygget rundt en robust kjerne, en rentedel som stabiliserer totalen og utvalgte satellitter som kan bidra med meravkastning.
                 </p>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
+                  På de neste sidene går vi gjennom selve porteføljekonstruksjonen, produktsammensetningen og de enkelte løsningene i detalj.
                 </p>
-                <div className="pt-4">
-                  <p className="text-sm text-gray-600">Med vennlig hilsen</p>
-                  <div className="flex items-center gap-4 mt-3">
+                <div className="pt-3">
+                  <p className="text-xs text-gray-500 italic">Notat: alle oppgitte forutsetninger, porteføljeutgift og obligasjons-vurdering.</p>
+                </div>
+                <div className="pt-2">
+                  <div className="flex items-center gap-3">
                     {bruker?.bilde ? (
-                      <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
+                      <img src={bruker.bilde} alt="" className="w-10 h-10 rounded-full object-cover border flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
                     ) : (
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                        <svg className="w-7 h-7" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                       </div>
                     )}
                     <div>
                       <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
                       <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
-                      {bruker?.telefon && <p className="text-xs text-gray-500 mt-1">{bruker.telefon}</p>}
-                      {bruker?.epost && <p className="text-xs text-gray-500">{bruker.epost}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-span-2 space-y-4">
+                <div className="rounded-lg p-5 space-y-3" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                  <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>Om forslaget</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-xs text-gray-600">
+                      <span className="mt-0.5">•</span>
+                      <span>Porteføljen er bygget for å gi en stabil vekstutvikling med global diversifisering og stabilitet.</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-xs text-gray-600">
+                      <span className="mt-0.5">•</span>
+                      <span>Inkludert er en besetning som er med {_antallProdukter} fond, fordelt {Math.round(_aksjeAndel)}% aksjer og {Math.round(_renteAndel)}% renter.</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-xs text-gray-600">
+                      <span className="mt-0.5">•</span>
+                      <span>Forslaget er rent fondsinvesteringsforeslag og gjelder kun effekten av allokering.</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="rounded-lg overflow-hidden" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <div className="p-5 space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.teal }}>Om Pensum</h4>
+                    <p className="text-xs text-blue-200 leading-relaxed">
+                      Pensum har røtter tilbake til 2002 og leverer uavhengig rådgivning og forvaltning til både private og institusjonelle kunder.
+                    </p>
+                    <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-white">NOK 12,3 <span className="text-xs font-normal text-blue-300">mrd</span></p>
+                        <p className="text-[9px] text-blue-400 uppercase tracking-wider">Forvaltningskapital</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2482,9 +2522,8 @@ export default function PensumPrognoseModell() {
         ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
         ...tilleggsmodulGruppe('etter-byggesteiner'),
-        { name: 'Allokering og sammensetning', selectors: ['allokering', 'sammensetning'], wide: true },
+        { name: 'Pensum Porteføljesammensetning', selectors: ['allokering', 'kalenderaar'], wide: true },
         ...tilleggsmodulGruppe('etter-allokering'),
-        { name: 'Historisk avkastning', selectors: ['historisk', 'kalenderaar'], wide: true },
         ...tilleggsmodulGruppe('etter-historisk'),
         { name: 'snapshot-charts-split', selectors: ['snapshot-charts'] },
         ...tilleggsmodulGruppe('etter-snapshot'),
@@ -7124,106 +7163,69 @@ export default function PensumPrognoseModell() {
 
                 {renderTilleggsmodulerVedPosisjon('etter-byggesteiner')}
 
-                {/* === ANBEFALT ALLOKERING (basert på valgte Pensum-produkter) === */}
-                {isStandardModulAktiv('allokering') && <><div data-rapport-slide="allokering" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Porteføljefordeling */}
-                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                    <div className="flex items-center gap-4">
-                      <div className="shrink-0">
-                        <ResponsiveContainer width={150} height={150}>
-                          <PieChart>
-                            <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={38} outerRadius={65} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
-                              {valgteProdukterRapport.map((p, idx) => (
-                                <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="space-y-2 flex-1 min-w-0">
-                        {valgteProdukterRapport.map((p, idx) => (
-                          <div key={p.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
-                            <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
-                            <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Aktivafordeling */}
-                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
-                    <div className="flex items-center gap-6">
-                      <div className="shrink-0">
-                        <ResponsiveContainer width={160} height={160}>
-                          <PieChart>
-                            <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
-                              {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
-                                <Cell key={entry.name} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="space-y-2.5 flex-1">
-                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                          <div key={a.name} className="flex items-center gap-2.5 text-sm">
-                            <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
-                            <span className="flex-1 text-gray-700">{a.name}</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* === PENSUM PORTEFØLJESAMMENSETNING === */}
-                <div data-rapport-slide="sammensetning">
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                        <th className="py-2.5 px-3 text-left text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produkt</th>
-                        <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekt</th>
-                        <th className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Type</th>
-                        <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Forv. avk.</th>
-                        <th className="py-2.5 px-3 text-right text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Yield</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {valgteProdukterRapport.map((p, idx) => (
-                        <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="py-2.5 px-3 font-medium text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
-                              {p.navn}
+                {/* === PENSUM PORTEFØLJESAMMENSETNING (kombinert allokering + historisk) === */}
+                {(isStandardModulAktiv('allokering') || isStandardModulAktiv('historisk')) && <><div data-rapport-slide="allokering">
+                  {/* Pie charts row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {/* Porteføljefordeling */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
+                      <div className="flex items-center gap-4">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={150} height={150}>
+                            <PieChart>
+                              <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={38} outerRadius={65} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                                {valgteProdukterRapport.map((p, idx) => (
+                                  <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2 flex-1 min-w-0">
+                          {valgteProdukterRapport.map((p, idx) => (
+                            <div key={p.id} className="flex items-center gap-2 text-xs">
+                              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                              <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
+                              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
                             </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-semibold text-sm">{p.vekt.toFixed(1)}%</td>
-                          <td className="py-2.5 px-3 text-center">
-                            <span className={"text-[10px] px-2 py-0.5 rounded-full font-medium " + (p.produkt?.aktivatype === 'aksje' ? 'bg-blue-100 text-blue-700' : p.produkt?.aktivatype === 'rente' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600')}>
-                              {p.produkt?.aktivatype === 'aksje' ? 'Aksje' : p.produkt?.aktivatype === 'rente' ? 'Rente' : p.produkt?.aktivatype === 'blandet' ? 'Blandet' : 'Alt.'}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—'}</td>
-                          <td className="py-2.5 px-3 text-right text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div></>}
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
-                {renderTilleggsmodulerVedPosisjon('etter-allokering')}
+                    {/* Aktivafordeling */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                      <div className="flex items-center gap-6">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={160} height={160}>
+                            <PieChart>
+                              <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
+                                  <Cell key={entry.name} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2.5 flex-1">
+                          {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                            <div key={a.name} className="flex items-center gap-2.5 text-sm">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
+                              <span className="flex-1 text-gray-700">{a.name}</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* === HISTORISK AVKASTNING PER PRODUKT (1, 3, 5 ÅR) === */}
-                {isStandardModulAktiv('historisk') && <><div data-rapport-slide="historisk">
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Historisk avkastning</h2>
+                  {/* Product table with historisk avkastning */}
+                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -7282,6 +7284,9 @@ export default function PensumPrognoseModell() {
                     ))}
                   </div>
                 </div></>}
+
+                {renderTilleggsmodulerVedPosisjon('etter-allokering')}
+                {renderTilleggsmodulerVedPosisjon('etter-historisk')}
 
                 {/* === PORTEFØLJE-AVKASTNING — STANDARDBILDER === */}
                 {(isStandardModulAktiv('snapshot-1y') || isStandardModulAktiv('snapshot-3y') || isStandardModulAktiv('snapshot-5y') || isStandardModulAktiv('snapshot-drawdown')) && (() => {
@@ -7546,7 +7551,6 @@ export default function PensumPrognoseModell() {
                   );
                 })()}
 
-                {renderTilleggsmodulerVedPosisjon('etter-historisk')}
                 {renderTilleggsmodulerVedPosisjon('etter-snapshot')}
 
 
