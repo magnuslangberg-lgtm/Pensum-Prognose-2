@@ -1585,8 +1585,8 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
 
-              {/* Right: Om Pensum sidebar - narrower */}
-              <div className="flex-shrink-0" style={{ width: '280px' }}>
+              {/* Right: Om Pensum sidebar - vertically centered */}
+              <div className="flex-shrink-0 flex items-center" style={{ width: '280px' }}>
                 <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                   <div className="p-5 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-widest" style={{ color: PENSUM_COLORS.gold }}>Om Pensum</h4>
