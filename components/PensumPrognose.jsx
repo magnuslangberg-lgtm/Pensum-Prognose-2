@@ -2606,27 +2606,22 @@ export default function PensumPrognoseModell() {
         });
         wrapper.appendChild(clone);
         document.body.appendChild(wrapper);
-        // Calculate actual available width for charts inside the wrapper
+        // Scale Recharts charts to fill the available width using CSS transform
+        // (html2canvas supports CSS transforms; SVG viewBox manipulation does not work)
         const innerW = wrapper.clientWidth;
         wrapper.querySelectorAll('.recharts-responsive-container').forEach(rc => {
-          // Recharts wraps chart in .recharts-wrapper with fixed inline styles
           const rw = rc.querySelector('.recharts-wrapper');
-          if (rw) {
-            rw.style.width = `${innerW}px`;
-            rw.style.position = 'relative';
-          }
-          const svg = rc.querySelector('svg.recharts-surface');
-          if (svg) {
-            const origW = parseFloat(svg.getAttribute('width')) || 600;
-            const origH = parseFloat(svg.getAttribute('height')) || chartH;
-            // Use viewBox to scale the existing paths to fill the new width
-            svg.setAttribute('viewBox', `0 0 ${origW} ${origH}`);
-            svg.setAttribute('width', innerW);
-            svg.setAttribute('height', Math.round(origH * (innerW / origW)));
-            svg.removeAttribute('style');
-            svg.style.width = `${innerW}px`;
-            svg.style.height = `${Math.round(origH * (innerW / origW))}px`;
-          }
+          if (!rw) return;
+          const origW = parseFloat(rw.style.width) || rc.offsetWidth || 600;
+          const origH = parseFloat(rw.style.height) || chartH;
+          if (origW >= innerW) return; // already wide enough
+          const scale = innerW / origW;
+          rw.style.transform = `scale(${scale})`;
+          rw.style.transformOrigin = 'top left';
+          // Size the responsive container to match the scaled output
+          rc.style.width = `${innerW}px`;
+          rc.style.height = `${Math.ceil(origH * scale)}px`;
+          rc.style.overflow = 'hidden';
         });
         await new Promise(r => setTimeout(r, 200));
         try {
