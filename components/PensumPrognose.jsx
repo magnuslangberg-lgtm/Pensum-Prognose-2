@@ -195,6 +195,8 @@ export default function PensumPrognoseModell() {
   const [produktHistorikk, setProduktHistorikk] = useState(() => oppdaterHistorikkTilRapportDato(DATAFEED_PRODUKT_HISTORIKK));
   const [historikkPeriode, setHistorikkPeriode] = useState('5y'); // 1y, 3y, 5y, max
   const [visScenarioanalyse, setVisScenarioanalyse] = useState(false);
+  const [scenarioLosninger, setScenarioLosninger] = useState({ pessimistisk: null, optimistisk: null });
+  const [showPessimisticLosninger, setShowPessimisticLosninger] = useState(false);
   const [visPortefoljSnapshots, setVisPortefoljSnapshots] = useState(false);
   const [valgteProdukterHistorikk, setValgteProdukterHistorikk] = useState(['global-core-active', 'global-edge', 'basis']);
   
@@ -4857,19 +4859,21 @@ export default function PensumPrognoseModell() {
             {(() => {
               const kapital = investertBelop !== null ? investertBelop : totalKapital;
               const baseAvk = erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 8;
+              const pessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : Math.round((baseAvk * 0.45) * 10) / 10;
+              const optAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : Math.round((baseAvk * 1.4) * 10) / 10;
               const scenarioer = [
-                { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: Math.round((baseAvk * 0.45) * 10) / 10, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
+                { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: pessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
                 { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Forventet utfall', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Gradvis normalisering av renter, moderat global vekst, sterk aktiv fondsseleksjon som leverer meravkastning over indeks.' },
-                { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: Math.round((baseAvk * 1.4) * 10) / 10, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
+                { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: optAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
               ];
-              const scenarioData = [];
+              const scData = [];
               for (let i = 0; i <= horisont; i++) {
                 const year = new Date().getFullYear() + i;
                 const row = { year };
                 scenarioer.forEach(s => {
                   row[s.id] = Math.round(kapital * Math.pow(1 + s.avk / 100, i));
                 });
-                scenarioData.push(row);
+                scData.push(row);
               }
               const formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
 
@@ -4890,14 +4894,22 @@ export default function PensumPrognoseModell() {
                   </button>
                   {visScenarioanalyse && (
                     <div className="p-6 space-y-5 border-t border-gray-100">
-                      <p className="text-sm text-gray-500 italic">Tre mulige utfall over {horisont} år basert på historiske mønstre og porteføljens sammensetning</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500 italic">Tre mulige utfall over {horisont} år basert på historiske mønstre og porteføljens sammensetning</p>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={showPessimisticLosninger} onChange={(e) => setShowPessimisticLosninger(e.target.checked)} className="w-4 h-4 rounded border-gray-300" />
+                          <span className="text-sm text-gray-500">Vis pessimistisk scenario</span>
+                        </label>
+                      </div>
 
                       {/* Scenario cards */}
-                      <div className="grid grid-cols-3 gap-5">
-                        {scenarioer.map(s => {
+                      <div className={"grid gap-5 " + (showPessimisticLosninger ? "grid-cols-3" : "grid-cols-2")}>
+                        {showPessimisticLosninger && (() => {
+                          const s = scenarioer[0];
                           const sluttverdi = Math.round(kapital * Math.pow(1 + s.avk / 100, horisont));
+                          const gevinst = sluttverdi - kapital;
                           return (
-                            <div key={s.id} className="rounded-xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+                            <div className="rounded-xl border border-red-200 bg-red-50 overflow-hidden shadow-sm">
                               <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
                               <div className="p-5 space-y-3">
                                 <div>
@@ -4905,32 +4917,100 @@ export default function PensumPrognoseModell() {
                                   <p className="text-xs text-gray-400">{s.undertittel}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] text-gray-500">Forv. avkastning</p>
-                                  <p className="text-2xl font-bold" style={{ color: s.farge }}>{s.avk}% p.a.</p>
+                                  <p className="text-4xl font-bold text-red-700">{formatPercent(s.avk)}</p>
+                                  <input type="range" min="-10" max={baseAvk} step="0.5" value={s.avk}
+                                    onChange={(e) => setScenarioLosninger(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
+                                    className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-2" />
                                 </div>
                                 <div>
                                   <p className="text-[10px] text-gray-500">Sluttverdi</p>
                                   <p className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatSluttverdi(sluttverdi)}</p>
                                 </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-red-100">
+                                  <div><div className="text-xs text-red-400">Gevinst</div><div className="font-semibold text-red-700 text-sm">{formatCurrency(gevinst)}</div></div>
+                                  <div><div className="text-xs text-red-400">CAGR</div><div className="font-semibold text-red-700 text-sm">{formatPercent(s.avk)}</div></div>
+                                </div>
                                 <p className="text-xs text-gray-500 leading-relaxed">{s.beskrivelse}</p>
                               </div>
                             </div>
                           );
-                        })}
+                        })()}
+
+                        {/* Hovedscenario - locked to portfolio weighted return */}
+                        {(() => {
+                          const s = scenarioer[1];
+                          const sluttverdi = Math.round(kapital * Math.pow(1 + s.avk / 100, horisont));
+                          const gevinst = sluttverdi - kapital;
+                          return (
+                            <div className="rounded-xl border-2 overflow-hidden shadow-sm" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
+                              <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
+                              <div className="p-5 space-y-3">
+                                <div>
+                                  <h3 className="text-lg font-bold text-white">{s.tittel}</h3>
+                                  <p className="text-xs text-blue-300">{s.undertittel}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-blue-400">Sluttverdi</p>
+                                  <p className="text-4xl font-bold text-white">{formatSluttverdi(sluttverdi)}</p>
+                                  <p className="text-blue-300 text-sm">etter {horisont} år</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
+                                  <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency(gevinst)}</div></div>
+                                  <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(s.avk)}</div></div>
+                                </div>
+                                <p className="text-xs text-blue-300 leading-relaxed">{s.beskrivelse}</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Optimistisk - with slider */}
+                        {(() => {
+                          const s = scenarioer[2];
+                          const sluttverdi = Math.round(kapital * Math.pow(1 + s.avk / 100, horisont));
+                          const gevinst = sluttverdi - kapital;
+                          return (
+                            <div className="rounded-xl border border-green-200 bg-green-50 overflow-hidden shadow-sm">
+                              <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
+                              <div className="p-5 space-y-3">
+                                <div>
+                                  <h3 className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{s.tittel}</h3>
+                                  <p className="text-xs text-gray-400">{s.undertittel}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-gray-500">Sluttverdi</p>
+                                  <p className="text-4xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatSluttverdi(sluttverdi)}</p>
+                                  <p className="text-green-500 text-sm">etter {horisont} år</p>
+                                </div>
+                                <div>
+                                  <input type="range" min={baseAvk} max="25" step="0.5" value={s.avk}
+                                    onChange={(e) => setScenarioLosninger(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
+                                    className="w-full h-2 bg-green-200 rounded-lg cursor-pointer" />
+                                  <div className="text-center font-bold text-green-600 mt-1">{formatPercent(s.avk)} p.a.</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
+                                  <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency(gevinst)}</div></div>
+                                  <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(s.avk)}</div></div>
+                                </div>
+                                <p className="text-xs text-gray-500 leading-relaxed">{s.beskrivelse}</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Scenario projection chart */}
                       <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
                         <h4 className="text-sm font-semibold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet utvikling over {horisont} år</h4>
                         <ResponsiveContainer width="100%" height={250}>
-                          <AreaChart data={scenarioData}>
+                          <AreaChart data={scData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                             <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6B7280' }} />
                             <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={v => v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'k'} />
                             <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(l) => `År ${l}`} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             <Area type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#059669" fill="#05966915" strokeWidth={2} strokeDasharray="6 3" dot={false} />
                             <Area type="monotone" dataKey="hoved" name="Hovedscenario" stroke={PENSUM_COLORS.darkBlue} fill={PENSUM_COLORS.darkBlue + '20'} strokeWidth={2.5} dot={false} />
-                            <Area type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" fill="#DC262610" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+                            {showPessimisticLosninger && <Area type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke="#DC2626" fill="#DC262610" strokeWidth={2} strokeDasharray="6 3" dot={false} />}
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -7387,10 +7467,12 @@ export default function PensumPrognoseModell() {
                 {isStandardModulAktiv('scenarioanalyse') && (() => {
                   const kapital = investertBelop !== null ? investertBelop : totalKapital;
                   const baseAvk = erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 8;
+                  const rapportPessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : Math.round((baseAvk * 0.45) * 10) / 10;
+                  const rapportOptAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : Math.round((baseAvk * 1.4) * 10) / 10;
                   const scenarioer = [
-                    { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: Math.round((baseAvk * 0.45) * 10) / 10, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
+                    { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: rapportPessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
                     { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Forventet utfall', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Gradvis normalisering av renter, moderat global vekst, sterk aktiv fondsseleksjon som leverer meravkastning over indeks.' },
-                    { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: Math.round((baseAvk * 1.4) * 10) / 10, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
+                    { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: rapportOptAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
                   ];
                   // Generate scenario projection data for chart
                   const scenarioData = [];
