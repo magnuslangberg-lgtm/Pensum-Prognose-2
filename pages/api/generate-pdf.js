@@ -1062,7 +1062,7 @@ function buildDeck(payload = {}) {
     if (d.drawdownChart && d.drawdownChart.labels && d.drawdownChart.labels.length >= 5) {
       const ddSlide = pptx.addSlide();
       addChrome(ddSlide, page++, 'Nedsiderisiko');
-      addTitle(ddSlide, 'Nedsiderisiko — siste 5 år', 'Drawdown fra løpende toppverdi (0% = all-time high i perioden)');
+      addTitle(ddSlide, 'Risiko og nedsidebeskyttelse', 'Drawdown fra løpende toppverdi (0% = all-time high i perioden)');
 
       // Max drawdown summary boxes
       const DD_COLORS = [COLORS.teal, COLORS.navy, COLORS.salmon];
@@ -1098,7 +1098,7 @@ function buildDeck(payload = {}) {
       if ((ae.regioner && ae.regioner.length > 0) || (ae.sektorer && ae.sektorer.length > 0)) {
         const aeSlide = pptx.addSlide();
         addChrome(aeSlide, page++, 'Porteføljeeksponering');
-        addTitle(aeSlide, 'Aggregert porteføljeeksponering', ae.beskrivelse || 'Vektet eksponering for den samlede porteføljen');
+        addTitle(aeSlide, 'Hvor er pengene investert?', ae.beskrivelse || 'Vektet eksponering for den samlede porteføljen');
         if (ae.regioner && ae.regioner.length > 0) addBarRows(aeSlide, 'Regioner', ae.regioner, 0.95, 1.95, 5.6, 2.4, COLORS.teal);
         if (ae.sektorer && ae.sektorer.length > 0) addBarRows(aeSlide, 'Sektorer', ae.sektorer, 6.8, 1.95, 5.55, 2.4, COLORS.blue);
         if (ae.stil && ae.stil.length > 0) addBarRows(aeSlide, 'Stil', ae.stil, 0.95, 4.6, 5.6, 2.0, COLORS.gold);
@@ -1288,7 +1288,7 @@ function buildDeck(payload = {}) {
     if (hasRegions || hasSectors) {
       const s = pptx.addSlide();
       addChrome(s, page++, 'Aggregert eksponering');
-      addTitle(s, 'Aggregert porteføljeeksponering', 'Samlet eksponering på tvers av alle valgte Pensum-produkter');
+      addTitle(s, 'Hvor er pengene investert?', 'Samlet eksponering på tvers av alle valgte Pensum-produkter');
 
       if (hasRegions) {
         s.addText('Regionfordeling', { x: 0.95, y: 1.85, w: 5.5, h: 0.18, fontSize: 10, color: COLORS.navy, bold: true });
@@ -1746,7 +1746,7 @@ function buildRapportDeck(payload = {}) {
   if (drawdownChart && drawdownChart.labels && drawdownChart.labels.length >= 5) {
     const ddSlide = pptx.addSlide();
     addChrome(ddSlide, page++, 'Nedsiderisiko');
-    addTitle(ddSlide, 'Nedsiderisiko — siste 5 år', 'Drawdown fra løpende toppverdi (0% = all-time high i perioden)');
+    addTitle(ddSlide, 'Risiko og nedsidebeskyttelse', 'Drawdown fra løpende toppverdi (0% = all-time high i perioden)');
 
     const DD_COLORS = [COLORS.teal, COLORS.navy, COLORS.salmon];
     drawdownChart.series.forEach((serie, si) => {
@@ -1780,7 +1780,7 @@ function buildRapportDeck(payload = {}) {
   if (ae && ((ae.regioner && ae.regioner.length > 0) || (ae.sektorer && ae.sektorer.length > 0))) {
     const aeSlide = pptx.addSlide();
     addChrome(aeSlide, page++, 'Porteføljeeksponering');
-    addTitle(aeSlide, 'Aggregert porteføljeeksponering', ae.beskrivelse || 'Vektet eksponering for den samlede porteføljen');
+    addTitle(aeSlide, 'Hvor er pengene investert?', ae.beskrivelse || 'Vektet eksponering for den samlede porteføljen');
     if (ae.regioner && ae.regioner.length > 0) addBarRows(aeSlide, 'Regioner', ae.regioner, 0.95, 1.95, 5.6, 2.4, COLORS.teal);
     if (ae.sektorer && ae.sektorer.length > 0) addBarRows(aeSlide, 'Sektorer', ae.sektorer, 6.8, 1.95, 5.55, 2.4, COLORS.blue);
     if (ae.stil && ae.stil.length > 0) addBarRows(aeSlide, 'Stil', ae.stil, 0.95, 4.6, 5.6, 2.0, COLORS.gold);
