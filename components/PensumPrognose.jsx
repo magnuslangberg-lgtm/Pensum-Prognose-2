@@ -51,6 +51,8 @@ export default function PensumPrognoseModell() {
   // visAlternativeAllokering: null = auto (basert på om kunden har alt.inv.), true/false = manuelt satt
   const [visAlternativeAllokering, setVisAlternativeAllokering] = useState(null);
   
+  const [investeringsFormaal, setInvesteringsFormaal] = useState('Utvikle finansiell formue');
+  const [likviditetsbehov, setLikviditetsbehov] = useState('Begrenset');
   const [scenarioParams, setScenarioParams] = useState({ pessimistisk: -2, optimistisk: 12 });
   const [dashboardPeriode, setDashboardPeriode] = useState('5y');
   const [dashboardProdukter, setDashboardProdukter] = useState(['basis', 'global-core-active', 'global-edge', 'global-hoyrente', 'nordisk-hoyrente', 'norge-a', 'energy-a', 'banking-d', 'financial-d']);
@@ -719,8 +721,10 @@ export default function PensumPrognoseModell() {
     innskudd, uttak,
     allokering,
     scenarioParams,
+    investeringsFormaal,
+    likviditetsbehov,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -751,6 +755,8 @@ export default function PensumPrognoseModell() {
     setUttak(data.uttak || 0);
     if (data.allokering) setAllokering(data.allokering);
     if (data.scenarioParams) setScenarioParams(data.scenarioParams);
+    if (data.investeringsFormaal) setInvesteringsFormaal(data.investeringsFormaal);
+    if (data.likviditetsbehov) setLikviditetsbehov(data.likviditetsbehov);
     setVisKundeliste(false);
     setActiveTab('input');
   }, [pensumStandardPortefoljer]);
@@ -1067,6 +1073,8 @@ export default function PensumPrognoseModell() {
     setInnskudd(0);
     setUttak(0);
     setAllokering(beregnAllokering(0, 0, 0, 'Moderat'));
+    setInvesteringsFormaal('Utvikle finansiell formue');
+    setLikviditetsbehov('Begrenset');
     setVisKundeliste(false);
     setActiveTab('input');
   }, []);
@@ -3364,6 +3372,22 @@ export default function PensumPrognoseModell() {
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">kr</span>
                   </div>
                 </div>
+
+                {/* Formål med investeringene */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Formål med investeringene</label>
+                  <input type="text" value={investeringsFormaal} onChange={(e) => setInvesteringsFormaal(e.target.value)} placeholder="F.eks. Utvikle finansiell formue" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                </div>
+
+                {/* Likviditetsbehov */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditetsbehov</label>
+                  <select value={likviditetsbehov} onChange={(e) => setLikviditetsbehov(e.target.value)} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors">
+                    <option value="Begrenset">Begrenset</option>
+                    <option value="Moderat">Moderat</option>
+                    <option value="Høyt">Høyt</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -4185,7 +4209,7 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
 
-                {/* Aggregert porteføljeeksponering (kun aksjedelen) */}
+                {/* Hvor er pengene investert? (kun aksjedelen) */}
                 {(() => {
                   // Beregn vektet aggregert eksponering for hele porteføljen (ekskl. høyrente/rente)
                   const aksjeProdukter = pensumAllokering.filter(a => {
@@ -4225,7 +4249,7 @@ export default function PensumPrognoseModell() {
                   return (
                     <div className="mt-8 rounded-2xl border border-blue-200/60 overflow-hidden" style={{ background: 'linear-gradient(135deg, #F0F7FF 0%, #EBF3FF 50%, #DBEAFE 100%)' }}>
                       <div className="px-5 py-4 border-b border-blue-200/50" style={{ backgroundColor: 'rgba(13, 34, 64, 0.04)' }}>
-                        <h4 className="font-semibold text-base" style={{ color: PENSUM_COLORS.darkBlue }}>Aggregert porteføljeeksponering</h4>
+                        <h4 className="font-semibold text-base" style={{ color: PENSUM_COLORS.darkBlue }}>Hvor er pengene investert?</h4>
                         <p className="text-xs text-gray-500 mt-1">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdukter.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
                       </div>
                       <div className="p-5">
@@ -5173,7 +5197,7 @@ export default function PensumPrognoseModell() {
                       return (
                         <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                           <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
+                            <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark</h4>
                           </div>
                           <div className="p-5">
                             <ResponsiveContainer width="100%" height={300}>
@@ -5340,7 +5364,7 @@ export default function PensumPrognoseModell() {
                         <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                             <div>
-                              <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko — siste 5 år</h4>
+                              <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Risiko og nedsidebeskyttelse</h4>
                               <p className="text-xs text-gray-400 mt-0.5">Drawdown fra løpende toppverdi (0% = all-time high i perioden)</p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -7211,14 +7235,15 @@ export default function PensumPrognoseModell() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {/* Forutsetninger */}
                     <div className="rounded-xl border border-gray-200 bg-white p-6">
-                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Forutsetninger</h3>
+                      <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Overordnede forutsetninger</h3>
                       <div className="space-y-0">
                         {[
+                          { label: 'Formål med investeringene', value: investeringsFormaal || '—' },
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
-                          { label: 'Risikoprofil', value: valgtPensumProfil },
-                          { label: 'Tidshorisont', value: horisont + ' år' },
-                          { label: 'Målsetting', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
-                          { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
+                          { label: 'Avkastningskrav/mål', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1) + '% p.a.' : '—' },
+                          { label: 'Investeringshorisont', value: 'Langsiktig, ' + horisont + ' år +' },
+                          { label: 'Overordnet risikonivå', value: valgtPensumProfil },
+                          { label: 'Likviditetsbehov', value: likviditetsbehov || 'Begrenset' },
                         ].map((row, i) => (
                           <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
                             <span className="text-sm text-gray-500">{row.label}</span>
@@ -7226,6 +7251,7 @@ export default function PensumPrognoseModell() {
                           </div>
                         ))}
                       </div>
+                      <p className="text-[10px] text-gray-400 mt-4 italic">Opplysningene ovenfor er ikke verifisert og er ikke å anse som grunnlag for investeringsrådgivning.</p>
                     </div>
 
                     {/* Porteføljelogikk */}
@@ -7739,7 +7765,7 @@ export default function PensumPrognoseModell() {
                           return (
                             <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                               <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark</h4>
                               </div>
                               <div className="p-5">
                                 <ResponsiveContainer width="100%" height={380}>
@@ -7789,7 +7815,7 @@ export default function PensumPrognoseModell() {
                           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                               <div>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko — siste 5 år</h4>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Risiko og nedsidebeskyttelse</h4>
                                 <p className="text-xs text-gray-400 mt-0.5">Drawdown fra løpende toppverdi (0% = all-time high i perioden)</p>
                               </div>
                               <div className="flex items-center gap-3">
@@ -7873,7 +7899,7 @@ export default function PensumPrognoseModell() {
 
                   return (
                     <div data-rapport-slide="eksponering">
-                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Aggregert porteføljeeksponering</h2>
+                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Hvor er pengene investert?</h2>
                       <p className="text-xs text-gray-500 mb-4">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[
