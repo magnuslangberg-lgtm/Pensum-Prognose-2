@@ -2616,15 +2616,26 @@ export default function PensumPrognoseModell() {
         const innerW = renderWidth - 72; // 36px padding each side
         sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${innerW}px;z-index:-1;`;
         document.body.appendChild(sizer);
+        // Remove overflow:hidden from element so ResponsiveContainer can detect the new width
+        const savedOverflow = element.style.overflow;
+        element.style.overflow = 'visible';
+        element.querySelectorAll('.overflow-hidden').forEach(el => { el.style.overflow = 'visible'; });
         sizer.appendChild(element);
 
-        // Wait for Recharts ResizeObserver to fire and React to re-render
-        await new Promise(r => setTimeout(r, 1000));
+        // Trigger resize detection: both ResizeObserver and window resize event
+        window.dispatchEvent(new Event('resize'));
+        // Wait for Recharts to re-render (longer wait for reliability)
+        await new Promise(r => setTimeout(r, 1500));
+        // Trigger again in case first didn't catch all charts
+        window.dispatchEvent(new Event('resize'));
+        await new Promise(r => setTimeout(r, 500));
 
         // Now clone the properly-rendered element
         const imgData = await captureElement(element, renderWidth, opts);
 
-        // Move element back to its original position
+        // Move element back to its original position and restore overflow
+        element.style.overflow = savedOverflow;
+        element.querySelectorAll('.overflow-hidden').forEach(el => { el.style.overflow = ''; });
         if (placeholder.parentNode) {
           placeholder.parentNode.insertBefore(element, placeholder);
           placeholder.parentNode.removeChild(placeholder);
@@ -2797,11 +2808,16 @@ export default function PensumPrognoseModell() {
                 const sizer = document.createElement('div');
                 sizer.style.cssText = `position:fixed;left:-9999px;top:0;width:${renderWidth - 72}px;z-index:-1;`;
                 document.body.appendChild(sizer);
+                el.style.overflow = 'visible';
+                el.querySelectorAll('.overflow-hidden').forEach(c => { c.style.overflow = 'visible'; });
                 sizer.appendChild(el);
                 restorerMap.set(el, { placeholder, sizer });
               }
             }
-            await new Promise(r => setTimeout(r, 1000));
+            window.dispatchEvent(new Event('resize'));
+            await new Promise(r => setTimeout(r, 1500));
+            window.dispatchEvent(new Event('resize'));
+            await new Promise(r => setTimeout(r, 500));
           }
 
           const wrapper = document.createElement('div');
@@ -2836,6 +2852,8 @@ export default function PensumPrognoseModell() {
             document.body.removeChild(wrapper);
             // Restore moved elements
             for (const [el, { placeholder, sizer }] of restorerMap) {
+              el.style.overflow = '';
+              el.querySelectorAll('.overflow-hidden').forEach(c => { c.style.overflow = ''; });
               if (placeholder.parentNode) {
                 placeholder.parentNode.insertBefore(el, placeholder);
                 placeholder.parentNode.removeChild(placeholder);
