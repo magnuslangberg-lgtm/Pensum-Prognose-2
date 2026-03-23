@@ -91,12 +91,9 @@ export default function PensumPrognoseModell() {
     { id: 'byggesteiner', label: 'Hvordan porteføljen er bygget', standard: true, aktiv: true },
     { id: 'allokering', label: 'Allokering & sammensetning', standard: true, aktiv: true },
     { id: 'historisk', label: 'Historisk avkastning', standard: true, aktiv: true },
-    { id: 'snapshot-1y', label: 'Snapshot — 1 år', standard: true, aktiv: true },
-    { id: 'snapshot-3y', label: 'Snapshot — 3 år', standard: true, aktiv: true },
     { id: 'snapshot-5y', label: 'Snapshot — 5 år', standard: true, aktiv: true },
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
     { id: 'eksponering', label: 'Eksponering', standard: true, aktiv: true },
-    { id: 'verdiutvikling', label: 'Verdiutvikling', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
@@ -110,14 +107,20 @@ export default function PensumPrognoseModell() {
     { id: 'folgebrev', label: 'Personlig følgebrev', aktiv: true, posisjon: 'etter-cover' },
     { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
     { id: 'neste-steg', label: 'Neste steg', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot' },
+    { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
+    { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
 
   // Helper to check if a standard rapport module is active
   const isStandardModulAktiv = useCallback((id) => {
     const modul = rapportModuler.find(m => m.id === id);
-    return modul ? modul.aktiv : true;
-  }, [rapportModuler]);
+    if (modul) return modul.aktiv;
+    // Also check tilleggsmoduler (for modules moved from standard to optional)
+    const tillegg = tilleggsmoduler.find(m => m.id === id);
+    return tillegg ? tillegg.aktiv : true;
+  }, [rapportModuler, tilleggsmoduler]);
 
   // Posisjonsvalg for tilleggsmoduler
   const TILLEGGSMODUL_POSISJONER = [
@@ -6985,8 +6988,7 @@ export default function PensumPrognoseModell() {
                   <div className="border-t pt-6" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     <div className="flex flex-wrap gap-x-12 gap-y-3">
                       <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Rådgiver</span><p className="text-sm font-semibold text-white mt-0.5">{radgiver || '—'}</p></div>
-                      <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Risikoprofil</span><p className="text-sm font-semibold text-white mt-0.5">{valgtPensumProfil}</p></div>
-                      <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Horisont</span><p className="text-sm font-semibold text-white mt-0.5">{horisont} år</p></div>
+                      <div><span className="text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.lightBlue }}>Dato</span><p className="text-sm font-semibold text-white mt-0.5">{dato ? new Date(dato).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</p></div>
                     </div>
                   </div>
                 </div>
