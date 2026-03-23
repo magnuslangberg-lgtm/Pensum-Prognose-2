@@ -1148,12 +1148,9 @@ export default function PensumPrognoseModell() {
       case 'om-oss':
         return (
           <div data-rapport-slide="om-oss" className="space-y-6 page-break-before">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-              </div>
-              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
               Pensum har røtter tilbake til 2002 og har i dag fire ulike virksomhetsområder, hvor kjernen ligger innen forvaltningstjenester.
@@ -1191,12 +1188,9 @@ export default function PensumPrognoseModell() {
       case 'kommunikasjon':
         return (
           <div data-rapport-slide="kommunikasjon" className="space-y-5 page-break-before">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kommunikasjon & løpende oppdateringer</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-              </div>
-              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kommunikasjon & løpende oppdateringer</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
               Pensum tilbyr løpende kommunikasjon og oppdateringer til sine kunder gjennom flere kanaler.
@@ -1244,12 +1238,9 @@ export default function PensumPrognoseModell() {
       case 'rapportering':
         return (
           <div data-rapport-slide="rapportering" className="space-y-5 page-break-before">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportering</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-              </div>
-              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportering</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
@@ -1306,12 +1297,9 @@ export default function PensumPrognoseModell() {
       case 'honorarstruktur':
         return (
           <div data-rapport-slide="honorarstruktur" className="space-y-5 page-break-before">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-              </div>
-              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             </div>
             <div className="rounded-lg p-4 text-sm text-gray-700 leading-relaxed" style={{ backgroundColor: '#F0F4F8' }}>
               Pensum ønsker å opptre som en transparent partner ovenfor sine kunder, også hva gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter og eventuelle returprovisjoner som vi mottar har uavkortet tilbake til våre kunder.
@@ -1399,12 +1387,9 @@ export default function PensumPrognoseModell() {
       case 'beskatning':
         return (
           <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-              </div>
-              <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60" />
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -1483,10 +1468,7 @@ export default function PensumPrognoseModell() {
                 <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
                 <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
               </div>
-              <div className="text-right">
-                <img src={PENSUM_LOGO} alt="Pensum" className="h-10 opacity-60 ml-auto" />
-                <p className="text-[10px] text-gray-400 mt-1 max-w-[260px]">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
-              </div>
+              <p className="text-[10px] text-gray-400 mt-1 max-w-[260px] text-right">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-5">
               <h3 className="text-sm font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Arlig aksjeavkastning og fall gjennom aret</h3>
