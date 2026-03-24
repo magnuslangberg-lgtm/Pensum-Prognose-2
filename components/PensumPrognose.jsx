@@ -2619,13 +2619,22 @@ export default function PensumPrognoseModell() {
         element.querySelectorAll('.overflow-hidden').forEach(el => { el.style.overflow = 'visible'; });
         sizer.appendChild(element);
 
-        // Trigger resize detection: both ResizeObserver and window resize event
-        window.dispatchEvent(new Event('resize'));
-        // Wait for Recharts to re-render (longer wait for reliability)
-        await new Promise(r => setTimeout(r, 1500));
-        // Trigger again in case first didn't catch all charts
-        window.dispatchEvent(new Event('resize'));
-        await new Promise(r => setTimeout(r, 500));
+        // Force Recharts ResponsiveContainer to detect new size by toggling display
+        const rechartsContainers = element.querySelectorAll('.recharts-responsive-container');
+        rechartsContainers.forEach(c => {
+          c.style.display = 'none';
+          c.offsetHeight; // force reflow
+          c.style.display = '';
+        });
+        // Wait for Recharts to re-render at new width
+        await new Promise(r => setTimeout(r, 800));
+        // Toggle again for reliability
+        rechartsContainers.forEach(c => {
+          c.style.display = 'none';
+          c.offsetHeight;
+          c.style.display = '';
+        });
+        await new Promise(r => setTimeout(r, 800));
 
         // Now clone the properly-rendered element
         const imgData = await captureElement(element, renderWidth, opts);
@@ -2837,10 +2846,23 @@ export default function PensumPrognoseModell() {
                 restorerMap.set(el, { placeholder, sizer });
               }
             }
-            window.dispatchEvent(new Event('resize'));
-            await new Promise(r => setTimeout(r, 1500));
-            window.dispatchEvent(new Event('resize'));
-            await new Promise(r => setTimeout(r, 500));
+            // Force Recharts ResponsiveContainer to detect new size
+            for (const [el] of restorerMap) {
+              el.querySelectorAll('.recharts-responsive-container').forEach(c => {
+                c.style.display = 'none';
+                c.offsetHeight;
+                c.style.display = '';
+              });
+            }
+            await new Promise(r => setTimeout(r, 800));
+            for (const [el] of restorerMap) {
+              el.querySelectorAll('.recharts-responsive-container').forEach(c => {
+                c.style.display = 'none';
+                c.offsetHeight;
+                c.style.display = '';
+              });
+            }
+            await new Promise(r => setTimeout(r, 800));
           }
 
           const wrapper = document.createElement('div');
