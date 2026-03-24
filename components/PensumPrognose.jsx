@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
-import { sokFond, finnFondISIN, finnFondNavn } from '../data/fondDatabase';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
@@ -139,6 +138,20 @@ export default function PensumPrognoseModell() {
     const tillegg = tilleggsmoduler.find(m => m.id === id);
     return tillegg ? tillegg.aktiv : true;
   }, [rapportModuler, tilleggsmoduler]);
+
+  // Lazy-load Morningstar-data for fondssammenligning og eksisterende portefølje
+  const lastEksterneFond = useCallback(async () => {
+    if (eksterneFond || eksterneFondLoading) return;
+    setEksterneFondLoading(true);
+    try {
+      const res = await fetch('/data/eksterne-fond.json');
+      const data = await res.json();
+      setEksterneFond(data);
+    } catch (e) {
+      console.error('Kunne ikke laste eksterne fond:', e);
+    }
+    setEksterneFondLoading(false);
+  }, [eksterneFond, eksterneFondLoading]);
 
   // Posisjonsvalg for tilleggsmoduler
   const TILLEGGSMODUL_POSISJONER = [
@@ -1760,7 +1773,7 @@ export default function PensumPrognoseModell() {
         const eksVektetAvk1y = fondTotalBelop > 0 ? fondMedData.reduce((s, f) => s + (f.avk1y || 0) * f.belop / fondTotalBelop, 0) : null;
         const eksVektetAvk3y = fondTotalBelop > 0 ? fondMedData.reduce((s, f) => s + (f.avk3y || 0) * f.belop / fondTotalBelop, 0) : null;
         const eksVektetAvk5y = fondTotalBelop > 0 ? fondMedData.reduce((s, f) => s + (f.avk5y || 0) * f.belop / fondTotalBelop, 0) : null;
-        const eksVektetTER = fondTotalBelop > 0 ? fondMedData.reduce((s, f) => s + (f.ter || 0) * f.belop / fondTotalBelop, 0) : null;
+        const eksVektetVolatilitet = fondTotalBelop > 0 ? fondMedData.reduce((s, f) => s + (f.volatilitet || 0) * f.belop / fondTotalBelop, 0) : null;
 
         // Pensum-forslag nøkkeltall
         const pensumBelop = investertBelop || totalKapital;
@@ -1802,7 +1815,7 @@ export default function PensumPrognoseModell() {
                   <div className="flex justify-between text-xs"><span className="text-gray-500">Renteandel</span><span className="font-medium">{eksRenteAndel.toFixed(0)}%</span></div>
                   <div className="flex justify-between text-xs"><span className="text-gray-500">Kontantandel</span><span className="font-medium" style={{ color: eksKontantAndel > 20 ? '#DC2626' : undefined }}>{eksKontantAndel.toFixed(0)}%</span></div>
                   <div className="border-t pt-2 mt-2">
-                    <div className="flex justify-between text-xs"><span className="text-gray-500">Vektet TER (fond)</span><span className="font-medium">{eksVektetTER != null ? eksVektetTER.toFixed(2) + '%' : '—'}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-gray-500">Vektet volatilitet (3 år)</span><span className="font-medium">{eksVektetVolatilitet != null ? eksVektetVolatilitet.toFixed(1) + '%' : '—'}</span></div>
                     <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Vektet avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
                   </div>
                 </div>
@@ -1837,7 +1850,7 @@ export default function PensumPrognoseModell() {
                       <th className="py-2 px-2 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Beløp</th>
                       <th className="py-2 px-2 text-center font-medium text-gray-500">Andel</th>
                       <th className="py-2 px-2 text-center font-medium text-gray-500">Kategori</th>
-                      <th className="py-2 px-2 text-right font-medium text-gray-500">TER</th>
+                      <th className="py-2 px-2 text-right font-medium text-gray-500">Vol. 3å</th>
                       <th className="py-2 px-2 text-right font-medium text-gray-500">1 år</th>
                       <th className="py-2 px-2 text-right font-medium text-gray-500">3 år p.a.</th>
                       <th className="py-2 px-2 text-right font-medium text-gray-500">5 år p.a.</th>
@@ -1850,7 +1863,7 @@ export default function PensumPrognoseModell() {
                         <td className="py-1.5 px-2 text-right">{f.belop > 0 ? formatCurrency(f.belop) : '—'}</td>
                         <td className="py-1.5 px-2 text-center text-gray-500">{eksTotal > 0 && f.belop > 0 ? (f.belop / eksTotal * 100).toFixed(1) + '%' : '—'}</td>
                         <td className="py-1.5 px-2 text-center">{f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right text-gray-500">{f.ter != null ? f.ter.toFixed(2) + '%' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1) + '%' : '—'}</td>
                         <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1) + '%' : '—'}</td>
                         <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk3y) }}>{f.avk3y != null ? (f.avk3y >= 0 ? '+' : '') + f.avk3y.toFixed(1) + '%' : '—'}</td>
                         <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1) + '%' : '—'}</td>
@@ -1882,7 +1895,7 @@ export default function PensumPrognoseModell() {
                       <td className="py-2 px-2 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(eksTotal)}</td>
                       <td className="py-2 px-2 text-center font-medium">100%</td>
                       <td></td>
-                      <td className="py-2 px-2 text-right font-medium">{eksVektetTER != null ? eksVektetTER.toFixed(2) + '%' : '—'}</td>
+                      <td className="py-2 px-2 text-right font-medium">{eksVektetVolatilitet != null ? eksVektetVolatilitet.toFixed(1) + '%' : '—'}</td>
                       <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk1y) }}>{eksVektetAvk1y != null ? (eksVektetAvk1y >= 0 ? '+' : '') + eksVektetAvk1y.toFixed(1) + '%' : '—'}</td>
                       <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk3y) }}>{eksVektetAvk3y != null ? (eksVektetAvk3y >= 0 ? '+' : '') + eksVektetAvk3y.toFixed(1) + '%' : '—'}</td>
                       <td className="py-2 px-2 text-right font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1) + '%' : '—'}</td>
@@ -3783,7 +3796,7 @@ export default function PensumPrognoseModell() {
               {/* ── Eksisterende portefølje ── */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
                 <button
-                  onClick={() => setVisEksisterendePortefolje(v => !v)}
+                  onClick={() => { setVisEksisterendePortefolje(v => !v); if (!eksterneFond && !eksterneFondLoading) lastEksterneFond(); }}
                   className="w-full px-6 py-4 flex items-center justify-between"
                   style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                   <div className="flex items-center gap-3">
@@ -3822,40 +3835,53 @@ export default function PensumPrognoseModell() {
                         <span className="text-xs text-gray-400">{eksisterendePortefolje.fond.length} fond</span>
                       </div>
 
-                      {/* Fondssøk */}
+                      {/* Fondssøk — bruker Morningstar-datasettet (eksterneFond) */}
                       <div className="relative mb-3">
                         <input
                           type="text" value={eksPortFondSok}
+                          onFocus={() => { if (!eksterneFond && !eksterneFondLoading) lastEksterneFond(); }}
                           onChange={(e) => {
                             setEksPortFondSok(e.target.value);
-                            setEksPortFondResultater(sokFond(e.target.value));
+                            const q = e.target.value.toLowerCase().trim();
+                            if (!eksterneFond || q.length < 2) { setEksPortFondResultater([]); return; }
+                            setEksPortFondResultater(eksterneFond.filter(f =>
+                              f.n?.toLowerCase().includes(q) || f.isin?.toLowerCase().includes(q) || f.mgr?.toLowerCase().includes(q)
+                            ).slice(0, 20));
                           }}
-                          placeholder="Søk fond (navn eller ISIN)..."
+                          placeholder={eksterneFondLoading ? 'Laster fondsdatabase...' : 'Søk fond (navn, ISIN eller forvalter) — 4 974 fond fra Morningstar'}
                           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pl-8"
                         />
                         <svg className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        {eksterneFondLoading && <svg className="w-4 h-4 absolute right-3 top-2.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>}
                         {eksPortFondResultater.length > 0 && eksPortFondSok.length >= 2 && (
                           <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
                             {eksPortFondResultater.map(f => {
                               const erLagtTil = eksisterendePortefolje.fond.some(ef => ef.isin === f.isin);
+                              const fondKat = f.cat?.toLowerCase().includes('fixed income') || f.cat?.toLowerCase().includes('bond') || f.cat?.toLowerCase().includes('money market') ? 'rente'
+                                : f.cat?.toLowerCase().includes('allocation') || f.cat?.toLowerCase().includes('mixed') ? 'blandet' : 'aksje';
                               return (
                                 <button key={f.isin} disabled={erLagtTil}
                                   onClick={() => {
                                     setEksisterendePortefolje(prev => ({
                                       ...prev,
-                                      fond: [...prev.fond, { id: f.isin, navn: f.navn, isin: f.isin, belop: 0, forvalter: f.forvalter, kategori: f.kategori, ter: f.ter, avk1y: f.avk1y, avk3y: f.avk3y, avk5y: f.avk5y, volatilitet: f.volatilitet, geografi: f.geografi, matchet: true }]
+                                      fond: [...prev.fond, {
+                                        id: f.isin, navn: f.n, isin: f.isin, belop: 0,
+                                        forvalter: f.mgr || '', kategori: fondKat, cat: f.cat || '',
+                                        avk1y: f.r1y, avk3y: f.r3y, avk5y: f.r5y,
+                                        volatilitet: f.sd3y, geografi: f.cat || '',
+                                        matchet: true
+                                      }]
                                     }));
                                     setEksPortFondSok('');
                                     setEksPortFondResultater([]);
                                   }}
                                   className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-50 flex items-center justify-between ${erLagtTil ? 'opacity-40' : ''}`}>
                                   <div>
-                                    <span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.navn}</span>
+                                    <span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.n}</span>
                                     <span className="text-gray-400 ml-2">{f.isin}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-gray-400">
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100">{f.kategori}</span>
-                                    <span>{f.forvalter}</span>
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100">{f.cat || '—'}</span>
                                     {erLagtTil && <span className="text-green-500">✓</span>}
                                   </div>
                                 </button>
@@ -3872,7 +3898,7 @@ export default function PensumPrognoseModell() {
                           if (!navn) return;
                           setEksisterendePortefolje(prev => ({
                             ...prev,
-                            fond: [...prev.fond, { id: `manuell-${Date.now()}`, navn, isin: '', belop: 0, forvalter: '', kategori: 'ukjent', ter: null, avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false }]
+                            fond: [...prev.fond, { id: `manuell-${Date.now()}`, navn, isin: '', belop: 0, forvalter: '', kategori: 'ukjent', cat: '', avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false }]
                           }));
                         }}
                         className="text-xs text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1">
@@ -3888,8 +3914,8 @@ export default function PensumPrognoseModell() {
                               <tr style={{ backgroundColor: '#F8FAFB' }}>
                                 <th className="py-2 px-3 text-left font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Fond</th>
                                 <th className="py-2 px-2 text-right font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Beløp</th>
-                                <th className="py-2 px-2 text-center font-medium text-gray-400">Kat.</th>
-                                <th className="py-2 px-2 text-right font-medium text-gray-400">TER</th>
+                                <th className="py-2 px-2 text-left font-medium text-gray-400">Kategori</th>
+                                <th className="py-2 px-2 text-right font-medium text-gray-400">3 år p.a.</th>
                                 <th className="py-2 px-2 text-right font-medium text-gray-400">5 år p.a.</th>
                                 <th className="py-2 px-1 text-center font-medium text-gray-400">Slett</th>
                               </tr>
@@ -3915,12 +3941,14 @@ export default function PensumPrognoseModell() {
                                         }));
                                       }} />
                                   </td>
-                                  <td className="py-1.5 px-2 text-center">
-                                    <span className={`px-1 py-0.5 rounded text-[9px] ${f.kategori === 'aksje' ? 'bg-blue-50 text-blue-600' : f.kategori === 'rente' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                                      {f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Bland' : '—'}
+                                  <td className="py-1.5 px-2 text-left">
+                                    <span className={`px-1 py-0.5 rounded text-[9px] ${f.kategori === 'aksje' ? 'bg-blue-50 text-blue-600' : f.kategori === 'rente' ? 'bg-green-50 text-green-600' : f.kategori === 'blandet' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'}`} title={f.cat || ''}>
+                                      {f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}
                                     </span>
                                   </td>
-                                  <td className="py-1.5 px-2 text-right text-gray-500">{f.ter != null ? f.ter.toFixed(2) + '%' : '—'}</td>
+                                  <td className="py-1.5 px-2 text-right">
+                                    {f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>}
+                                  </td>
                                   <td className="py-1.5 px-2 text-right">
                                     {f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>}
                                   </td>
@@ -4048,15 +4076,22 @@ export default function PensumPrognoseModell() {
                             kontanter = belop;
                             continue;
                           }
-                          // Forsøk å matche mot fondsdatabasen
-                          const fondMatch = finnFondNavn(navnDel);
+                          // Forsøk å matche mot Morningstar-datasettet (eksterneFond)
+                          let fondMatch = null;
+                          if (eksterneFond && navnDel.length > 2) {
+                            const q = navnDel.toLowerCase();
+                            fondMatch = eksterneFond.find(f => f.n?.toLowerCase() === q) ||
+                              eksterneFond.find(f => f.n?.toLowerCase().includes(q) || q.includes(f.n?.toLowerCase()));
+                          }
                           if (fondMatch) {
                             if (!nyeFond.some(f => f.isin === fondMatch.isin)) {
-                              nyeFond.push({ id: fondMatch.isin, navn: fondMatch.navn, isin: fondMatch.isin, belop, forvalter: fondMatch.forvalter, kategori: fondMatch.kategori, ter: fondMatch.ter, avk1y: fondMatch.avk1y, avk3y: fondMatch.avk3y, avk5y: fondMatch.avk5y, volatilitet: fondMatch.volatilitet, geografi: fondMatch.geografi, matchet: true });
+                              const fKat = fondMatch.cat?.toLowerCase().includes('fixed income') || fondMatch.cat?.toLowerCase().includes('bond') || fondMatch.cat?.toLowerCase().includes('money market') ? 'rente'
+                                : fondMatch.cat?.toLowerCase().includes('allocation') || fondMatch.cat?.toLowerCase().includes('mixed') ? 'blandet' : 'aksje';
+                              nyeFond.push({ id: fondMatch.isin, navn: fondMatch.n, isin: fondMatch.isin, belop, forvalter: fondMatch.mgr || '', kategori: fKat, cat: fondMatch.cat || '', avk1y: fondMatch.r1y, avk3y: fondMatch.r3y, avk5y: fondMatch.r5y, volatilitet: fondMatch.sd3y, geografi: fondMatch.cat || '', matchet: true });
                             }
                           } else if (belop > 0 && navnDel.length > 1) {
                             // Ukjent fond med beløp
-                            nyeFond.push({ id: `paste-${Date.now()}-${Math.random()}`, navn: navnDel, isin: '', belop, forvalter: '', kategori: 'ukjent', ter: null, avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false });
+                            nyeFond.push({ id: `paste-${Date.now()}-${Math.random()}`, navn: navnDel, isin: '', belop, forvalter: '', kategori: 'ukjent', cat: '', avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false });
                           } else if (navnDel.length > 1 && belop === 0) {
                             // Sannsynligvis en aksje (bare navn, ingen beløp)
                             nyeAksjer.push({ navn: navnDel, belop: 0 });
@@ -6150,19 +6185,7 @@ export default function PensumPrognoseModell() {
           // FOND_FARGER for external fund colors
           const FOND_FARGER = [PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.lightBlue, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.navy, PENSUM_COLORS.red, PENSUM_COLORS.midBlue];
 
-          // Lazy-load external fund data
-          const lastEksterneFond = async () => {
-            if (eksterneFond || eksterneFondLoading) return;
-            setEksterneFondLoading(true);
-            try {
-              const res = await fetch('/data/eksterne-fond.json');
-              const data = await res.json();
-              setEksterneFond(data);
-            } catch (e) {
-              console.error('Kunne ikke laste eksterne fond:', e);
-            }
-            setEksterneFondLoading(false);
-          };
+          // lastEksterneFond is defined as a top-level useCallback
 
           // Get unique categories for fond search
           const kategorier = eksterneFond ? [...new Set(eksterneFond.map(f => f.cat).filter(Boolean))].sort() : [];
