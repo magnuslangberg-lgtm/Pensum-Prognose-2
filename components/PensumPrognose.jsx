@@ -6472,25 +6472,37 @@ export default function PensumPrognoseModell() {
               }
             }
 
-            // Samlet portefølje — Pensum + eksisterende vektet sammen
-            if (visSamletPortefolje && serieMap['Pensum-forslaget'] && serieMap['Eksisterende portefølje']) {
-              const pensumSerie = serieMap['Pensum-forslaget'];
-              const eksSerie = serieMap['Eksisterende portefølje'];
-              const pensumBelop = investertBelop || totalKapital;
-              const eksBelop = eksFondMedData.reduce((s, f) => s + f.belop, 0) + eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0) + eksisterendePortefolje.kontanter;
-              const samletTotal = pensumBelop + eksBelop;
-              if (samletTotal > 0) {
-                const pVekt = pensumBelop / samletTotal;
-                const eVekt = eksBelop / samletTotal;
-                const alleDatoerSamlet = new Set([...pensumSerie.map(d => d.dato), ...eksSerie.map(d => d.dato)]);
-                const pensumMap = {}; pensumSerie.forEach(d => { pensumMap[d.dato] = d.indeksert; });
-                const eksMap = {}; eksSerie.forEach(d => { eksMap[d.dato] = d.indeksert; });
+            // Samlet portefølje — vektet gjennomsnitt av alle aktive porteføljer
+            if (visSamletPortefolje) {
+              const deler = []; // { serie: Map<dato, indeksert>, belop }
+              if (serieMap['Pensum-forslaget']) {
+                const m = {}; serieMap['Pensum-forslaget'].forEach(p => { m[p.dato] = p.indeksert; });
+                deler.push({ map: m, belop: investertBelop || totalKapital });
+              }
+              if (serieMap['Eksisterende portefølje']) {
+                const m = {}; serieMap['Eksisterende portefølje'].forEach(p => { m[p.dato] = p.indeksert; });
+                const eksBelop = eksFondMedData.reduce((s, f) => s + f.belop, 0) + eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0) + eksisterendePortefolje.kontanter;
+                deler.push({ map: m, belop: eksBelop });
+              }
+              if (serieMap['Konkurrentportefølje']) {
+                const m = {}; serieMap['Konkurrentportefølje'].forEach(p => { m[p.dato] = p.indeksert; });
+                deler.push({ map: m, belop: investertBelop || totalKapital });
+              }
+              if (deler.length >= 2) {
+                const samletTotal = deler.reduce((s, d) => s + d.belop, 0);
+                const alleDatoerSamlet = new Set();
+                deler.forEach(d => Object.keys(d.map).forEach(dato => alleDatoerSamlet.add(dato)));
                 const samlet = [];
                 Array.from(alleDatoerSamlet).sort().forEach(dato => {
-                  const pVal = pensumMap[dato]; const eVal = eksMap[dato];
-                  if (pVal !== undefined && eVal !== undefined) {
-                    samlet.push({ dato, indeksert: parseFloat((pVal * pVekt + eVal * eVekt).toFixed(2)) });
-                  }
+                  let vektetSum = 0; let vektSum = 0;
+                  deler.forEach(d => {
+                    if (d.map[dato] !== undefined) {
+                      const vekt = d.belop / samletTotal;
+                      vektetSum += d.map[dato] * vekt;
+                      vektSum += vekt;
+                    }
+                  });
+                  if (vektSum > 0) samlet.push({ dato, indeksert: parseFloat((vektetSum / vektSum).toFixed(2)) });
                 });
                 if (samlet.length > 0) serieMap['Samlet portefølje'] = samlet;
               }
@@ -6517,7 +6529,8 @@ export default function PensumPrognoseModell() {
           const visbareFondNavn = (valgteFond.length > 0 && !skjulEnkeltfond) ? valgteFond.map(f => f.n) : [];
           const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
           const eksNavn = harEksisterendePortefoljeChart && visEksisterendeIChart ? ['Eksisterende portefølje'] : [];
-          const samletNavn = visSamletPortefolje && harEksisterendePortefoljeChart && visEksisterendeIChart && visPortefoljeScen ? ['Samlet portefølje'] : [];
+          const antallAktivePortefoljer = [visPortefoljeScen, harEksisterendePortefoljeChart && visEksisterendeIChart, harKonkurrentPortefolje].filter(Boolean).length;
+          const samletNavn = visSamletPortefolje && antallAktivePortefoljer >= 2 ? ['Samlet portefølje'] : [];
           const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Pensum-forslaget'] : []), ...eksNavn, ...samletNavn, ...valgtePensumScen, ...valgteIndekserScen, ...visbareFondNavn, ...konkNavn];
 
           // Color function for merged chart
@@ -6992,7 +7005,8 @@ export default function PensumPrognoseModell() {
                         Manuell portefølje
                       </button>
                     )}
-                    {harEksisterendePortefoljeChart && visEksisterendeIChart && visPortefoljeScen && (
+                    {/* Samlet portefølje — vises når minst 2 porteføljer er aktive */}
+                    {([visPortefoljeScen, harEksisterendePortefoljeChart && visEksisterendeIChart, harKonkurrentPortefolje].filter(Boolean).length >= 2) && (
                       <button
                         onClick={() => setVisSamletPortefolje(prev => !prev)}
                         className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visSamletPortefolje ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
