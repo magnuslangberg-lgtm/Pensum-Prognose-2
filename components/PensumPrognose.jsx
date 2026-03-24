@@ -2801,7 +2801,7 @@ export default function PensumPrognoseModell() {
         if (elements.length === 0) continue;
 
         // Cover slide: full-bleed dark background, no padding
-        if (group.cover || group.darkBg) {
+        if (group.cover) {
           const el = elements[0];
           const imgData = await captureElement(el, 1120, { bgColor: PENSUM_COLORS.darkBlue, noPadding: true });
           const img = new Image();
@@ -2809,10 +2809,37 @@ export default function PensumPrognoseModell() {
           const slide = pptx.addSlide();
           slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
           slide.addImage({ data: imgData, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H, sizing: { type: 'contain', w: SLIDE_W, h: SLIDE_H } });
-          // Add white logo for dark background slides (except cover which has its own)
-          if (group.darkBg && logoImgData) {
+          continue;
+        }
+
+        // Dark background slides: standard padding, dark bg, with logo
+        if (group.darkBg) {
+          const el = elements[0];
+          const imgData = await captureElement(el, 1120, { bgColor: PENSUM_COLORS.darkBlue });
+          const img = new Image();
+          await new Promise(r => { img.onload = r; img.src = imgData; });
+          const slide = pptx.addSlide();
+          slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
+          const imgAspect = img.width / img.height;
+          const availH = SLIDE_H - FOOTER_H - 0.1;
+          const availW = CONTENT_W;
+          const slideAspect = availW / availH;
+          let imgW, imgH;
+          if (imgAspect > slideAspect) { imgW = availW; imgH = availW / imgAspect; }
+          else { imgH = availH; imgW = availH * imgAspect; }
+          const imgX = (SLIDE_W - imgW) / 2;
+          const imgY = Math.max(0.15, (availH - imgH) / 2);
+          slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
+          if (logoImgData) {
             slide.addImage({ data: logoImgData, x: SLIDE_W - 0.4 - 1.8, y: 0.15, w: 1.8, h: 0.75, sizing: { type: 'contain', w: 1.8, h: 0.75 } });
           }
+          // Dark footer bar
+          slide.addShape(pptx.ShapeType.rect, { x: 0, y: SLIDE_H - FOOTER_H, w: SLIDE_W, h: FOOTER_H, fill: { color: '0A1929' } });
+          slide.addText('P E N S U M   A S S E T   M A N A G E M E N T', {
+            x: MARGIN, y: SLIDE_H - FOOTER_H + 0.02, w: CONTENT_W / 2, h: FOOTER_H - 0.04,
+            fontSize: 7, color: '6B8CAA', fontFace: 'Arial',
+            align: 'left', valign: 'middle', charSpacing: 3,
+          });
           continue;
         }
 
