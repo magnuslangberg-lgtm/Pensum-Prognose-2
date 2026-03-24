@@ -83,6 +83,7 @@ export default function PensumPrognoseModell() {
   const [fondVekter, setFondVekter] = useState({}); // { isin: vekt } for konkurranseportefølje
   const [visKonkurrentPortefolje, setVisKonkurrentPortefolje] = useState(false);
   const [skjulEnkeltfond, setSkjulEnkeltfond] = useState(false); // skjul individuelle fond-linjer
+  const [slaSammenPortefoljer, setSlaSammenPortefoljer] = useState(false); // merge eks + ekstern → Nåværende portefølje
   const [visFondssammenligning, setVisFondssammenligning] = useState(false); // collapsible external fund search
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [visSamletPortefolje, setVisSamletPortefolje] = useState(false); // Pensum + eksisterende sammenslått
@@ -1825,7 +1826,8 @@ export default function PensumPrognoseModell() {
         const sumFond = eksFond.reduce((s, f) => s + f.belop, 0);
         const sumAksjer = eksAksjer.reduce((s, a) => s + a.belop, 0);
         const eksTotal = sumFond + sumAksjer + eksKontanter;
-        if (eksTotal <= 0) return null;
+        // Vis modulen selv om eksisterende portefølje ikke har beløp — viser da Pensum-delen alene
+        const harEksisterendeData = eksTotal > 0;
 
         // Vektede nøkkeltall for eksisterende portefølje (kun fond med data)
         const fondMedData = eksFond.filter(f => f.matchet && f.belop > 0);
@@ -1922,9 +1924,9 @@ export default function PensumPrognoseModell() {
             </h2>
 
             {/* Side-ved-side nøkkeltall */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className={harEksisterendeData ? "grid grid-cols-2 gap-6 mb-6" : "grid grid-cols-1 gap-6 mb-6 max-w-md"}>
               {/* Eksisterende */}
-              <div className="rounded-xl border-2 p-5" style={{ borderColor: '#94A3B8' }}>
+              {harEksisterendeData && <div className="rounded-xl border-2 p-5" style={{ borderColor: '#94A3B8' }}>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#94A3B8' }}></div>
                   <h3 className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende portefølje{eksisterendePortefolje.kilde ? ` — ${eksisterendePortefolje.kilde}` : ''}</h3>
@@ -1941,7 +1943,7 @@ export default function PensumPrognoseModell() {
                     <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
                   </div>
                 </div>
-              </div>
+              </div>}
 
               {/* Pensum-forslaget */}
               <div className="rounded-xl border-2 p-5" style={{ borderColor: PENSUM_COLORS.teal }}>
@@ -6587,13 +6589,13 @@ export default function PensumPrognoseModell() {
               });
               if (filtrert.length > 1) {
                 const startV = filtrert[0].verdi;
-                serieMap['Konkurrentportefølje'] = filtrert.map(d => ({
+                serieMap['Ekstern portefølje'] = filtrert.map(d => ({
                   dato: d.dato,
                   indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
                 }));
               } else if (rawSerie.length > 1) {
                 const startV = rawSerie[0].verdi;
-                serieMap['Konkurrentportefølje'] = rawSerie.map(d => ({
+                serieMap['Ekstern portefølje'] = rawSerie.map(d => ({
                   dato: d.dato,
                   indeksert: startV > 0 ? parseFloat((((d.verdi / startV) - 1) * 100).toFixed(2)) : 0
                 }));
@@ -6639,6 +6641,36 @@ export default function PensumPrognoseModell() {
               }
             }
 
+            // Slå sammen eksisterende + ekstern → "Nåværende portefølje"
+            if (slaSammenPortefoljer && serieMap['Eksisterende portefølje'] && serieMap['Ekstern portefølje']) {
+              const eksMap = {}; serieMap['Eksisterende portefølje'].forEach(p => { eksMap[p.dato] = p.indeksert; });
+              const extMap = {}; serieMap['Ekstern portefølje'].forEach(p => { extMap[p.dato] = p.indeksert; });
+              const eksBelop2 = eksTotalBelop;
+              const extBelop = valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0); // bruker vekter som proxy-beløp
+              // Normaliser: eks bruker faktisk beløp, ekstern bruker vekter som andel av et tilsvarende beløp
+              const extNormBelop = eksBelop2; // anta lik størrelse så vektene bestemmer
+              const totBelop = eksBelop2 + extNormBelop;
+              const eksVekt = eksBelop2 / totBelop;
+              const extVekt = extNormBelop / totBelop;
+              const alleDatoer = new Set([...Object.keys(eksMap), ...Object.keys(extMap)]);
+              const sammenslatt = [];
+              Array.from(alleDatoer).sort().forEach(dato => {
+                const eVal = eksMap[dato]; const xVal = extMap[dato];
+                if (eVal !== undefined && xVal !== undefined) {
+                  sammenslatt.push({ dato, indeksert: parseFloat((eVal * eksVekt + xVal * extVekt).toFixed(2)) });
+                } else if (eVal !== undefined) {
+                  sammenslatt.push({ dato, indeksert: eVal });
+                } else if (xVal !== undefined) {
+                  sammenslatt.push({ dato, indeksert: xVal });
+                }
+              });
+              if (sammenslatt.length > 0) {
+                serieMap['Nåværende portefølje'] = sammenslatt;
+                delete serieMap['Eksisterende portefølje'];
+                delete serieMap['Ekstern portefølje'];
+              }
+            }
+
             // Samlet portefølje — vektet gjennomsnitt av alle aktive porteføljer
             if (visSamletPortefolje) {
               const deler = []; // { serie: Map<dato, indeksert>, belop }
@@ -6651,8 +6683,8 @@ export default function PensumPrognoseModell() {
                 const eksBelop = eksFondMedData.reduce((s, f) => s + f.belop, 0) + eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0) + eksisterendePortefolje.kontanter;
                 deler.push({ map: m, belop: eksBelop });
               }
-              if (serieMap['Konkurrentportefølje']) {
-                const m = {}; serieMap['Konkurrentportefølje'].forEach(p => { m[p.dato] = p.indeksert; });
+              if (serieMap['Ekstern portefølje']) {
+                const m = {}; serieMap['Ekstern portefølje'].forEach(p => { m[p.dato] = p.indeksert; });
                 deler.push({ map: m, belop: investertBelop || totalKapital });
               }
               if (deler.length >= 2) {
@@ -6694,18 +6726,21 @@ export default function PensumPrognoseModell() {
           const sammenligningsData = byggSammenligningsdata();
           // Build list of all series names for chart
           const visbareFondNavn = (valgteFond.length > 0 && !skjulEnkeltfond) ? valgteFond.map(f => f.n) : [];
-          const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
-          const eksNavn = harEksisterendePortefoljeChart && visEksisterendeIChart ? ['Eksisterende portefølje'] : [];
-          const antallAktivePortefoljer = [visPortefoljeScen, harEksisterendePortefoljeChart && visEksisterendeIChart, harKonkurrentPortefolje].filter(Boolean).length;
+          const erSammenslatt = slaSammenPortefoljer && harEksisterendePortefoljeChart && visEksisterendeIChart && harKonkurrentPortefolje;
+          const konkNavn = harKonkurrentPortefolje && !erSammenslatt ? ['Ekstern portefølje'] : [];
+          const eksNavn = harEksisterendePortefoljeChart && visEksisterendeIChart && !erSammenslatt ? ['Eksisterende portefølje'] : [];
+          const sammenslattNavn = erSammenslatt ? ['Nåværende portefølje'] : [];
+          const antallAktivePortefoljer = [visPortefoljeScen, (harEksisterendePortefoljeChart && visEksisterendeIChart) || erSammenslatt, harKonkurrentPortefolje && !erSammenslatt].filter(Boolean).length + (erSammenslatt ? 1 : 0);
           const samletNavn = visSamletPortefolje && antallAktivePortefoljer >= 2 ? ['Samlet portefølje'] : [];
-          const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Pensum-forslaget'] : []), ...eksNavn, ...samletNavn, ...valgtePensumScen, ...valgteIndekserScen, ...visbareFondNavn, ...konkNavn];
+          const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Pensum-forslaget'] : []), ...eksNavn, ...sammenslattNavn, ...samletNavn, ...valgtePensumScen, ...valgteIndekserScen, ...visbareFondNavn, ...konkNavn];
 
           // Color function for merged chart
           const getLineFarge = (name) => {
             if (name === 'Pensum-forslaget') return PENSUM_COLORS.navy;
             if (name === 'Eksisterende portefølje') return '#D97706';
+            if (name === 'Nåværende portefølje') return '#D97706';
             if (name === 'Samlet portefølje') return '#7C3AED';
-            if (name === 'Konkurrentportefølje') return '#059669';
+            if (name === 'Ekstern portefølje') return '#059669';
             const pensumCfg = PENSUM_SCEN_CONFIG.find(c => c.label === name);
             if (pensumCfg) return PENSUM_AARLIG[name]?.farge || '#333';
             const indeksCfg = INDEKS_CONFIG[name];
@@ -6858,7 +6893,23 @@ export default function PensumPrognoseModell() {
               const periodeKeys = ['r1m', 'r3m', 'r6m', 'rytd', 'r1y', 'r3y', 'r5y', 'r10y'];
               data.forEach((punkt, i) => {
                 const avk = beregnKonkurrentAvk(periodeKeys[i]);
-                if (avk !== null) punkt['Konkurrentportefølje'] = avk;
+                if (avk !== null) punkt['Ekstern portefølje'] = avk;
+              });
+            }
+            // Slå sammen eks + ekstern → Nåværende i bar chart
+            if (erSammenslatt) {
+              data.forEach(punkt => {
+                const eksV = punkt['Eksisterende portefølje'];
+                const extV = punkt['Ekstern portefølje'];
+                if (eksV != null && extV != null) {
+                  punkt['Nåværende portefølje'] = parseFloat(((eksV + extV) / 2).toFixed(2));
+                } else if (eksV != null) {
+                  punkt['Nåværende portefølje'] = eksV;
+                } else if (extV != null) {
+                  punkt['Nåværende portefølje'] = extV;
+                }
+                delete punkt['Eksisterende portefølje'];
+                delete punkt['Ekstern portefølje'];
               });
             }
             // Samlet portefølje — vektet gjennomsnitt av aktive porteføljer
@@ -6868,11 +6919,12 @@ export default function PensumPrognoseModell() {
                 if (punkt['Pensum-forslaget'] != null && harPortefolje) {
                   deler.push({ avk: punkt['Pensum-forslaget'], belop: investertBelop || totalKapital });
                 }
-                if (punkt['Eksisterende portefølje'] != null && harEksisterendePortefoljeChart && visEksisterendeIChart) {
-                  deler.push({ avk: punkt['Eksisterende portefølje'], belop: eksTotalBelop });
+                const eksKey = erSammenslatt ? 'Nåværende portefølje' : 'Eksisterende portefølje';
+                if (punkt[eksKey] != null && (harEksisterendePortefoljeChart && visEksisterendeIChart || erSammenslatt)) {
+                  deler.push({ avk: punkt[eksKey], belop: eksTotalBelop });
                 }
-                if (punkt['Konkurrentportefølje'] != null && harKonkurrentPortefolje) {
-                  deler.push({ avk: punkt['Konkurrentportefølje'], belop: investertBelop || totalKapital });
+                if (!erSammenslatt && punkt['Ekstern portefølje'] != null && harKonkurrentPortefolje) {
+                  deler.push({ avk: punkt['Ekstern portefølje'], belop: investertBelop || totalKapital });
                 }
                 if (deler.length >= 2) {
                   const totalBelop = deler.reduce((s, d) => s + d.belop, 0);
@@ -6940,7 +6992,7 @@ export default function PensumPrognoseModell() {
                     harV = true;
                   }
                 });
-                if (harV) punkt['Konkurrentportefølje'] = parseFloat(vektet.toFixed(2));
+                if (harV) punkt['Ekstern portefølje'] = parseFloat(vektet.toFixed(2));
               });
             }
             // Eksisterende portefølje årlig avkastning
@@ -6958,6 +7010,22 @@ export default function PensumPrognoseModell() {
                 if (harV) punkt['Eksisterende portefølje'] = parseFloat(vektet.toFixed(2));
               });
             }
+            // Slå sammen eks + ekstern → Nåværende i kalenderår
+            if (erSammenslatt) {
+              data.forEach(punkt => {
+                const eksV = punkt['Eksisterende portefølje'];
+                const extV = punkt['Ekstern portefølje'];
+                if (eksV != null && extV != null) {
+                  punkt['Nåværende portefølje'] = parseFloat(((eksV + extV) / 2).toFixed(2));
+                } else if (eksV != null) {
+                  punkt['Nåværende portefølje'] = eksV;
+                } else if (extV != null) {
+                  punkt['Nåværende portefølje'] = extV;
+                }
+                delete punkt['Eksisterende portefølje'];
+                delete punkt['Ekstern portefølje'];
+              });
+            }
             // Samlet portefølje — vektet gjennomsnitt kalenderår
             if (visSamletPortefolje && antallAktivePortefoljerTab >= 2) {
               data.forEach(punkt => {
@@ -6965,11 +7033,12 @@ export default function PensumPrognoseModell() {
                 if (punkt['Pensum-forslaget'] != null && harPortefolje) {
                   deler.push({ avk: punkt['Pensum-forslaget'], belop: investertBelop || totalKapital });
                 }
-                if (punkt['Eksisterende portefølje'] != null && harEksisterendePortefoljeChart && visEksisterendeIChart) {
-                  deler.push({ avk: punkt['Eksisterende portefølje'], belop: eksTotalBelop });
+                const eksKey2 = erSammenslatt ? 'Nåværende portefølje' : 'Eksisterende portefølje';
+                if (punkt[eksKey2] != null && (harEksisterendePortefoljeChart && visEksisterendeIChart || erSammenslatt)) {
+                  deler.push({ avk: punkt[eksKey2], belop: eksTotalBelop });
                 }
-                if (punkt['Konkurrentportefølje'] != null && harKonkurrentPortefolje) {
-                  deler.push({ avk: punkt['Konkurrentportefølje'], belop: investertBelop || totalKapital });
+                if (!erSammenslatt && punkt['Ekstern portefølje'] != null && harKonkurrentPortefolje) {
+                  deler.push({ avk: punkt['Ekstern portefølje'], belop: investertBelop || totalKapital });
                 }
                 if (deler.length >= 2) {
                   const totalBelop = deler.reduce((s, d) => s + d.belop, 0);
@@ -7048,7 +7117,7 @@ export default function PensumPrognoseModell() {
               const punkt = { sektor: s.label };
               if (pensumSektorer?.[s.key]) punkt['Pensum-forslaget'] = parseFloat(pensumSektorer[s.key].toFixed(1));
               if (eksSektorer?.[s.key]) punkt['Eksisterende portefølje'] = parseFloat(eksSektorer[s.key].toFixed(1));
-              if (konkSektorer?.[s.key]) punkt['Konkurrentportefølje'] = parseFloat(konkSektorer[s.key].toFixed(1));
+              if (konkSektorer?.[s.key]) punkt['Ekstern portefølje'] = parseFloat(konkSektorer[s.key].toFixed(1));
               fondMedSektordata.forEach(f => {
                 const val = f[s.key];
                 if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
@@ -7058,7 +7127,7 @@ export default function PensumPrognoseModell() {
                 const deler = [];
                 if (punkt['Pensum-forslaget'] != null && harPortefolje) deler.push({ v: punkt['Pensum-forslaget'], b: investertBelop || totalKapital });
                 if (punkt['Eksisterende portefølje'] != null && harEksisterendePortefoljeChart && visEksisterendeIChart) deler.push({ v: punkt['Eksisterende portefølje'], b: eksTotalBelop });
-                if (punkt['Konkurrentportefølje'] != null && harKonkurrentPortefolje) deler.push({ v: punkt['Konkurrentportefølje'], b: investertBelop || totalKapital });
+                if (punkt['Ekstern portefølje'] != null && harKonkurrentPortefolje) deler.push({ v: punkt['Ekstern portefølje'], b: investertBelop || totalKapital });
                 if (deler.length >= 2) {
                   const tot = deler.reduce((s, d) => s + d.b, 0);
                   punkt['Samlet portefølje'] = parseFloat((deler.reduce((s, d) => s + d.v * (d.b / tot), 0)).toFixed(1));
@@ -7095,7 +7164,7 @@ export default function PensumPrognoseModell() {
               const punkt = { region: r.label };
               if (pensumRegioner?.[r.key]) punkt['Pensum-forslaget'] = parseFloat(pensumRegioner[r.key].toFixed(1));
               if (eksRegioner?.[r.key]) punkt['Eksisterende portefølje'] = parseFloat(eksRegioner[r.key].toFixed(1));
-              if (konkRegioner?.[r.key]) punkt['Konkurrentportefølje'] = parseFloat(konkRegioner[r.key].toFixed(1));
+              if (konkRegioner?.[r.key]) punkt['Ekstern portefølje'] = parseFloat(konkRegioner[r.key].toFixed(1));
               fondMedRegiondata.forEach(f => {
                 const val = f[r.key];
                 if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
@@ -7105,7 +7174,7 @@ export default function PensumPrognoseModell() {
                 const deler = [];
                 if (punkt['Pensum-forslaget'] != null && harPortefolje) deler.push({ v: punkt['Pensum-forslaget'], b: investertBelop || totalKapital });
                 if (punkt['Eksisterende portefølje'] != null && harEksisterendePortefoljeChart && visEksisterendeIChart) deler.push({ v: punkt['Eksisterende portefølje'], b: eksTotalBelop });
-                if (punkt['Konkurrentportefølje'] != null && harKonkurrentPortefolje) deler.push({ v: punkt['Konkurrentportefølje'], b: investertBelop || totalKapital });
+                if (punkt['Ekstern portefølje'] != null && harKonkurrentPortefolje) deler.push({ v: punkt['Ekstern portefølje'], b: investertBelop || totalKapital });
                 if (deler.length >= 2) {
                   const tot = deler.reduce((s, d) => s + d.b, 0);
                   punkt['Samlet portefølje'] = parseFloat((deler.reduce((s, d) => s + d.v * (d.b / tot), 0)).toFixed(1));
@@ -7120,17 +7189,20 @@ export default function PensumPrognoseModell() {
           const pensumNavn = pensumValgte.map(p => p.navn);
           const portNavn = harPortefolje ? ['Pensum-forslaget'] : [];
           const eksNavnTab = harEksisterendePortefoljeChart && visEksisterendeIChart ? ['Eksisterende portefølje'] : [];
-          const konkNavnTab = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
-          const antallAktivePortefoljerTab = [harPortefolje, harEksisterendePortefoljeChart && visEksisterendeIChart, harKonkurrentPortefolje].filter(Boolean).length;
+          const konkNavnTab = harKonkurrentPortefolje && !erSammenslatt ? ['Ekstern portefølje'] : [];
+          const eksNavnTab2 = harEksisterendePortefoljeChart && visEksisterendeIChart && !erSammenslatt ? ['Eksisterende portefølje'] : [];
+          const sammenslattNavnTab = erSammenslatt ? ['Nåværende portefølje'] : [];
+          const antallAktivePortefoljerTab = [harPortefolje, (harEksisterendePortefoljeChart && visEksisterendeIChart) || erSammenslatt, harKonkurrentPortefolje && !erSammenslatt].filter(Boolean).length + (erSammenslatt ? 1 : 0);
           const samletNavnTab = visSamletPortefolje && antallAktivePortefoljerTab >= 2 ? ['Samlet portefølje'] : [];
           const visbareFondNavnTab = skjulEnkeltfond && (harKonkurrentPortefolje || harEksisterendePortefoljeChart) ? [] : fondNavn;
           const indeksNavnTab = [...valgteIndekserScen];
-          const alleSerieNavnTab = [...portNavn, ...eksNavnTab, ...samletNavnTab, ...pensumNavn, ...indeksNavnTab, ...visbareFondNavnTab, ...konkNavnTab];
+          const alleSerieNavnTab = [...portNavn, ...eksNavnTab2, ...sammenslattNavnTab, ...samletNavnTab, ...pensumNavn, ...indeksNavnTab, ...visbareFondNavnTab, ...konkNavnTab];
           const getSerieColor = (name, idx) => {
             if (name === 'Pensum-forslaget') return PENSUM_COLORS.navy;
             if (name === 'Eksisterende portefølje') return '#D97706';
+            if (name === 'Nåværende portefølje') return '#D97706';
             if (name === 'Samlet portefølje') return '#7C3AED';
-            if (name === 'Konkurrentportefølje') return '#059669';
+            if (name === 'Ekstern portefølje') return '#059669';
             const pensumMatch = pensumValgte.find(p => p.navn === name);
             if (pensumMatch) return pensumMatch.farge;
             const indeksCfgTab = INDEKS_CONFIG[name];
@@ -7251,7 +7323,7 @@ export default function PensumPrognoseModell() {
                         className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visKonkurrentPortefolje ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
                         style={visKonkurrentPortefolje ? { backgroundColor: '#059669', borderColor: '#059669' } : { color: '#059669' }}>
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visKonkurrentPortefolje ? 'white' : '#059669' }}></span>
-                        Manuell portefølje
+                        Ekstern portefølje
                       </button>
                     )}
                     {/* Samlet portefølje — vises når minst 2 porteføljer er aktive */}
@@ -7448,12 +7520,24 @@ export default function PensumPrognoseModell() {
                               </div>
                             )}
 
-                            {/* Bygg manuell portefølje — sett vekter på fond */}
+                            {/* Slå sammen eksisterende + ekstern → Nåværende portefølje */}
+                            {harEksisterendePortefoljeChart && harKonkurrentPortefolje && (
+                              <label className="flex items-center gap-2.5 p-3 rounded-lg border border-purple-200 bg-purple-50/50 cursor-pointer hover:bg-purple-50">
+                                <input type="checkbox" checked={slaSammenPortefoljer} onChange={e => setSlaSammenPortefoljer(e.target.checked)}
+                                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                <div>
+                                  <span className="text-xs font-semibold text-purple-700">Slå sammen til «Nåværende portefølje»</span>
+                                  <p className="text-[10px] text-gray-500 mt-0.5">Kombinerer eksisterende fond og eksterne fond til én felles porteføljelinje</p>
+                                </div>
+                              </label>
+                            )}
+
+                            {/* Bygg ekstern portefølje — sett vekter på fond */}
                             {valgteFond.length > 0 && (
                               <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50">
                                 <div className="flex items-center justify-between mb-3">
                                   <div>
-                                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#059669' }}>Bygg manuell portefølje</div>
+                                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#059669' }}>Bygg ekstern portefølje</div>
                                     <p className="text-xs text-gray-500 mt-0.5">Sett vekter på fondene over for å bygge en sammenligningsportefølje</p>
                                   </div>
                                   <button
@@ -7549,7 +7633,7 @@ export default function PensumPrognoseModell() {
                         {alleSammenligningsNavn.map(n => {
                           const erPortefolje = n === 'Pensum-forslaget' || n === 'Samlet portefølje';
                           const erEks = n === 'Eksisterende portefølje';
-                          const erKonk = n === 'Konkurrentportefølje';
+                          const erKonk = n === 'Ekstern portefølje';
                           const erIndeks = !!REFERANSE_DATA[n];
                           const farge = getLineFarge(n);
                           return (
