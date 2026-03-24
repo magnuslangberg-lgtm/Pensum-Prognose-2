@@ -86,6 +86,7 @@ export default function PensumPrognoseModell() {
   const [visFondssammenligning, setVisFondssammenligning] = useState(false); // collapsible external fund search
   const [fondSammenligningVisning, setFondSammenligningVisning] = useState('avkastning');
   const [visSamletPortefolje, setVisSamletPortefolje] = useState(false); // Pensum + eksisterende sammenslått
+  const [visEksisterendeIChart, setVisEksisterendeIChart] = useState(true); // toggle eksisterende i chart
 
   // ── Eksisterende portefølje (kundens nåværende investeringer) ──
   const [eksisterendePortefolje, setEksisterendePortefolje] = useState({
@@ -6515,8 +6516,8 @@ export default function PensumPrognoseModell() {
           // Build list of all series names for chart
           const visbareFondNavn = (valgteFond.length > 0 && !skjulEnkeltfond) ? valgteFond.map(f => f.n) : [];
           const konkNavn = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
-          const eksNavn = harEksisterendePortefoljeChart ? ['Eksisterende portefølje'] : [];
-          const samletNavn = visSamletPortefolje && harEksisterendePortefoljeChart && visPortefoljeScen ? ['Samlet portefølje'] : [];
+          const eksNavn = harEksisterendePortefoljeChart && visEksisterendeIChart ? ['Eksisterende portefølje'] : [];
+          const samletNavn = visSamletPortefolje && harEksisterendePortefoljeChart && visEksisterendeIChart && visPortefoljeScen ? ['Samlet portefølje'] : [];
           const alleSammenligningsNavn = [...(visPortefoljeScen ? ['Pensum-forslaget'] : []), ...eksNavn, ...samletNavn, ...valgtePensumScen, ...valgteIndekserScen, ...visbareFondNavn, ...konkNavn];
 
           // Color function for merged chart
@@ -6524,7 +6525,7 @@ export default function PensumPrognoseModell() {
             if (name === 'Pensum-forslaget') return PENSUM_COLORS.navy;
             if (name === 'Eksisterende portefølje') return '#D97706';
             if (name === 'Samlet portefølje') return '#7C3AED';
-            if (name === 'Konkurrentportefølje') return '#D97706';
+            if (name === 'Konkurrentportefølje') return '#059669';
             const pensumCfg = PENSUM_SCEN_CONFIG.find(c => c.label === name);
             if (pensumCfg) return PENSUM_AARLIG[name]?.farge || '#333';
             const indeksCfg = INDEKS_CONFIG[name];
@@ -6858,7 +6859,7 @@ export default function PensumPrognoseModell() {
           const fondNavn = valgteFond.map(f => f.n);
           const pensumNavn = pensumValgte.map(p => p.navn);
           const portNavn = harPortefolje ? ['Pensum-forslaget'] : [];
-          const eksNavnTab = harEksisterendePortefoljeChart ? ['Eksisterende portefølje'] : [];
+          const eksNavnTab = harEksisterendePortefoljeChart && visEksisterendeIChart ? ['Eksisterende portefølje'] : [];
           const konkNavnTab = harKonkurrentPortefolje ? ['Konkurrentportefølje'] : [];
           const visbareFondNavnTab = skjulEnkeltfond && (harKonkurrentPortefolje || harEksisterendePortefoljeChart) ? [] : fondNavn;
           const indeksNavnTab = [...valgteIndekserScen];
@@ -6867,7 +6868,7 @@ export default function PensumPrognoseModell() {
             if (name === 'Pensum-forslaget') return PENSUM_COLORS.navy;
             if (name === 'Eksisterende portefølje') return '#D97706';
             if (name === 'Samlet portefølje') return '#7C3AED';
-            if (name === 'Konkurrentportefølje') return '#D97706';
+            if (name === 'Konkurrentportefølje') return '#059669';
             const pensumMatch = pensumValgte.find(p => p.navn === name);
             if (pensumMatch) return pensumMatch.farge;
             const indeksCfgTab = INDEKS_CONFIG[name];
@@ -6975,14 +6976,23 @@ export default function PensumPrognoseModell() {
                     </button>
                     {harEksisterendePortefoljeChart && (
                       <button
-                        onClick={() => {/* alltid synlig når data finnes */}}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 text-white border-transparent"
-                        style={{ backgroundColor: '#D97706', borderColor: '#D97706' }}>
-                        <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
+                        onClick={() => setVisEksisterendeIChart(prev => !prev)}
+                        className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visEksisterendeIChart ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
+                        style={visEksisterendeIChart ? { backgroundColor: '#D97706', borderColor: '#D97706' } : { color: '#D97706' }}>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visEksisterendeIChart ? 'white' : '#D97706' }}></span>
                         Eksisterende portefølje
                       </button>
                     )}
-                    {harEksisterendePortefoljeChart && visPortefoljeScen && (
+                    {valgteFond.some(f => (fondVekter[f.isin] || 0) > 0) && (
+                      <button
+                        onClick={() => setVisKonkurrentPortefolje(prev => !prev)}
+                        className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visKonkurrentPortefolje ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
+                        style={visKonkurrentPortefolje ? { backgroundColor: '#059669', borderColor: '#059669' } : { color: '#059669' }}>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: visKonkurrentPortefolje ? 'white' : '#059669' }}></span>
+                        Manuell portefølje
+                      </button>
+                    )}
+                    {harEksisterendePortefoljeChart && visEksisterendeIChart && visPortefoljeScen && (
                       <button
                         onClick={() => setVisSamletPortefolje(prev => !prev)}
                         className={"flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all " + (visSamletPortefolje ? "text-white border-transparent" : "bg-white border-gray-200 hover:border-gray-400")}
@@ -7172,13 +7182,68 @@ export default function PensumPrognoseModell() {
                                     <span style={{ color: '#D97706' }}>{formatCurrency(eksTotalBelop)}</span>
                                   </div>
                                 </div>
-                                <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                                  <input type="checkbox" checked={skjulEnkeltfond} onChange={e => setSkjulEnkeltfond(e.target.checked)}
-                                    className="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
-                                  <span className="text-xs text-gray-600">Skjul enkeltfond i grafene (vis kun porteføljene)</span>
-                                </label>
                               </div>
                             )}
+
+                            {/* Bygg manuell portefølje — sett vekter på fond */}
+                            {valgteFond.length > 0 && (
+                              <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#059669' }}>Bygg manuell portefølje</div>
+                                    <p className="text-xs text-gray-500 mt-0.5">Sett vekter på fondene over for å bygge en sammenligningsportefølje</p>
+                                  </div>
+                                  <button
+                                    onClick={() => setVisKonkurrentPortefolje(prev => !prev)}
+                                    className={"px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all " + (visKonkurrentPortefolje ? "text-white border-transparent" : "border-emerald-300 hover:border-emerald-500")}
+                                    style={visKonkurrentPortefolje ? { backgroundColor: '#059669', borderColor: '#059669' } : { color: '#059669' }}>
+                                    {visKonkurrentPortefolje ? '✓ Aktiv' : 'Aktiver'}
+                                  </button>
+                                </div>
+                                {visKonkurrentPortefolje && (
+                                  <div className="space-y-2">
+                                    {valgteFond.map((f, i) => (
+                                      <div key={f.isin} className="flex items-center gap-3">
+                                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: FOND_FARGER[i % FOND_FARGER.length] }}></span>
+                                        <span className="text-xs text-gray-700 flex-1 truncate">{f.n}</span>
+                                        <div className="flex items-center gap-1">
+                                          <input
+                                            type="number" min="0" max="100" step="5"
+                                            value={fondVekter[f.isin] || ''}
+                                            onChange={e => setFondVekter(prev => ({ ...prev, [f.isin]: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                                            placeholder="0"
+                                            className="w-16 px-2 py-1 text-xs text-right border border-gray-200 rounded focus:ring-1 focus:ring-emerald-300 focus:border-emerald-400 outline-none"
+                                          />
+                                          <span className="text-xs text-gray-400">%</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="flex items-center justify-between pt-2 border-t border-emerald-200">
+                                      <span className="text-xs font-semibold text-gray-600">Total vekt:</span>
+                                      <span className={"text-xs font-bold " + (Math.abs(valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0) - 100) < 1 ? 'text-green-600' : 'text-amber-600')}>
+                                        {valgteFond.reduce((s, f) => s + (fondVekter[f.isin] || 0), 0)}%
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        const perFond = Math.round(100 / valgteFond.length);
+                                        const nyeVekter = {};
+                                        valgteFond.forEach((f, i) => { nyeVekter[f.isin] = i === valgteFond.length - 1 ? 100 - perFond * (valgteFond.length - 1) : perFond; });
+                                        setFondVekter(nyeVekter);
+                                      }}
+                                      className="text-xs text-emerald-700 hover:text-emerald-900 underline">
+                                      Fordel likt
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={skjulEnkeltfond} onChange={e => setSkjulEnkeltfond(e.target.checked)}
+                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                              <span className="text-xs text-gray-600">Skjul enkeltfond i grafene (vis kun porteføljene)</span>
+                            </label>
                           </div>
                         )}
 
