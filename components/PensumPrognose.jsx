@@ -74,6 +74,7 @@ export default function PensumPrognoseModell() {
   const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
   const [fondSok, setFondSok] = useState('');
   const [fondSokDebounced, setFondSokDebounced] = useState('');
+  const [fondSokResultater, setFondSokResultater] = useState([]);
   const fondSokTimerRef = useRef(null);
   const [fondKategoriFilter, setFondKategoriFilter] = useState('');
   const [valgteFond, setValgteFond] = useState([]);
@@ -297,13 +298,16 @@ export default function PensumPrognoseModell() {
   const [adminBrukere, setAdminBrukere] = useState(null);
   const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
 
-  // Debounce fond search to avoid lag on each keystroke
+  // Debounce fond search — compute results in timeout to avoid re-render of entire component
   const handleFondSokChange = useCallback((e) => {
     const val = e.target.value;
     setFondSok(val);
     if (fondSokTimerRef.current) clearTimeout(fondSokTimerRef.current);
-    fondSokTimerRef.current = setTimeout(() => setFondSokDebounced(val), 250);
-  }, []);
+    fondSokTimerRef.current = setTimeout(() => {
+      setFondSokDebounced(val);
+      setFondSokResultater(sokEksterneFondFuzzy(val, 50));
+    }, 200);
+  }, [sokEksterneFondFuzzy]);
 
   const storageGet = async (key) => {
     if (typeof window === 'undefined') return null;
@@ -6237,13 +6241,10 @@ export default function PensumPrognoseModell() {
           // Get unique categories for fond search
           const kategorier = eksterneFond ? [...new Set(eksterneFond.map(f => f.cat).filter(Boolean))].sort() : [];
 
-          // Filter and search funds
-          const sokLower = fondSokDebounced.toLowerCase().trim();
-          const filtrerteFond = eksterneFond ? eksterneFond.filter(f => {
-            if (fondKategoriFilter && f.cat !== fondKategoriFilter) return false;
-            if (sokLower.length < 2) return false;
-            return (f.n?.toLowerCase().includes(sokLower) || f.isin?.toLowerCase().includes(sokLower) || f.mgr?.toLowerCase().includes(sokLower));
-          }).slice(0, 50) : [];
+          // Filter pre-computed search results by category
+          const filtrerteFond = fondKategoriFilter
+            ? fondSokResultater.filter(f => f.cat === fondKategoriFilter)
+            : fondSokResultater;
 
           // Pensum products for comparison (used in secondary tabs)
           const pensumProdListe = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer];
