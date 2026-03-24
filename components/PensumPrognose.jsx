@@ -1826,8 +1826,20 @@ export default function PensumPrognoseModell() {
         const sumFond = eksFond.reduce((s, f) => s + f.belop, 0);
         const sumAksjer = eksAksjer.reduce((s, a) => s + a.belop, 0);
         const eksTotal = sumFond + sumAksjer + eksKontanter;
-        // Vis modulen selv om eksisterende portefølje ikke har beløp — viser da Pensum-delen alene
+
+        // Eksterne fond (fra sammenligningssiden) — inkluder i oversikten
+        const harEksterneFondRapport = visKonkurrentPortefolje && valgteFond.length > 0 && valgteFond.some(f => (fondVekter[f.isin] || 0) > 0);
+        const eksterneFondRapport = harEksterneFondRapport ? valgteFond.filter(f => (fondVekter[f.isin] || 0) > 0).map(f => ({
+          navn: f.n, isin: f.isin, kategori: f.cat || '',
+          vekt: fondVekter[f.isin] || 0,
+          avk1y: f.r1y, avk3y: f.r3y, avk5y: f.r5y,
+          volatilitet: f.sd3y,
+        })) : [];
+        const extTotalVekt = eksterneFondRapport.reduce((s, f) => s + f.vekt, 0) || 1;
+
+        // Vis modulen når eksisterende ELLER eksterne fond har data
         const harEksisterendeData = eksTotal > 0;
+        const harNoeNaaværendeData = harEksisterendeData || harEksterneFondRapport;
 
         // Vektede nøkkeltall for eksisterende portefølje (kun fond med data)
         const fondMedData = eksFond.filter(f => f.matchet && f.belop > 0);
@@ -1927,21 +1939,65 @@ export default function PensumPrognoseModell() {
           }
         }
 
+        // Nåværende nøkkeltall — kombiner eksisterende + eksterne fond
+        let naaVektetAvk1y = eksVektetAvk1y, naaVektetAvk3y = eksVektetAvk3y, naaVektetAvk5y = eksVektetAvk5y;
+        let naaVektetVol = eksVektetVolatilitet;
+        let naaAksjeAndel = eksAksjeAndel, naaRenteAndel = eksRenteAndel, naaKontantAndel = eksKontantAndel;
+        let naaTotal = eksTotal;
+        if (harEksterneFondRapport && !harEksisterendeData) {
+          // Bare eksterne fond — bruk dem som "nåværende"
+          let ea1 = 0, ea3 = 0, ea5 = 0, ev = 0, w1e = 0, w3e = 0, w5e = 0, wve = 0;
+          eksterneFondRapport.forEach(f => {
+            const w = f.vekt / extTotalVekt;
+            if (erGyldigTall(f.avk1y)) { ea1 += f.avk1y * w; w1e += w; }
+            if (erGyldigTall(f.avk3y)) { ea3 += f.avk3y * w; w3e += w; }
+            if (erGyldigTall(f.avk5y)) { ea5 += f.avk5y * w; w5e += w; }
+            if (erGyldigTall(f.volatilitet)) { ev += f.volatilitet * w; wve += w; }
+          });
+          naaVektetAvk1y = w1e > 0 ? ea1 / w1e : null;
+          naaVektetAvk3y = w3e > 0 ? ea3 / w3e : null;
+          naaVektetAvk5y = w5e > 0 ? ea5 / w5e : null;
+          naaVektetVol = wve > 0 ? ev / wve : null;
+          // Aksje/rente fordeling fra fondskategorier
+          let extAksje = 0, extRente = 0;
+          eksterneFondRapport.forEach(f => {
+            const cat = f.kategori?.toLowerCase() || '';
+            const w = f.vekt / extTotalVekt;
+            if (cat.includes('fixed income') || cat.includes('bond') || cat.includes('money market')) extRente += w;
+            else extAksje += w;
+          });
+          naaAksjeAndel = extAksje * 100;
+          naaRenteAndel = extRente * 100;
+          naaKontantAndel = 0;
+          naaTotal = 0; // Ingen beløp for eksterne
+        } else if (harEksterneFondRapport && harEksisterendeData) {
+          // Begge — vekt begge together
+          let ea1 = 0, ea3 = 0, ea5 = 0, ev = 0, w1e = 0, w3e = 0, w5e = 0, wve = 0;
+          eksterneFondRapport.forEach(f => {
+            const w = f.vekt / extTotalVekt;
+            if (erGyldigTall(f.avk1y)) { ea1 += f.avk1y * w; w1e += w; }
+            if (erGyldigTall(f.avk3y)) { ea3 += f.avk3y * w; w3e += w; }
+            if (erGyldigTall(f.avk5y)) { ea5 += f.avk5y * w; w5e += w; }
+            if (erGyldigTall(f.volatilitet)) { ev += f.volatilitet * w; wve += w; }
+          });
+          const extAvk1y = w1e > 0 ? ea1 / w1e : null;
+          const extAvk3y = w3e > 0 ? ea3 / w3e : null;
+          const extAvk5y = w5e > 0 ? ea5 / w5e : null;
+          // Snitt av eks og ekstern
+          if (extAvk1y != null && eksVektetAvk1y != null) naaVektetAvk1y = (eksVektetAvk1y + extAvk1y) / 2;
+          else if (extAvk1y != null) naaVektetAvk1y = extAvk1y;
+          if (extAvk3y != null && eksVektetAvk3y != null) naaVektetAvk3y = (eksVektetAvk3y + extAvk3y) / 2;
+          else if (extAvk3y != null) naaVektetAvk3y = extAvk3y;
+          if (extAvk5y != null && eksVektetAvk5y != null) naaVektetAvk5y = (eksVektetAvk5y + extAvk5y) / 2;
+          else if (extAvk5y != null) naaVektetAvk5y = extAvk5y;
+        }
+
         // Data for avkastnings-sammenligning bar chart
         const avkBarData = [
-          { periode: '1 år', eksisterende: eksVektetAvk1y, pensum: pensumVektetAvk1y },
-          { periode: '3 år p.a.', eksisterende: eksVektetAvk3y, pensum: pensumVektetAvk3y },
-          { periode: '5 år p.a.', eksisterende: eksVektetAvk5y, pensum: pensumVektetAvk5y },
+          { periode: '1 år', eksisterende: naaVektetAvk1y, pensum: pensumVektetAvk1y },
+          { periode: '3 år p.a.', eksisterende: naaVektetAvk3y, pensum: pensumVektetAvk3y },
+          { periode: '5 år p.a.', eksisterende: naaVektetAvk5y, pensum: pensumVektetAvk5y },
         ].filter(d => d.eksisterende != null || d.pensum != null);
-
-        // Eksterne fond (fra sammenligningssiden) — inkluder i oversikten
-        const harEksterneFondRapport = visKonkurrentPortefolje && valgteFond.length > 0 && valgteFond.some(f => (fondVekter[f.isin] || 0) > 0);
-        const eksterneFondRapport = harEksterneFondRapport ? valgteFond.filter(f => (fondVekter[f.isin] || 0) > 0).map(f => ({
-          navn: f.n, isin: f.isin, kategori: f.cat || '',
-          vekt: fondVekter[f.isin] || 0,
-          avk1y: f.r1y, avk3y: f.r3y, avk5y: f.r5y,
-          volatilitet: f.sd3y,
-        })) : [];
 
         // Sektor/region sammenligning
         const pensumSektorer = aggregertPensumEksponering?.sektorer || [];
@@ -1984,23 +2040,23 @@ export default function PensumPrognoseModell() {
             </h2>
 
             {/* Side-ved-side nøkkeltall */}
-            <div className={harEksisterendeData ? "grid grid-cols-2 gap-6 mb-6" : "grid grid-cols-1 gap-6 mb-6 max-w-md"}>
-              {/* Eksisterende */}
-              {harEksisterendeData && <div className="rounded-xl border-2 p-5" style={{ borderColor: '#94A3B8' }}>
+            <div className={harNoeNaaværendeData ? "grid grid-cols-2 gap-6 mb-6" : "grid grid-cols-1 gap-6 mb-6 max-w-md"}>
+              {/* Nåværende portefølje (eksisterende + eksterne fond) */}
+              {harNoeNaaværendeData && <div className="rounded-xl border-2 p-5" style={{ borderColor: '#94A3B8' }}>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#94A3B8' }}></div>
-                  <h3 className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende portefølje{eksisterendePortefolje.kilde ? ` — ${eksisterendePortefolje.kilde}` : ''}</h3>
+                  <h3 className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende portefølje{eksisterendePortefolje.kilde ? ` — ${eksisterendePortefolje.kilde}` : ''}{harEksterneFondRapport && !harEksisterendeData ? ' (ekstern)' : ''}</h3>
                 </div>
                 <div className="space-y-2.5">
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Total verdi</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(eksTotal)}</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Aksjeandel</span><span className="font-medium">{eksAksjeAndel.toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Renteandel</span><span className="font-medium">{eksRenteAndel.toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Kontantandel</span><span className="font-medium" style={{ color: eksKontantAndel > 20 ? '#DC2626' : undefined }}>{eksKontantAndel.toFixed(0)}%</span></div>
+                  {naaTotal > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Total verdi</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(naaTotal)}</span></div>}
+                  <div className="flex justify-between text-xs"><span className="text-gray-500">Aksjeandel</span><span className="font-medium">{naaAksjeAndel.toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-xs"><span className="text-gray-500">Renteandel</span><span className="font-medium">{naaRenteAndel.toFixed(0)}%</span></div>
+                  {naaKontantAndel > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Kontantandel</span><span className="font-medium" style={{ color: naaKontantAndel > 20 ? '#DC2626' : undefined }}>{naaKontantAndel.toFixed(0)}%</span></div>}
                   <div className="border-t pt-2 mt-1">
-                    <div className="flex justify-between text-xs"><span className="text-gray-500">Volatilitet (3 år)</span><span className="font-medium">{eksVektetVolatilitet != null ? eksVektetVolatilitet.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 1 år</span><span className="font-bold" style={{ color: avkFargeInline(eksVektetAvk1y) }}>{eksVektetAvk1y != null ? (eksVektetAvk1y >= 0 ? '+' : '') + eksVektetAvk1y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 3 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(eksVektetAvk3y) }}>{eksVektetAvk3y != null ? (eksVektetAvk3y >= 0 ? '+' : '') + eksVektetAvk3y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-gray-500">Volatilitet (3 år)</span><span className="font-medium">{naaVektetVol != null ? naaVektetVol.toFixed(1) + '%' : '—'}</span></div>
+                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 1 år</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk1y) }}>{naaVektetAvk1y != null ? (naaVektetAvk1y >= 0 ? '+' : '') + naaVektetAvk1y.toFixed(1) + '%' : '—'}</span></div>
+                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 3 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk3y) }}>{naaVektetAvk3y != null ? (naaVektetAvk3y >= 0 ? '+' : '') + naaVektetAvk3y.toFixed(1) + '%' : '—'}</span></div>
+                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk5y) }}>{naaVektetAvk5y != null ? (naaVektetAvk5y >= 0 ? '+' : '') + naaVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
                   </div>
                 </div>
               </div>}
@@ -2051,14 +2107,14 @@ export default function PensumPrognoseModell() {
 
             {/* Aktivafordeling visuell sammenligning */}
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <div>
+              {harNoeNaaværendeData && <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Nåværende</h4>
                 <div className="flex h-6 rounded-full overflow-hidden">
-                  {eksAksjeAndel > 0 && <div style={{ width: eksAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{eksAksjeAndel >= 10 ? 'Aksje ' + eksAksjeAndel.toFixed(0) + '%' : ''}</div>}
-                  {eksRenteAndel > 0 && <div style={{ width: eksRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[9px] font-medium">{eksRenteAndel >= 10 ? 'Rente ' + eksRenteAndel.toFixed(0) + '%' : ''}</div>}
-                  {eksKontantAndel > 0 && <div style={{ width: eksKontantAndel + '%', backgroundColor: '#CBD5E1' }} className="flex items-center justify-center text-gray-600 text-[9px] font-medium">{eksKontantAndel >= 10 ? 'Kont. ' + eksKontantAndel.toFixed(0) + '%' : ''}</div>}
+                  {naaAksjeAndel > 0 && <div style={{ width: naaAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{naaAksjeAndel >= 10 ? 'Aksje ' + naaAksjeAndel.toFixed(0) + '%' : ''}</div>}
+                  {naaRenteAndel > 0 && <div style={{ width: naaRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[9px] font-medium">{naaRenteAndel >= 10 ? 'Rente ' + naaRenteAndel.toFixed(0) + '%' : ''}</div>}
+                  {naaKontantAndel > 0 && <div style={{ width: naaKontantAndel + '%', backgroundColor: '#CBD5E1' }} className="flex items-center justify-center text-gray-600 text-[9px] font-medium">{naaKontantAndel >= 10 ? 'Kont. ' + naaKontantAndel.toFixed(0) + '%' : ''}</div>}
                 </div>
-              </div>
+              </div>}
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Pensum</h4>
                 <div className="flex h-6 rounded-full overflow-hidden">
