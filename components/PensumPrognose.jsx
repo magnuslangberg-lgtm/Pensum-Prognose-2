@@ -1309,10 +1309,7 @@ export default function PensumPrognoseModell() {
       case 'honorarstruktur':
         return (
           <div data-rapport-slide="honorarstruktur" className="space-y-5 page-break-before">
-            <div>
-              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-            </div>
+            <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
             <div className="rounded-lg p-4 text-sm text-gray-700 leading-relaxed" style={{ backgroundColor: '#F0F4F8' }}>
               Pensum ønsker å opptre som en transparent partner ovenfor sine kunder, også hva gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter og eventuelle returprovisjoner som vi mottar har uavkortet tilbake til våre kunder.
             </div>
@@ -2574,7 +2571,7 @@ export default function PensumPrognoseModell() {
         ...tilleggsmodulGruppe('etter-faktaark'),
         ...tilleggsmodulGruppe('foer-disclaimer'),
         { name: 'Hvordan tar vi oss betalt?', selectors: ['honorarstruktur'] },
-        { name: 'Neste steg', selectors: ['neste-steg'] },
+        { name: 'Neste steg', selectors: ['neste-steg'], darkBg: true },
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
@@ -2757,10 +2754,32 @@ export default function PensumPrognoseModell() {
             for (const card of chartCards) {
               // Skip the disclaimer note at the bottom (text-only, no chart)
               if (card.classList.contains('text-xs') && !card.querySelector('svg')) continue;
-              const imgData = await captureWithResize(card, 1300, { chartMinHeight: 400 });
+
+              // Determine slide title based on chart type
+              const chartType = card.getAttribute('data-chart-type');
+              let slideTitle = 'Historisk avkastning — benchmark';
+              if (chartType === 'drawdown') slideTitle = 'Risiko og nedsidebeskyttelse';
+
+              // Create a temporary wrapper with the title above the card
+              const titleEl = document.createElement('div');
+              titleEl.innerHTML = `<h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1.5rem;padding-bottom:0.75rem;border-bottom:2px solid ${PENSUM_COLORS.darkBlue};color:${PENSUM_COLORS.darkBlue};">${slideTitle}</h2>`;
+              const cardParent = card.parentNode;
+              cardParent.insertBefore(titleEl, card);
+
+              // Wrap title + card in a temporary container for capture
+              const wrapper = document.createElement('div');
+              cardParent.insertBefore(wrapper, titleEl);
+              wrapper.appendChild(titleEl);
+              wrapper.appendChild(card);
+
+              const imgData = await captureWithResize(wrapper, 1300, { chartMinHeight: 400 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
               addImageSlide(imgData, img.width / img.height, { centerV: true });
+
+              // Restore: move card back to original parent and remove wrapper/title
+              cardParent.insertBefore(card, wrapper);
+              wrapper.remove();
             }
           }
           continue;
@@ -2773,7 +2792,7 @@ export default function PensumPrognoseModell() {
         if (elements.length === 0) continue;
 
         // Cover slide: full-bleed dark background, no padding
-        if (group.cover) {
+        if (group.cover || group.darkBg) {
           const el = elements[0];
           const imgData = await captureElement(el, 1120, { bgColor: PENSUM_COLORS.darkBlue, noPadding: true });
           const img = new Image();
@@ -2781,6 +2800,10 @@ export default function PensumPrognoseModell() {
           const slide = pptx.addSlide();
           slide.background = { color: PENSUM_COLORS.darkBlue.replace('#', '') };
           slide.addImage({ data: imgData, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H, sizing: { type: 'contain', w: SLIDE_W, h: SLIDE_H } });
+          // Add white logo for dark background slides (except cover which has its own)
+          if (group.darkBg && logoImgData) {
+            slide.addImage({ data: logoImgData, x: SLIDE_W - 0.4 - 1.8, y: 0.15, w: 1.8, h: 0.75, sizing: { type: 'contain', w: 1.8, h: 0.75 } });
+          }
           continue;
         }
 
@@ -7571,6 +7594,29 @@ export default function PensumPrognoseModell() {
                           </tr>
                         ))}
                       </tbody>
+                      <tfoot>
+                        {(() => {
+                          const totalVekt = valgteProdukterRapport.reduce((s, p) => s + p.vekt, 0);
+                          const vektet1y = valgteProdukterRapport.reduce((s, p) => s + (erGyldigTall(p.stat1y?.totalAvkastning) ? p.vekt / 100 * p.stat1y.totalAvkastning : 0), 0);
+                          const har1y = valgteProdukterRapport.some(p => erGyldigTall(p.stat1y?.totalAvkastning));
+                          const vektet3y = valgteProdukterRapport.reduce((s, p) => s + (erGyldigTall(p.stat3y?.aarligAvkastning) ? p.vekt / 100 * p.stat3y.aarligAvkastning : 0), 0);
+                          const har3y = valgteProdukterRapport.some(p => erGyldigTall(p.stat3y?.aarligAvkastning));
+                          const vektet5y = valgteProdukterRapport.reduce((s, p) => s + (erGyldigTall(p.stat5y?.aarligAvkastning) ? p.vekt / 100 * p.stat5y.aarligAvkastning : 0), 0);
+                          const har5y = valgteProdukterRapport.some(p => erGyldigTall(p.stat5y?.aarligAvkastning));
+                          return (
+                            <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                              <td className="py-2.5 px-3 font-bold text-white text-xs">Portefølje (vektet)</td>
+                              <td className="py-2.5 px-2 text-center text-xs text-blue-200">{totalVekt.toFixed(1)}%</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har1y ? (vektet1y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')} style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{har1y ? (vektet1y >= 0 ? '+' : '') + vektet1y.toFixed(1) + '%' : '—'}</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har3y ? (vektet3y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har3y ? (vektet3y >= 0 ? '+' : '') + vektet3y.toFixed(1) + '%' : '—'}</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har5y ? (vektet5y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har5y ? (vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1) + '%' : '—'}</td>
+                              <td className="py-2.5 px-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}></td>
+                              <td className="py-2.5 px-2"></td>
+                              <td className="py-2.5 px-2"></td>
+                            </tr>
+                          );
+                        })()}
+                      </tfoot>
                     </table>
                   </div>
                   <div className="mt-2 text-[10px] text-gray-400">Avkastning beregnet fra månedlige indeksverdier per {RAPPORT_DATO}. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</div>
@@ -7846,7 +7892,7 @@ export default function PensumPrognoseModell() {
                           const { chartData, avkastninger } = buildRapSnapshotData(years);
                           if (chartData.length < 2) return null;
                           return (
-                            <div key={years} className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
+                            <div key={years} data-chart-type="performance" className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', background: 'linear-gradient(to bottom, #FAFBFC, #FFFFFF)' }}>
                               <div className="px-5 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
                                 <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Siste {label} — prosentvis avkastning</h4>
                               </div>
@@ -7895,7 +7941,7 @@ export default function PensumPrognoseModell() {
 
                         {/* Drawdown chart */}
                         {isStandardModulAktiv('snapshot-drawdown') && ddChartDataR.length >= 5 && (
-                          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
+                          <div data-chart-type="drawdown" className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                               <div>
                                 <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Risiko og nedsidebeskyttelse</h4>
@@ -7982,7 +8028,7 @@ export default function PensumPrognoseModell() {
 
                   return (
                     <div data-rapport-slide="eksponering">
-                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Hvor er pengene investert?</h2>
+                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Porteføljens eksponering</h2>
                       <p className="text-xs text-gray-500 mb-4">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[
