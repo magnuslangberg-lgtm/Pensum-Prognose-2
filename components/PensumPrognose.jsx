@@ -3615,9 +3615,9 @@ export default function PensumPrognoseModell() {
         <div style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
-              {['input', 'allokering', 'losninger', 'scenario', 'rapport'].map(tab => (
+              {['input', 'losninger', 'allokering', 'scenario', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'allokering' ? 'Prognoser' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'scenario' ? 'Historisk sammenligning' : 'Investeringsforslag'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Historisk sammenligning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -6761,12 +6761,47 @@ export default function PensumPrognoseModell() {
             return data;
           };
 
+          // Mapping fra Pensum-sektornavn til Morningstar-felt
+          const PENSUM_SEKTOR_MAP = { 'Technology': 'sTech', 'Financial Services': 'sFin', 'Healthcare': 'sHlt', 'Industrials': 'sInd', 'Consumer Cyclical': 'sCyc', 'Consumer Defensive': 'sDef', 'Energy': 'sEng', 'Communication Services': 'sComm', 'Basic Materials': 'sMat', 'Real Estate': 'sRE', 'Utilities': 'sUtil' };
+          const PENSUM_REGION_MAP = { 'United States': 'cUS', 'United Kingdom': 'cUK', 'Japan': 'cJP', 'Germany': 'cDE', 'France': 'cFR', 'Norway': 'cNO', 'Sweden': 'cSE', 'Denmark': 'cDK', 'China': 'cCN' };
+
+          // Beregn vektet Pensum-portefølje sektor/region fra produkteksponering
+          const beregnPensumVektetEksponering = (type) => {
+            const vektede = pensumAllokering.filter(a => a.vekt > 0);
+            if (vektede.length === 0) return null;
+            const totalVekt = vektede.reduce((s, a) => s + a.vekt, 0) || 1;
+            const samlet = {};
+            vektede.forEach(a => {
+              const eksp = produktEksponering?.[a.id];
+              const data = type === 'sektor' ? eksp?.sektorer : eksp?.regioner;
+              if (!data) return;
+              data.forEach(d => {
+                const msKey = type === 'sektor' ? PENSUM_SEKTOR_MAP[d.navn] : PENSUM_REGION_MAP[d.navn];
+                if (msKey) {
+                  samlet[msKey] = (samlet[msKey] || 0) + d.vekt * (a.vekt / totalVekt);
+                }
+              });
+            });
+            return Object.keys(samlet).length > 0 ? samlet : null;
+          };
+
+          // Beregn vektet eksisterende portefølje sektor/region fra Morningstar-data
+          const beregnEksisterendeEksponering = (keys) => {
+            if (!harEksisterendePortefoljeChart) return null;
+            const samlet = {};
+            eksFondMedData.forEach(ef => {
+              const ms = eksFondLookup[ef.isin];
+              if (!ms) return;
+              keys.forEach(k => {
+                if (ms[k] && ms[k] > 0) {
+                  samlet[k] = (samlet[k] || 0) + ms[k] * (ef.belop / eksTotalBelop);
+                }
+              });
+            });
+            return Object.keys(samlet).length > 0 ? samlet : null;
+          };
+
           const byggSektordata = () => {
-            // Filtrér kun fond som faktisk har sektordata
-            const fondMedSektordata = valgteFond.filter(f =>
-              f.sTech || f.sFin || f.sHlt || f.sInd || f.sCyc || f.sDef || f.sEng || f.sComm || f.sMat || f.sRE || f.sUtil
-            );
-            if (fondMedSektordata.length === 0) return [];
             const sektorer = [
               { key: 'sTech', label: 'Teknologi' }, { key: 'sFin', label: 'Finans' },
               { key: 'sHlt', label: 'Helse' }, { key: 'sInd', label: 'Industri' },
@@ -6775,8 +6810,16 @@ export default function PensumPrognoseModell() {
               { key: 'sMat', label: 'Materialer' }, { key: 'sRE', label: 'Eiendom' },
               { key: 'sUtil', label: 'Kraftforsyning' },
             ];
+            const fondMedSektordata = valgteFond.filter(f =>
+              f.sTech || f.sFin || f.sHlt || f.sInd || f.sCyc || f.sDef || f.sEng || f.sComm || f.sMat || f.sRE || f.sUtil
+            );
+            const pensumSektorer = beregnPensumVektetEksponering('sektor');
+            const eksSektorer = beregnEksisterendeEksponering(sektorer.map(s => s.key));
+            if (fondMedSektordata.length === 0 && !pensumSektorer && !eksSektorer) return [];
             return sektorer.map(s => {
               const punkt = { sektor: s.label };
+              if (pensumSektorer?.[s.key]) punkt['Pensum-forslaget'] = parseFloat(pensumSektorer[s.key].toFixed(1));
+              if (eksSektorer?.[s.key]) punkt['Eksisterende portefølje'] = parseFloat(eksSektorer[s.key].toFixed(1));
               fondMedSektordata.forEach(f => {
                 const val = f[s.key];
                 if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
@@ -6786,11 +6829,6 @@ export default function PensumPrognoseModell() {
           };
 
           const byggRegiondata = () => {
-            // Filtrér kun fond som faktisk har regiondata
-            const fondMedRegiondata = valgteFond.filter(f =>
-              f.cUS || f.cUK || f.cJP || f.cDE || f.cFR || f.cNO || f.cSE || f.cDK || f.cCN
-            );
-            if (fondMedRegiondata.length === 0) return [];
             const regioner = [
               { key: 'cUS', label: 'USA' }, { key: 'cUK', label: 'Storbritannia' },
               { key: 'cJP', label: 'Japan' }, { key: 'cDE', label: 'Tyskland' },
@@ -6798,8 +6836,16 @@ export default function PensumPrognoseModell() {
               { key: 'cSE', label: 'Sverige' }, { key: 'cDK', label: 'Danmark' },
               { key: 'cCN', label: 'Kina' },
             ];
+            const fondMedRegiondata = valgteFond.filter(f =>
+              f.cUS || f.cUK || f.cJP || f.cDE || f.cFR || f.cNO || f.cSE || f.cDK || f.cCN
+            );
+            const pensumRegioner = beregnPensumVektetEksponering('region');
+            const eksRegioner = beregnEksisterendeEksponering(regioner.map(r => r.key));
+            if (fondMedRegiondata.length === 0 && !pensumRegioner && !eksRegioner) return [];
             return regioner.map(r => {
               const punkt = { region: r.label };
+              if (pensumRegioner?.[r.key]) punkt['Pensum-forslaget'] = parseFloat(pensumRegioner[r.key].toFixed(1));
+              if (eksRegioner?.[r.key]) punkt['Eksisterende portefølje'] = parseFloat(eksRegioner[r.key].toFixed(1));
               fondMedRegiondata.forEach(f => {
                 const val = f[r.key];
                 if (val !== undefined && val !== null && !isNaN(val)) punkt[f.n] = parseFloat(val.toFixed(1));
@@ -7029,7 +7075,7 @@ export default function PensumPrognoseModell() {
                         </div>
 
                         {/* Søkeresultater */}
-                        {sokLower.length >= 2 && (
+                        {fondSokDebounced.length >= 2 && (
                           <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-lg bg-white">
                             {filtrerteFond.length === 0 ? (
                               <div className="p-4 text-sm text-gray-400 text-center">Ingen fond funnet</div>
@@ -7206,9 +7252,11 @@ export default function PensumPrognoseModell() {
                             { key: 'avkastning', label: 'Periodeavkastning' },
                             { key: 'kalenderaar', label: 'Kalenderår' },
                             { key: 'nokkeltall', label: 'Nøkkeltall' },
-                            ...(valgteFond.length > 0 ? [
+                            ...((valgteFond.length > 0 || harPortefolje || harEksisterendePortefoljeChart) ? [
                               { key: 'sektor', label: 'Sektorfordeling' },
                               { key: 'region', label: 'Landfordeling' },
+                            ] : []),
+                            ...(valgteFond.length > 0 ? [
                               { key: 'detaljer', label: 'Fondsdetaljer' },
                             ] : []),
                           ].map(v => (
