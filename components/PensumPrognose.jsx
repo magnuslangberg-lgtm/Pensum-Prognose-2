@@ -72,10 +72,10 @@ export default function PensumPrognoseModell() {
   // Fondssammenligning
   const [eksterneFond, setEksterneFond] = useState(null);
   const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
-  const [fondSok, setFondSok] = useState('');
   const [fondSokDebounced, setFondSokDebounced] = useState('');
   const [fondSokResultater, setFondSokResultater] = useState([]);
   const fondSokTimerRef = useRef(null);
+  const fondSokInputRef = useRef(null);
   const [fondKategoriFilter, setFondKategoriFilter] = useState('');
   const [valgteFond, setValgteFond] = useState([]);
   const [visPensumIFondComp, setVisPensumIFondComp] = useState([]);
@@ -300,10 +300,9 @@ export default function PensumPrognoseModell() {
   const [adminBrukere, setAdminBrukere] = useState(null);
   const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
 
-  // Debounce fond search — compute results in timeout to avoid re-render of entire component
+  // Debounce fond search — only update state for debounced results, not per keystroke
   const handleFondSokChange = useCallback((e) => {
     const val = e.target.value;
-    setFondSok(val);
     if (fondSokTimerRef.current) clearTimeout(fondSokTimerRef.current);
     fondSokTimerRef.current = setTimeout(() => {
       setFondSokDebounced(val);
@@ -7334,7 +7333,7 @@ export default function PensumPrognoseModell() {
                           <div className="flex-1 relative">
                             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             <input
-                              type="text" value={fondSok} onChange={handleFondSokChange}
+                              type="text" ref={fondSokInputRef} defaultValue="" onChange={handleFondSokChange}
                               placeholder={eksterneFondLoading ? 'Laster fond...' : 'Søk på fondsnavn, ISIN eller forvalter...'}
                               disabled={eksterneFondLoading}
                               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none bg-white"
