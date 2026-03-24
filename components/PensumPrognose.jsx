@@ -153,6 +153,61 @@ export default function PensumPrognoseModell() {
     setEksterneFondLoading(false);
   }, [eksterneFond, eksterneFondLoading]);
 
+  // Fuzzy fondssøk — matcher ord i søkestrengen mot fondsnavnet, scorer etter relevans
+  const sokEksterneFondFuzzy = useCallback((query, maks = 20) => {
+    if (!eksterneFond || !query || query.length < 2) return [];
+    const q = query.toLowerCase().trim();
+
+    // Direkte ISIN-match
+    if (/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/i.test(q) || (q.length === 12 && /^[a-z]{2}[a-z0-9]+$/.test(q))) {
+      return eksterneFond.filter(f => f.isin?.toLowerCase() === q).slice(0, 1);
+    }
+
+    // Split query into words, remove noise
+    const stopord = new Set(['fond', 'fund', 'a', 'b', 'i', 'bp', 'bi', 'acc', 'dis', 'distr', 'nok', 'sek', 'eur', 'usd', 'the', 'of', 'og', 'for', 'til', 'av']);
+    const queryOrd = q.split(/[\s\-–—/,()]+/).filter(w => w.length >= 2 && !stopord.has(w));
+    if (queryOrd.length === 0) return [];
+
+    const resultater = [];
+    for (const f of eksterneFond) {
+      const navn = (f.n || '').toLowerCase();
+      const navnOrd = navn.split(/[\s\-–—/,()]+/);
+
+      let navnTreff = 0;
+      let ordGrenseBonus = 0;
+      for (const qo of queryOrd) {
+        if (navn.includes(qo)) {
+          navnTreff++;
+          if (navnOrd.some(no => no === qo || no.startsWith(qo))) ordGrenseBonus += 0.5;
+        }
+      }
+
+      if (navnTreff === 0) continue;
+
+      // Score: fraction of query words matched + bonuses
+      const dekningsgrad = navnTreff / queryOrd.length;
+      if (dekningsgrad < 0.4) continue;
+
+      let score = dekningsgrad * 3 + ordGrenseBonus;
+      // Bonus: full query is substring of name
+      if (navn.includes(q)) score += 3;
+      // Bonus: all query words matched in name
+      if (navnTreff === queryOrd.length) score += 2;
+      // Bonus: name starts with first query word (brand match)
+      if (queryOrd[0] && navnOrd[0]?.startsWith(queryOrd[0])) score += 1;
+      // Slight bonus for AUM (prefer larger, more well-known funds)
+      if (f.aum > 500000000) score += 0.3;
+      else if (f.aum > 100000000) score += 0.1;
+
+      resultater.push({ fond: f, score });
+    }
+
+    return resultater
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maks)
+      .map(r => r.fond);
+  }, [eksterneFond]);
+
   // Posisjonsvalg for tilleggsmoduler
   const TILLEGGSMODUL_POSISJONER = [
     { value: 'etter-cover', label: 'Etter forside' },
@@ -3842,11 +3897,7 @@ export default function PensumPrognoseModell() {
                           onFocus={() => { if (!eksterneFond && !eksterneFondLoading) lastEksterneFond(); }}
                           onChange={(e) => {
                             setEksPortFondSok(e.target.value);
-                            const q = e.target.value.toLowerCase().trim();
-                            if (!eksterneFond || q.length < 2) { setEksPortFondResultater([]); return; }
-                            setEksPortFondResultater(eksterneFond.filter(f =>
-                              f.n?.toLowerCase().includes(q) || f.isin?.toLowerCase().includes(q) || f.mgr?.toLowerCase().includes(q)
-                            ).slice(0, 20));
+                            setEksPortFondResultater(sokEksterneFondFuzzy(e.target.value, 20));
                           }}
                           placeholder={eksterneFondLoading ? 'Laster fondsdatabase...' : 'Søk fond (navn, ISIN eller forvalter) — 4 974 fond fra Morningstar'}
                           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pl-8"
@@ -4076,13 +4127,9 @@ export default function PensumPrognoseModell() {
                             kontanter = belop;
                             continue;
                           }
-                          // Forsøk å matche mot Morningstar-datasettet (eksterneFond)
-                          let fondMatch = null;
-                          if (eksterneFond && navnDel.length > 2) {
-                            const q = navnDel.toLowerCase();
-                            fondMatch = eksterneFond.find(f => f.n?.toLowerCase() === q) ||
-                              eksterneFond.find(f => f.n?.toLowerCase().includes(q) || q.includes(f.n?.toLowerCase()));
-                          }
+                          // Forsøk å matche mot Morningstar-datasettet via fuzzy-søk
+                          const fondMatchResultat = sokEksterneFondFuzzy(navnDel, 1);
+                          const fondMatch = fondMatchResultat.length > 0 ? fondMatchResultat[0] : null;
                           if (fondMatch) {
                             if (!nyeFond.some(f => f.isin === fondMatch.isin)) {
                               const fKat = fondMatch.cat?.toLowerCase().includes('fixed income') || fondMatch.cat?.toLowerCase().includes('bond') || fondMatch.cat?.toLowerCase().includes('money market') ? 'rente'
