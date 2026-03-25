@@ -4335,8 +4335,10 @@ export default function PensumPrognoseModell() {
                                 <th className="py-2 px-3 text-left font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Fond</th>
                                 <th className="py-2 px-2 text-right font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Beløp</th>
                                 <th className="py-2 px-2 text-left font-medium text-gray-400">Kategori</th>
+                                <th className="py-2 px-2 text-right font-medium text-gray-400">1 år</th>
                                 <th className="py-2 px-2 text-right font-medium text-gray-400">3 år p.a.</th>
                                 <th className="py-2 px-2 text-right font-medium text-gray-400">5 år p.a.</th>
+                                <th className="py-2 px-2 text-right font-medium text-gray-400">Vol.</th>
                                 <th className="py-2 px-1 text-center font-medium text-gray-400">Slett</th>
                               </tr>
                             </thead>
@@ -4362,15 +4364,71 @@ export default function PensumPrognoseModell() {
                                       }} />
                                   </td>
                                   <td className="py-1.5 px-2 text-left">
-                                    <span className={`px-1 py-0.5 rounded text-[9px] ${f.kategori === 'aksje' ? 'bg-blue-50 text-blue-600' : f.kategori === 'rente' ? 'bg-green-50 text-green-600' : f.kategori === 'blandet' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'}`} title={f.cat || ''}>
-                                      {f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}
-                                    </span>
+                                    {f.matchet ? (
+                                      <span className={`px-1 py-0.5 rounded text-[9px] ${f.kategori === 'aksje' ? 'bg-blue-50 text-blue-600' : f.kategori === 'rente' ? 'bg-green-50 text-green-600' : f.kategori === 'blandet' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'}`} title={f.cat || ''}>
+                                        {f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}
+                                      </span>
+                                    ) : (
+                                      <select className="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white"
+                                        value={f.kategori}
+                                        onChange={(e) => setEksisterendePortefolje(prev => ({
+                                          ...prev,
+                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, kategori: e.target.value } : ff)
+                                        }))}>
+                                        <option value="ukjent">—</option>
+                                        <option value="aksje">Aksje</option>
+                                        <option value="rente">Rente</option>
+                                        <option value="blandet">Blandet</option>
+                                      </select>
+                                    )}
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
-                                    {f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>}
+                                    {f.matchet ? (
+                                      f.avk1y != null ? <span className={f.avk1y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk1y >= 0 ? '+' : ''}{f.avk1y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>
+                                    ) : (
+                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
+                                        value={f.avk1y ?? ''} placeholder="—"
+                                        onChange={(e) => setEksisterendePortefolje(prev => ({
+                                          ...prev,
+                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk1y: e.target.value ? parseFloat(e.target.value) : null } : ff)
+                                        }))} />
+                                    )}
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
-                                    {f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>}
+                                    {f.matchet ? (
+                                      f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>
+                                    ) : (
+                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
+                                        value={f.avk3y ?? ''} placeholder="—"
+                                        onChange={(e) => setEksisterendePortefolje(prev => ({
+                                          ...prev,
+                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk3y: e.target.value ? parseFloat(e.target.value) : null } : ff)
+                                        }))} />
+                                    )}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-right">
+                                    {f.matchet ? (
+                                      f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1)}%</span> : <span className="text-gray-400">—</span>
+                                    ) : (
+                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
+                                        value={f.avk5y ?? ''} placeholder="—"
+                                        onChange={(e) => setEksisterendePortefolje(prev => ({
+                                          ...prev,
+                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk5y: e.target.value ? parseFloat(e.target.value) : null } : ff)
+                                        }))} />
+                                    )}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-right">
+                                    {f.matchet ? (
+                                      f.volatilitet != null ? <span className="text-gray-500">{f.volatilitet.toFixed(1)}%</span> : <span className="text-gray-400">—</span>
+                                    ) : (
+                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
+                                        value={f.volatilitet ?? ''} placeholder="—"
+                                        onChange={(e) => setEksisterendePortefolje(prev => ({
+                                          ...prev,
+                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, volatilitet: e.target.value ? parseFloat(e.target.value) : null } : ff)
+                                        }))} />
+                                    )}
                                   </td>
                                   <td className="py-1.5 px-1 text-center">
                                     <button onClick={() => setEksisterendePortefolje(prev => ({ ...prev, fond: prev.fond.filter((_, i) => i !== idx) }))}
