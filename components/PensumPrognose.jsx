@@ -9438,14 +9438,14 @@ export default function PensumPrognoseModell() {
                             <div className="flex items-center gap-1"><div className="w-3 h-2 rounded-sm" style={{ backgroundColor: msciColor }}></div>MSCI World</div>
                           </div>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {merged.map((row, idx) => (
-                            <div key={idx} className="py-1">
-                              <div className="flex items-center gap-2">
+                            <div key={idx} className="py-0.5">
+                              <div className="flex items-center gap-2" style={{ lineHeight: '1.2' }}>
                                 <span className="text-xs text-gray-700 w-36 flex-shrink-0 truncate">{row.navn}</span>
-                                <div className="flex-1 flex gap-0.5 h-2">
-                                  <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.9}%`, backgroundColor: color, minWidth: row.pensum > 0 ? '3px' : '0' }}></div>
-                                  <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.9}%`, backgroundColor: msciColor, opacity: 0.4, minWidth: row.msci > 0 ? '3px' : '0' }}></div>
+                                <div className="flex-1 flex gap-0.5" style={{ height: '8px' }}>
+                                  <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.9}%`, backgroundColor: color, minWidth: row.pensum > 0 ? '3px' : '0', height: '100%' }}></div>
+                                  <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.9}%`, backgroundColor: msciColor, opacity: 0.4, minWidth: row.msci > 0 ? '3px' : '0', height: '100%' }}></div>
                                 </div>
                                 <span className="text-xs font-semibold w-11 text-right flex-shrink-0" style={{ color }}>{row.pensum > 0 ? row.pensum + '%' : '—'}</span>
                                 <span className="text-xs text-gray-400 w-11 text-right flex-shrink-0">{row.msci > 0 ? row.msci + '%' : '—'}</span>
@@ -9616,11 +9616,11 @@ export default function PensumPrognoseModell() {
                               return (
                                 <div key={block.key} className="rounded-lg border border-slate-100 p-4">
                                   <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
-                                  <div className="space-y-2">
+                                  <div className="space-y-2.5">
                                     {rows.map((row, ri) => (
-                                      <div key={ri} className="flex items-center gap-2">
+                                      <div key={ri} className="flex items-center gap-2" style={{ lineHeight: '1.2' }}>
                                         <span className="text-xs min-w-0 flex-1" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{row.navn}</span>
-                                        <div className="w-20 bg-slate-100 rounded-full h-3 overflow-hidden flex-shrink-0">
+                                        <div className="w-20 bg-slate-100 rounded-full overflow-hidden flex-shrink-0" style={{ height: '10px' }}>
                                           <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
                                         </div>
                                         <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
@@ -9651,11 +9651,11 @@ export default function PensumPrognoseModell() {
                               return (
                                 <div key={block.key} className="rounded-lg border border-slate-100 p-4">
                                   <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
-                                  <div className="space-y-2">
+                                  <div className="space-y-2.5">
                                     {rows.map((row, ri) => (
-                                      <div key={ri} className="flex items-center gap-2">
+                                      <div key={ri} className="flex items-center gap-2" style={{ lineHeight: '1.2' }}>
                                         <span className="text-xs min-w-0 flex-1" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{row.navn}</span>
-                                        <div className="w-20 bg-slate-100 rounded-full h-3 overflow-hidden flex-shrink-0">
+                                        <div className="w-20 bg-slate-100 rounded-full overflow-hidden flex-shrink-0" style={{ height: '10px' }}>
                                           <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
                                         </div>
                                         <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
