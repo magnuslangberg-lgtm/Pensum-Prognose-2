@@ -2012,6 +2012,57 @@ export default function PensumPrognoseModell() {
         // Sektor/region sammenligning
         const pensumSektorer = aggregertPensumEksponering?.sektorer || [];
         const pensumRegioner = aggregertPensumEksponering?.regioner || [];
+
+        // Bygg nåværende portefølje sektor/region eksponering fra Morningstar-data
+        const SEKTOR_KEYS = [
+          { key: 'sTech', label: 'Teknologi' }, { key: 'sFin', label: 'Finans' },
+          { key: 'sHlt', label: 'Helse' }, { key: 'sInd', label: 'Industri' },
+          { key: 'sCyc', label: 'Syklisk konsum' }, { key: 'sDef', label: 'Defensivt konsum' },
+          { key: 'sEng', label: 'Energi' }, { key: 'sComm', label: 'Kommunikasjon' },
+          { key: 'sMat', label: 'Materialer' }, { key: 'sRE', label: 'Eiendom' },
+          { key: 'sUtil', label: 'Kraftforsyning' },
+        ];
+        const REGION_KEYS = [
+          { key: 'cUS', label: 'USA' }, { key: 'cUK', label: 'Storbritannia' },
+          { key: 'cJP', label: 'Japan' }, { key: 'cDE', label: 'Tyskland' },
+          { key: 'cFR', label: 'Frankrike' }, { key: 'cNO', label: 'Norge' },
+          { key: 'cSE', label: 'Sverige' }, { key: 'cDK', label: 'Danmark' },
+          { key: 'cCN', label: 'Kina' },
+        ];
+
+        // Samle MS-data fra alle nåværende fond (eksisterende + eksterne)
+        const naaSektorMap = {};
+        const naaRegionMap = {};
+        let naaTotalVektForEksp = 0;
+        // Eksisterende fond — slå opp i Morningstar-listen
+        eksFond.filter(f => f.matchet && f.belop > 0).forEach(f => {
+          const ms = eksterneFond?.find(ef => ef.isin === f.isin);
+          if (!ms) return;
+          const vekt = harEksisterendeData ? (f.belop / (eksTotal || 1)) : 0;
+          SEKTOR_KEYS.forEach(s => { if (ms[s.key] > 0) naaSektorMap[s.key] = (naaSektorMap[s.key] || 0) + ms[s.key] * vekt; });
+          REGION_KEYS.forEach(r => { if (ms[r.key] > 0) naaRegionMap[r.key] = (naaRegionMap[r.key] || 0) + ms[r.key] * vekt; });
+          naaTotalVektForEksp += vekt;
+        });
+        // Eksterne fond — har allerede Morningstar-data direkte
+        eksterneFondRapport.forEach(f => {
+          const ms = valgteFond.find(vf => vf.isin === f.isin);
+          if (!ms) return;
+          const vekt = f.vekt / extTotalVekt;
+          const skalert = harEksisterendeData ? vekt * (1 - naaTotalVektForEksp) : vekt; // normaliser hvis begge finnes
+          SEKTOR_KEYS.forEach(s => { if (ms[s.key] > 0) naaSektorMap[s.key] = (naaSektorMap[s.key] || 0) + ms[s.key] * (harEksisterendeData ? vekt * 0.5 : vekt); });
+          REGION_KEYS.forEach(r => { if (ms[r.key] > 0) naaRegionMap[r.key] = (naaRegionMap[r.key] || 0) + ms[r.key] * (harEksisterendeData ? vekt * 0.5 : vekt); });
+        });
+        const naaSektorer = SEKTOR_KEYS
+          .map(s => ({ navn: s.label, vekt: parseFloat((naaSektorMap[s.key] || 0).toFixed(1)) }))
+          .filter(s => s.vekt > 0)
+          .sort((a, b) => b.vekt - a.vekt)
+          .slice(0, 6);
+        const naaRegioner = REGION_KEYS
+          .map(r => ({ navn: r.label, vekt: parseFloat((naaRegionMap[r.key] || 0).toFixed(1)) }))
+          .filter(r => r.vekt > 0)
+          .sort((a, b) => b.vekt - a.vekt)
+          .slice(0, 6);
+
         // Bygg nåværende portefølje kategorioversikt (eksisterende + eksterne fond)
         const eksKategoriOversikt = {};
         eksFond.filter(f => f.matchet && f.belop > 0).forEach(f => {
@@ -2125,63 +2176,86 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Sektor/region sammenligning */}
-            {(pensumRegioner.length > 0 || eksKategorier.length > 0) && (
+            {/* Sektor/region sammenligning — side-by-side */}
+            {(pensumRegioner.length > 0 || naaRegioner.length > 0 || pensumSektorer.length > 0 || naaSektorer.length > 0) && (
               <div className="mb-6">
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponering — sammenligning</h4>
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Pensum regioner */}
-                  {pensumRegioner.length > 0 && (
+
+                {/* Regioner */}
+                {(pensumRegioner.length > 0 || naaRegioner.length > 0) && (
+                  <div className="grid grid-cols-2 gap-6 mb-4">
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Regioner</p>
+                      {naaRegioner.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {naaRegioner.map((r, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+                                <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
+                              </div>
+                              <span className="text-[10px] text-gray-600 truncate flex-1">{r.navn}</span>
+                              <span className="text-[10px] font-semibold w-10 text-right">{r.vekt}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
+                    </div>
                     <div>
                       <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Regioner</p>
-                      <div className="space-y-1.5">
-                        {pensumRegioner.slice(0, 6).map((r, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="w-24 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                              <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.teal }}></div>
+                      {pensumRegioner.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {pensumRegioner.slice(0, 6).map((r, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+                                <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.teal }}></div>
+                              </div>
+                              <span className="text-[10px] text-gray-600 truncate flex-1">{r.navn}</span>
+                              <span className="text-[10px] font-semibold w-10 text-right">{r.vekt}%</span>
                             </div>
-                            <span className="text-[10px] text-gray-600 truncate flex-1">{r.navn}</span>
-                            <span className="text-[10px] font-semibold w-10 text-right">{r.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
                     </div>
-                  )}
-                  {/* Pensum sektorer */}
-                  {pensumSektorer.length > 0 && (
+                  </div>
+                )}
+
+                {/* Sektorer */}
+                {(pensumSektorer.length > 0 || naaSektorer.length > 0) && (
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Sektorer</p>
+                      {naaSektorer.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {naaSektorer.map((s, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+                                <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
+                              </div>
+                              <span className="text-[10px] text-gray-600 truncate flex-1">{s.navn}</span>
+                              <span className="text-[10px] font-semibold w-10 text-right">{s.vekt}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
+                    </div>
                     <div>
                       <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Sektorer</p>
-                      <div className="space-y-1.5">
-                        {pensumSektorer.slice(0, 6).map((s, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="w-24 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                              <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.salmon }}></div>
+                      {pensumSektorer.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {pensumSektorer.slice(0, 6).map((s, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+                                <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.salmon }}></div>
+                              </div>
+                              <span className="text-[10px] text-gray-600 truncate flex-1">{s.navn}</span>
+                              <span className="text-[10px] font-semibold w-10 text-right">{s.vekt}%</span>
                             </div>
-                            <span className="text-[10px] text-gray-600 truncate flex-1">{s.navn}</span>
-                            <span className="text-[10px] font-semibold w-10 text-right">{s.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
                     </div>
-                  )}
-                  {/* Eksisterende kategorier */}
-                  {eksKategorier.length > 0 && (
-                    <div className={pensumSektorer.length > 0 && pensumRegioner.length > 0 ? 'col-span-2' : ''}>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Fondskategorier</p>
-                      <div className="space-y-1.5">
-                        {eksKategorier.map((k, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="w-24 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                              <div className="h-full rounded-full" style={{ width: Math.min(k.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
-                            </div>
-                            <span className="text-[10px] text-gray-600 truncate flex-1">{k.navn}</span>
-                            <span className="text-[10px] font-semibold w-10 text-right">{k.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
