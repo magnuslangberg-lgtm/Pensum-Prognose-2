@@ -2167,7 +2167,7 @@ export default function PensumPrognoseModell() {
                   {/* Eksisterende kategorier */}
                   {eksKategorier.length > 0 && (
                     <div className={pensumSektorer.length > 0 && pensumRegioner.length > 0 ? 'col-span-2' : ''}>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Fondskategorier {eksterneFondRapport.length > 0 ? '(inkl. eksterne)' : ''}</p>
+                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Fondskategorier</p>
                       <div className="space-y-1.5">
                         {eksKategorier.map((k, i) => (
                           <div key={i} className="flex items-center gap-2">
@@ -2215,18 +2215,14 @@ export default function PensumPrognoseModell() {
                         <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1) + '%' : '—'}</td>
                       </tr>
                     ))}
-                    {eksterneFondRapport.length > 0 && (
-                      <tr><td colSpan={8} className="py-2 px-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: '#059669', backgroundColor: '#F0FDF4' }}>Eksterne fond (fra sammenligning)</td></tr>
-                    )}
                     {eksterneFondRapport.map((f, idx) => {
-                      const totalExtVekt = eksterneFondRapport.reduce((s, ef) => s + ef.vekt, 0) || 1;
                       const fKat = f.kategori?.toLowerCase().includes('fixed income') || f.kategori?.toLowerCase().includes('bond') || f.kategori?.toLowerCase().includes('money market') ? 'Rente'
                         : f.kategori?.toLowerCase().includes('allocation') || f.kategori?.toLowerCase().includes('mixed') ? 'Blandet' : 'Aksje';
                       return (
-                        <tr key={f.isin} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                          <td className="py-1.5 px-3 font-medium" style={{ color: '#059669' }}>{f.navn}</td>
+                        <tr key={f.isin} className={(eksFond.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                          <td className="py-1.5 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.navn}</td>
                           <td className="py-1.5 px-2 text-right text-gray-400">—</td>
-                          <td className="py-1.5 px-2 text-center text-gray-500">{(f.vekt / totalExtVekt * 100).toFixed(0)}%</td>
+                          <td className="py-1.5 px-2 text-center text-gray-500">{(f.vekt / extTotalVekt * 100).toFixed(0)}%</td>
                           <td className="py-1.5 px-2 text-center">{fKat}</td>
                           <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1) + '%' : '—'}</td>
                           <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1) + '%' : '—'}</td>
