@@ -8758,13 +8758,13 @@ export default function PensumPrognoseModell() {
                     <div className="rounded-xl p-6 text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                       <h3 className="text-lg font-bold mb-4">Rådgivers vurdering</h3>
                       <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                        Forslaget er satt sammen for å gi en robust samlet portefølje med tydelig rollefordeling mellom byggesteinene.
+                        Forslaget er satt sammen for å gi en robust og balansert portefølje, der hver byggestein har en tydelig rolle i helheten.
                       </p>
                       <div className="space-y-3">
                         {[
-                          { color: PENSUM_COLORS.lightBlue, text: 'Bred global kjerne som hovedmotor for langsiktig verdiskaping' },
-                          { color: PENSUM_COLORS.teal, text: 'Rentedel som demper svingninger og bidrar med løpende avkastning' },
-                          { color: PENSUM_COLORS.salmon, text: 'Utvalgte satellitter som gir mer diversifisering og økt avkastningspotensial' },
+                          { color: PENSUM_COLORS.lightBlue, text: 'Porteføljen er bygget for å stå bedre gjennom svingninger enn en ren aksjeportefølje' },
+                          { color: PENSUM_COLORS.teal, text: 'Sammensetningen kombinerer langsiktig verdiskaping med løpende avkastning og stabilitet' },
+                          { color: PENSUM_COLORS.salmon, text: 'De utvalgte løsningene utfyller hverandre på tvers av aktivaklasse, geografi og investeringsstil' },
                         ].map((punkt, i) => (
                           <div key={i} className="flex items-start gap-2.5">
                             <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: punkt.color }}></div>
@@ -8877,15 +8877,15 @@ export default function PensumPrognoseModell() {
                   <p className="text-sm text-gray-600 mb-6 leading-relaxed">Porteføljesammensetningen kombinerer bred eksponering, løpende avkastning og utvalgte aktive valg.</p>
 
                   {/* Hero donut (left) + Key facts panel (right) */}
-                  <div className="flex gap-6 mb-8">
-                    {/* Left: Large hero donut */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-6 flex-1">
-                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                      <div className="flex items-center gap-6">
+                  <div className="grid grid-cols-3 gap-5 mb-8">
+                    {/* Left: Large hero donut — takes 2 cols */}
+                    <div className="col-span-2 rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
+                      <div className="flex items-center gap-5">
                         <div className="shrink-0">
-                          <ResponsiveContainer width={180} height={180}>
+                          <ResponsiveContainer width={160} height={160}>
                             <PieChart>
-                              <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={45} outerRadius={78} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                              <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
                                 {valgteProdukterRapport.map((p, idx) => (
                                   <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
                                 ))}
@@ -8894,9 +8894,9 @@ export default function PensumPrognoseModell() {
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
-                        <div className="space-y-2.5 flex-1 min-w-0">
+                        <div className="space-y-2 flex-1 min-w-0">
                           {valgteProdukterRapport.map((p, idx) => (
-                            <div key={p.id} className="flex items-center gap-2.5 text-sm">
+                            <div key={p.id} className="flex items-center gap-2 text-sm">
                               <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
                               <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
                               <span className="font-bold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
@@ -8906,20 +8906,20 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
 
-                    {/* Right: Key facts panel */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-6 flex-shrink-0" style={{ width: '280px' }}>
-                      <h4 className="font-semibold mb-5 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljen i korte trekk</h4>
-                      <div className="space-y-4">
+                    {/* Right: Key facts panel — 1 col */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljen i korte trekk</h4>
+                      <div className="space-y-3">
                         {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
                           <div key={a.name} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
                               <span className="text-sm text-gray-700">{a.name}</span>
                             </div>
                             <span className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value.toFixed(0)}%</span>
                           </div>
                         ))}
-                        <div className="border-t border-gray-100 pt-3 mt-3">
+                        <div className="border-t border-gray-100 pt-3">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">Byggesteiner</span>
                             <span className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{valgteProdukterRapport.length}</span>
