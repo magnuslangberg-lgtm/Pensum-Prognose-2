@@ -121,11 +121,11 @@ export default function PensumPrognoseModell() {
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
   const [tilleggsmoduler, setTilleggsmoduler] = useState([
-    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'etter-cover' },
-    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'appendix' },
+    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix' },
+    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix' },
+    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix' },
+    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix' },
     { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
     { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot' },
     { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
