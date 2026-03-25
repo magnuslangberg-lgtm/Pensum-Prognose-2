@@ -1744,29 +1744,16 @@ export default function PensumPrognoseModell() {
       case 'neste-steg':
         return (
           <div data-rapport-slide="neste-steg" className="page-break-before" style={{ backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px', padding: '32px' }}>
-            {/* Header */}
-            <div className="mb-8">
+            {/* Header + CTA text */}
+            <div className="mb-6">
               <h2 className="text-3xl font-bold text-white">Neste steg</h2>
               <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+              <p className="text-sm mt-3" style={{ color: '#94A3B8' }}>Vi ser frem til å ta neste steg sammen. Ta kontakt for en oppfølgingssamtale — vi tilpasser forslaget etter dine ønsker.</p>
             </div>
 
-            {/* Advisor card first — more personal */}
+            {/* Steps (left) + Advisor card (right) */}
             <div className="grid grid-cols-3 gap-8">
-              <div className="col-span-2 space-y-6">
-                {/* Personal advisor intro */}
-                <div className="flex items-start gap-4 mb-2">
-                  {bruker?.bilde ? (
-                    <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
-                  ) : null}
-                  <div>
-                    <p className="text-white font-bold text-sm">{radgiver || 'Din rådgiver'}</p>
-                    <p className="text-xs" style={{ color: '#94A3B8' }}>{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
-                    {bruker?.telefon && <p className="text-xs text-white mt-1">{bruker.telefon}</p>}
-                    {bruker?.epost && <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{bruker.epost}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-5">
+              <div className="col-span-2 space-y-5">
                 {[
                   { nr: '1', tittel: 'Gjennomgang av forslaget', tekst: 'Vi går gjennom porteføljeforslaget sammen og justerer allokering og produktvalg etter dine ønsker.' },
                   { nr: '2', tittel: 'Formaliteter og signering', tekst: 'Etter enighet signerer vi investeringsavtale og rådgivningsmandat. KYC fylles ut digitalt.' },
@@ -1782,14 +1769,23 @@ export default function PensumPrognoseModell() {
                     </div>
                   </div>
                 ))}
-                </div>
               </div>
-              <div className="flex items-center justify-center">
-                <div className="rounded-lg border p-6" style={{ borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                  <p className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>Vi ser frem til å ta neste steg sammen. Ta kontakt for en oppfølgingssamtale — vi tilpasser forslaget etter dine ønsker.</p>
-                  <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ color: PENSUM_COLORS.teal }}>pensum.no</p>
-                  </div>
+
+              {/* Advisor card */}
+              <div className="flex items-center">
+                <div className="rounded-lg border p-5 text-center w-full" style={{ borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  {bruker?.bilde ? (
+                    <img src={bruker.bilde} alt="" className="w-14 h-14 rounded-full object-cover mx-auto mb-2 border-2" style={{ borderColor: PENSUM_COLORS.teal }} />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      <svg className="w-7 h-7" style={{ color: PENSUM_COLORS.lightBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                  )}
+                  <p className="text-[10px] uppercase tracking-widest" style={{ color: PENSUM_COLORS.teal }}>Din rådgiver</p>
+                  <p className="text-white font-bold mt-1 text-sm">{radgiver || 'Rådgiver'}</p>
+                  <p className="text-xs" style={{ color: '#94A3B8' }}>{bruker?.tittel || 'Investeringsrådgiver'}</p>
+                  {bruker?.telefon && <p className="text-xs text-white mt-2">{bruker.telefon}</p>}
+                  {bruker?.epost && <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{bruker.epost}</p>}
                 </div>
               </div>
             </div>
