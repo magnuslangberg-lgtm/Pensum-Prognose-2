@@ -2172,86 +2172,78 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Sektor/region sammenligning — side-by-side */}
+            {/* Sektor/region sammenligning — cleaner inline layout */}
             {(pensumRegioner.length > 0 || naaRegioner.length > 0 || pensumSektorer.length > 0 || naaSektorer.length > 0) && (
-              <div className="mb-6">
+              <div className="mb-5">
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponering — sammenligning</h4>
-
-                {/* Regioner */}
-                {(pensumRegioner.length > 0 || naaRegioner.length > 0) && (
-                  <div className="grid grid-cols-2 gap-6 mb-4">
-                    <div>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Regioner</p>
-                      {naaRegioner.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {naaRegioner.map((r, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                                <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
-                              </div>
-                              <span className="text-[10px] text-gray-600 truncate flex-1">{r.navn}</span>
-                              <span className="text-[10px] font-semibold w-10 text-right">{r.vekt}%</span>
+                <div className="grid grid-cols-2 gap-5">
+                  {/* Regioner */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Regioner</p>
+                    {naaRegioner.length > 0 ? (
+                      <div className="space-y-1">
+                        {naaRegioner.map((r, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-600 w-20 flex-shrink-0 truncate">{r.navn}</span>
+                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
                             </div>
-                          ))}
-                        </div>
-                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Regioner</p>
-                      {pensumRegioner.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {pensumRegioner.slice(0, 6).map((r, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                                <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.teal }}></div>
-                              </div>
-                              <span className="text-[10px] text-gray-600 truncate flex-1">{r.navn}</span>
-                              <span className="text-[10px] font-semibold w-10 text-right">{r.vekt}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                    </div>
+                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{r.vekt}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
                   </div>
-                )}
-
-                {/* Sektorer */}
-                {(pensumSektorer.length > 0 || naaSektorer.length > 0) && (
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Sektorer</p>
-                      {naaSektorer.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {naaSektorer.map((s, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                                <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
-                              </div>
-                              <span className="text-[10px] text-gray-600 truncate flex-1">{s.navn}</span>
-                              <span className="text-[10px] font-semibold w-10 text-right">{s.vekt}%</span>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Regioner</p>
+                    {pensumRegioner.length > 0 ? (
+                      <div className="space-y-1">
+                        {pensumRegioner.slice(0, 6).map((r, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-600 w-24 flex-shrink-0 truncate">{r.navn}</span>
+                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.teal }}></div>
                             </div>
-                          ))}
-                        </div>
-                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Sektorer</p>
-                      {pensumSektorer.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {pensumSektorer.slice(0, 6).map((s, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <div className="w-20 h-4 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
-                                <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.salmon }}></div>
-                              </div>
-                              <span className="text-[10px] text-gray-600 truncate flex-1">{s.navn}</span>
-                              <span className="text-[10px] font-semibold w-10 text-right">{s.vekt}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                    </div>
+                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{r.vekt}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
                   </div>
-                )}
+                  {/* Sektorer */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 mb-2 mt-2">Nåværende — Sektorer</p>
+                    {naaSektorer.length > 0 ? (
+                      <div className="space-y-1">
+                        {naaSektorer.map((s, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-600 w-20 flex-shrink-0 truncate">{s.navn}</span>
+                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
+                            </div>
+                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{s.vekt}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 mb-2 mt-2">Pensum — Sektorer</p>
+                    {pensumSektorer.length > 0 ? (
+                      <div className="space-y-1">
+                        {pensumSektorer.slice(0, 6).map((s, i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-gray-600 w-24 flex-shrink-0 truncate">{s.navn}</span>
+                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.salmon }}></div>
+                            </div>
+                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{s.vekt}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -8766,8 +8758,8 @@ export default function PensumPrognoseModell() {
                           { color: PENSUM_COLORS.teal, text: 'Sammensetningen kombinerer langsiktig verdiskaping med løpende avkastning og stabilitet' },
                           { color: PENSUM_COLORS.salmon, text: 'De utvalgte løsningene utfyller hverandre på tvers av aktivaklasse, geografi og investeringsstil' },
                         ].map((punkt, i) => (
-                          <div key={i} className="flex items-start gap-2.5">
-                            <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: punkt.color }}></div>
+                          <div key={i} className="flex items-center gap-2.5">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: punkt.color }}></div>
                             <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.8)' }}>{punkt.text}</p>
                           </div>
                         ))}
