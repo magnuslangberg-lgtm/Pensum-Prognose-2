@@ -8898,7 +8898,7 @@ export default function PensumPrognoseModell() {
                             <div className="p-5">
                               <div className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white mb-3" style={{ backgroundColor: b.color }}>{b.type}</div>
                               <div className="flex items-baseline gap-2 mb-3">
-                                <span className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{b.vekt.toFixed(1)}%</span>
+                                <span className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{b.vekt.toFixed(0)}%</span>
                                 <span className="text-sm text-gray-400">av porteføljen</span>
                               </div>
                               <p className="text-sm font-bold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{b.tittel}</p>
