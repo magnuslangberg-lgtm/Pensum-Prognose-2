@@ -9407,36 +9407,89 @@ export default function PensumPrognoseModell() {
 
                   if (aksjeProdRap.length === 0) return null;
 
+                  // MSCI World benchmark eksponering (fra Morningstar-data)
+                  const MSCI_WORLD_REGIONER = [
+                    { navn: 'United States', vekt: 59.3 }, { navn: 'United Kingdom', vekt: 5.8 },
+                    { navn: 'France', vekt: 5.3 }, { navn: 'Japan', vekt: 5.0 },
+                    { navn: 'Germany', vekt: 3.6 }, { navn: 'China', vekt: 2.5 },
+                    { navn: 'Sweden', vekt: 1.6 }, { navn: 'Denmark', vekt: 1.3 },
+                    { navn: 'Norway', vekt: 1.1 }, { navn: 'Other', vekt: 14.5 },
+                  ];
+                  const MSCI_WORLD_SEKTORER = [
+                    { navn: 'Technology', vekt: 25.3 }, { navn: 'Financial Services', vekt: 17.5 },
+                    { navn: 'Industrials', vekt: 13.8 }, { navn: 'Healthcare', vekt: 10.9 },
+                    { navn: 'Consumer Cyclical', vekt: 8.7 }, { navn: 'Communication Services', vekt: 8.4 },
+                    { navn: 'Consumer Defensive', vekt: 4.5 }, { navn: 'Basic Materials', vekt: 3.7 },
+                    { navn: 'Energy', vekt: 3.5 }, { navn: 'Utilities', vekt: 2.5 },
+                  ];
+
+                  const renderComparisonBars = (title, pensumData, msciData, color, msciColor) => {
+                    // Merge all unique names, pensum first
+                    const allNames = [...new Set([...pensumData.map(r => r.navn), ...msciData.map(r => r.navn)])];
+                    const pensumMap = {}; pensumData.forEach(r => { pensumMap[r.navn] = r.vekt; });
+                    const msciMap = {}; msciData.forEach(r => { msciMap[r.navn] = r.vekt; });
+                    const merged = allNames.slice(0, 10).map(navn => ({
+                      navn, pensum: pensumMap[navn] || 0, msci: msciMap[navn] || 0
+                    })).sort((a, b) => b.pensum - a.pensum || b.msci - a.msci);
+
+                    return (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{title}</p>
+                          <div className="flex items-center gap-3 text-[10px]">
+                            <div className="flex items-center gap-1"><div className="w-3 h-2 rounded-sm" style={{ backgroundColor: color }}></div>Pensum</div>
+                            <div className="flex items-center gap-1"><div className="w-3 h-2 rounded-sm" style={{ backgroundColor: msciColor }}></div>MSCI World</div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {merged.map((row, idx) => (
+                            <div key={idx}>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-xs text-gray-700">{row.navn}</span>
+                                <div className="flex gap-3 text-xs">
+                                  <span className="font-semibold w-12 text-right" style={{ color }}>{row.pensum > 0 ? row.pensum + '%' : '—'}</span>
+                                  <span className="text-gray-400 w-12 text-right">{row.msci > 0 ? row.msci + '%' : '—'}</span>
+                                </div>
+                              </div>
+                              <div className="flex gap-0.5 h-2.5">
+                                <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.8}%`, backgroundColor: color }}></div>
+                                <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.8}%`, backgroundColor: msciColor, opacity: 0.4 }}></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  };
+
                   return (
                     <div data-rapport-slide="eksponering">
-                      <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Porteføljens eksponering</h2>
-                      <p className="text-xs text-gray-500 mb-4">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {[
-                          { title: 'Regioner', data: aggRegionerRap, color: PENSUM_COLORS.teal },
-                          { title: 'Sektorer', data: aggSektorerRap, color: PENSUM_COLORS.lightBlue },
-                          { title: 'Stil', data: aggStilRap, color: PENSUM_COLORS.gold }
-                        ].map(block => (
-                          <div key={block.title} className="rounded-xl border border-slate-200 bg-white p-4">
-                            <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
-                            {block.data.length > 0 ? (
-                              <div className="space-y-2">
-                                {block.data.map((row, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <span className="text-xs min-w-0 flex-1 truncate">{row.navn}</span>
-                                    <div className="w-24 bg-slate-100 rounded-full h-3.5 overflow-hidden">
-                                      <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
-                                    </div>
-                                    <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="h-[100px] flex items-center justify-center text-sm text-slate-400">Ingen data</div>
-                            )}
-                          </div>
-                        ))}
+                      <h2 className="text-xl font-bold mb-2 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Porteføljens eksponering</h2>
+                      <p className="text-xs text-gray-500 mb-5">Vektet eksponering for aksjedelen sammenlignet med MSCI World. <em>Gjelder {aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}.</em></p>
+
+                      {/* Pensum vs MSCI World — side by side comparison */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                        {renderComparisonBars('Regioner', aggRegionerRap, MSCI_WORLD_REGIONER, PENSUM_COLORS.teal, '#94A3B8')}
+                        {renderComparisonBars('Sektorer', aggSektorerRap, MSCI_WORLD_SEKTORER, PENSUM_COLORS.lightBlue, '#94A3B8')}
                       </div>
+
+                      {/* Stil — only Pensum (no MSCI comparison for style) */}
+                      {aggStilRap.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Stil</p>
+                          <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+                            {aggStilRap.map((row, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-xs min-w-0 flex-1 truncate">{row.navn}</span>
+                                <div className="w-16 bg-slate-100 rounded-full h-3 overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: PENSUM_COLORS.gold }}></div>
+                                </div>
+                                <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
