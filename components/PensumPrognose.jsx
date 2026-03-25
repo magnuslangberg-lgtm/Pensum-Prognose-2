@@ -8700,7 +8700,7 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
 
-              <div className="p-8 space-y-8">
+              <div className="p-10 space-y-10">
 
                 {renderTilleggsmodulerVedPosisjon('etter-cover')}
 
@@ -9065,11 +9065,11 @@ export default function PensumPrognoseModell() {
                                   <p className="text-xs text-gray-400">{s.undertittel}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] text-gray-500">Forv. avkastning</p>
+                                  <p className="text-xs text-gray-500">Forv. avkastning</p>
                                   <p className="text-2xl font-bold" style={{ color: s.farge }}>{s.avk}% p.a.</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] text-gray-500">Sluttverdi</p>
+                                  <p className="text-xs text-gray-500">Sluttverdi</p>
                                   <p className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatSluttverdi(sluttverdi)}</p>
                                 </div>
                                 <p className="text-xs text-gray-500 leading-relaxed">{s.beskrivelse}</p>
@@ -9493,10 +9493,11 @@ export default function PensumPrognoseModell() {
                   const eks = produktEksponering?.[p.id] || {};
                   const meta = produktRapportMeta?.[p.id] || {};
                   const pColor = produktFarger[pIdx % produktFarger.length];
+                  const isFixedIncome = meta.category === 'fixed-income' || meta.category === 'fixed-income-specialist';
                   return (
                     <div key={p.id} data-rapport-slide={`faktaark-${p.id}`} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                       {/* Product header bar */}
-                      <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                      <div className="px-6 py-5 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                         <div className="flex items-center gap-3">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: pColor }}></div>
                           <div>
@@ -9506,82 +9507,155 @@ export default function PensumPrognoseModell() {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-white">{p.vekt.toFixed(1)}%</div>
-                          <div className="text-[10px] text-blue-300 uppercase tracking-wider">Porteføljevekt</div>
+                          <div className="text-xs text-blue-300 uppercase tracking-wider">Porteføljevekt</div>
                         </div>
                       </div>
 
                       <div className="p-6 space-y-5">
-                        {/* KPI row */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                          {[
-                            { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—', color: PENSUM_COLORS.green },
-                            { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—', color: PENSUM_COLORS.teal },
-                            { label: '1 år avk.', value: formatAvk(p.stat1y?.totalAvkastning), color: erGyldigTall(p.stat1y?.totalAvkastning) && p.stat1y.totalAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
-                            { label: '3 år p.a.', value: formatAvk(p.stat3y?.aarligAvkastning), color: erGyldigTall(p.stat3y?.aarligAvkastning) && p.stat3y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
-                            { label: '5 år p.a.', value: formatAvk(p.stat5y?.aarligAvkastning), color: erGyldigTall(p.stat5y?.aarligAvkastning) && p.stat5y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
-                          ].map((kpi, ki) => (
-                            <div key={ki} className="rounded-lg p-3 text-center" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                              <div className="text-[10px] uppercase tracking-wider text-gray-500">{kpi.label}</div>
-                              <div className="text-lg font-bold mt-0.5" style={{ color: kpi.color }}>{kpi.value}</div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Description */}
-                        {meta.pitch && (
-                          <p className="text-sm text-slate-600 leading-relaxed">{meta.pitch}</p>
+                        {/* KPI row — different for fixed income */}
+                        {isFixedIncome ? (
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {[
+                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—', color: PENSUM_COLORS.teal },
+                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—', color: PENSUM_COLORS.green },
+                              { label: '1 år avk.', value: formatAvk(p.stat1y?.totalAvkastning), color: erGyldigTall(p.stat1y?.totalAvkastning) && p.stat1y.totalAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
+                              { label: '3 år p.a.', value: formatAvk(p.stat3y?.aarligAvkastning), color: erGyldigTall(p.stat3y?.aarligAvkastning) && p.stat3y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
+                              { label: 'Volatilitet', value: erGyldigTall(p.stat3y?.stdDev) ? p.stat3y.stdDev.toFixed(1) + '%' : (erGyldigTall(p.produkt?.volatilitet) ? p.produkt.volatilitet.toFixed(1) + '%' : '—'), color: PENSUM_COLORS.darkBlue },
+                            ].map((kpi, ki) => (
+                              <div key={ki} className="rounded-lg p-3 text-center" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                                <div className="text-xs uppercase tracking-wider text-gray-500">{kpi.label}</div>
+                                <div className="text-lg font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {[
+                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1) + '%' : '—', color: PENSUM_COLORS.green },
+                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1) + '%' : '—', color: PENSUM_COLORS.teal },
+                              { label: '1 år avk.', value: formatAvk(p.stat1y?.totalAvkastning), color: erGyldigTall(p.stat1y?.totalAvkastning) && p.stat1y.totalAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
+                              { label: '3 år p.a.', value: formatAvk(p.stat3y?.aarligAvkastning), color: erGyldigTall(p.stat3y?.aarligAvkastning) && p.stat3y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
+                              { label: '5 år p.a.', value: formatAvk(p.stat5y?.aarligAvkastning), color: erGyldigTall(p.stat5y?.aarligAvkastning) && p.stat5y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
+                            ].map((kpi, ki) => (
+                              <div key={ki} className="rounded-lg p-3 text-center" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                                <div className="text-xs uppercase tracking-wider text-gray-500">{kpi.label}</div>
+                                <div className="text-lg font-bold mt-1" style={{ color: kpi.color }}>{kpi.value}</div>
+                              </div>
+                            ))}
+                          </div>
                         )}
 
-                        {/* Exposure bars */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
-                            { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
-                            { key: 'underliggende', title: 'Underliggende fond', color: PENSUM_COLORS.salmon },
-                            { key: 'stil', title: 'Stil', color: PENSUM_COLORS.gold },
-                          ].map(block => {
-                            const rows = (eks[block.key] || []).slice(0, 8);
-                            if (rows.length === 0) return null;
-                            return (
-                              <div key={block.key} className="rounded-lg border border-slate-100 p-3">
-                                <p className="text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
-                                <div className="space-y-1.5">
-                                  {rows.map((row, ri) => (
-                                    <div key={ri} className="flex items-center gap-2">
-                                      <span className="text-[11px] min-w-0 flex-1" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{row.navn}</span>
-                                      <div className="w-20 bg-slate-100 rounded-full h-3 overflow-hidden flex-shrink-0">
-                                        <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
-                                      </div>
-                                      <span className="text-[11px] font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        {/* Fixed Income: Investeringscase + Rolle */}
+                        {isFixedIncome ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-lg border border-slate-100 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringscase</p>
+                              <p className="text-sm text-slate-600 leading-relaxed">{meta.caseText || meta.pitch || 'Mandatet investerer i kredittobligasjoner og søker attraktiv løpende yield gjennom aktiv kredittseleksjon og god diversifisering.'}</p>
+                            </div>
+                            <div className="rounded-lg border border-slate-100 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rolle i porteføljen</p>
+                              <p className="text-sm text-slate-600 leading-relaxed">{meta.role || 'Rentedelen skal stabilisere totalen, bidra med løpende avkastning og redusere svingningene i samlet portefølje.'}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          meta.pitch && <p className="text-sm text-slate-600 leading-relaxed">{meta.pitch}</p>
+                        )}
 
-                        {/* Role, benchmark, risk */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {meta.role && (
-                            <div className="rounded-lg border border-slate-100 p-3">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Rolle i porteføljen</p>
-                              <p className="text-xs text-slate-700 mt-1">{meta.role}</p>
-                            </div>
-                          )}
-                          {meta.benchmark && (
-                            <div className="rounded-lg border border-slate-100 p-3">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Referanseindeks</p>
-                              <p className="text-xs text-slate-700 mt-1">{meta.benchmark}</p>
-                            </div>
-                          )}
-                          {meta.riskText && (
-                            <div className="rounded-lg border border-slate-100 p-3">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nøkkelrisiko</p>
-                              <p className="text-xs text-slate-700 mt-1">{meta.riskText}</p>
-                            </div>
-                          )}
-                        </div>
+                        {/* Exposure bars — different layout for fixed income */}
+                        {isFixedIncome ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Underliggende fond / Kreditteksponering */}
+                            {[
+                              { key: 'underliggende', title: 'Kreditteksponering', color: PENSUM_COLORS.salmon },
+                              { key: 'stil', title: 'Nøkkelkarakteristika', color: PENSUM_COLORS.gold },
+                              { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
+                              { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
+                            ].map(block => {
+                              const rows = (eks[block.key] || []).slice(0, 8);
+                              if (rows.length === 0) return null;
+                              return (
+                                <div key={block.key} className="rounded-lg border border-slate-100 p-4">
+                                  <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
+                                  <div className="space-y-2">
+                                    {rows.map((row, ri) => (
+                                      <div key={ri} className="flex items-center gap-2">
+                                        <span className="text-xs min-w-0 flex-1" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{row.navn}</span>
+                                        <div className="w-20 bg-slate-100 rounded-full h-3 overflow-hidden flex-shrink-0">
+                                          <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
+                                        </div>
+                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {/* Nøkkelrisiko for fixed income */}
+                            {meta.riskText && (
+                              <div className="rounded-lg border border-slate-100 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Nøkkelrisiko</p>
+                                <p className="text-xs text-slate-600 leading-relaxed">{meta.riskText}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {[
+                              { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
+                              { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
+                              { key: 'underliggende', title: 'Underliggende fond', color: PENSUM_COLORS.salmon },
+                              { key: 'stil', title: 'Stil', color: PENSUM_COLORS.gold },
+                            ].map(block => {
+                              const rows = (eks[block.key] || []).slice(0, 8);
+                              if (rows.length === 0) return null;
+                              return (
+                                <div key={block.key} className="rounded-lg border border-slate-100 p-4">
+                                  <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{block.title}</p>
+                                  <div className="space-y-2">
+                                    {rows.map((row, ri) => (
+                                      <div key={ri} className="flex items-center gap-2">
+                                        <span className="text-xs min-w-0 flex-1" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{row.navn}</span>
+                                        <div className="w-20 bg-slate-100 rounded-full h-3 overflow-hidden flex-shrink-0">
+                                          <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
+                                        </div>
+                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Role, benchmark, risk — equity only (fixed income shows these above) */}
+                        {!isFixedIncome && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {meta.role && (
+                              <div className="rounded-lg border border-slate-100 p-4">
+                                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Rolle i porteføljen</p>
+                                <p className="text-xs text-slate-700 mt-1.5">{meta.role}</p>
+                              </div>
+                            )}
+                            {meta.benchmark && (
+                              <div className="rounded-lg border border-slate-100 p-4">
+                                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Referanseindeks</p>
+                                <p className="text-xs text-slate-700 mt-1.5">{meta.benchmark}</p>
+                              </div>
+                            )}
+                            {meta.riskText && (
+                              <div className="rounded-lg border border-slate-100 p-4">
+                                <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Nøkkelrisiko</p>
+                                <p className="text-xs text-slate-700 mt-1.5">{meta.riskText}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Fixed income: benchmark as subtle footer */}
+                        {isFixedIncome && meta.benchmark && (
+                          <div className="text-xs text-gray-400">Referanseindeks: {meta.benchmark}</div>
+                        )}
 
                         {/* Product disclaimer */}
                         {eks.disclaimer && (
