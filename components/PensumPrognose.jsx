@@ -9423,6 +9423,14 @@ export default function PensumPrognoseModell() {
                     { navn: 'Energy', vekt: 3.5 }, { navn: 'Utilities', vekt: 2.5 },
                   ];
 
+                  const MSCI_WORLD_STIL = [
+                    { navn: 'Large Core', vekt: 24.1 }, { navn: 'Large Value', vekt: 24.1 },
+                    { navn: 'Large Growth', vekt: 12.6 }, { navn: 'Small Core', vekt: 11.1 },
+                    { navn: 'Mid Core', vekt: 8.8 }, { navn: 'Mid Value', vekt: 6.3 },
+                    { navn: 'Mid Growth', vekt: 5.6 }, { navn: 'Small Value', vekt: 5.0 },
+                    { navn: 'Small Growth', vekt: 3.2 },
+                  ];
+
                   const renderComparisonBars = (title, pensumData, msciData, color, msciColor) => {
                     // Merge all unique names, pensum first
                     const allNames = [...new Set([...pensumData.map(r => r.navn), ...msciData.map(r => r.navn)])];
@@ -9441,19 +9449,17 @@ export default function PensumPrognoseModell() {
                             <div className="flex items-center gap-1"><div className="w-3 h-2 rounded-sm" style={{ backgroundColor: msciColor }}></div>MSCI World</div>
                           </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {merged.map((row, idx) => (
-                            <div key={idx}>
-                              <div className="flex items-center justify-between mb-0.5">
-                                <span className="text-xs text-gray-700">{row.navn}</span>
-                                <div className="flex gap-3 text-xs">
-                                  <span className="font-semibold w-12 text-right" style={{ color }}>{row.pensum > 0 ? row.pensum + '%' : '—'}</span>
-                                  <span className="text-gray-400 w-12 text-right">{row.msci > 0 ? row.msci + '%' : '—'}</span>
+                            <div key={idx} className="py-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-700 w-36 flex-shrink-0 truncate">{row.navn}</span>
+                                <div className="flex-1 flex gap-0.5 h-2">
+                                  <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.9}%`, backgroundColor: color, minWidth: row.pensum > 0 ? '3px' : '0' }}></div>
+                                  <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.9}%`, backgroundColor: msciColor, opacity: 0.4, minWidth: row.msci > 0 ? '3px' : '0' }}></div>
                                 </div>
-                              </div>
-                              <div className="flex gap-0.5 h-2.5">
-                                <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.8}%`, backgroundColor: color }}></div>
-                                <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.8}%`, backgroundColor: msciColor, opacity: 0.4 }}></div>
+                                <span className="text-xs font-semibold w-11 text-right flex-shrink-0" style={{ color }}>{row.pensum > 0 ? row.pensum + '%' : '—'}</span>
+                                <span className="text-xs text-gray-400 w-11 text-right flex-shrink-0">{row.msci > 0 ? row.msci + '%' : '—'}</span>
                               </div>
                             </div>
                           ))}
@@ -9473,22 +9479,9 @@ export default function PensumPrognoseModell() {
                         {renderComparisonBars('Sektorer', aggSektorerRap, MSCI_WORLD_SEKTORER, PENSUM_COLORS.lightBlue, '#94A3B8')}
                       </div>
 
-                      {/* Stil — only Pensum (no MSCI comparison for style) */}
+                      {/* Stil — Pensum vs MSCI World */}
                       {aggStilRap.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Stil</p>
-                          <div className="grid grid-cols-3 gap-x-6 gap-y-2">
-                            {aggStilRap.map((row, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <span className="text-xs min-w-0 flex-1 truncate">{row.navn}</span>
-                                <div className="w-16 bg-slate-100 rounded-full h-3 overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: PENSUM_COLORS.gold }}></div>
-                                </div>
-                                <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        renderComparisonBars('Stil', aggStilRap, MSCI_WORLD_STIL, PENSUM_COLORS.gold, '#94A3B8')
                       )}
                     </div>
                   );
