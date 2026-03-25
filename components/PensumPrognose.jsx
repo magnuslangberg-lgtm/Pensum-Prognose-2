@@ -1647,62 +1647,62 @@ export default function PensumPrognoseModell() {
         const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
-            <div className="mb-6">
-              <div className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: PENSUM_COLORS.salmon }}>Innledning</div>
-              <div className="h-0.5 w-20" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-            </div>
-            <div className="flex gap-10" style={{ minHeight: '440px' }}>
+            <div className="flex gap-8" style={{ minHeight: '480px' }}>
               {/* Left: Letter content */}
               <div className="flex-1 flex flex-col justify-between" style={{ minWidth: 0 }}>
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Takk for en god samtale. Med utgangspunkt i målene og rammene vi har diskutert, har vi satt sammen et investeringsforslag som skal kombinere langsiktig verdiskaping med en robust og balansert portefølje.
+                  <p className="text-base text-gray-700 leading-relaxed">
+                    Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
                   </p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Forslaget tar utgangspunkt i investerbar kapital på {formatCurrency(_effektivtBelop)}. Porteføljen er bygget rundt en bred kjerne, en stabiliserende rentedel og utvalgte satellitter som kan bidra til økt avkastningspotensial.
+                  <p className="text-base text-gray-700 leading-relaxed">
+                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
                   </p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    På de neste sidene går vi gjennom porteføljekonstruksjonen, de sentrale forutsetningene og de enkelte løsningene i forslaget.
-                  </p>
-                  <p className="text-xs text-gray-400 italic mt-2">
-                    Notat: Forslaget er basert på oppgitte forutsetninger og viser effekten av anbefalt allokering.
+                  <p className="text-base text-gray-700 leading-relaxed">
+                    På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
                   </p>
                 </div>
-                <div className="pt-5 mt-4 border-t border-gray-200">
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
-                    <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                <div className="pt-6 mt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-3">
+                    {bruker?.bilde ? (
+                      <img src={bruker.bilde} alt="" className="w-10 h-10 rounded-full object-cover border flex-shrink-0" style={{ borderColor: PENSUM_COLORS.teal }} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
+                        <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{radgiver || 'Rådgiver'}</p>
+                      <p className="text-xs text-gray-500">{bruker?.tittel || 'Investeringsrådgiver'}, Pensum Asset Management</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Two calm support boxes */}
-              <div className="flex-shrink-0 flex flex-col gap-5 justify-center" style={{ width: '300px' }}>
-                <div className="rounded-xl border border-gray-200 bg-white p-6">
-                  <h4 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Om forslaget</h4>
-                  <div className="space-y-2.5">
-                    {[
-                      'Bygget rundt en robust kjerne med utvalgte satellitter',
-                      'Søker å balansere verdiskaping, stabilitet og likviditet',
-                      'Viser effekten av anbefalt sammensetning og allokering',
-                    ].map((t, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
-                        <p className="text-xs text-gray-600 leading-relaxed">{t}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-xl overflow-hidden" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <div className="p-6 space-y-3">
+              {/* Right: Om Pensum sidebar */}
+              <div className="flex-shrink-0 flex items-center" style={{ width: '280px' }}>
+                <div className="rounded-xl overflow-hidden w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                  <div className="p-5 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-widest" style={{ color: PENSUM_COLORS.gold }}>Om Pensum</h4>
-                    <p className="text-xs text-blue-100 leading-relaxed">
-                      Pensum har røtter tilbake til 2002 og leverer uavhengig rådgivning og kapitalforvaltning til både private og institusjonelle kunder.
+                    <p className="text-sm text-blue-100 leading-relaxed">
+                      Rådgivning og forvaltning til private og institusjonelle kunder siden 2002.
                     </p>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
                       <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 12,3</span> <span className="text-sm text-blue-300">mrd</span></p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Ansatte</p>
+                        <p className="text-xl font-bold text-white mt-0.5">39</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Vekst AUM</p>
+                        <p className="text-xl font-bold mt-0.5" style={{ color: PENSUM_COLORS.teal }}>29,1%</p>
+                      </div>
+                    </div>
+                    <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Regulert av <span className="font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>Finanstilsynet</span></p>
                     </div>
                   </div>
                 </div>
@@ -8874,17 +8874,18 @@ export default function PensumPrognoseModell() {
 
                 {/* === PENSUM PORTEFØLJESAMMENSETNING (kombinert allokering + historisk) === */}
                 {(isStandardModulAktiv('allokering') || isStandardModulAktiv('historisk')) && <><div data-rapport-slide="allokering">
-                  <p className="text-sm text-gray-600 mb-5 leading-relaxed">Porteføljesammensetningen kombinerer bred eksponering, løpende avkastning og utvalgte aktive valg.</p>
-                  {/* Pie charts row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    {/* Porteføljefordeling */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <p className="text-sm text-gray-600 mb-6 leading-relaxed">Porteføljesammensetningen kombinerer bred eksponering, løpende avkastning og utvalgte aktive valg.</p>
+
+                  {/* Hero donut (left) + Key facts panel (right) */}
+                  <div className="flex gap-6 mb-8">
+                    {/* Left: Large hero donut */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-6 flex-1">
                       <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-6">
                         <div className="shrink-0">
-                          <ResponsiveContainer width={150} height={150}>
+                          <ResponsiveContainer width={180} height={180}>
                             <PieChart>
-                              <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={38} outerRadius={65} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                              <Pie data={valgteProdukterRapport} cx="50%" cy="50%" innerRadius={45} outerRadius={78} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
                                 {valgteProdukterRapport.map((p, idx) => (
                                   <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
                                 ))}
@@ -8893,79 +8894,83 @@ export default function PensumPrognoseModell() {
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
-                        <div className="space-y-2 flex-1 min-w-0">
+                        <div className="space-y-2.5 flex-1 min-w-0">
                           {valgteProdukterRapport.map((p, idx) => (
-                            <div key={p.id} className="flex items-center gap-2 text-xs">
+                            <div key={p.id} className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
                               <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
-                              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
+                              <span className="font-bold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0)}%</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
 
-                    {/* Aktivafordeling */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
-                      <div className="flex items-center gap-6">
-                        <div className="shrink-0">
-                          <ResponsiveContainer width={160} height={160}>
-                            <PieChart>
-                              <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
-                                {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
-                                  <Cell key={entry.name} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="space-y-2.5 flex-1">
-                          {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                            <div key={a.name} className="flex items-center gap-2.5 text-sm">
+                    {/* Right: Key facts panel */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-6 flex-shrink-0" style={{ width: '280px' }}>
+                      <h4 className="font-semibold mb-5 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljen i korte trekk</h4>
+                      <div className="space-y-4">
+                        {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
+                          <div key={a.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
-                              <span className="flex-1 text-gray-700">{a.name}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                              <span className="text-sm text-gray-700">{a.name}</span>
                             </div>
-                          ))}
+                            <span className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value.toFixed(0)}%</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-gray-100 pt-3 mt-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Byggesteiner</span>
+                            <span className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{valgteProdukterRapport.length}</span>
+                          </div>
                         </div>
+                        {(() => {
+                          const vektet5y = valgteProdukterRapport.reduce((s, p) => s + (erGyldigTall(p.stat5y?.aarligAvkastning) ? p.vekt / 100 * p.stat5y.aarligAvkastning : 0), 0);
+                          const har5y = valgteProdukterRapport.some(p => erGyldigTall(p.stat5y?.aarligAvkastning));
+                          return har5y ? (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">5 år p.a. historisk</span>
+                              <span className="text-lg font-bold" style={{ color: vektet5y >= 0 ? '#059669' : '#DC2626' }}>{(vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1)}%</span>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>
 
-                  {/* Product table with historisk avkastning */}
-                  <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Pensum Porteføljesammensetning</h2>
+                  {/* Product table */}
+                  <h2 className="text-xl font-bold mb-5 pb-3 border-b" style={{ color: PENSUM_COLORS.darkBlue, borderColor: '#E5E7EB' }}>Pensum Porteføljesammensetning</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                          <th className="py-3 px-3 text-left text-white text-xs">Produkt</th>
-                          <th className="py-3 px-2 text-center text-white text-xs">Vekt</th>
-                          <th className="py-3 px-2 text-right text-blue-200 text-xs" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>1 år</th>
-                          <th className="py-3 px-2 text-right text-blue-200 text-xs">3 år p.a.</th>
-                          <th className="py-3 px-2 text-right text-blue-200 text-xs">5 år p.a.</th>
-                          <th className="py-3 px-2 text-right text-white text-xs" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>Volatilitet</th>
-                          <th className="py-3 px-2 text-right text-white text-xs">Sharpe</th>
-                          <th className="py-3 px-2 text-right text-white text-xs">Maks DD</th>
+                        <tr style={{ backgroundColor: '#F0F4F8' }}>
+                          <th className="py-3 px-3 text-left text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Produkt</th>
+                          <th className="py-3 px-2 text-center text-xs font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Vekt</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-500">1 år</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-500">3 år p.a.</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-500">5 år p.a.</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-500">Volatilitet</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-400">Sharpe</th>
+                          <th className="py-3 px-2 text-right text-xs font-medium text-gray-500">Maks DD</th>
                         </tr>
                       </thead>
                       <tbody>
                         {valgteProdukterRapport.map((p, idx) => (
-                          <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="py-2.5 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
+                          <tr key={p.id} className="border-b border-gray-100">
+                            <td className="py-3 px-3 font-medium text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
                                 {p.navn}
                               </div>
                             </td>
-                            <td className="py-2.5 px-2 text-center text-xs text-gray-500">{p.vekt.toFixed(1)}%</td>
-                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat1y?.totalAvkastning)} style={{ borderLeft: '1px solid #E5E7EB' }}>{formatAvk(p.stat1y?.totalAvkastning)}</td>
-                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat3y?.aarligAvkastning)}>{formatAvk(p.stat3y?.aarligAvkastning)}</td>
-                            <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat5y?.aarligAvkastning)}>{formatAvk(p.stat5y?.aarligAvkastning)}</td>
-                            <td className="py-2.5 px-2 text-right text-xs text-gray-600" style={{ borderLeft: '1px solid #E5E7EB' }}>{p.stat5y ? p.stat5y.standardavvik.toFixed(1) + '%' : '—'}</td>
-                            <td className="py-2.5 px-2 text-right">{p.stat5y ? <span className={"text-[10px] font-bold px-1.5 py-0.5 rounded " + (p.stat5y.sharpe >= 1 ? "bg-green-100 text-green-700" : p.stat5y.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{p.stat5y.sharpe.toFixed(2)}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
-                            <td className="py-2.5 px-2 text-right text-xs text-red-600 font-medium">{p.stat5y ? p.stat5y.maxDrawdown.toFixed(1) + '%' : '—'}</td>
+                            <td className="py-3 px-2 text-center text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(1)}%</td>
+                            <td className={"py-3 px-2 text-right text-xs font-semibold " + avkFarge(p.stat1y?.totalAvkastning)}>{formatAvk(p.stat1y?.totalAvkastning)}</td>
+                            <td className={"py-3 px-2 text-right text-xs font-semibold " + avkFarge(p.stat3y?.aarligAvkastning)}>{formatAvk(p.stat3y?.aarligAvkastning)}</td>
+                            <td className={"py-3 px-2 text-right text-xs font-semibold " + avkFarge(p.stat5y?.aarligAvkastning)}>{formatAvk(p.stat5y?.aarligAvkastning)}</td>
+                            <td className="py-3 px-2 text-right text-xs text-gray-600">{p.stat5y ? p.stat5y.standardavvik.toFixed(1) + '%' : '—'}</td>
+                            <td className="py-3 px-2 text-right text-xs text-gray-400">{p.stat5y ? p.stat5y.sharpe.toFixed(2) : '—'}</td>
+                            <td className="py-3 px-2 text-right text-xs text-red-600 font-medium">{p.stat5y ? p.stat5y.maxDrawdown.toFixed(1) + '%' : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -8979,27 +8984,27 @@ export default function PensumPrognoseModell() {
                           const vektet5y = valgteProdukterRapport.reduce((s, p) => s + (erGyldigTall(p.stat5y?.aarligAvkastning) ? p.vekt / 100 * p.stat5y.aarligAvkastning : 0), 0);
                           const har5y = valgteProdukterRapport.some(p => erGyldigTall(p.stat5y?.aarligAvkastning));
                           return (
-                            <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                              <td className="py-2.5 px-3 font-bold text-white text-xs">Portefølje (vektet)</td>
-                              <td className="py-2.5 px-2 text-center text-xs text-blue-200">{totalVekt.toFixed(1)}%</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har1y ? (vektet1y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')} style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{har1y ? (vektet1y >= 0 ? '+' : '') + vektet1y.toFixed(1) + '%' : '—'}</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har3y ? (vektet3y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har3y ? (vektet3y >= 0 ? '+' : '') + vektet3y.toFixed(1) + '%' : '—'}</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har5y ? (vektet5y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har5y ? (vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1) + '%' : '—'}</td>
-                              <td className="py-2.5 px-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}></td>
-                              <td className="py-2.5 px-2"></td>
-                              <td className="py-2.5 px-2"></td>
+                            <tr className="border-t-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F0F4F8' }}>
+                              <td className="py-3 px-3 font-bold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Portefølje (vektet)</td>
+                              <td className="py-3 px-2 text-center text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{totalVekt.toFixed(1)}%</td>
+                              <td className={"py-3 px-2 text-right text-xs font-bold " + (har1y ? (vektet1y >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{har1y ? (vektet1y >= 0 ? '+' : '') + vektet1y.toFixed(1) + '%' : '—'}</td>
+                              <td className={"py-3 px-2 text-right text-xs font-bold " + (har3y ? (vektet3y >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{har3y ? (vektet3y >= 0 ? '+' : '') + vektet3y.toFixed(1) + '%' : '—'}</td>
+                              <td className={"py-3 px-2 text-right text-xs font-bold " + (har5y ? (vektet5y >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{har5y ? (vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1) + '%' : '—'}</td>
+                              <td className="py-3 px-2"></td>
+                              <td className="py-3 px-2"></td>
+                              <td className="py-3 px-2"></td>
                             </tr>
                           );
                         })()}
                       </tfoot>
                     </table>
                   </div>
-                  <div className="mt-2 text-[10px] text-gray-400">Avkastning beregnet fra månedlige indeksverdier per {RAPPORT_DATO}. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</div>
+                  <div className="mt-3 text-[10px] text-gray-400">Avkastning beregnet fra månedlige indeksverdier per {RAPPORT_DATO}. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</div>
                 </div>
 
-                {/* === PORTEFØLJENS HISTORISKE AVKASTNING (vektet) === */}
-                <div data-rapport-slide="kalenderaar" className="rounded-xl p-5 border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' }}>
-                  <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum-forslagets historiske avkastning (vektet)</h3>
+                {/* === HISTORISK UTVIKLING (vektet) — lighter strip === */}
+                <div data-rapport-slide="kalenderaar" className="mt-8">
+                  <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk utvikling (vektet)</h3>
                   <div className="grid grid-cols-5 gap-4 text-center">
                     {[
                       { aar: '2026 YTD', key: 'aar2026' },
@@ -9008,8 +9013,8 @@ export default function PensumPrognoseModell() {
                       { aar: '2023', key: 'aar2023' },
                       { aar: '2022', key: 'aar2022' }
                     ].map(({ aar, key }) => (
-                      <div key={aar} className="bg-white rounded-lg p-3 shadow-sm">
-                        <p className="text-[10px] text-gray-500 mb-1 font-medium">{aar}</p>
+                      <div key={aar} className="rounded-lg p-3" style={{ backgroundColor: '#F8FAFC' }}>
+                        <p className="text-xs text-gray-500 mb-1 font-medium">{aar}</p>
                         <p className={"text-xl font-bold " + (erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>
                           {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1) + '%' : '—'}
                         </p>
