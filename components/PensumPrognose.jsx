@@ -2082,175 +2082,115 @@ export default function PensumPrognoseModell() {
 
         return (
           <div data-rapport-slide="eksisterende-sammenligning" className="page-break-before">
-            <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>
+            <h2 className="text-lg font-bold mb-4 pb-2 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>
               Sammenligning med eksisterende portefølje{eksisterendePortefolje.kilde ? ` (${eksisterendePortefolje.kilde})` : ''}
             </h2>
 
-            {/* Side-ved-side nøkkeltall */}
-            <div className={harNoeNaaværendeData ? "grid grid-cols-2 gap-6 mb-6" : "grid grid-cols-1 gap-6 mb-6 max-w-md"}>
-              {/* Nåværende portefølje (eksisterende + eksterne fond) */}
-              {harNoeNaaværendeData && <div className="rounded-xl border-2 p-5" style={{ borderColor: '#94A3B8' }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#94A3B8' }}></div>
-                  <h3 className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende portefølje{eksisterendePortefolje.kilde ? ` — ${eksisterendePortefolje.kilde}` : ''}{harEksterneFondRapport && !harEksisterendeData ? ' (ekstern)' : ''}</h3>
+            {/* Row 1: Nøkkeltall (left 2 cols) + Bar chart (right) */}
+            <div className="flex gap-4 mb-4">
+              {/* Nåværende nøkkeltall */}
+              {harNoeNaaværendeData && <div className="rounded-lg border p-3 flex-1" style={{ borderColor: '#CBD5E1' }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#94A3B8' }}></div>
+                  <h3 className="text-xs font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende{eksisterendePortefolje.kilde ? ` — ${eksisterendePortefolje.kilde}` : ''}</h3>
                 </div>
-                <div className="space-y-2.5">
-                  {naaTotal > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Total verdi</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(naaTotal)}</span></div>}
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Aksjeandel</span><span className="font-medium">{naaAksjeAndel.toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Renteandel</span><span className="font-medium">{naaRenteAndel.toFixed(0)}%</span></div>
-                  {naaKontantAndel > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Kontantandel</span><span className="font-medium" style={{ color: naaKontantAndel > 20 ? '#DC2626' : undefined }}>{naaKontantAndel.toFixed(0)}%</span></div>}
-                  <div className="border-t pt-2 mt-1">
-                    <div className="flex justify-between text-xs"><span className="text-gray-500">Volatilitet (3 år)</span><span className="font-medium">{naaVektetVol != null ? naaVektetVol.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 1 år</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk1y) }}>{naaVektetAvk1y != null ? (naaVektetAvk1y >= 0 ? '+' : '') + naaVektetAvk1y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 3 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk3y) }}>{naaVektetAvk3y != null ? (naaVektetAvk3y >= 0 ? '+' : '') + naaVektetAvk3y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk5y) }}>{naaVektetAvk5y != null ? (naaVektetAvk5y >= 0 ? '+' : '') + naaVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
-                  </div>
+                <div className="space-y-1">
+                  {naaTotal > 0 && <div className="flex justify-between text-[10px]"><span className="text-gray-500">Total verdi</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(naaTotal)}</span></div>}
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{naaAksjeAndel.toFixed(0)}% / {naaRenteAndel.toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{naaVektetVol != null ? naaVektetVol.toFixed(1) + '%' : '—'}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk1y) }}>{[naaVektetAvk1y, naaVektetAvk3y, naaVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—').join(' / ')}</span></div>
                 </div>
               </div>}
 
-              {/* Pensum-forslaget */}
-              <div className="rounded-xl border-2 p-5" style={{ borderColor: PENSUM_COLORS.teal }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
-                  <h3 className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum-forslaget</h3>
+              {/* Pensum nøkkeltall */}
+              <div className="rounded-lg border p-3 flex-1" style={{ borderColor: PENSUM_COLORS.teal }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+                  <h3 className="text-xs font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum-forslaget</h3>
                 </div>
-                <div className="space-y-2.5">
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Investert beløp</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(pensumBelop)}</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Aksjeandel</span><span className="font-medium">{aksjeAndelPensum.toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Renteandel</span><span className="font-medium">{renteAndelPensum.toFixed(0)}%</span></div>
-                  {altAndelPensum > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Alternativer</span><span className="font-medium">{altAndelPensum.toFixed(0)}%</span></div>}
-                  <div className="flex justify-between text-xs"><span className="text-gray-500">Kontantandel</span><span className="font-medium">0%</span></div>
-                  <div className="border-t pt-2 mt-1">
-                    <div className="flex justify-between text-xs"><span className="text-gray-500">Volatilitet (3 år)</span><span className="font-medium">{pensumVektetVol != null ? pensumVektetVol.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 1 år</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk1y) }}>{pensumVektetAvk1y != null ? (pensumVektetAvk1y >= 0 ? '+' : '') + pensumVektetAvk1y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 3 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk3y) }}>{pensumVektetAvk3y != null ? (pensumVektetAvk3y >= 0 ? '+' : '') + pensumVektetAvk3y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Avk. 5 år p.a.</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk5y) }}>{pensumVektetAvk5y != null ? (pensumVektetAvk5y >= 0 ? '+' : '') + pensumVektetAvk5y.toFixed(1) + '%' : '—'}</span></div>
-                    <div className="flex justify-between text-xs mt-1"><span className="text-gray-500">Forv. avkastning p.a.</span><span className="font-bold" style={{ color: '#059669' }}>{pensumAvk ? pensumAvk.toFixed(1) + '%' : '—'}</span></div>
-                  </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Investert beløp</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(pensumBelop)}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{aksjeAndelPensum.toFixed(0)}% / {renteAndelPensum.toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{pensumVektetVol != null ? pensumVektetVol.toFixed(1) + '%' : '—'}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk1y) }}>{[pensumVektetAvk1y, pensumVektetAvk3y, pensumVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—').join(' / ')}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Forv. avk. p.a.</span><span className="font-bold" style={{ color: '#059669' }}>{pensumAvk ? pensumAvk.toFixed(1) + '%' : '—'}</span></div>
                 </div>
               </div>
-            </div>
 
-            {/* Avkastnings-sammenligning graf */}
-            {avkBarData.length > 0 && (
-              <div className="mb-6">
-                <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning — sammenligning</h4>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={avkBarData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }} barCategoryGap="30%">
+              {/* Bar chart */}
+              {avkBarData.length > 0 && (
+                <div className="flex-1 bg-gray-50 rounded-lg p-3">
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={avkBarData} margin={{ top: 5, right: 10, left: 5, bottom: 0 }} barCategoryGap="30%">
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                      <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={{ stroke: '#D1D5DB' }} />
-                      <YAxis tickFormatter={(v) => (v >= 0 ? '+' : '') + v.toFixed(0) + '%'} tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={50} />
-                      <Tooltip formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'eksisterende' ? 'Nåværende' : 'Pensum']} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                      <Legend iconType="circle" formatter={(v) => v === 'eksisterende' ? 'Nåværende portefølje' : 'Pensum-forslaget'} wrapperStyle={{ fontSize: '11px' }} />
-                      <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="3 3" />
-                      <Bar dataKey="eksisterende" fill="#94A3B8" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                      <Bar dataKey="pensum" fill={PENSUM_COLORS.teal} radius={[4, 4, 0, 0]} maxBarSize={50} />
+                      <XAxis dataKey="periode" tick={{ fontSize: 9, fill: '#6B7280' }} axisLine={{ stroke: '#D1D5DB' }} />
+                      <YAxis tickFormatter={(v) => (v >= 0 ? '+' : '') + v.toFixed(0) + '%'} tick={{ fontSize: 8, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={35} />
+                      <Tooltip formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'eksisterende' ? 'Nåværende' : 'Pensum']} contentStyle={{ borderRadius: '8px', fontSize: '10px' }} />
+                      <Legend iconType="circle" formatter={(v) => v === 'eksisterende' ? 'Nåværende' : 'Pensum'} wrapperStyle={{ fontSize: '9px' }} />
+                      <Bar dataKey="eksisterende" fill="#94A3B8" radius={[3, 3, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="pensum" fill={PENSUM_COLORS.teal} radius={[3, 3, 0, 0]} maxBarSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Aktivafordeling visuell sammenligning */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            {/* Row 2: Aktivafordeling side by side */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
               {harNoeNaaværendeData && <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Nåværende</h4>
-                <div className="flex h-6 rounded-full overflow-hidden">
-                  {naaAksjeAndel > 0 && <div style={{ width: naaAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{naaAksjeAndel >= 10 ? 'Aksje ' + naaAksjeAndel.toFixed(0) + '%' : ''}</div>}
-                  {naaRenteAndel > 0 && <div style={{ width: naaRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[9px] font-medium">{naaRenteAndel >= 10 ? 'Rente ' + naaRenteAndel.toFixed(0) + '%' : ''}</div>}
-                  {naaKontantAndel > 0 && <div style={{ width: naaKontantAndel + '%', backgroundColor: '#CBD5E1' }} className="flex items-center justify-center text-gray-600 text-[9px] font-medium">{naaKontantAndel >= 10 ? 'Kont. ' + naaKontantAndel.toFixed(0) + '%' : ''}</div>}
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Nåværende</p>
+                <div className="flex h-5 rounded-full overflow-hidden">
+                  {naaAksjeAndel > 0 && <div style={{ width: naaAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaAksjeAndel >= 15 ? 'Aksje ' + naaAksjeAndel.toFixed(0) + '%' : ''}</div>}
+                  {naaRenteAndel > 0 && <div style={{ width: naaRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaRenteAndel >= 15 ? 'Rente ' + naaRenteAndel.toFixed(0) + '%' : ''}</div>}
+                  {naaKontantAndel > 0 && <div style={{ width: naaKontantAndel + '%', backgroundColor: '#CBD5E1' }} className="flex items-center justify-center text-[8px] font-medium">{naaKontantAndel >= 15 ? 'Kont.' : ''}</div>}
                 </div>
               </div>}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Pensum</h4>
-                <div className="flex h-6 rounded-full overflow-hidden">
-                  {aksjeAndelPensum > 0 && <div style={{ width: aksjeAndelPensum + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{aksjeAndelPensum >= 10 ? 'Aksje ' + aksjeAndelPensum.toFixed(0) + '%' : ''}</div>}
-                  {renteAndelPensum > 0 && <div style={{ width: renteAndelPensum + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[9px] font-medium">{renteAndelPensum >= 10 ? 'Rente ' + renteAndelPensum.toFixed(0) + '%' : ''}</div>}
-                  {altAndelPensum > 0 && <div style={{ width: altAndelPensum + '%', backgroundColor: PENSUM_COLORS.teal }} className="flex items-center justify-center text-white text-[9px] font-medium">{altAndelPensum >= 10 ? 'Alt. ' + altAndelPensum.toFixed(0) + '%' : ''}</div>}
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Pensum</p>
+                <div className="flex h-5 rounded-full overflow-hidden">
+                  {aksjeAndelPensum > 0 && <div style={{ width: aksjeAndelPensum + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{aksjeAndelPensum >= 15 ? 'Aksje ' + aksjeAndelPensum.toFixed(0) + '%' : ''}</div>}
+                  {renteAndelPensum > 0 && <div style={{ width: renteAndelPensum + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{renteAndelPensum >= 15 ? 'Rente ' + renteAndelPensum.toFixed(0) + '%' : ''}</div>}
+                  {altAndelPensum > 0 && <div style={{ width: altAndelPensum + '%', backgroundColor: PENSUM_COLORS.teal }} className="flex items-center justify-center text-white text-[8px] font-medium">{altAndelPensum >= 15 ? 'Alt.' : ''}</div>}
                 </div>
               </div>
             </div>
 
-            {/* Sektor/region sammenligning — cleaner inline layout */}
+            {/* Row 3: Eksponering — 4 columns */}
             {(pensumRegioner.length > 0 || naaRegioner.length > 0 || pensumSektorer.length > 0 || naaSektorer.length > 0) && (
-              <div className="mb-5">
-                <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponering — sammenligning</h4>
-                <div className="grid grid-cols-2 gap-5">
-                  {/* Regioner */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-2">Nåværende — Regioner</p>
-                    {naaRegioner.length > 0 ? (
-                      <div className="space-y-1">
-                        {naaRegioner.map((r, i) => (
-                          <div key={i} className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-gray-600 w-20 flex-shrink-0 truncate">{r.navn}</span>
-                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
+              <div className="mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponering — sammenligning</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { title: 'Nåv. — Regioner', data: naaRegioner, color: '#94A3B8' },
+                    { title: 'Pensum — Regioner', data: pensumRegioner, color: PENSUM_COLORS.teal },
+                    { title: 'Nåv. — Sektorer', data: naaSektorer, color: '#94A3B8' },
+                    { title: 'Pensum — Sektorer', data: pensumSektorer, color: PENSUM_COLORS.salmon },
+                  ].map(block => (
+                    <div key={block.title}>
+                      <p className="text-[9px] font-semibold text-gray-500 mb-1">{block.title}</p>
+                      {block.data.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {block.data.slice(0, 5).map((r, i) => (
+                            <div key={i} className="flex items-center gap-1" style={{ lineHeight: '1.1' }}>
+                              <div className="w-10 bg-gray-100 rounded-full overflow-hidden flex-shrink-0" style={{ height: '6px' }}>
+                                <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: block.color }}></div>
+                              </div>
+                              <span className="text-[9px] text-gray-600 flex-1 truncate">{r.navn}</span>
+                              <span className="text-[9px] font-semibold w-8 text-right flex-shrink-0">{r.vekt}%</span>
                             </div>
-                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{r.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-2">Pensum — Regioner</p>
-                    {pensumRegioner.length > 0 ? (
-                      <div className="space-y-1">
-                        {pensumRegioner.slice(0, 6).map((r, i) => (
-                          <div key={i} className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-gray-600 w-24 flex-shrink-0 truncate">{r.navn}</span>
-                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.teal }}></div>
-                            </div>
-                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{r.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                  </div>
-                  {/* Sektorer */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-2 mt-2">Nåværende — Sektorer</p>
-                    {naaSektorer.length > 0 ? (
-                      <div className="space-y-1">
-                        {naaSektorer.map((s, i) => (
-                          <div key={i} className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-gray-600 w-20 flex-shrink-0 truncate">{s.navn}</span>
-                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: '#94A3B8' }}></div>
-                            </div>
-                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{s.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-gray-500 mb-2 mt-2">Pensum — Sektorer</p>
-                    {pensumSektorer.length > 0 ? (
-                      <div className="space-y-1">
-                        {pensumSektorer.slice(0, 6).map((s, i) => (
-                          <div key={i} className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-gray-600 w-24 flex-shrink-0 truncate">{s.navn}</span>
-                            <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: Math.min(s.vekt, 100) + '%', backgroundColor: PENSUM_COLORS.salmon }}></div>
-                            </div>
-                            <span className="text-[10px] font-semibold w-9 text-right flex-shrink-0">{s.vekt}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : <p className="text-[10px] text-gray-400 italic">Ingen data</p>}
-                  </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-[9px] text-gray-400 italic">—</p>}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Fondsoversikt — eksisterende + eksterne fond */}
+            {/* Row 4: Fondstabell — kompakt */}
             {(eksFond.length > 0 || eksterneFondRapport.length > 0) && (
-              <div className="mb-5">
-                <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende fondsbeholdning</h4>
+              <div className="mb-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Nåværende fondsbeholdning</p>
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr style={{ backgroundColor: '#F0F4F8' }}>
