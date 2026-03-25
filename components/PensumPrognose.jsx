@@ -9049,8 +9049,9 @@ export default function PensumPrognoseModell() {
                       <div className="grid grid-cols-3 gap-5">
                         {scenarioer.map(s => {
                           const sluttverdi = Math.round(kapital * Math.pow(1 + s.avk / 100, horisont));
+                          const erHoved = s.id === 'hoved';
                           return (
-                            <div key={s.id} className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+                            <div key={s.id} className={"rounded-xl overflow-hidden " + (erHoved ? "border-2 shadow-sm" : "border border-gray-100")} style={erHoved ? { borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' } : { backgroundColor: 'white' }}>
                               <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
                               <div className="p-5 space-y-3">
                                 <div>
