@@ -2736,7 +2736,7 @@ export default function PensumPrognoseModell() {
 
     '<div class="section"><h2>Historisk avkastning</h2><table><thead><tr style="background:#0D2240"><th style="padding:7px 8px;color:white;font-size:10px;text-align:left">Produkt</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:center">Vekt</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right;border-left:1px solid rgba(255,255,255,0.2)">1 år</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right">3 år p.a.</th><th style="padding:7px 4px;color:#93C5FD;font-size:10px;text-align:right">5 år p.a.</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right;border-left:1px solid rgba(255,255,255,0.2)">Volatilitet</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right">Sharpe</th><th style="padding:7px 4px;color:white;font-size:10px;text-align:right">Maks DD</th></tr></thead><tbody>' + histRows + '</tbody></table><p style="font-size:8px;color:#9CA3AF;margin-top:6px">Avkastning beregnet fra månedlige indeksverdier per ' + RAPPORT_DATO + '. Sharpe (risikofri rente 3%). Volatilitet og maks drawdown basert på 5-årsperioden.</p></div>' +
 
-    '<div class="hist-port"><h3>Din porteføljes historiske avkastning (vektet)</h3><div class="hist-port-grid">' + histPortCards + '</div></div>' +
+    '<div class="hist-port"><h3>Pensum-forslagets historiske avkastning (vektet)</h3><div class="hist-port-grid">' + histPortCards + '</div></div>' +
 
     '<div class="section"><h2>Scenarioanalyse — ' + horisont + ' års horisont</h2><div class="scenarios"><div class="box" style="background:' + PENSUM_COLORS.darkBlue + ';border:2px solid ' + PENSUM_COLORS.darkBlue + '"><div class="box-label" style="color:' + PENSUM_COLORS.lightBlue + '">Forventet</div><div class="box-value" style="color:white">' + formatCurrency(forventetSluttverdi) + '</div><div class="box-sub" style="color:' + PENSUM_COLORS.lightBlue + '">CAGR ' + formatPercent(vektetAvkastning) + '</div></div><div class="box" style="background:#E8F0F0;border:1px solid #B8D4D4"><div class="box-label" style="color:' + PENSUM_COLORS.teal + '">Optimistisk</div><div class="box-value" style="color:' + PENSUM_COLORS.teal + '">' + formatCurrency(optimistiskSluttverdi) + '</div><div class="box-sub" style="color:' + PENSUM_COLORS.teal + '">CAGR ' + formatPercent(scenarioParams.optimistisk) + '</div></div><div class="box" style="background:#F8FAFC;border:1px solid #E2E8F0"><div class="box-label" style="color:#6B7280">Sluttverdi</div><div class="box-value" style="color:' + PENSUM_COLORS.darkBlue + '">' + formatCurrency(sluttverdi) + '</div><div class="box-sub" style="color:#6B7280">Aktivaallokering</div></div></div></div>' +
 
@@ -5097,7 +5097,7 @@ export default function PensumPrognoseModell() {
                   {/* Venstre: Allokering */}
                   <div>
                     <h4 className="font-semibold mb-4 flex items-center justify-between" style={{ color: PENSUM_COLORS.darkBlue }}>
-                      <span>Din portefølje</span>
+                      <span>Pensum-forslaget</span>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-xs">
                           <span className="text-gray-500">Beløp:</span>
@@ -5644,7 +5644,7 @@ export default function PensumPrognoseModell() {
                       portSerie.push({ dato, indeksert: parseFloat((vektetVerdi / totalProdVekt).toFixed(2)) });
                     }
                   });
-                  if (portSerie.length > 0) serieMap['Din portefølje'] = portSerie;
+                  if (portSerie.length > 0) serieMap['Pensum-forslaget'] = portSerie;
                 }
 
                 // 2. Referanseindekser
@@ -5703,13 +5703,13 @@ export default function PensumPrognoseModell() {
 
               const compData = byggPortCompData();
               const alleCompNavn = [
-                ...(pensumAllokering.some(a => a.vekt > 0) ? ['Din portefølje'] : []),
+                ...(pensumAllokering.some(a => a.vekt > 0) ? ['Pensum-forslaget'] : []),
                 ...portCompIndekser,
                 ...portCompVisProdukter
               ];
 
               const getFarge = (n) => {
-                if (n === 'Din portefølje') return '#1B3A5F';
+                if (n === 'Pensum-forslaget') return '#1B3A5F';
                 if (PORT_COMP_INDEKS_CONFIG[n]) return PORT_COMP_INDEKS_CONFIG[n].farge;
                 const prod = PORT_COMP_PROD_CONFIG.find(c => c.label === n);
                 return prod?.farge || '#999';
@@ -5719,7 +5719,7 @@ export default function PensumPrognoseModell() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-5">
                     <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sammenlign portefølje mot benchmarks</h3>
-                    <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt — din vektede portefølje vs. referanseindekser</p>
+                    <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt — Pensum-forslaget vs. referanseindekser</p>
 
                     {/* Periodeknapper */}
                     <div className="flex items-center gap-2 mb-4">
@@ -5735,13 +5735,13 @@ export default function PensumPrognoseModell() {
                       })}
                     </div>
 
-                    {/* Din portefølje indikator */}
+                    {/* Pensum-forslaget indikator */}
                     <div className="mb-3">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Din portefølje</div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensum-forslaget</div>
                       <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 text-white w-fit"
                         style={{ backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' }}>
                         <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
-                        Din portefølje (vektet)
+                        Pensum-forslaget (vektet)
                       </div>
                     </div>
 
@@ -5798,7 +5798,7 @@ export default function PensumPrognoseModell() {
                           <Legend verticalAlign="bottom" height={36} />
                           <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                           {alleCompNavn.map(n => {
-                            const erPortefolje = n === 'Din portefølje' || n === 'Pensum-forslaget';
+                            const erPortefolje = n === 'Pensum-forslaget' || n === 'Pensum-forslaget';
                             const erIndeks = !!PORT_COMP_INDEKS_CONFIG[n];
                             return (
                               <Line key={n} type="monotone" dataKey={n} stroke={getFarge(n)}
@@ -5826,7 +5826,7 @@ export default function PensumPrognoseModell() {
               <div className="p-6">
                 {/* Vektet porteføljeavkastning */}
                 <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
-                  <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Din porteføljes historiske avkastning</h4>
+                  <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum-forslagets historiske avkastning</h4>
                   <div className="grid grid-cols-5 gap-4 text-center">
                     {[
                       { aar: '2026 YTD', key: 'aar2026' },
@@ -6171,7 +6171,7 @@ export default function PensumPrognoseModell() {
                   <h3 className={"text-lg font-semibold " + (visPortefoljSnapshots ? "text-white" : "")} style={{ color: visPortefoljSnapshots ? undefined : PENSUM_COLORS.darkBlue }}>Historisk avkastning — benchmark</h3>
                 </div>
                 <span className={"text-sm " + (visPortefoljSnapshots ? "text-blue-200" : "text-gray-400")}>
-                  {visPortefoljSnapshots ? 'Skjul' : 'Vis 1, 3 og 5 års historikk for din portefølje'}
+                  {visPortefoljSnapshots ? 'Skjul' : 'Vis 1, 3 og 5 års historikk for Pensum-forslaget'}
                 </span>
               </button>
               {visPortefoljSnapshots && (() => {
@@ -6297,9 +6297,9 @@ export default function PensumPrognoseModell() {
                                 <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
-                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
                                 <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
-                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
+                                <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Pensum-forslaget" />
                                 {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
                                   <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
                                 ))}
@@ -6308,7 +6308,7 @@ export default function PensumPrognoseModell() {
                             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 justify-center">
                               <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
                                 <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
-                                Din portefølje: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                Pensum-forslaget: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                   {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
                                 </span>
                               </div>
@@ -6432,7 +6432,7 @@ export default function PensumPrognoseModell() {
                         .filter((_, i) => i % sampleRate === 0 || i === ddSorterteDatoer.length - 1)
                         .map(dato => {
                           const punkt = { dato };
-                          if (portDDMap[dato] !== undefined) punkt['Din portefølje'] = portDDMap[dato];
+                          if (portDDMap[dato] !== undefined) punkt['Pensum-forslaget'] = portDDMap[dato];
                           Object.keys(indeksDDMaps).forEach(navn => {
                             if (indeksDDMaps[navn][dato] !== undefined) punkt[navn] = indeksDDMaps[navn][dato];
                           });
@@ -6480,7 +6480,7 @@ export default function PensumPrognoseModell() {
                                   formatter={(v, name) => [v.toFixed(2) + '%', name]} />
                                 <Legend verticalAlign="bottom" height={36} />
                                 <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
-                                <Area type="monotone" dataKey="Din portefølje" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
+                                <Area type="monotone" dataKey="Pensum-forslaget" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Pensum-forslaget" />
                                 {Object.entries(INDEKS_DD).map(([navn, cfg]) => (
                                   <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} name={navn} />
                                 ))}
@@ -6492,7 +6492,7 @@ export default function PensumPrognoseModell() {
                     })()}
 
                     <div className="text-xs text-gray-400 p-4 bg-gray-50/80 rounded-lg border border-gray-100">
-                      <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
+                      <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser Pensum-forslagets vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning. Kilde: {DATAFEED_KILDE}.
                     </div>
                   </div>
                 );
@@ -9008,7 +9008,7 @@ export default function PensumPrognoseModell() {
 
                 {/* === PORTEFØLJENS HISTORISKE AVKASTNING (vektet) === */}
                 <div data-rapport-slide="kalenderaar" className="rounded-xl p-5 border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' }}>
-                  <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Din porteføljes historiske avkastning (vektet)</h3>
+                  <h3 className="text-sm font-bold mb-4" style={{ color: PENSUM_COLORS.darkBlue }}>Pensum-forslagets historiske avkastning (vektet)</h3>
                   <div className="grid grid-cols-5 gap-4 text-center">
                     {[
                       { aar: '2026 YTD', key: 'aar2026' },
@@ -9259,7 +9259,7 @@ export default function PensumPrognoseModell() {
                     .filter((_, i) => i % sampleRateR === 0 || i === ddSorterteDatoerR.length - 1)
                     .map(dato => {
                       const punkt = { dato };
-                      if (portDDMapR[dato] !== undefined) punkt['Din portefølje'] = portDDMapR[dato];
+                      if (portDDMapR[dato] !== undefined) punkt['Pensum-forslaget'] = portDDMapR[dato];
                       Object.keys(indeksDDMapsR).forEach(navn => { if (indeksDDMapsR[navn][dato] !== undefined) punkt[navn] = indeksDDMapsR[navn][dato]; });
                       return punkt;
                     });
@@ -9290,9 +9290,9 @@ export default function PensumPrognoseModell() {
                                     <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const vals = chartData.map(d => d.portefolje).filter(v => v !== undefined); const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                       labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
-                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Din portefølje' ? 'Din portefølje' : name]} />
+                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
                                     <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
-                                    <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Din portefølje" />
+                                    <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Pensum-forslaget" />
                                     {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => (
                                       <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} connectNulls />
                                     ))}
@@ -9301,7 +9301,7 @@ export default function PensumPrognoseModell() {
                                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 justify-center">
                                   <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
                                     <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
-                                    Din portefølje: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
+                                    Pensum-forslaget: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
                                       {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1) + '%' : '—'}
                                     </span>
                                   </div>
@@ -9354,7 +9354,7 @@ export default function PensumPrognoseModell() {
                                     formatter={(v, name) => [v.toFixed(2) + '%', name]} />
                                   <Legend verticalAlign="bottom" height={36} />
                                   <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
-                                  <Area type="monotone" dataKey="Din portefølje" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Din portefølje" />
+                                  <Area type="monotone" dataKey="Pensum-forslaget" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Pensum-forslaget" />
                                   {Object.entries(INDEKS_DD_RAP).map(([navn, cfg]) => (
                                     <Line key={navn} type="monotone" dataKey={navn} stroke={cfg.farge} strokeWidth={1.5} dot={false} strokeDasharray={cfg.dash} name={navn} />
                                   ))}
@@ -9365,7 +9365,7 @@ export default function PensumPrognoseModell() {
                         )}
 
                         <div className="text-xs text-gray-400 p-3 bg-gray-50/80 rounded-lg border border-gray-100">
-                          <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser din vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning.
+                          <strong>Merk:</strong> Alle grafer viser prosentvis avkastning fra periodens start. Den tykke linjen viser Pensum-forslagets vektede portefølje. Historisk avkastning er ingen garanti for fremtidig avkastning.
                         </div>
                       </div>
                     </div>
