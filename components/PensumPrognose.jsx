@@ -8670,7 +8670,8 @@ export default function PensumPrognoseModell() {
                   {/* Center: Title & Client */}
                   <div className="flex-1 flex flex-col justify-center py-8">
                     <div className="text-sm font-semibold uppercase tracking-[0.25em] mb-4" style={{ color: PENSUM_COLORS.salmon }}>Investeringsforslag</div>
-                    <h1 className="text-4xl font-bold text-white mb-3" style={{ lineHeight: '1.15' }}>{kundeNavn ? <>{kundeNavn}{kundeSelskap ? <span className="text-base text-blue-300 ml-2">— {kundeSelskap}</span> : ''}</> : (kundeSelskap || 'Investor')}</h1>
+                    <h1 className="text-4xl font-bold text-white mb-1" style={{ lineHeight: '1.15' }}>{kundeNavn || kundeSelskap || 'Investor'}</h1>
+                    {kundeNavn && kundeSelskap && <p className="text-lg text-blue-200 mt-1">{kundeSelskap}</p>}
                   </div>
 
                   {/* Bottom: Metadata — advisor + date together */}
