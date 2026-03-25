@@ -3205,6 +3205,16 @@ export default function PensumPrognoseModell() {
         clone.querySelectorAll('.recharts-responsive-container').forEach(rc => {
           rc.style.width = '100%';
           rc.style.minHeight = `${chartH}px`;
+          // Force SVG to stretch to full width of container
+          const svg = rc.querySelector('svg.recharts-surface');
+          if (svg) {
+            svg.setAttribute('width', '100%');
+            svg.style.width = '100%';
+          }
+          const rw = rc.querySelector('.recharts-wrapper');
+          if (rw) {
+            rw.style.width = '100%';
+          }
         });
         wrapper.appendChild(clone);
         document.body.appendChild(wrapper);
@@ -3323,6 +3333,9 @@ export default function PensumPrognoseModell() {
               cardParent.insertBefore(wrapper, titleEl);
               wrapper.appendChild(titleEl);
               wrapper.appendChild(card);
+              // Force card to fill width for proper chart rendering
+              card.style.width = '100%';
+              card.style.maxWidth = 'none';
 
               const imgData = await captureWithResize(wrapper, 1400, { chartMinHeight: 420 });
               const img = new Image();
@@ -3330,6 +3343,8 @@ export default function PensumPrognoseModell() {
               addImageSlide(imgData, img.width / img.height, { centerV: true });
 
               // Restore: move card back to original parent and remove wrapper/title
+              card.style.width = '';
+              card.style.maxWidth = '';
               cardParent.insertBefore(card, wrapper);
               wrapper.remove();
             }
