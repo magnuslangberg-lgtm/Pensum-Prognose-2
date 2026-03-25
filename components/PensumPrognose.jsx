@@ -3383,11 +3383,12 @@ export default function PensumPrognoseModell() {
 
               // Wrap title + card in a temporary container for capture
               const wrapper = document.createElement('div');
+              wrapper.style.cssText = 'width:100%;';
               cardParent.insertBefore(wrapper, titleEl);
               wrapper.appendChild(titleEl);
               wrapper.appendChild(card);
 
-              const imgData = await captureWithResize(wrapper, 1300, { chartMinHeight: 400 });
+              const imgData = await captureWithResize(wrapper, 1400, { chartMinHeight: 420 });
               const img = new Image();
               await new Promise(r => { img.onload = r; img.src = imgData; });
               addImageSlide(imgData, img.width / img.height, { centerV: true });
