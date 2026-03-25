@@ -223,7 +223,8 @@ export default function PensumPrognoseModell() {
     { value: 'etter-eksponering', label: 'Etter eksponering' },
     { value: 'etter-verdiutvikling', label: 'Etter verdiutvikling' },
     { value: 'etter-faktaark', label: 'Etter faktaark' },
-    { value: 'foer-disclaimer', label: 'Før disclaimer (standard)' },
+    { value: 'appendix', label: 'Appendix (etter neste steg)' },
+    { value: 'foer-disclaimer', label: 'Før disclaimer' },
   ];
 
   // Beskrivelser for tilleggsmoduler
@@ -3114,6 +3115,11 @@ export default function PensumPrognoseModell() {
         ...tilleggsmodulGruppe('foer-disclaimer'),
         { name: 'Hvordan tar vi oss betalt?', selectors: ['honorarstruktur'] },
         { name: 'Neste steg', selectors: ['neste-steg'], darkBg: true },
+        // Appendix divider + modules (only if any appendix modules are active)
+        ...(tilleggsmoduler.some(m => m.aktiv && m.posisjon === 'appendix') ? [
+          { name: 'Appendix', selectors: ['appendix-divider'], darkBg: true },
+        ] : []),
+        ...tilleggsmodulGruppe('appendix'),
         { name: 'Viktig informasjon', selectors: ['disclaimer'] },
       ];
 
@@ -9726,6 +9732,18 @@ export default function PensumPrognoseModell() {
 
                 {/* === NESTE STEG === */}
                 {isStandardModulAktiv('neste-steg') && renderTilleggsmodulInnhold('neste-steg')}
+
+                {/* === APPENDIX DIVIDER + MODULES === */}
+                {tilleggsmoduler.some(m => m.aktiv && m.posisjon === 'appendix') && (
+                  <div data-rapport-slide="appendix-divider" className="page-break-before flex items-center justify-center" style={{ minHeight: '300px', backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px' }}>
+                    <div className="text-center">
+                      <div className="text-xs font-bold uppercase tracking-[0.3em] mb-3" style={{ color: PENSUM_COLORS.salmon }}>Tilleggsinformasjon</div>
+                      <h2 className="text-4xl font-bold text-white">Appendix</h2>
+                      <div className="h-0.5 w-20 mx-auto mt-4" style={{ backgroundColor: PENSUM_COLORS.teal }}></div>
+                    </div>
+                  </div>
+                )}
+                {renderTilleggsmodulerVedPosisjon('appendix')}
 
                 {/* === DISCLAIMER === */}
                 {isStandardModulAktiv('disclaimer') && <div data-rapport-slide="disclaimer" className="page-break-before pt-16 pb-6">
