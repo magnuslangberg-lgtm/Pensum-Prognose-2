@@ -8876,10 +8876,10 @@ export default function PensumPrognoseModell() {
                 {(isStandardModulAktiv('allokering') || isStandardModulAktiv('historisk')) && <><div data-rapport-slide="allokering">
                   <p className="text-sm text-gray-600 mb-6 leading-relaxed">Porteføljesammensetningen kombinerer bred eksponering, løpende avkastning og utvalgte aktive valg.</p>
 
-                  {/* Hero donut (left) + Key facts panel (right) */}
-                  <div className="grid grid-cols-3 gap-5 mb-8">
-                    {/* Left: Large hero donut — takes 2 cols */}
-                    <div className="col-span-2 rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  {/* Donut + Key facts — side by side with fixed proportions */}
+                  <div className="flex gap-5 mb-8">
+                    {/* Left: Donut chart + legend */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5" style={{ flex: '0 0 60%' }}>
                       <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljefordeling</h4>
                       <div className="flex items-center gap-5">
                         <div className="shrink-0">
@@ -8906,8 +8906,8 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
 
-                    {/* Right: Key facts panel — 1 col */}
-                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                    {/* Right: Key facts */}
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5" style={{ flex: '0 0 35%' }}>
                       <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljen i korte trekk</h4>
                       <div className="space-y-3">
                         {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
