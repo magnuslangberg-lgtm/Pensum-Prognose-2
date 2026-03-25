@@ -12,8 +12,8 @@ export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
   const [showPessimistic, setShowPessimistic] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(true);
-  const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(true);
+  const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
+  const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false });
   const [expandedKundeKategorier, setExpandedKundeKategorier] = useState({ likvide: true, illikvide: true, pe: false, eiendom: false });
 
@@ -468,7 +468,7 @@ export default function PensumPrognoseModell() {
 
   // Innstillinger for Pensum Løsninger
   const [visAlternative, setVisAlternative] = useState(false);
-  const [brukBasis, setBrukBasis] = useState(true);
+  const [brukBasis, setBrukBasis] = useState(false);
 
   // Porteføljeallokering for Pensum-produkter
   const [pensumAllokering, setPensumAllokering] = useState([
