@@ -1939,6 +1939,16 @@ export default function PensumPrognoseModell() {
           }
         }
 
+        // Eksisterende fordeling (må beregnes FØR nåværende nøkkeltall)
+        const eksFondAksje = eksFond.filter(f => f.kategori === 'aksje').reduce((s, f) => s + f.belop, 0);
+        const eksFondRente = eksFond.filter(f => f.kategori === 'rente').reduce((s, f) => s + f.belop, 0);
+        const eksFondBlandet = eksFond.filter(f => f.kategori === 'blandet').reduce((s, f) => s + f.belop, 0);
+        const eksAksjeTotal = eksFondAksje + sumAksjer + eksFondBlandet * 0.6;
+        const eksRenteTotal = eksFondRente + eksFondBlandet * 0.4;
+        const eksAksjeAndel = eksTotal > 0 ? (eksAksjeTotal / eksTotal * 100) : 0;
+        const eksRenteAndel = eksTotal > 0 ? (eksRenteTotal / eksTotal * 100) : 0;
+        const eksKontantAndel = eksTotal > 0 ? (eksKontanter / eksTotal * 100) : 0;
+
         // Nåværende nøkkeltall — kombiner eksisterende + eksterne fond
         let naaVektetAvk1y = eksVektetAvk1y, naaVektetAvk3y = eksVektetAvk3y, naaVektetAvk5y = eksVektetAvk5y;
         let naaVektetVol = eksVektetVolatilitet;
@@ -2020,16 +2030,6 @@ export default function PensumPrognoseModell() {
           .map(([navn, belop]) => ({ navn, vekt: eksKategoriTotal > 0 ? parseFloat((belop / eksKategoriTotal * 100).toFixed(1)) : 0 }))
           .sort((a, b) => b.vekt - a.vekt)
           .slice(0, 6);
-
-        // Eksisterende fordeling
-        const eksFondAksje = eksFond.filter(f => f.kategori === 'aksje').reduce((s, f) => s + f.belop, 0);
-        const eksFondRente = eksFond.filter(f => f.kategori === 'rente').reduce((s, f) => s + f.belop, 0);
-        const eksFondBlandet = eksFond.filter(f => f.kategori === 'blandet').reduce((s, f) => s + f.belop, 0);
-        const eksAksjeTotal = eksFondAksje + sumAksjer + eksFondBlandet * 0.6;
-        const eksRenteTotal = eksFondRente + eksFondBlandet * 0.4;
-        const eksAksjeAndel = eksTotal > 0 ? (eksAksjeTotal / eksTotal * 100) : 0;
-        const eksRenteAndel = eksTotal > 0 ? (eksRenteTotal / eksTotal * 100) : 0;
-        const eksKontantAndel = eksTotal > 0 ? (eksKontanter / eksTotal * 100) : 0;
 
         const avkFargeInline = (v) => v == null ? '#9CA3AF' : v >= 0 ? '#059669' : '#DC2626';
 
