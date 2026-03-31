@@ -2508,7 +2508,7 @@ export default function PensumPrognoseModell() {
                   {_scenario.length > 0 && <Area type="monotone" dataKey="optimistisk" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.08} strokeDasharray="5 5" strokeWidth={1.5} name="Optimistisk" />}
                   <Area type="monotone" dataKey="forventet" stroke={PENSUM_COLORS.darkBlue} fill={PENSUM_COLORS.darkBlue} fillOpacity={0.1} strokeWidth={2.5} name={harSammenl2 ? `${valgtPensumProfil} (nåværende)` : 'Forventet'} />
                   {harSammenl2 && <Area type="monotone" dataKey="alternativ" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.05} strokeWidth={2} strokeDasharray="8 4" name={`${sammenligningProfil} (foreslått)`} />}
-                  {_scenario.length > 0 && <Area type="monotone" dataKey="pessimistisk" stroke="#DC2626" fill="#DC2626" fillOpacity={0.05} strokeDasharray="5 5" strokeWidth={1.5} name="Pessimistisk" />}
+                  {_scenario.length > 0 && showPessimistic && <Area type="monotone" dataKey="pessimistisk" stroke="#DC2626" fill="#DC2626" fillOpacity={0.05} strokeDasharray="5 5" strokeWidth={1.5} name="Pessimistisk" />}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -2533,7 +2533,7 @@ export default function PensumPrognoseModell() {
         return null;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond, allokering, sammenligningAllokering, showComparison, sammenligningProfil]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond, allokering, sammenligningAllokering, showComparison, sammenligningProfil, showPessimistic]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
