@@ -2480,7 +2480,8 @@ export default function PensumPrognoseModell() {
       default:
         return null;
     }
-  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond, allokering, sammenligningAllokering, vektetAvkastning, sammenligningAvkastning, verdiutvikling, sammenligningVerdiutvikling, scenarioData, likviditetData, renterAksjerData, showComparison, sammenligningProfil, effektivtInvestertBelop, nettoKontantstrom]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond, allokering, sammenligningAllokering, showComparison, sammenligningProfil]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
