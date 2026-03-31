@@ -4964,60 +4964,110 @@ export default function PensumPrognoseModell() {
 
                   {/* Likviditet og Aktiva side om side - donut style */}
                   <div className="grid grid-cols-1 gap-4">
-                    {/* Likviditet */}
+                    {/* Likviditet & Aktivafordeling */}
                     <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
                       <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet & Aktivafordeling</h4>
-                      <div className="flex items-center gap-6 flex-wrap">
-                        <div className="flex items-center gap-3">
-                          <div className="shrink-0">
-                            <ResponsiveContainer width={90} height={90}>
-                              <PieChart>
-                                <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                  <Cell fill={PENSUM_COLORS.darkBlue} />
-                                  <Cell fill={PENSUM_COLORS.salmon} />
-                                </Pie>
-                                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                              <span className="text-gray-600">Likvid</span>
-                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[0].value)}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PENSUM_COLORS.salmon }}></div>
-                              <span className="text-gray-600">Illikvid</span>
-                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(likviditetData[1].value)}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="h-12 w-px bg-gray-200 hidden sm:block"></div>
-                        <div className="flex items-center gap-3">
-                          <div className="shrink-0">
-                            <ResponsiveContainer width={90} height={90}>
-                              <PieChart>
-                                <Pie data={renterAksjerData} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                  {renterAksjerData.map((entry) => (
-                                    <Cell key={entry.name} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-1.5">
-                            {renterAksjerData.map(a => (
-                              <div key={a.name} className="flex items-center gap-2 text-sm">
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
-                                <span className="text-gray-600">{a.name}</span>
-                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(a.value)}</span>
+                      {showComparison ? (() => {
+                        // Compute comparison data
+                        const illikvKat = ['privateMarkets', 'eiendom'];
+                        const sammIllikvid = sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
+                        const sammLikvid = sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid;
+                        const sammAksjer = sammenligningAllokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0);
+                        const sammRenter = sammenligningAllokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0);
+                        const sammPE = sammenligningAllokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0);
+                        const sammEiendom = sammenligningAllokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
+                        const sammAktivaData = [
+                          { name: 'Aksjer', value: sammAksjer, color: PENSUM_COLORS.darkBlue },
+                          { name: 'Renter', value: sammRenter, color: PENSUM_COLORS.salmon },
+                          { name: 'Private Equity', value: sammPE, color: PENSUM_COLORS.teal },
+                          { name: 'Eiendom', value: sammEiendom, color: PENSUM_COLORS.gold },
+                        ].filter(d => d.value > 0);
+                        const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
+
+                        const renderMiniSection = (title, likvidData, aktivaData) => (
+                          <div>
+                            <p className="text-[10px] font-semibold text-gray-500 mb-2 text-center">{title}</p>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <ResponsiveContainer width={70} height={70}>
+                                  <PieChart><Pie data={likvidData} cx="50%" cy="50%" innerRadius={18} outerRadius={30} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                    <Cell fill={PENSUM_COLORS.darkBlue} /><Cell fill={PENSUM_COLORS.salmon} />
+                                  </Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} /></PieChart>
+                                </ResponsiveContainer>
+                                <div className="space-y-0.5 text-[10px]">
+                                  {likvidData.map((d, i) => <div key={i} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : PENSUM_COLORS.salmon }}></div>{d.name} {d.value.toFixed(0)}%</div>)}
+                                </div>
                               </div>
-                            ))}
+                              <div className="flex items-center gap-2">
+                                <ResponsiveContainer width={70} height={70}>
+                                  <PieChart><Pie data={aktivaData} cx="50%" cy="50%" innerRadius={18} outerRadius={30} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                    {aktivaData.map(e => <Cell key={e.name} fill={e.color} />)}
+                                  </Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} /></PieChart>
+                                </ResponsiveContainer>
+                                <div className="space-y-0.5 text-[10px]">
+                                  {aktivaData.map((d, i) => <div key={i} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>{d.name} {d.value.toFixed(0)}%</div>)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                        return (
+                          <div className="grid grid-cols-2 gap-4">
+                            {renderMiniSection(risikoprofil, likviditetData.filter(d => d.value > 0), renterAksjerData)}
+                            {renderMiniSection(sammenligningProfil, sammLikvidData, sammAktivaData)}
+                          </div>
+                        );
+                      })() : (
+                        <div className="flex items-center gap-6 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="shrink-0">
+                              <ResponsiveContainer width={90} height={90}>
+                                <PieChart>
+                                  <Pie data={likviditetData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                    <Cell fill={PENSUM_COLORS.darkBlue} />
+                                    <Cell fill={PENSUM_COLORS.salmon} />
+                                  </Pie>
+                                  <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-1.5">
+                              {likviditetData.map((d, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm">
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : PENSUM_COLORS.salmon }}></div>
+                                  <span className="text-gray-600">{d.name}</span>
+                                  <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(d.value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="h-12 w-px bg-gray-200 hidden sm:block"></div>
+                          <div className="flex items-center gap-3">
+                            <div className="shrink-0">
+                              <ResponsiveContainer width={90} height={90}>
+                                <PieChart>
+                                  <Pie data={renterAksjerData} cx="50%" cy="50%" innerRadius={22} outerRadius={38} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                                    {renterAksjerData.map((entry) => (
+                                      <Cell key={entry.name} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #E2E8F0' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-1.5">
+                              {renterAksjerData.map(a => (
+                                <div key={a.name} className="flex items-center gap-2 text-sm">
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }}></div>
+                                  <span className="text-gray-600">{a.name}</span>
+                                  <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(a.value)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
