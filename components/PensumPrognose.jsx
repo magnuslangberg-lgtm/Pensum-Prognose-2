@@ -131,6 +131,8 @@ export default function PensumPrognoseModell() {
     { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
     { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering' },
+    { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix' },
+    { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix' },
     { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
@@ -239,6 +241,8 @@ export default function PensumPrognoseModell() {
     'folgebrev': 'Personlig brev til kunden med sammendrag av porteføljeforslaget og nøkkeltall',
     'markedssyn': 'Pensums markedssyn med makrobilde, risikobilde og mulighetsbilde — oppdateres månedlig',
     'neste-steg': 'Veien videre med steg-for-steg prosess og kontaktinfo for din rådgiver',
+    'totalallokering': 'Visuell sammenligning av nåværende og foreslått aktivasammensetning — kakediagram, likvid/illikvid-fordeling og nøkkeltall',
+    'prognose-sammenligning': 'Verdiutvikling over tid med forventet, pessimistisk og optimistisk scenario — inkl. sammenligning med alternativ profil',
     'appendix-side': 'Skilleark som markerer starten på appendix-delen — tilleggsmoduler plassert etter denne vises i appendix',
   };
 
@@ -2275,6 +2279,193 @@ export default function PensumPrognoseModell() {
         );
       }
 
+      case 'totalallokering': {
+        const _allok = allokering || [];
+        const _sammAllok = sammenligningAllokering || [];
+        const _belop = effektivtInvestertBelop || totalKapital || 10000000;
+        const harSammenligning = showComparison && _sammAllok.length > 0;
+
+        // Category-level data for current
+        const katCurrent = {};
+        _allok.forEach(a => { if (a.vekt > 0) katCurrent[a.kategori] = (katCurrent[a.kategori] || 0) + a.vekt; });
+        const katCurrentArr = Object.entries(katCurrent).map(([k, v]) => ({ name: k === 'aksjer' ? 'Aksjer' : k === 'renter' ? 'Renter' : k === 'privateMarkets' ? 'Private Equity' : k === 'eiendom' ? 'Eiendom' : k, value: parseFloat(v.toFixed(1)), color: k === 'aksjer' ? PENSUM_COLORS.darkBlue : k === 'renter' ? PENSUM_COLORS.salmon : k === 'privateMarkets' ? PENSUM_COLORS.teal : PENSUM_COLORS.gold }));
+
+        // Category-level data for proposed
+        const katProposed = {};
+        _sammAllok.forEach(a => { if (a.vekt > 0) katProposed[a.kategori] = (katProposed[a.kategori] || 0) + a.vekt; });
+        const katProposedArr = Object.entries(katProposed).map(([k, v]) => ({ name: k === 'aksjer' ? 'Aksjer' : k === 'renter' ? 'Renter' : k === 'privateMarkets' ? 'Private Equity' : k === 'eiendom' ? 'Eiendom' : k, value: parseFloat(v.toFixed(1)), color: k === 'aksjer' ? PENSUM_COLORS.darkBlue : k === 'renter' ? PENSUM_COLORS.salmon : k === 'privateMarkets' ? PENSUM_COLORS.teal : PENSUM_COLORS.gold }));
+
+        // Likvid/illikvid
+        const illikvCurrent = _allok.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
+        const likvidCurrent = _allok.reduce((s, a) => s + a.vekt, 0) - illikvCurrent;
+        const illikvProposed = _sammAllok.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
+        const likvidProposed = _sammAllok.reduce((s, a) => s + a.vekt, 0) - illikvProposed;
+
+        const renderPie = (data, label) => (
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-center" style={{ color: PENSUM_COLORS.darkBlue }}>{label}</h4>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                  {data.map((e) => <Cell key={e.name} fill={e.color} />)}
+                </Pie>
+                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1.5 mt-2">
+              {data.map((d, i) => (
+                <div key={i} className="flex items-center justify-between text-xs px-4">
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div><span className="text-gray-600">{d.name}</span></div>
+                  <span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+        return (
+          <div data-rapport-slide="totalallokering" className="page-break-before">
+            <h2 className="text-xl font-bold mb-2 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Totalallokering — {harSammenligning ? 'før og etter' : 'oversikt'}</h2>
+            <p className="text-xs text-gray-500 mb-5">Samlet aktivasammensetning {harSammenligning ? `for nåværende (${valgtPensumProfil}) og foreslått (${sammenligningProfil}) allokering` : `basert på ${valgtPensumProfil}-profil`}. Totalkapital: {formatCurrency(_belop)}.</p>
+
+            {/* Pie charts: current vs proposed */}
+            <div className={harSammenligning ? "grid grid-cols-2 gap-8 mb-6" : "grid grid-cols-1 gap-8 mb-6 max-w-sm mx-auto"}>
+              {renderPie(katCurrentArr, harSammenligning ? `Nåværende — ${valgtPensumProfil}` : valgtPensumProfil)}
+              {harSammenligning && renderPie(katProposedArr, `Foreslått — ${sammenligningProfil}`)}
+            </div>
+
+            {/* Likvid vs illikvid comparison */}
+            <div className="mb-5">
+              <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Likvid vs. illikvid fordeling</h4>
+              <div className={harSammenligning ? "grid grid-cols-2 gap-6" : "grid grid-cols-1 gap-6 max-w-md"}>
+                <div>
+                  <p className="text-[10px] text-gray-500 mb-1">{harSammenligning ? 'Nåværende' : valgtPensumProfil}</p>
+                  <div className="flex h-7 rounded-full overflow-hidden">
+                    {likvidCurrent > 0 && <div style={{ width: likvidCurrent + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{likvidCurrent >= 15 ? 'Likvid ' + likvidCurrent.toFixed(0) + '%' : ''}</div>}
+                    {illikvCurrent > 0 && <div style={{ width: illikvCurrent + '%', backgroundColor: PENSUM_COLORS.gold }} className="flex items-center justify-center text-white text-[9px] font-medium">{illikvCurrent >= 15 ? 'Illikvid ' + illikvCurrent.toFixed(0) + '%' : ''}</div>}
+                  </div>
+                </div>
+                {harSammenligning && <div>
+                  <p className="text-[10px] text-gray-500 mb-1">Foreslått</p>
+                  <div className="flex h-7 rounded-full overflow-hidden">
+                    {likvidProposed > 0 && <div style={{ width: likvidProposed + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[9px] font-medium">{likvidProposed >= 15 ? 'Likvid ' + likvidProposed.toFixed(0) + '%' : ''}</div>}
+                    {illikvProposed > 0 && <div style={{ width: illikvProposed + '%', backgroundColor: PENSUM_COLORS.gold }} className="flex items-center justify-center text-white text-[9px] font-medium">{illikvProposed >= 15 ? 'Illikvid ' + illikvProposed.toFixed(0) + '%' : ''}</div>}
+                  </div>
+                </div>}
+              </div>
+            </div>
+
+            {/* Key metrics comparison table */}
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ backgroundColor: '#F0F4F8' }}>
+                    <th className="py-2.5 px-4 text-left font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Nøkkeltall</th>
+                    <th className="py-2.5 px-4 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{harSammenligning ? 'Nåværende' : 'Portefølje'}</th>
+                    {harSammenligning && <th className="py-2.5 px-4 text-right font-semibold" style={{ color: PENSUM_COLORS.teal }}>Foreslått</th>}
+                    {harSammenligning && <th className="py-2.5 px-4 text-right font-semibold text-gray-400">Endring</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: 'Forventet avkastning p.a.', curr: vektetAvkastning, prop: sammenligningAvkastning, fmt: v => v.toFixed(1) + '%' },
+                    { label: 'Aksjeandel', curr: _allok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0) + '%' },
+                    { label: 'Renteandel', curr: _allok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0) + '%' },
+                    { label: 'Eiendomsandel', curr: _allok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0) + '%' },
+                    { label: 'Likvid andel', curr: likvidCurrent, prop: likvidProposed, fmt: v => v.toFixed(0) + '%' },
+                    { label: 'Sluttverdi (' + horisont + ' år)', curr: verdiutvikling?.[verdiutvikling?.length - 1]?.total, prop: sammenligningVerdiutvikling?.[sammenligningVerdiutvikling?.length - 1]?.total, fmt: v => v ? formatCurrency(Math.round(v)) : '—' },
+                  ].map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="py-2 px-4 text-sm text-gray-600">{row.label}</td>
+                      <td className="py-2 px-4 text-right text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{row.fmt(row.curr)}</td>
+                      {harSammenligning && <td className="py-2 px-4 text-right text-sm font-semibold" style={{ color: PENSUM_COLORS.teal }}>{row.fmt(row.prop)}</td>}
+                      {harSammenligning && <td className="py-2 px-4 text-right text-xs" style={{ color: typeof row.curr === 'number' && typeof row.prop === 'number' ? (row.prop > row.curr ? '#059669' : row.prop < row.curr ? '#DC2626' : '#9CA3AF') : '#9CA3AF' }}>{typeof row.curr === 'number' && typeof row.prop === 'number' ? (row.prop > row.curr ? '+' : '') + (row.prop - row.curr).toFixed(1) + (row.label.includes('%') || row.label.includes('andel') ? 'pp' : '') : '—'}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
+
+      case 'prognose-sammenligning': {
+        const _belop2 = effektivtInvestertBelop || totalKapital || 10000000;
+        const harSammenl2 = showComparison && sammenligningVerdiutvikling?.length > 0;
+        const _verd = verdiutvikling || [];
+        const _sammVerd = sammenligningVerdiutvikling || [];
+        const _scenario = scenarioData || [];
+
+        // Build combined chart data
+        const chartRows = _verd.map((row, idx) => {
+          const r = { year: row.year, forventet: row.total };
+          if (_scenario[idx]) {
+            r.pessimistisk = _scenario[idx].pessimistisk;
+            r.optimistisk = _scenario[idx].optimistisk;
+          }
+          if (harSammenl2 && _sammVerd[idx]) r.alternativ = _sammVerd[idx].total;
+          return r;
+        });
+
+        const sluttForventet = _verd[_verd.length - 1]?.total || _belop2;
+        const sluttAlternativ = harSammenl2 ? (_sammVerd[_sammVerd.length - 1]?.total || _belop2) : null;
+        const differanse = harSammenl2 ? sluttAlternativ - sluttForventet : null;
+
+        return (
+          <div data-rapport-slide="prognose-sammenligning" className="page-break-before">
+            <h2 className="text-xl font-bold mb-2 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Prognoseoversikt — verdiutvikling</h2>
+            <p className="text-xs text-gray-500 mb-5">Forventet verdiutvikling over {horisont} år basert på modellert avkastning.{harSammenl2 ? ` Sammenligner ${valgtPensumProfil} (nåværende) med ${sammenligningProfil} (foreslått).` : ''} Startkapital: {formatCurrency(_belop2)}.{nettoKontantstrom ? ` Årlig netto kontantstrøm: ${formatCurrency(nettoKontantstrom)}.` : ''}</p>
+
+            {/* Summary cards */}
+            <div className={harSammenl2 ? "grid grid-cols-4 gap-4 mb-5" : "grid grid-cols-3 gap-4 mb-5"}>
+              <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#F0F4F8' }}>
+                <p className="text-[10px] text-gray-500 uppercase">Startkapital</p>
+                <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(_belop2)}</p>
+              </div>
+              <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#F0F4F8' }}>
+                <p className="text-[10px] text-gray-500 uppercase">Sluttverdi ({valgtPensumProfil})</p>
+                <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(Math.round(sluttForventet))}</p>
+              </div>
+              {harSammenl2 && <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#F0FDF4' }}>
+                <p className="text-[10px] text-gray-500 uppercase">Sluttverdi ({sammenligningProfil})</p>
+                <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.teal }}>{formatCurrency(Math.round(sluttAlternativ))}</p>
+              </div>}
+              {harSammenl2 ? (
+                <div className="rounded-lg p-3 text-center" style={{ backgroundColor: differanse >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
+                  <p className="text-[10px] text-gray-500 uppercase">Differanse</p>
+                  <p className="text-lg font-bold" style={{ color: differanse >= 0 ? '#059669' : '#DC2626' }}>{differanse >= 0 ? '+' : ''}{formatCurrency(Math.round(differanse))}</p>
+                </div>
+              ) : (
+                <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#F0F4F8' }}>
+                  <p className="text-[10px] text-gray-500 uppercase">Forv. avkastning p.a.</p>
+                  <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{vektetAvkastning.toFixed(1)}%</p>
+                </div>
+              )}
+            </div>
+
+            {/* Projection chart */}
+            <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5 mb-4">
+              <h4 className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet utvikling over {horisont} år</h4>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartRows} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#6B7280' }} />
+                  <YAxis tickFormatter={(v) => (v / 1000000).toFixed(0) + 'M'} tick={{ fontSize: 10, fill: '#6B7280' }} width={50} />
+                  <Tooltip formatter={(v) => formatCurrency(Math.round(v))} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  {_scenario.length > 0 && <Area type="monotone" dataKey="optimistisk" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.08} strokeDasharray="5 5" strokeWidth={1.5} name="Optimistisk" />}
+                  <Area type="monotone" dataKey="forventet" stroke={PENSUM_COLORS.darkBlue} fill={PENSUM_COLORS.darkBlue} fillOpacity={0.1} strokeWidth={2.5} name={harSammenl2 ? `${valgtPensumProfil} (nåværende)` : 'Forventet'} />
+                  {harSammenl2 && <Area type="monotone" dataKey="alternativ" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.05} strokeWidth={2} strokeDasharray="8 4" name={`${sammenligningProfil} (foreslått)`} />}
+                  {_scenario.length > 0 && <Area type="monotone" dataKey="pessimistisk" stroke="#DC2626" fill="#DC2626" fillOpacity={0.05} strokeDasharray="5 5" strokeWidth={1.5} name="Pessimistisk" />}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <p className="text-[10px] text-gray-400 italic">Prognosene er modellbaserte illustrasjoner basert på forventede avkastningstall. Faktisk avkastning vil kunne avvike vesentlig. Historisk avkastning er ingen garanti for fremtidig avkastning.</p>
+          </div>
+        );
+      }
+
       case 'appendix-side':
         return (
           <div data-rapport-slide="appendix-side" className="page-break-before flex items-center justify-center" style={{ minHeight: '300px', backgroundColor: PENSUM_COLORS.darkBlue, borderRadius: '8px' }}>
@@ -2289,7 +2480,7 @@ export default function PensumPrognoseModell() {
       default:
         return null;
     }
-  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, valgtPensumProfil, horisont, investertBelop, totalKapital, pensumForventetAvkastning, pensumAktivafordeling, pensumAllokering, pensumProdukter, produktRapportMeta, pensumPrognose, markedssynData, eksisterendePortefolje, beregnPensumHistorikk, aggregertPensumEksponering, produktHistorikk, valgteFond, fondVekter, visKonkurrentPortefolje, slaSammenPortefoljer, eksterneFond, allokering, sammenligningAllokering, vektetAvkastning, sammenligningAvkastning, verdiutvikling, sammenligningVerdiutvikling, scenarioData, likviditetData, renterAksjerData, showComparison, sammenligningProfil, effektivtInvestertBelop, nettoKontantstrom]);
 
   // Render alle aktive tilleggsmoduler for en gitt posisjon
   const renderTilleggsmodulerVedPosisjon = useCallback((posisjon) => {
