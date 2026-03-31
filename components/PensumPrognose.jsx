@@ -261,11 +261,9 @@ export default function PensumPrognoseModell() {
 
   // Rebalansering - årlig endring i allokering
   const [rebalanseringAktiv, setRebalanseringAktiv] = useState(false);
-  const [rebalansering, setRebalansering] = useState({
-    fraAktiva: 'Eiendom',
-    tilAktiva: 'Globale Aksjer',
-    prosentPerAar: 10
-  });
+  const [rebalanseringer, setRebalanseringer] = useState([
+    { fraAktiva: 'Eiendom', tilAktiva: 'Globale Aksjer', prosentPerAar: 10 }
+  ]);
 
   // Kostnadsanalyse - hva koster det å ikke investere?
   const [kostnadsanalyseAktiv, setKostnadsanalyseAktiv] = useState(false);
@@ -2408,6 +2406,16 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
+            {/* Rebalansering info */}
+            {rebalanseringAktiv && rebalanseringer.length > 0 && (
+              <div className="mb-4 p-3 rounded-lg border border-blue-200 bg-blue-50">
+                <p className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig rebalansering</p>
+                {rebalanseringer.map((reb, i) => (
+                  <p key={i} className="text-xs text-gray-600">{reb.prosentPerAar}% av {reb.fraAktiva} selges årlig og reinvesteres i {reb.tilAktiva}</p>
+                ))}
+              </div>
+            )}
+
             {/* Key metrics comparison table */}
             <div className="rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
@@ -2659,69 +2667,55 @@ export default function PensumPrognoseModell() {
     for (let i = 0; i <= horisont; i++) {
       const row = { year: startYear + i, kontantstrom: i === 0 ? 0 : nettoKontantstrom };
       
-      // Beregn gjeldende allokering med rebalansering
+      // Beregn gjeldende allokering med rebalansering(er)
       let gjeldendAllokering = aktiveAktiva.map(a => ({ ...a }));
       if (rebalanseringAktiv && i > 0) {
-        const fraIdx = gjeldendAllokering.findIndex(a => a.navn === rebalansering.fraAktiva);
-        const tilIdx = gjeldendAllokering.findIndex(a => a.navn === rebalansering.tilAktiva);
-        if (fraIdx >= 0 && tilIdx >= 0) {
-          // Beregn kumulativ endring over årene
-          const endringPerAar = rebalansering.prosentPerAar;
-          const totalEndring = Math.min(endringPerAar * i, gjeldendAllokering[fraIdx].vekt);
-          gjeldendAllokering[fraIdx] = { ...gjeldendAllokering[fraIdx], vekt: Math.max(0, aktiveAktiva[fraIdx].vekt - totalEndring) };
-          gjeldendAllokering[tilIdx] = { ...gjeldendAllokering[tilIdx], vekt: aktiveAktiva[tilIdx].vekt + totalEndring };
-        }
+        rebalanseringer.forEach(reb => {
+          const fraIdx = gjeldendAllokering.findIndex(a => a.navn === reb.fraAktiva);
+          const tilIdx = gjeldendAllokering.findIndex(a => a.navn === reb.tilAktiva);
+          if (fraIdx >= 0 && tilIdx >= 0) {
+            const totalEndring = Math.min(reb.prosentPerAar * i, gjeldendAllokering[fraIdx].vekt);
+            gjeldendAllokering[fraIdx] = { ...gjeldendAllokering[fraIdx], vekt: Math.max(0, gjeldendAllokering[fraIdx].vekt - totalEndring) };
+            gjeldendAllokering[tilIdx] = { ...gjeldendAllokering[tilIdx], vekt: gjeldendAllokering[tilIdx].vekt + totalEndring };
+          }
+        });
       }
-      
+
       gjeldendAllokering.forEach(asset => {
         if (i === 0) {
           row[asset.navn] = (asset.vekt / 100) * effektivtInvestertBelop;
         } else {
-          // Finn forrige verdi og beregn ny verdi med eventuell rebalansering
           const prevRow = data[i - 1];
-          const prevTotal = aktiveAktiva.reduce((s, a) => s + (prevRow[a.navn] || 0), 0);
-          
+
           if (rebalanseringAktiv) {
-            // Med rebalansering: redistribuer basert på ny allokering
-            const originalAsset = aktiveAktiva.find(a => a.navn === asset.navn);
             const prevValue = prevRow[asset.navn] || 0;
-            
-            // Beregn hvor mye som flyttes
-            const fraAsset = rebalansering.fraAktiva;
-            const tilAsset = rebalansering.tilAktiva;
-            const endringProsent = rebalansering.prosentPerAar / 100;
-            
-            let nyVerdi = prevValue;
-            if (asset.navn === fraAsset && prevRow[fraAsset] > 0) {
-              // Selg andel fra denne aktiva
-              const salgVerdi = prevRow[fraAsset] * endringProsent;
-              nyVerdi = (prevValue - salgVerdi) * (1 + asset.avkastning / 100);
-            } else if (asset.navn === tilAsset) {
-              // Kjøp andel til denne aktiva
-              const fraVerdi = prevRow[fraAsset] || 0;
-              const kjopVerdi = fraVerdi * endringProsent;
-              nyVerdi = (prevValue + kjopVerdi + (asset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
-            } else {
-              // Ingen endring, bare vekst
-              nyVerdi = (prevValue + (originalAsset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
-            }
+            // Apply all rebalansering rules
+            let salgTotal = 0, kjopTotal = 0;
+            rebalanseringer.forEach(reb => {
+              const endringProsent = reb.prosentPerAar / 100;
+              if (asset.navn === reb.fraAktiva && prevRow[reb.fraAktiva] > 0) {
+                salgTotal += prevRow[reb.fraAktiva] * endringProsent;
+              }
+              if (asset.navn === reb.tilAktiva) {
+                kjopTotal += (prevRow[reb.fraAktiva] || 0) * endringProsent;
+              }
+            });
+            const originalAsset = aktiveAktiva.find(a => a.navn === asset.navn);
+            const nyVerdi = (prevValue - salgTotal + kjopTotal + (originalAsset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
             row[asset.navn] = Math.max(0, nyVerdi);
           } else {
-            // Uten rebalansering: normal vekst
             const prev = prevRow[asset.navn] || 0;
             row[asset.navn] = (prev + (asset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
           }
         }
       });
       row.total = aktiveAktiva.reduce((s, a) => s + (row[a.navn] || 0), 0);
-      
-      // Lagre allokering-snapshot for dette året
       row.allokeringSnapshot = gjeldendAllokering.map(a => ({ navn: a.navn, vekt: row.total > 0 ? (row[a.navn] / row.total) * 100 : 0 }));
-      
+
       data.push(row);
     }
     return data;
-  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalansering]);
+  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer]);
 
   const sammenligningVerdiutvikling = useMemo(() => {
     const data = [];
@@ -2763,10 +2757,14 @@ export default function PensumPrognoseModell() {
         row.pessimistisk = (data[i-1].pessimistisk + nettoKontantstrom) * (1 + scenarioParams.pessimistisk / 100);
         row.optimistisk = (data[i-1].optimistisk + nettoKontantstrom) * (1 + scenarioParams.optimistisk / 100);
       }
+      // Sammenligning (alternativ profil)
+      if (showComparison && sammenligningVerdiutvikling[i]) {
+        row.sammenligning = sammenligningVerdiutvikling[i].total;
+      }
       data.push(row);
     }
     return data;
-  }, [effektivtInvestertBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont]);
+  }, [effektivtInvestertBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
@@ -4929,11 +4927,27 @@ export default function PensumPrognoseModell() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h5>
-                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={30} outerRadius={55} dataKey="value" paddingAngle={2} cornerRadius={3}>{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} /></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                          <div className="space-y-1 mt-1">
+                            {pieData.filter(d => d.value > 0).map(d => (
+                              <div key={d.name} className="flex items-center justify-between text-xs px-1">
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: ASSET_COLORS[d.name] || '#888' }}></div><span className="text-gray-600 truncate">{d.name}</span></div>
+                                <span className="font-semibold">{d.value.toFixed(0)}%</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         <div>
                           <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</h5>
-                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" innerRadius={30} outerRadius={55} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} /></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                          <div className="space-y-1 mt-1">
+                            {sammenligningPieData.filter(d => d.value > 0).map(d => (
+                              <div key={d.name} className="flex items-center justify-between text-xs px-1">
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: ASSET_COLORS_LIGHT[d.name] || ASSET_COLORS[d.name] || '#888' }}></div><span className="text-gray-600 truncate">{d.name}</span></div>
+                                <span className="font-semibold">{d.value.toFixed(0)}%</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -5040,33 +5054,43 @@ export default function PensumPrognoseModell() {
                 </label>
               </div>
               {rebalanseringAktiv && (
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Selg fra</label>
-                      <select value={rebalansering.fraAktiva} onChange={(e) => setRebalansering(prev => ({ ...prev, fraAktiva: e.target.value }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm">
-                        {allokering.map(a => <option key={a.navn} value={a.navn}>{a.navn}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Kjøp til</label>
-                      <select value={rebalansering.tilAktiva} onChange={(e) => setRebalansering(prev => ({ ...prev, tilAktiva: e.target.value }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm">
-                        {allokering.filter(a => a.navn !== rebalansering.fraAktiva).map(a => <option key={a.navn} value={a.navn}>{a.navn}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Andel per år</label>
-                      <div className="relative">
-                        <input type="number" min="1" max="100" value={rebalansering.prosentPerAar} onChange={(e) => setRebalansering(prev => ({ ...prev, prosentPerAar: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 pr-10 text-sm" />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                <div className="p-6 space-y-4">
+                  {rebalanseringer.map((reb, rebIdx) => (
+                    <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                      <div>
+                        {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Selg fra</label>}
+                        <select value={reb.fraAktiva} onChange={(e) => setRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, fraAktiva: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                          {allokering.map(a => <option key={a.navn} value={a.navn}>{a.navn}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Kjøp til</label>}
+                        <select value={reb.tilAktiva} onChange={(e) => setRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, tilAktiva: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                          {allokering.filter(a => a.navn !== reb.fraAktiva).map(a => <option key={a.navn} value={a.navn}>{a.navn}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Andel per år</label>}
+                        <div className="relative">
+                          <input type="number" min="1" max="100" value={reb.prosentPerAar} onChange={(e) => setRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, prosentPerAar: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-8 text-sm" />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
+                        <p>{reb.prosentPerAar}% av {reb.fraAktiva} → {reb.tilAktiva}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {rebalanseringer.length > 1 && (
+                          <button onClick={() => setRebalanseringer(prev => prev.filter((_, i) => i !== rebIdx))} className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded border border-red-200 hover:bg-red-50">Fjern</button>
+                        )}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                      <p className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Effekt:</p>
-                      <p>{rebalansering.prosentPerAar}% av {rebalansering.fraAktiva} selges årlig og reinvesteres i {rebalansering.tilAktiva}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  ))}
+                  <button onClick={() => setRebalanseringer(prev => [...prev, { fraAktiva: allokering[0]?.navn || 'Eiendom', tilAktiva: allokering[1]?.navn || 'Globale Aksjer', prosentPerAar: 5 }])}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+                    + Legg til regel
+                  </button>
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <p className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Allokering ved slutten av perioden ({horisont} år):</p>
                     <div className="flex flex-wrap gap-3 mt-2">
                       {verdiutvikling[verdiutvikling.length - 1]?.allokeringSnapshot?.filter(a => a.vekt > 0.1).map(a => (
@@ -5206,6 +5230,7 @@ export default function PensumPrognoseModell() {
                     {showPessimistic && <Line type="monotone" dataKey="pessimistisk" name="Pessimistisk" stroke={PENSUM_COLORS.salmon} strokeWidth={2} strokeDasharray="5 5" dot={false} />}
                     <Line type="monotone" dataKey="forventet" name="Forventet" stroke={PENSUM_COLORS.darkBlue} strokeWidth={3} dot={false} />
                     <Line type="monotone" dataKey="optimistisk" name="Optimistisk" stroke={PENSUM_COLORS.teal} strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    {showComparison && <Line type="monotone" dataKey="sammenligning" name={sammenligningProfil} stroke={PENSUM_COLORS.teal} strokeWidth={2} strokeDasharray="8 4" dot={false} />}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
