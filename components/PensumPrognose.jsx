@@ -4968,7 +4968,6 @@ export default function PensumPrognoseModell() {
                     <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-4">
                       <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet & Aktivafordeling</h4>
                       {showComparison ? (() => {
-                        // Compute comparison data
                         const illikvKat = ['privateMarkets', 'eiendom'];
                         const sammIllikvid = sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
                         const sammLikvid = sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid;
@@ -4976,46 +4975,33 @@ export default function PensumPrognoseModell() {
                         const sammRenter = sammenligningAllokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0);
                         const sammPE = sammenligningAllokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0);
                         const sammEiendom = sammenligningAllokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
-                        const sammAktivaData = [
-                          { name: 'Aksjer', value: sammAksjer, color: PENSUM_COLORS.darkBlue },
-                          { name: 'Renter', value: sammRenter, color: PENSUM_COLORS.salmon },
-                          { name: 'Private Equity', value: sammPE, color: PENSUM_COLORS.teal },
-                          { name: 'Eiendom', value: sammEiendom, color: PENSUM_COLORS.gold },
-                        ].filter(d => d.value > 0);
-                        const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
 
-                        const renderMiniSection = (title, likvidData, aktivaData) => (
-                          <div>
-                            <p className="text-[10px] font-semibold text-gray-500 mb-2 text-center">{title}</p>
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                <ResponsiveContainer width={70} height={70}>
-                                  <PieChart><Pie data={likvidData} cx="50%" cy="50%" innerRadius={18} outerRadius={30} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                    <Cell fill={PENSUM_COLORS.darkBlue} /><Cell fill={PENSUM_COLORS.salmon} />
-                                  </Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} /></PieChart>
-                                </ResponsiveContainer>
-                                <div className="space-y-0.5 text-[10px]">
-                                  {likvidData.map((d, i) => <div key={i} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : PENSUM_COLORS.salmon }}></div>{d.name} {d.value.toFixed(0)}%</div>)}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <ResponsiveContainer width={70} height={70}>
-                                  <PieChart><Pie data={aktivaData} cx="50%" cy="50%" innerRadius={18} outerRadius={30} dataKey="value" paddingAngle={2} cornerRadius={3}>
-                                    {aktivaData.map(e => <Cell key={e.name} fill={e.color} />)}
-                                  </Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} /></PieChart>
-                                </ResponsiveContainer>
-                                <div className="space-y-0.5 text-[10px]">
-                                  {aktivaData.map((d, i) => <div key={i} className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>{d.name} {d.value.toFixed(0)}%</div>)}
-                                </div>
-                              </div>
+                        const renderBar = (label, items) => (
+                          <div className="mb-2">
+                            <p className="text-[10px] text-gray-500 mb-1">{label}</p>
+                            <div className="flex h-5 rounded-full overflow-hidden">
+                              {items.map((it, i) => it.value > 0 && <div key={i} style={{ width: it.value + '%', backgroundColor: it.color }} className="flex items-center justify-center text-white text-[8px] font-medium">{it.value >= 12 ? it.label : ''}</div>)}
                             </div>
                           </div>
                         );
 
                         return (
-                          <div className="grid grid-cols-2 gap-4">
-                            {renderMiniSection(risikoprofil, likviditetData.filter(d => d.value > 0), renterAksjerData)}
-                            {renderMiniSection(sammenligningProfil, sammLikvidData, sammAktivaData)}
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Likvid vs. illikvid</p>
+                              {renderBar(risikoprofil, [{ label: 'Likvid ' + (likviditetData[0]?.value || 0).toFixed(0) + '%', value: likviditetData[0]?.value || 0, color: PENSUM_COLORS.darkBlue }, { label: 'Illikvid ' + (likviditetData[1]?.value || 0).toFixed(0) + '%', value: likviditetData[1]?.value || 0, color: PENSUM_COLORS.gold }])}
+                              {renderBar(sammenligningProfil, [{ label: 'Likvid ' + sammLikvid.toFixed(0) + '%', value: sammLikvid, color: PENSUM_COLORS.darkBlue }, { label: 'Illikvid ' + sammIllikvid.toFixed(0) + '%', value: sammIllikvid, color: PENSUM_COLORS.gold }])}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</p>
+                              {renderBar(risikoprofil, renterAksjerData.map(d => ({ label: d.name + ' ' + d.value.toFixed(0) + '%', value: d.value, color: d.color })))}
+                              {renderBar(sammenligningProfil, [
+                                { label: 'Aksjer ' + sammAksjer.toFixed(0) + '%', value: sammAksjer, color: PENSUM_COLORS.darkBlue },
+                                { label: 'Renter ' + sammRenter.toFixed(0) + '%', value: sammRenter, color: PENSUM_COLORS.salmon },
+                                ...(sammPE > 0 ? [{ label: 'PE ' + sammPE.toFixed(0) + '%', value: sammPE, color: PENSUM_COLORS.teal }] : []),
+                                ...(sammEiendom > 0 ? [{ label: 'Eiendom ' + sammEiendom.toFixed(0) + '%', value: sammEiendom, color: PENSUM_COLORS.gold }] : []),
+                              ])}
+                            </div>
                           </div>
                         );
                       })() : (
