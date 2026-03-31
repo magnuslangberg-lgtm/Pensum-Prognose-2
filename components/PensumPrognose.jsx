@@ -12,6 +12,7 @@ export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
   const [showPessimistic, setShowPessimistic] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false });
@@ -5548,6 +5549,46 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Vis likviditet toggle */}
+                    <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer px-1">
+                      <input type="checkbox" checked={visLikviditetPensum} onChange={e => setVisLikviditetPensum(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
+                      <span>Vis likviditetsfordeling</span>
+                    </label>
+
+                    {/* Likviditet donut */}
+                    {visLikviditetPensum && (
+                      <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                        <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                        <div className="flex items-center gap-6">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={160} height={160}>
+                              <PieChart>
+                                <Pie data={[{ name: 'Likvid', value: pensumLikviditet.likvid }, { name: 'Illikvid', value: pensumLikviditet.illikvid }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                  <Cell fill={PENSUM_COLORS.darkBlue} />
+                                  {pensumLikviditet.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
+                                </Pie>
+                                <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2.5 flex-1">
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                              <span className="flex-1 text-gray-700">Likvid (daglig)</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.likvid.toFixed(1)}%</span>
+                            </div>
+                            {pensumLikviditet.illikvid > 0 && (
+                              <div className="flex items-center gap-2.5 text-sm">
+                                <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
+                                <span className="flex-1 text-gray-700">Illikvid</span>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.illikvid.toFixed(1)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                 </div>
