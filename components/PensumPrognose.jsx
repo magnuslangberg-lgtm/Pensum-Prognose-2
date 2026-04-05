@@ -4973,12 +4973,11 @@ export default function PensumPrognoseModell() {
                     </div>
                     <div className="space-y-2">
                       {(() => {
-                        const defaultIndekser = ['Globale Aksjer', 'Norske Aksjer', 'Høyrente', 'Investment Grade', 'Private Equity', 'Eiendom'];
                         const fjernIndeks = (navn) => setAllokering(prev => prev.filter(a => a.navn !== navn));
                         const renderRows = (kategoriFilter, isExpanded) => {
                           if (!isExpanded) return null;
                           return allokering.filter(a => kategoriFilter(a)).map((item) => (
-                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={!defaultIndekser.includes(item.navn) ? () => fjernIndeks(item.navn) : undefined} />
+                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
                           ));
                         };
                         return (<>
@@ -5002,6 +5001,8 @@ export default function PensumPrognoseModell() {
                           <p className="text-xs font-semibold text-gray-500 mb-2">AKSJER</p>
                           <div className="space-y-1">
                             {[
+                              { navn: 'Globale Aksjer', avkastning: 10, kategori: 'aksjer' },
+                              { navn: 'Norske Aksjer', avkastning: 11, kategori: 'aksjer' },
                               { navn: 'Europeiske Aksjer', avkastning: 9, kategori: 'aksjer' },
                               { navn: 'Emerging Markets', avkastning: 11, kategori: 'aksjer' },
                               { navn: 'Amerikanske Aksjer', avkastning: 10.5, kategori: 'aksjer' },
