@@ -4968,17 +4968,71 @@ export default function PensumPrognoseModell() {
                       {expandedCategories.aksjer && allokering.filter(a => a.kategori === 'aksjer').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />)}
                       <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
                       {expandedCategories.renter && allokering.filter(a => a.kategori === 'renter').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />)}
-                      {effektivVisAlternative && (
-                        <>
-                          {allokering.find(a => a.navn === 'Private Equity') && <AllokeringRow item={allokering.find(a => a.navn === 'Private Equity')} index={allokering.findIndex(a => a.navn === 'Private Equity')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />}
-                          {allokering.find(a => a.navn === 'Eiendom') && <AllokeringRow item={allokering.find(a => a.navn === 'Eiendom')} index={allokering.findIndex(a => a.navn === 'Eiendom')} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />}
-                        </>
-                      )}
+                      {effektivVisAlternative && allokering.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom').map((item) => (
+                        <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />
+                      ))}
+                    </div>
+
+                    {/* Legg til indeks */}
+                    <div className="border-t border-gray-200 pt-5 mt-2">
+                      <h5 className="text-xs font-semibold tracking-wide uppercase mb-3" style={{ color: PENSUM_COLORS.teal }}>Legg til indeks</h5>
+                      <div className={"grid gap-4 " + (effektivVisAlternative ? "grid-cols-3" : "grid-cols-2")}>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">AKSJER</p>
+                          <div className="space-y-1">
+                            {[
+                              { navn: 'Europeiske Aksjer', avkastning: 9, kategori: 'aksjer' },
+                              { navn: 'Emerging Markets', avkastning: 11, kategori: 'aksjer' },
+                              { navn: 'Amerikanske Aksjer', avkastning: 10.5, kategori: 'aksjer' },
+                              { navn: 'Asiatiske Aksjer', avkastning: 10, kategori: 'aksjer' },
+                            ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
+                              <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                                <span>{produkt.navn}</span>
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">RENTER</p>
+                          <div className="space-y-1">
+                            {[
+                              { navn: 'Statsobligasjoner', avkastning: 3.5, kategori: 'renter' },
+                              { navn: 'Emerging Markets Obligasjoner', avkastning: 6.5, kategori: 'renter' },
+                              { navn: 'Inflasjonslenkede Obligasjoner', avkastning: 4, kategori: 'renter' },
+                            ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
+                              <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                                <span>{produkt.navn}</span>
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {effektivVisAlternative && (
+                          <div>
+                            <p className="text-xs font-semibold text-amber-600 mb-2">ALTERNATIVE</p>
+                            <div className="space-y-1">
+                              {[
+                                { navn: 'Private Equity', avkastning: 15, kategori: 'privateMarkets' },
+                                { navn: 'Eiendom', avkastning: 8, kategori: 'eiendom' },
+                                { navn: 'Infrastruktur', avkastning: 9, kategori: 'privateMarkets' },
+                                { navn: 'Hedgefond', avkastning: 7, kategori: 'privateMarkets' },
+                              ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
+                                <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
+                                  <span>{produkt.navn}</span>
+                                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                </button>
+                              ))}
+                            </div>
+                            <p className="text-xs text-amber-600 mt-2 italic">Alle alternative investeringer er illikvide</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="xl:col-span-2">
+              <div className="xl:col-span-2 space-y-5">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-5">
                   {/* Porteføljesammensetning - donut chart with side legend */}
                   <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
@@ -5036,77 +5090,81 @@ export default function PensumPrognoseModell() {
                       </div>
                     )}
                   </div>
-
                 </div>
+
+                {/* Likviditet — donut on right side */}
+                {(() => {
+                  const illikvKat = ['privateMarkets', 'eiendom'];
+                  const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
+                  const currLikvid = totalVekt - currIllikvid;
+                  const currLikvidData = [{ name: 'Likvid', value: currLikvid }, { name: 'Illikvid', value: currIllikvid }].filter(d => d.value > 0);
+
+                  if (showComparison) {
+                    const sammIllikvid = sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
+                    const sammLikvid = sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid;
+                    const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
+                    return (
+                      <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                        <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h5>
+                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={currLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{currLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                            <div className="space-y-1 mt-1">
+                              {currLikvidData.map((d, i) => (
+                                <div key={d.name} className="flex items-center justify-between text-xs px-1">
+                                  <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div><span className="text-gray-600">{d.name}</span></div>
+                                  <span className="font-semibold">{d.value.toFixed(0)}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</h5>
+                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={sammLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                            <div className="space-y-1 mt-1">
+                              {sammLikvidData.map((d, i) => (
+                                <div key={d.name} className="flex items-center justify-between text-xs px-1">
+                                  <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div><span className="text-gray-600">{d.name}</span></div>
+                                  <span className="font-semibold">{d.value.toFixed(0)}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                      <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                      <div className="flex items-center gap-6">
+                        <div className="shrink-0">
+                          <ResponsiveContainer width={160} height={160}>
+                            <PieChart>
+                              <Pie data={currLikvidData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                {currLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}
+                              </Pie>
+                              <Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2.5 flex-1">
+                          {currLikvidData.map((d, i) => (
+                            <div key={d.name} className="flex items-center gap-2.5 text-sm">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div>
+                              <span className="flex-1 text-gray-700">{d.name}</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
-
-            {/* Aktivafordeling & Likviditet — alltid synlig, pen layout */}
-            {(() => {
-              const illikvKat = ['privateMarkets', 'eiendom'];
-              const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
-              const currLikvid = totalVekt - currIllikvid;
-              const currLikvidData = [{ name: 'Likvid', value: currLikvid }, { name: 'Illikvid', value: currIllikvid }].filter(d => d.value > 0);
-              const currLikvidColors = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold];
-
-              const sammIllikvid = showComparison ? sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0) : 0;
-              const sammLikvid = showComparison ? sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid : 0;
-              const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
-
-              const sammAktivaData = showComparison ? [
-                { name: 'Aksjer', value: sammenligningAllokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.darkBlue },
-                { name: 'Renter', value: sammenligningAllokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.salmon },
-                { name: 'Private Equity', value: sammenligningAllokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.teal },
-                { name: 'Eiendom', value: sammenligningAllokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.gold },
-              ].filter(d => d.value > 0) : [];
-
-              const renderCard = (title, pieData, colors) => (
-                <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                  <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>{title}</h4>
-                  <div className="flex items-center gap-6">
-                    <div className="shrink-0">
-                      <ResponsiveContainer width={160} height={160}>
-                        <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
-                            {pieData.map((e, i) => <Cell key={i} fill={colors ? colors[i] : e.color} />)}
-                          </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="space-y-2.5 flex-1">
-                      {pieData.map((d, i) => (
-                        <div key={i} className="flex items-center gap-2.5 text-sm">
-                          <div className="w-3 h-3 rounded" style={{ backgroundColor: colors ? colors[i] : d.color }}></div>
-                          <span className="flex-1 text-gray-700">{d.name}</span>
-                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0)}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-
-              return showComparison ? (
-                <div className="grid grid-cols-2 gap-5">
-                  <div className="space-y-5">
-                    <p className="text-[11px] font-semibold text-gray-500 text-center">{`Nåværende — ${risikoprofil}`}</p>
-                    {renderCard('Aktivafordeling', renterAksjerData, undefined)}
-                    {renderCard('Likviditet', currLikvidData, currLikvidColors)}
-                  </div>
-                  <div className="space-y-5">
-                    <p className="text-[11px] font-semibold text-gray-500 text-center">{`Foreslått — ${sammenligningProfil}`}</p>
-                    {renderCard('Aktivafordeling', sammAktivaData, undefined)}
-                    {renderCard('Likviditet', sammLikvidData, [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold])}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-5 max-w-lg">
-                  {renderCard('Aktivafordeling', renterAksjerData, undefined)}
-                  {renderCard('Likviditet', currLikvidData, currLikvidColors)}
-                </div>
-              );
-            })()}
 
             {/* Rebalansering panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
