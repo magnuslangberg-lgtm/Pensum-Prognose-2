@@ -16,7 +16,7 @@ export default function PensumPrognoseModell() {
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false });
+  const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false, alternative: false });
   const [expandedKundeKategorier, setExpandedKundeKategorier] = useState({ likvide: true, illikvide: true, pe: false, eiendom: false });
 
   // Bruker-autentisering
@@ -2657,12 +2657,20 @@ export default function PensumPrognoseModell() {
     const effektivBelop = investertBelop !== null ? investertBelop : totalKapital;
     const cats = ['aksjer', 'renter', 'privateMarkets', 'eiendom'];
     const names = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Private Equity', eiendom: 'Eiendom' };
-    return cats.map(cat => {
+    const result = cats.map(cat => {
       const items = allokering.filter(a => a.kategori === cat);
       const totalVekt = items.reduce((s, a) => s + a.vekt, 0);
       const vektetAvk = totalVekt > 0 ? items.reduce((s, a) => s + a.vekt * a.avkastning, 0) / totalVekt : 0;
       return { kategori: cat, navn: names[cat], vekt: totalVekt, avkastning: vektetAvk, items, belop: (totalVekt / 100) * effektivBelop };
     }).filter(c => c.items.length > 0);
+    // Add combined "Alternative" category for display
+    const altItems = allokering.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom');
+    if (altItems.length > 0) {
+      const altVekt = altItems.reduce((s, a) => s + a.vekt, 0);
+      const altAvk = altVekt > 0 ? altItems.reduce((s, a) => s + a.vekt * a.avkastning, 0) / altVekt : 0;
+      result.push({ kategori: 'alternative', navn: 'Alternative investeringer', vekt: altVekt, avkastning: altAvk, items: altItems, belop: (altVekt / 100) * effektivBelop });
+    }
+    return result;
   }, [allokering, totalKapital, investertBelop]);
 
   const pieData = useMemo(() => {
@@ -4964,13 +4972,26 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
-                      {expandedCategories.aksjer && allokering.filter(a => a.kategori === 'aksjer').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />)}
-                      <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
-                      {expandedCategories.renter && allokering.filter(a => a.kategori === 'renter').map((item) => <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />)}
-                      {effektivVisAlternative && allokering.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom').map((item) => (
-                        <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={false} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} />
-                      ))}
+                      {(() => {
+                        const defaultIndekser = ['Globale Aksjer', 'Norske Aksjer', 'Høyrente', 'Investment Grade', 'Private Equity', 'Eiendom'];
+                        const fjernIndeks = (navn) => setAllokering(prev => prev.filter(a => a.navn !== navn));
+                        const renderRows = (kategoriFilter, isExpanded) => {
+                          if (!isExpanded) return null;
+                          return allokering.filter(a => kategoriFilter(a)).map((item) => (
+                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={!defaultIndekser.includes(item.navn) ? () => fjernIndeks(item.navn) : undefined} />
+                          ));
+                        };
+                        return (<>
+                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
+                          {renderRows(a => a.kategori === 'aksjer', expandedCategories.aksjer)}
+                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
+                          {renderRows(a => a.kategori === 'renter', expandedCategories.renter)}
+                          {effektivVisAlternative && kategorierData.find(c => c.kategori === 'alternative') && (<>
+                            <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'alternative')} isExpanded={expandedCategories.alternative} onToggle={() => toggleCategory('alternative')} />
+                            {renderRows(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom', expandedCategories.alternative)}
+                          </>)}
+                        </>);
+                      })()}
                     </div>
 
                     {/* Legg til indeks */}
