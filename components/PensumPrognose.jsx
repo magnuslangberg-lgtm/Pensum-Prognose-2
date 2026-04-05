@@ -5020,6 +5020,7 @@ export default function PensumPrognoseModell() {
                             {[
                               { navn: 'Investment Grade', avkastning: 5, kategori: 'renter' },
                               { navn: 'Høyrente', avkastning: 7.5, kategori: 'renter' },
+                              { navn: 'Statsobligasjoner', avkastning: 3.5, kategori: 'renter' },
                             ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
                               <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
                                 <span>{produkt.navn}</span>
