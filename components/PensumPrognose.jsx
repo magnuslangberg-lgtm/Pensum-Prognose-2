@@ -5041,64 +5041,72 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Likviditet & Aktivafordeling — valgfritt */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
-                <input type="checkbox" checked={visLikviditetAllokering} onChange={e => setVisLikviditetAllokering(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
-                <span>Vis likviditet & aktivafordeling</span>
-              </label>
-              {visLikviditetAllokering && (() => {
-                const illikvKat = ['privateMarkets', 'eiendom'];
-                const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
-                const currLikvid = totalVekt - currIllikvid;
-                const currLikvidData = [{ name: 'Likvid', value: currLikvid }, { name: 'Illikvid', value: currIllikvid }].filter(d => d.value > 0);
+            {/* Aktivafordeling & Likviditet — alltid synlig, pen layout */}
+            {(() => {
+              const illikvKat = ['privateMarkets', 'eiendom'];
+              const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
+              const currLikvid = totalVekt - currIllikvid;
+              const currLikvidData = [{ name: 'Likvid', value: currLikvid }, { name: 'Illikvid', value: currIllikvid }].filter(d => d.value > 0);
+              const currLikvidColors = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold];
 
-                const sammIllikvid = showComparison ? sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0) : 0;
-                const sammLikvid = showComparison ? sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid : 0;
-                const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
+              const sammIllikvid = showComparison ? sammenligningAllokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0) : 0;
+              const sammLikvid = showComparison ? sammenligningAllokering.reduce((s, a) => s + a.vekt, 0) - sammIllikvid : 0;
+              const sammLikvidData = [{ name: 'Likvid', value: sammLikvid }, { name: 'Illikvid', value: sammIllikvid }].filter(d => d.value > 0);
 
-                const sammAktivaData = showComparison ? [
-                  { name: 'Aksjer', value: sammenligningAllokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.darkBlue },
-                  { name: 'Renter', value: sammenligningAllokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.salmon },
-                  { name: 'Private Equity', value: sammenligningAllokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.teal },
-                  { name: 'Eiendom', value: sammenligningAllokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.gold },
-                ].filter(d => d.value > 0) : [];
+              const sammAktivaData = showComparison ? [
+                { name: 'Aksjer', value: sammenligningAllokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.darkBlue },
+                { name: 'Renter', value: sammenligningAllokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.salmon },
+                { name: 'Private Equity', value: sammenligningAllokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.teal },
+                { name: 'Eiendom', value: sammenligningAllokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), color: PENSUM_COLORS.gold },
+              ].filter(d => d.value > 0) : [];
 
-                const renderDonutWithLegend = (title, pieData, colors) => (
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-gray-500 mb-1">{title}</p>
-                    <div className="flex items-center justify-center gap-3">
-                      <ResponsiveContainer width={100} height={100}>
+              const renderCard = (title, pieData, colors) => (
+                <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>{title}</h4>
+                  <div className="flex items-center gap-6">
+                    <div className="shrink-0">
+                      <ResponsiveContainer width={160} height={160}>
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={25} outerRadius={42} dataKey="value" paddingAngle={2} cornerRadius={3}>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                             {pieData.map((e, i) => <Cell key={i} fill={colors ? colors[i] : e.color} />)}
                           </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} />
+                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="space-y-1 text-left">
-                        {pieData.map((d, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-xs">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors ? colors[i] : d.color }}></div>
-                            <span className="text-gray-600">{d.name}</span>
-                            <span className="font-semibold">{d.value.toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
+                    </div>
+                    <div className="space-y-2.5 flex-1">
+                      {pieData.map((d, i) => (
+                        <div key={i} className="flex items-center gap-2.5 text-sm">
+                          <div className="w-3 h-3 rounded" style={{ backgroundColor: colors ? colors[i] : d.color }}></div>
+                          <span className="flex-1 text-gray-700">{d.name}</span>
+                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0)}%</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                );
+                </div>
+              );
 
-                return (
-                  <div className={showComparison ? "grid grid-cols-4 gap-4" : "grid grid-cols-2 gap-6"}>
-                    {renderDonutWithLegend(showComparison ? `Likvid — ${risikoprofil}` : 'Likvid vs. illikvid', currLikvidData, [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold])}
-                    {showComparison && renderDonutWithLegend(`Likvid — ${sammenligningProfil}`, sammLikvidData, [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold])}
-                    {renderDonutWithLegend(showComparison ? `Aktiva — ${risikoprofil}` : 'Aktivafordeling', renterAksjerData, undefined)}
-                    {showComparison && renderDonutWithLegend(`Aktiva — ${sammenligningProfil}`, sammAktivaData, undefined)}
+              return showComparison ? (
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="space-y-5">
+                    <p className="text-[11px] font-semibold text-gray-500 text-center">{`Nåværende — ${risikoprofil}`}</p>
+                    {renderCard('Aktivafordeling', renterAksjerData, undefined)}
+                    {renderCard('Likviditet', currLikvidData, currLikvidColors)}
                   </div>
-                );
-              })()}
-            </div>
+                  <div className="space-y-5">
+                    <p className="text-[11px] font-semibold text-gray-500 text-center">{`Foreslått — ${sammenligningProfil}`}</p>
+                    {renderCard('Aktivafordeling', sammAktivaData, undefined)}
+                    {renderCard('Likviditet', sammLikvidData, [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold])}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5 max-w-lg">
+                  {renderCard('Aktivafordeling', renterAksjerData, undefined)}
+                  {renderCard('Likviditet', currLikvidData, currLikvidColors)}
+                </div>
+              );
+            })()}
 
             {/* Rebalansering panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
