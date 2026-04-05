@@ -5041,10 +5041,13 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Likviditet & Aktivafordeling — full bredde under allokering */}
+            {/* Likviditet & Aktivafordeling — valgfritt */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-              <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet & Aktivafordeling</h4>
-              {(() => {
+              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+                <input type="checkbox" checked={visLikviditetAllokering} onChange={e => setVisLikviditetAllokering(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
+                <span>Vis likviditet & aktivafordeling</span>
+              </label>
+              {visLikviditetAllokering && (() => {
                 const illikvKat = ['privateMarkets', 'eiendom'];
                 const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
                 const currLikvid = totalVekt - currIllikvid;
