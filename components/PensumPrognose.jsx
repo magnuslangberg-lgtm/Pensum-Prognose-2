@@ -13,6 +13,7 @@ export default function PensumPrognoseModell() {
   const [showPessimistic, setShowPessimistic] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
+  const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false });
@@ -2333,77 +2334,88 @@ export default function PensumPrognoseModell() {
               {harSammenligning && renderPie(katProposedArr, `Foreslått — ${sammenligningProfil}`)}
             </div>
 
-            {/* Likviditet & Aktivafordeling — side by side pie charts */}
+            {/* Likviditet & Aktivafordeling — toggle checkbox */}
             <div className="mb-5">
-              <h4 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet & aktivafordeling</h4>
+              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer px-1 mb-3">
+                <input type="checkbox" checked={visLikviditetAllokering} onChange={e => setVisLikviditetAllokering(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
+                <span>Vis likviditet & aktivafordeling</span>
+              </label>
+              {visLikviditetAllokering && (
               <div className={harSammenligning ? "grid grid-cols-2 gap-5" : "grid grid-cols-1 gap-5 max-w-lg"}>
                 {/* Nåværende */}
-                <div className="rounded-lg border border-gray-100 p-4">
-                  <p className="text-[10px] font-semibold text-gray-500 mb-2 text-center">{harSammenligning ? `Nåværende — ${valgtPensumProfil}` : valgtPensumProfil}</p>
-                  <div className="flex gap-4 items-center">
-                    <div className="flex-1">
-                      <ResponsiveContainer width="100%" height={110}>
+                <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <p className="text-[11px] font-semibold text-gray-500 mb-3 text-center">{harSammenligning ? `Nåværende — ${valgtPensumProfil}` : valgtPensumProfil}</p>
+                  <div className="flex gap-6 items-center justify-center">
+                    <div className="shrink-0 text-center">
+                      <h4 className="font-semibold mb-2 text-xs tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                      <ResponsiveContainer width={160} height={160}>
                         <PieChart>
-                          <Pie data={[{ name: 'Likvid', value: likvidCurrent, color: PENSUM_COLORS.darkBlue }, { name: 'Illikvid', value: illikvCurrent, color: PENSUM_COLORS.gold }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={45} dataKey="value" paddingAngle={2}>
-                            {[{ color: PENSUM_COLORS.darkBlue }, { color: PENSUM_COLORS.gold }].map((e, i) => <Cell key={i} fill={e.color} />)}
+                          <Pie data={[{ name: 'Likvid', value: likvidCurrent, color: PENSUM_COLORS.darkBlue }, { name: 'Illikvid', value: illikvCurrent, color: PENSUM_COLORS.gold }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                            <Cell fill={PENSUM_COLORS.darkBlue} />
+                            {illikvCurrent > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                           </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} />
+                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex justify-center gap-3 text-[9px]">
-                        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>Likvid {likvidCurrent.toFixed(0)}%</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PENSUM_COLORS.gold }}></span>Illikvid {illikvCurrent.toFixed(0)}%</span>
+                      <div className="flex justify-center gap-3 text-[10px] mt-1">
+                        <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>Likvid {likvidCurrent.toFixed(1)}%</span>
+                        {illikvCurrent > 0 && <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></span>Illikvid {illikvCurrent.toFixed(1)}%</span>}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <ResponsiveContainer width="100%" height={110}>
+                    <div className="shrink-0 text-center">
+                      <h4 className="font-semibold mb-2 text-xs tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                      <ResponsiveContainer width={160} height={160}>
                         <PieChart>
-                          <Pie data={katCurrentArr} cx="50%" cy="50%" innerRadius={25} outerRadius={45} dataKey="value" paddingAngle={2}>
+                          <Pie data={katCurrentArr} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                             {katCurrentArr.map((e) => <Cell key={e.name} fill={e.color} />)}
                           </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} />
+                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[9px]">
-                        {katCurrentArr.map(d => <span key={d.name}><span className="inline-block w-2 h-2 rounded-full mr-0.5" style={{ backgroundColor: d.color }}></span>{d.name} {d.value.toFixed(0)}%</span>)}
+                      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[10px] mt-1">
+                        {katCurrentArr.map(d => <span key={d.name} className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }}></span>{d.name} {d.value.toFixed(1)}%</span>)}
                       </div>
                     </div>
                   </div>
                 </div>
                 {/* Foreslått */}
-                {harSammenligning && <div className="rounded-lg border border-gray-100 p-4">
-                  <p className="text-[10px] font-semibold text-gray-500 mb-2 text-center">Foreslått — {sammenligningProfil}</p>
-                  <div className="flex gap-4 items-center">
-                    <div className="flex-1">
-                      <ResponsiveContainer width="100%" height={110}>
+                {harSammenligning && <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <p className="text-[11px] font-semibold text-gray-500 mb-3 text-center">Foreslått — {sammenligningProfil}</p>
+                  <div className="flex gap-6 items-center justify-center">
+                    <div className="shrink-0 text-center">
+                      <h4 className="font-semibold mb-2 text-xs tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
+                      <ResponsiveContainer width={160} height={160}>
                         <PieChart>
-                          <Pie data={[{ name: 'Likvid', value: likvidProposed, color: PENSUM_COLORS.darkBlue }, { name: 'Illikvid', value: illikvProposed, color: PENSUM_COLORS.gold }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={25} outerRadius={45} dataKey="value" paddingAngle={2}>
-                            {[{ color: PENSUM_COLORS.darkBlue }, { color: PENSUM_COLORS.gold }].map((e, i) => <Cell key={i} fill={e.color} />)}
+                          <Pie data={[{ name: 'Likvid', value: likvidProposed, color: PENSUM_COLORS.darkBlue }, { name: 'Illikvid', value: illikvProposed, color: PENSUM_COLORS.gold }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                            <Cell fill={PENSUM_COLORS.darkBlue} />
+                            {illikvProposed > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                           </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} />
+                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex justify-center gap-3 text-[9px]">
-                        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>Likvid {likvidProposed.toFixed(0)}%</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: PENSUM_COLORS.gold }}></span>Illikvid {illikvProposed.toFixed(0)}%</span>
+                      <div className="flex justify-center gap-3 text-[10px] mt-1">
+                        <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>Likvid {likvidProposed.toFixed(1)}%</span>
+                        {illikvProposed > 0 && <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></span>Illikvid {illikvProposed.toFixed(1)}%</span>}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <ResponsiveContainer width="100%" height={110}>
+                    <div className="shrink-0 text-center">
+                      <h4 className="font-semibold mb-2 text-xs tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling</h4>
+                      <ResponsiveContainer width={160} height={160}>
                         <PieChart>
-                          <Pie data={katProposedArr} cx="50%" cy="50%" innerRadius={25} outerRadius={45} dataKey="value" paddingAngle={2}>
+                          <Pie data={katProposedArr} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                             {katProposedArr.map((e) => <Cell key={e.name} fill={e.color} />)}
                           </Pie>
-                          <Tooltip formatter={(v) => v.toFixed(0) + '%'} />
+                          <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[9px]">
-                        {katProposedArr.map(d => <span key={d.name}><span className="inline-block w-2 h-2 rounded-full mr-0.5" style={{ backgroundColor: d.color }}></span>{d.name} {d.value.toFixed(0)}%</span>)}
+                      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[10px] mt-1">
+                        {katProposedArr.map(d => <span key={d.name} className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }}></span>{d.name} {d.value.toFixed(1)}%</span>)}
                       </div>
                     </div>
                   </div>
                 </div>}
               </div>
+              )}
             </div>
 
             {/* Rebalansering info */}
