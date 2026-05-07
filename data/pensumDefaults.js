@@ -127,6 +127,73 @@ export const defaultPensumStandardLosninger = {
       ]
     }
   },
+  '30/70 m basis': {
+    beskrivelse: 'Konservativ med Pensum Basis. 30% aksjer, 70% renter',
+    allokeringer: {
+      'Allokering 1 (Kjerne)': [
+        { id: 'basis', vekt: 25, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 50, kategori: 'fondsportefoljer' },
+        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 2 (Kjerne +)': [
+        { id: 'basis', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 35, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 7.5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 3 (Kjerne ++)': [
+        { id: 'basis', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ]
+    }
+  },
+  '30/70 u basis': {
+    beskrivelse: '30% aksjer, 70% renter uten Pensum Basis',
+    allokeringer: {
+      'Allokering 1 (Kjerne)': [
+        { id: 'global-core-active', vekt: 12.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 12.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 60, kategori: 'fondsportefoljer' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
+      ],
+      'Allokering 2 (Kjerne +)': [
+        { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 40, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 3 (Kjerne ++)': [
+        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 25, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 15, kategori: 'enkeltfond' }
+      ]
+    }
+  },
   '50/50 m basis': {
     beskrivelse: 'Balansert med Pensum Basis. 50% aksjer, 50% renter',
     allokeringer: {
@@ -153,6 +220,39 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 7.5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' },
+        { id: 'energy-a', vekt: 7.5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ]
+    }
+  },
+  '50/50 u basis': {
+    beskrivelse: '50% aksjer, 50% renter uten Pensum Basis',
+    allokeringer: {
+      'Allokering 1 (Kjerne)': [
+        { id: 'global-core-active', vekt: 22.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 17.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 40, kategori: 'fondsportefoljer' },
+        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
+      ],
+      'Allokering 2 (Kjerne +)': [
+        { id: 'global-core-active', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 3 (Kjerne ++)': [
+        { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 25, kategori: 'fondsportefoljer' },
         { id: 'kairos-a', vekt: 7.5, kategori: 'enkeltfond' },
         { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' },
         { id: 'energy-a', vekt: 7.5, kategori: 'enkeltfond' },
@@ -384,7 +484,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Bred global aksjeportefølje med aktiv fondsseleksjon',
     role: 'Kjernebyggestein i aksjedelen',
     benchmark: 'MSCI World / bred global aksjereferanse',
-    expectedReturn: 10.0,
+    expectedReturn: 8.0,
     expectedYield: 1.8,
     pitch: 'Gir bred global aksjeeksponering og fungerer som hovedmotor i porteføljens aksjedel.',
     caseText: 'Kombinerer kvalitet, geografi og forvalterdiversifisering i én samlet løsning.',
@@ -399,7 +499,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Mer aktiv og spisset global aksjeløsning',
     role: 'Satellitt for meravkastning i aksjedelen',
     benchmark: 'Global aktiv aksjereferanse',
-    expectedReturn: 10.5,
+    expectedReturn: 8.5,
     expectedYield: 1.2,
     pitch: 'Supplerer kjerneporteføljen med mer konsentrerte og aktive globale idéer.',
     caseText: 'Brukes når man ønsker høyere aktiv andel og flere tydelige forvalterbets.',
@@ -414,7 +514,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Kombinasjon av aksjer og renter i én løsning',
     role: 'Helhetlig blandet byggestein',
     benchmark: 'Blandet referanse / 50-50 aksjer-renter',
-    expectedReturn: 8.0,
+    expectedReturn: 7.0,
     expectedYield: 3.4,
     pitch: 'Gir en ferdig sammensatt blanding av aksjer, renter og utvalgte spesialmandater.',
     caseText: 'Egnet når man ønsker en enkel, balansert løsning med moderat risikonivå.',
@@ -429,7 +529,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Seleksjon av globale high yield- og kredittfond',
     role: 'Rentedel med fokus på løpende avkastning',
     benchmark: 'Global high yield / kredittreferanse',
-    expectedReturn: 7.5,
+    expectedReturn: 7.2,
     expectedYield: 7.0,
     pitch: 'Skal bidra med løpende renteinntekter og lavere volatilitet enn aksjer.',
     caseText: 'Bygger robusthet i porteføljen og gir kontantstrøm i et mer defensivt segment.',
@@ -459,7 +559,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Aktivt norsk aksjefond',
     role: 'Hjemmemarkeds- og stock-picking-eksponering',
     benchmark: 'OSEBX / norsk aksjereferanse',
-    expectedReturn: 11.0,
+    expectedReturn: 9.5,
     expectedYield: 3.0,
     pitch: 'Gir aktiv eksponering mot norske børsnoterte selskaper og sektorer.',
     caseText: 'Brukes for å utnytte lokal markedskunnskap og tilføre tydelige norske idéer.',
@@ -474,7 +574,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Konsentrert energirelatert mandat',
     role: 'Tematisk satellitt',
     benchmark: 'Energi-/råvareorientert aksjereferanse',
-    expectedReturn: 11.0,
+    expectedReturn: 9.0,
     expectedYield: 3.5,
     pitch: 'Gir målrettet eksponering mot energi, råvarer og tilhørende verdikjeder.',
     caseText: 'Kan bidra med meravkastningspotensial når energisektoren er attraktivt priset.',
@@ -489,7 +589,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Sektorspesialist mot banker og finans',
     role: 'Sektorsatellitt',
     benchmark: 'Nordisk bank-/finansreferanse',
-    expectedReturn: 12.0,
+    expectedReturn: 9.0,
     expectedYield: 5.0,
     pitch: 'Gir eksponering mot nordiske banker og finansinstitusjoner med tydelig sektorvinkel.',
     caseText: 'Kan brukes når man ønsker særskilt eksponering mot en sektor med attraktive utbytter og soliditet.',
@@ -504,7 +604,7 @@ export const defaultProduktRapportMeta = {
     slideSubtitle: 'Rente-/kredittmandat med finanssektor som fokus',
     role: 'Spesialist i rentedelen',
     benchmark: 'Finansiell kreditt / high yield referanse',
-    expectedReturn: 9.0,
+    expectedReturn: 7.5,
     expectedYield: 8.0,
     pitch: 'Gir målrettet kreditt- og renteeksponering mot finansrelaterte utstedere.',
     caseText: 'Kan bidra med attraktiv løpende avkastning fra et avgrenset og analysekrevende segment.',
@@ -513,5 +613,65 @@ export const defaultProduktRapportMeta = {
     diagramType: 'underlying',
     slideCount: 2,
     category: 'fixed-income-specialist'
+  },
+  'kairos-a': {
+    slideTitle: 'Tematisk global aksjeløsning',
+    slideSubtitle: 'Konsentrert tematisk aksjefond',
+    role: 'Spisset tematisk satellitt',
+    benchmark: 'MSCI ACWI / global aksjereferanse',
+    expectedReturn: 9.0,
+    expectedYield: 1.0,
+    pitch: 'Investerer i utvalgte aktuelle tema, eksempler kan være energi, forsvar, AI osv.',
+    caseText: 'Brukes som tematisk satellitt for å fange strukturelle vekstdrivere.',
+    whyIncluded: 'Gir spisset eksponering mot dagens viktigste investeringstema.',
+    riskText: 'Konsentrert portefølje med høy temaspesifikk risiko og kort historikk.',
+    diagramType: 'underlying',
+    slideCount: 2,
+    category: 'equity-thematic'
+  },
+  'turnstone-pe': {
+    slideTitle: 'Private Equity',
+    slideSubtitle: 'Illikvid eksponering mot unoterte selskaper',
+    role: 'Illikvid satellitt',
+    benchmark: 'Globale private markets',
+    expectedReturn: 10.5,
+    expectedYield: 0,
+    pitch: 'Gir tilgang til unoterte selskaper med høyere forventet avkastning og illikviditetspremie.',
+    caseText: 'Egnet for langsiktige investorer som tåler bindingstid og lavere likviditet.',
+    whyIncluded: 'Bidrar med diversifisering og potensiell meravkastning utover børsnoterte aksjer.',
+    riskText: 'Illikvid, høyere equity-beta og avhengig av forvalterseleksjon. Lang bindingstid.',
+    diagramType: 'underlying',
+    slideCount: 2,
+    category: 'private-equity'
+  },
+  'amaron-re': {
+    slideTitle: 'Eiendom',
+    slideSubtitle: 'Realaktiva med løpende inntekter',
+    role: 'Inflasjonsbeskyttende realaktiva',
+    benchmark: 'Nordiske/europeiske eiendomsbenchmarks',
+    expectedReturn: 7.2,
+    expectedYield: 4.0,
+    pitch: 'Eksponering mot fysiske eiendommer for løpende leieinntekter og verdivekst.',
+    caseText: 'Realaktiva med inflasjonsbeskyttelse og kontantstrøm.',
+    whyIncluded: 'Diversifiserer porteføljen med realaktiva og lav korrelasjon mot aksjer.',
+    riskText: 'Illikvid, sensitiv for renter og lokale eiendomsmarkeder.',
+    diagramType: 'underlying',
+    slideCount: 2,
+    category: 'real-estate'
+  },
+  'unoterte-aksjer': {
+    slideTitle: 'Unoterte aksjer',
+    slideSubtitle: 'Direkte eksponering mot enkeltselskaper',
+    role: 'Spisset illikvid satellitt',
+    benchmark: 'Privat egenkapital / vekst',
+    expectedReturn: 9.5,
+    expectedYield: 0,
+    pitch: 'Direkte investering i utvalgte unoterte selskaper med vekstpotensial.',
+    caseText: 'Egnet for investorer som ønsker eksponering mot enkeltselskaper utenfor børs.',
+    whyIncluded: 'Bidrar med spisset eksponering mot kvalitetsselskaper i tidlige eller mellomsene faser.',
+    riskText: 'Høy idiosynkratisk risiko, illikvid og selskapsavhengig.',
+    diagramType: 'underlying',
+    slideCount: 2,
+    category: 'private-equity'
   }
 };

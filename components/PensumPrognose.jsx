@@ -475,7 +475,6 @@ export default function PensumPrognoseModell() {
 
   // Innstillinger for Pensum Løsninger
   const [visAlternative, setVisAlternative] = useState(false);
-  const [brukBasis, setBrukBasis] = useState(false);
 
   // Porteføljeallokering for Pensum-produkter
   const [pensumAllokering, setPensumAllokering] = useState([
@@ -544,8 +543,9 @@ export default function PensumPrognoseModell() {
     ]
   };
 
-  // Velg riktig porteføljesett basert på brukBasis
-  const pensumStandardPortefoljer = brukBasis ? pensumStandardPortefoljerMedBasis : pensumStandardPortefoljerUtenBasis;
+  // Standardporteføljer-knapper bruker alltid varianten med Basis;
+  // Definerte porteføljer (dropdown) tilbyr m/u Basis-varianter.
+  const pensumStandardPortefoljer = pensumStandardPortefoljerMedBasis;
 
   const [valgtPensumProfil, setValgtPensumProfil] = useState('Moderat');
 
@@ -5523,10 +5523,6 @@ export default function PensumPrognoseModell() {
                     {/* Innstillinger */}
                     <div className="flex items-center gap-4 pr-4 border-r border-blue-400">
                       <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer">
-                        <input type="checkbox" checked={brukBasis} onChange={(e) => setBrukBasis(e.target.checked)} className="w-4 h-4 rounded" />
-                        <span>Inkluder Basis</span>
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer">
                         <input type="checkbox" checked={visAlternative} onChange={(e) => setVisAlternative(e.target.checked)} className="w-4 h-4 rounded" />
                         <span>Alternative investeringer</span>
                       </label>
@@ -5697,7 +5693,7 @@ export default function PensumPrognoseModell() {
                         <div>
                           <p className="text-xs font-semibold text-gray-500 mb-2">FONDSPORTEFØLJER</p>
                           <div className="space-y-1">
-                            {pensumProdukter.fondsportefoljer.filter(p => !pensumAllokering.find(a => a.id === p.id) && (brukBasis || p.id !== 'basis')).map(produkt => (
+                            {pensumProdukter.fondsportefoljer.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
                               <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'fondsportefoljer')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
                                 <span>{produkt.navn}</span>
                                 <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
