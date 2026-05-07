@@ -652,7 +652,7 @@ export default function PensumPrognoseModell() {
 
   // Beregn vektet historisk avkastning
   const beregnPensumHistorikk = useMemo(() => {
-    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     const aarKolonner = HISTORIKK_ARFELT;
     const aarMapping = { aar2026: 2026, aar2025: 2025, aar2024: 2024, aar2023: 2023, aar2022: 2022 };
     const resultat = {};
@@ -707,7 +707,7 @@ export default function PensumPrognoseModell() {
 
   // Beregn aktivafordeling (aksjer vs renter vs alternativer)
   const pensumAktivafordeling = useMemo(() => {
-    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     let aksjeVekt = 0;
     let renteVekt = 0;
     let alternativVekt = 0;
@@ -738,7 +738,7 @@ export default function PensumPrognoseModell() {
 
   // Beregn likviditetsfordeling
   const pensumLikviditet = useMemo(() => {
-    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     let likvidVekt = 0;
     let illikvidVekt = 0;
     
@@ -758,7 +758,7 @@ export default function PensumPrognoseModell() {
 
   // Beregn forventet avkastning for Pensum-portefølje
   const pensumForventetAvkastning = useMemo(() => {
-    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     let vektetSum = 0;
     let totalVekt = 0;
 
@@ -1220,7 +1220,7 @@ export default function PensumPrognoseModell() {
 
   // Beregn prognose for Pensum-portefølje (må være etter totalKapital er definert)
   const pensumPrognose = useMemo(() => {
-    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     const totalVekt = pensumAllokering.reduce((s, p) => s + (p.vekt || 0), 0) || 1;
     const produkterMedAvk = pensumAllokering.filter(a => a.vekt > 0).map(a => {
       const produkt = alleProdukt.find(p => p.id === a.id);
@@ -1859,7 +1859,7 @@ export default function PensumPrognoseModell() {
         const pensumHistAvk = beregnPensumHistorikk;
 
         // Pensum volatilitet (vektet)
-        const alleProduktSammenl = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+        const alleProduktSammenl = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
         let pensumVektetVol = null;
         {
           let volSum = 0; let volVekt = 0;
@@ -2870,7 +2870,7 @@ export default function PensumPrognoseModell() {
     const forventetSluttverdi = scenarioData[scenarioData.length - 1]?.forventet || 0;
     const optimistiskSluttverdi = scenarioData[scenarioData.length - 1]?.optimistisk || 0;
 
-    const alleProduktHTML = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+    const alleProduktHTML = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     const produktFargerHTML = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
     const produktNavnRapport = {
       'global-core-active': 'Global Core Active', 'global-edge': 'Global Edge', 'basis': 'Basis',
@@ -3072,7 +3072,7 @@ export default function PensumPrognoseModell() {
       const produkterForArk = pensumAllokering.filter(a => a.vekt > 0).sort((a,b) => b.vekt - a.vekt);
       if (produkterForArk.length === 0) return '';
 
-      const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+      const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
       const produktArkHTML = produkterForArk.map((allok, arkIdx) => {
         const produkt = alleProdukt.find(p => p.id === allok.id);
         const meta = produktRapportMeta?.[allok.id] || {};
@@ -5568,7 +5568,7 @@ export default function PensumPrognoseModell() {
                     {/* Valgte produkter */}
                     <div className="space-y-2 mb-6">
                       {pensumAllokering.map(produkt => {
-                        const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                        const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
                         const produktInfo = alleProdukt.find(p => p.id === produkt.id);
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
@@ -5627,7 +5627,7 @@ export default function PensumPrognoseModell() {
                     {/* Legg til produkter */}
                     <div className="border-t border-gray-200 pt-5 mt-2">
                       <h5 className="text-xs font-semibold tracking-wide uppercase mb-3" style={{ color: '#94A3B8' }}>Legg til produkt</h5>
-                      <div className={"grid gap-4 " + (visAlternative ? "grid-cols-3" : "grid-cols-2")}>
+                      <div className={"grid gap-4 " + (visAlternative ? "grid-cols-4" : "grid-cols-3")}>
                         <div>
                           <p className="text-xs font-semibold text-gray-500 mb-2">ENKELTFOND</p>
                           <div className="space-y-1">
@@ -5649,6 +5649,18 @@ export default function PensumPrognoseModell() {
                               </button>
                             ))}
                           </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
+                          <div className="space-y-1">
+                            {(pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'eksterneFond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-teal-200 flex items-center justify-between">
+                                <span>{produkt.navn}</span>
+                                <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-teal-700 mt-2 italic">Fond fra fondsfokuslisten</p>
                         </div>
                         {visAlternative && (
                           <div>
@@ -5774,7 +5786,7 @@ export default function PensumPrognoseModell() {
                   // Beregn vektet aggregert eksponering for hele porteføljen (ekskl. høyrente/rente)
                   const aksjeProdukter = pensumAllokering.filter(a => {
                     if (a.vekt <= 0) return false;
-                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
                     const p = alle.find(pp => pp.id === a.id);
                     // Ekskluder rente/høyrente-produkter
                     if (p?.aktivatype === 'rente') return false;
@@ -5996,7 +6008,7 @@ export default function PensumPrognoseModell() {
 
             {/* Prognose */}
             {(() => {
-              const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+              const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
               let yieldSum = 0; let yieldTotal = 0;
               pensumAllokering.forEach(a => {
                 const p = alleProdukt.find(pp => pp.id === a.id);
@@ -6340,7 +6352,7 @@ export default function PensumPrognoseModell() {
                     <tbody>
                       {/* Vektet totalrad */}
                       {pensumAllokering.length > 0 && (() => {
-                        const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                        const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
                         const vektetYield = (() => {
                           let sum = 0; let totalV = 0;
                           pensumAllokering.forEach(a => {
@@ -6402,6 +6414,36 @@ export default function PensumPrognoseModell() {
                         <td colSpan="13" className="py-2 px-4 font-semibold text-xs" style={{ color: PENSUM_COLORS.salmon }}>FONDSPORTEFØLJER</td>
                       </tr>
                       {pensumProdukter.fondsportefoljer.map((p, idx) => {
+                        const aar2026 = hentAarsverdiForProdukt(p, 'aar2026', 2026);
+                        const aar2025 = hentAarsverdiForProdukt(p, 'aar2025', 2025);
+                        const aar2024 = hentAarsverdiForProdukt(p, 'aar2024', 2024);
+                        const aar2023 = hentAarsverdiForProdukt(p, 'aar2023', 2023);
+                        const aar2022 = hentAarsverdiForProdukt(p, 'aar2022', 2022);
+                        const allok = pensumAllokering.find(a => a.id === p.id);
+                        const fAvk = p.forventetAvkastning ?? produktRapportMeta?.[p.id]?.expectedReturn;
+                        const fYield = p.forventetYield ?? produktRapportMeta?.[p.id]?.expectedYield;
+                        const pStat = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+                        return (
+                        <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1) + '%' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1) + '%' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1) + '%' : '—'}</td>
+                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1) + '%' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1) + '%' : '—'}</td></>; })()}
+                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2)}</span> : '—'}</td>
+                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1) + '%' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1) + '%' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1) + '%' : '—'}</td>
+                        </tr>
+                        );
+                      })}
+                      <tr className="bg-gray-100">
+                        <td colSpan="13" className="py-2 px-4 font-semibold text-xs text-teal-700">EKSTERNE FOND</td>
+                      </tr>
+                      {(pensumProdukter.eksterneFond || []).map((p, idx) => {
                         const aar2026 = hentAarsverdiForProdukt(p, 'aar2026', 2026);
                         const aar2025 = hentAarsverdiForProdukt(p, 'aar2025', 2025);
                         const aar2024 = hentAarsverdiForProdukt(p, 'aar2024', 2024);
@@ -7032,7 +7074,7 @@ export default function PensumPrognoseModell() {
           ];
 
           const PENSUM_AARLIG = (() => {
-            const produktMap = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer].reduce((acc, p) => {
+            const produktMap = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])].reduce((acc, p) => {
               acc[p.id] = p;
               return acc;
             }, {});
@@ -7096,7 +7138,7 @@ export default function PensumPrognoseModell() {
             : fondSokResultater;
 
           // Pensum products for comparison (used in secondary tabs)
-          const pensumProdListe = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer];
+          const pensumProdListe = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])];
           const PENSUM_FOND_FARGER = {
             'basis': PENSUM_COLORS.salmon, 'financial-d': PENSUM_COLORS.gray,
             'global-core-active': PENSUM_COLORS.navy, 'global-edge': PENSUM_COLORS.lightBlue,
@@ -8794,7 +8836,7 @@ export default function PensumPrognoseModell() {
                   });
                   return punkt;
                 });
-                const alleProdukter2 = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer];
+                const alleProdukter2 = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])];
                 const sortedBySharpe = [...allStatistikk].sort((a, b) => b.sharpe - a.sharpe);
                 const sortedByAvk = [...allStatistikk].sort((a, b) => b.aarligAvkastning - a.aarligAvkastning);
                 const sortedByVol = [...allStatistikk].sort((a, b) => a.standardavvik - b.standardavvik);
@@ -9114,7 +9156,7 @@ export default function PensumPrognoseModell() {
 
         {activeTab === 'rapport' && (() => {
           // Beregn alle data for rapporten
-          const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+          const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
           const valgteProdukterRapport = pensumAllokering.filter(a => a.vekt > 0).map(a => {
             const produkt = alleProdukt.find(p => p.id === a.id);
             const stat1y = beregnProduktStatistikk(produktHistorikk[a.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 1, RAPPORT_DATO_OBJEKT.getMonth(), 1));
@@ -9850,7 +9892,7 @@ export default function PensumPrognoseModell() {
                 {isStandardModulAktiv('eksponering') && (() => {
                   const aksjeProdRap = pensumAllokering.filter(a => {
                     if (a.vekt <= 0) return false;
-                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...pensumProdukter.alternative];
+                    const alle = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
                     const p = alle.find(pp => pp.id === a.id);
                     if (p?.aktivatype === 'rente') return false;
                     if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
