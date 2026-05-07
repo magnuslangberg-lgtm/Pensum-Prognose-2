@@ -1229,12 +1229,26 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
 
   if (valuta === 'NOK' || lanebelop <= 0) {
     return (
-      <div className="pensum-card" style={{ marginTop: '20px' }}>
-        <h2 className="section-title">🌍 Valutahedge</h2>
-        <div style={{ fontSize: '12px', color: colors.textMuted, padding: '14px 16px', background: colors.lightGray, borderRadius: '6px' }}>
+      <div className="pensum-card" style={{ marginTop: '20px', borderTop: `4px solid ${colors.accent}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — analyse for rådgiver</h2>
+            <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Vurder effekten av FX-hedge på lån i fremmed valuta</div>
+          </div>
+          <div style={{ fontSize: '10px', color: colors.accent, padding: '4px 10px', background: `${colors.accent}15`, borderRadius: '4px', fontWeight: 700 }}>
+            INAKTIV
+          </div>
+        </div>
+        <div style={{ fontSize: '13px', color: colors.textDark, padding: '16px 18px', background: colors.lightGray, borderRadius: '6px', borderLeft: `4px solid ${colors.primary}` }}>
           {valuta === 'NOK'
-            ? 'Lånet er i NOK — ingen valutaeksponering eller hedge er nødvendig. Bytt valuta i "Lånerente"-seksjonen for å se effekten av valutahedge.'
-            : 'Velg en aktivaklasse og en LTV > 0 for å se valutahedge-analyse.'}
+            ? <>
+                <strong>Lånet er i NOK</strong> — ingen valutaeksponering eller hedge er nødvendig.<br/><br/>
+                <span style={{ color: colors.textMuted, fontSize: '12px' }}>For å se verktøyet for valutahedge, bytt valuta i <strong>"Lånerente"-seksjonen</strong> over (EUR, USD eller SEK). Da får du tilgang til full hedge-analyse med anbefaling, scenarioer og slide-grunnlag for kunderapport.</span>
+              </>
+            : <>
+                <strong>Velg en aktivaklasse og en LTV &gt; 0</strong> for å se valutahedge-analyse.
+              </>
+          }
         </div>
       </div>
     );

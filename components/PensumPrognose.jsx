@@ -6290,6 +6290,56 @@ export default function PensumPrognoseModell() {
               )}
             </div>
 
+            {/* Detaljert verdiutvikling — viser uttak/innskudd og vekt per produkt år for år */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Detaljert verdiutvikling</h3>
+                <p className="text-xs text-blue-200 mt-0.5">Inkluderer årlig kontantstrøm{pensumRebalanseringAktiv && pensumRebalanseringer.length > 0 ? ' og rebalanseringer' : ''}.</p>
+              </div>
+              <div className="p-6 overflow-x-auto">
+                {(() => {
+                  const valgte = pensumAllokering.filter(a => a.vekt > 0);
+                  if (valgte.length === 0 || pensumPrognose.length === 0) {
+                    return <p className="text-sm text-gray-500 italic">Legg til produkter for å se detaljert verdiutvikling.</p>;
+                  }
+                  return (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                          <th className="py-3 px-4 text-left text-white">År</th>
+                          <th className="py-3 px-3 text-right text-white">Innskudd/uttak</th>
+                          {valgte.map(a => <th key={a.id} className="py-3 px-3 text-right text-white">{a.navn}</th>)}
+                          <th className="py-3 px-4 text-right text-white font-bold">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pensumPrognose.map((row, idx) => (
+                          <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
+                            <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
+                            <td className={"py-3 px-3 text-right tabular-nums " + (idx === 0 ? "text-gray-400" : (nettoKontantstrom > 0 ? "text-green-600" : (nettoKontantstrom < 0 ? "text-red-600" : "text-gray-400")))}>
+                              {idx === 0 ? '—' : (nettoKontantstrom !== 0 ? formatCurrency(nettoKontantstrom) : '—')}
+                            </td>
+                            {valgte.map(a => <td key={a.id} className="py-3 px-3 text-right text-gray-600 tabular-nums">{formatCurrency(row[a.navn] || 0)}</td>)}
+                            <td className="py-3 px-4 text-right font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.verdi)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+                {pensumRebalanseringAktiv && pensumRebalanseringer.length > 0 && (
+                  <div className="mt-4 p-3 rounded-lg border border-blue-100 bg-blue-50 text-xs text-gray-700">
+                    <strong style={{ color: PENSUM_COLORS.darkBlue }}>Aktive rebalanseringsregler:</strong>{' '}
+                    {pensumRebalanseringer.map((reb, i) => {
+                      const fra = pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?';
+                      const til = pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?';
+                      return <span key={i}>{i > 0 ? ' · ' : ''}{reb.prosentPerAar}% av {fra} → {til}</span>;
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
             {(() => {
               const PORT_COMP_INDEKS_CONFIG = {
