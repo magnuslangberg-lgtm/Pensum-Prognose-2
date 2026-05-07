@@ -5807,26 +5807,31 @@ export default function PensumPrognoseModell() {
 
                       const fraTopp = [...blokker].reverse(); // for legend: spisset, stab, kjerne
 
-                      // Smaller diameters to fit narrow right column
-                      const diameter = (v) => 70 + v * 1.4;
-                      const containerWidth = 200;
+                      // Diameter-skala: kompakt slik at maks-sirkel passer i container,
+                      // og forskjellen mellom min og maks er moderat (linær 65→155)
+                      const containerWidth = 180;
+                      const maxDiameter = 150; // maks så vi har 15px buffer på hver side
+                      const minDiameter = 70;  // sikrer at små verdier fortsatt er lesbare
+                      const diameter = (v) => Math.min(maxDiameter, Math.max(minDiameter, minDiameter + v * 0.95));
 
-                      // Posisjoner: bunn-anchor, hvert ikke-toppsirkel har topp 50% dekket av sirkelen over
-                      const overlap = 0.5;
-                      let bottomEdge = 0; // y-koord der bunn-kanten skal være (settes etter)
-                      const sirkelPos = [];
-                      blokker.forEach((b) => {
-                        const d = diameter(b.verdi);
-                        sirkelPos.push({ ...b, d });
-                      });
-                      // Container-høyde = d_kjerne + sum(0.5 * d for stab+spisset)
-                      const containerHeight = sirkelPos[0].d + sirkelPos.slice(1).reduce((s, c) => s + c.d * 0.5, 0) + 8;
-                      // Place each circle from bottom up
-                      bottomEdge = containerHeight;
-                      sirkelPos.forEach((s, idx) => {
+                      const overlap = 0.5; // hver ikke-topp sirkel har topp 50% dekket av sirkelen over
+                      const sirkelPos = blokker.map(b => ({ ...b, d: diameter(b.verdi) }));
+
+                      // Riktig containerhøyde:
+                      // sum av 0.5*d for ALLE bortsett fra topp-sirkelen, pluss full d for topp-sirkelen
+                      // Bunn-sirkelen er anchored til container-bunn med full d
+                      // Generell formel for stack med 50% overlapp:
+                      //   container.h = topp.d + 0.5 * sum(d for ikke-topp)
+                      const sirkelTopIdx = sirkelPos.length - 1;
+                      const containerHeight = sirkelPos[sirkelTopIdx].d
+                        + sirkelPos.slice(0, -1).reduce((s, c) => s + c.d * overlap, 0)
+                        + 16;
+                      // Plassér fra bunn opp
+                      let bottomEdge = containerHeight - 8; // 8px buffer på bunn
+                      sirkelPos.forEach((s) => {
                         s.y_top = bottomEdge - s.d;
                         s.cx = containerWidth / 2;
-                        bottomEdge = s.y_top + s.d * overlap; // neste sirkel-bunn lander her
+                        bottomEdge = s.y_top + s.d * overlap;
                       });
 
                       // Tegn fra bunn (kjerne) til topp (spisset) for riktig z-stacking
