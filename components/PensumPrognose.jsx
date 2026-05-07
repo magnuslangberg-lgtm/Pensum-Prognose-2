@@ -5789,44 +5789,82 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
 
-                    {/* Kjerne vs Spisset eksponering */}
+                    {/* Eksponeringsroller — byggesett (stablet) */}
                     {(() => {
                       const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
-                      let kjerneSum = 0, spissetSum = 0;
+                      let kjerneSum = 0, stabSum = 0, spissetSum = 0;
+                      const kjerneNavn = [], stabNavn = [], spissetNavn = [];
                       pensumAllokering.forEach(a => {
                         if (a.vekt <= 0) return;
                         const p = alleProd.find(pp => pp.id === a.id);
                         if (!p) return;
-                        if (p.rolle === 'spisset') spissetSum += a.vekt;
-                        else kjerneSum += a.vekt;
+                        // Stabilisator: rentefond og blandet/dynamisk-fond (Basis)
+                        if (p.aktivatype === 'rente' || p.aktivatype === 'dynamisk' || p.aktivatype === 'blandet') {
+                          stabSum += a.vekt;
+                          stabNavn.push(p.navn);
+                        } else if (p.rolle === 'spisset' || p.aktivatype === 'alternativ') {
+                          spissetSum += a.vekt;
+                          spissetNavn.push(p.navn);
+                        } else {
+                          kjerneSum += a.vekt;
+                          kjerneNavn.push(p.navn);
+                        }
                       });
-                      const data = [];
-                      if (kjerneSum > 0) data.push({ name: 'Kjerneeksponering', value: kjerneSum, color: PENSUM_COLORS.darkBlue });
-                      if (spissetSum > 0) data.push({ name: 'Spisset eksponering', value: spissetSum, color: PENSUM_COLORS.teal });
-                      if (data.length === 0) return null;
+                      const total = kjerneSum + stabSum + spissetSum;
+                      if (total === 0) return null;
+                      // Visuell høyde: total maks ~220px, hver blokk får andel + min 28px hvis > 0
+                      const totalH = 240;
+                      const minBlokk = 32;
+                      const blokker = [
+                        { navn: 'Spisset / satellitter', verdi: spissetSum, farge: PENSUM_COLORS.gold, posisjon: 'top', items: spissetNavn, beskr: 'Målrettet sektor-, tema- eller regionseksponering for meravkastning' },
+                        { navn: 'Stabilisator', verdi: stabSum, farge: PENSUM_COLORS.salmon, posisjon: 'midt', items: stabNavn, beskr: 'Rentedel for løpende avkastning og lavere svingninger' },
+                        { navn: 'Kjerne', verdi: kjerneSum, farge: PENSUM_COLORS.darkBlue, posisjon: 'bunn', items: kjerneNavn, beskr: 'Bred kvalitetseksponering — langsiktig grunnmur' }
+                      ];
+                      // Filtrer ut blokker som er 0
+                      const aktive = blokker.filter(b => b.verdi > 0);
+                      // Beregn visuell høyde per blokk (proporsjonal med min-grense)
+                      const restAndelTotal = aktive.reduce((s, b) => s + b.verdi, 0);
+                      const aktiveMedHoyde = aktive.map(b => {
+                        const proporsjonal = (b.verdi / restAndelTotal) * (totalH - aktive.length * minBlokk);
+                        return { ...b, hoyde: minBlokk + Math.max(0, proporsjonal) };
+                      });
                       return (
                         <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                          <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponeringsroller</h4>
-                          <div className="flex items-center gap-6">
-                            <div className="shrink-0">
-                              <ResponsiveContainer width={160} height={160}>
-                                <PieChart>
-                                  <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
-                                    {data.map(e => <Cell key={e.name} fill={e.color} />)}
-                                  </Pie>
-                                  <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                                </PieChart>
-                              </ResponsiveContainer>
+                          <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponeringsroller — byggesett</h4>
+                          <div className="flex items-end gap-6">
+                            {/* Stack */}
+                            <div className="shrink-0 w-32 flex flex-col" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.08))' }}>
+                              {aktiveMedHoyde.map((b, idx) => {
+                                const isFirst = idx === 0;
+                                const isLast = idx === aktiveMedHoyde.length - 1;
+                                return (
+                                  <div
+                                    key={b.navn}
+                                    title={b.items.join(', ')}
+                                    className={`flex flex-col items-center justify-center text-white font-semibold relative transition-transform hover:scale-105 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''}`}
+                                    style={{ height: b.hoyde + 'px', backgroundColor: b.farge, borderTop: !isFirst ? '1px solid rgba(255,255,255,0.2)' : 'none' }}
+                                  >
+                                    <span className="text-lg leading-none tabular-nums">{b.verdi.toFixed(0)}%</span>
+                                    <span className="text-[10px] uppercase tracking-wide opacity-90 mt-0.5">{b.navn.split(' ')[0].split(' /')[0]}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <div className="space-y-2.5 flex-1">
-                              {data.map(d => (
-                                <div key={d.name} className="flex items-center gap-2.5 text-sm">
-                                  <div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div>
-                                  <span className="flex-1 text-gray-700">{d.name}</span>
-                                  <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(1)}%</span>
+                            {/* Beskrivelser - i samme rekkefølge som blokker */}
+                            <div className="flex-1 space-y-3">
+                              {aktiveMedHoyde.map(b => (
+                                <div key={b.navn} className="flex items-start gap-3">
+                                  <div className="w-3 h-3 rounded mt-1 shrink-0" style={{ backgroundColor: b.farge }}></div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="font-semibold text-gray-700 flex-1">{b.navn}</span>
+                                      <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{b.verdi.toFixed(1)}%</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5 leading-snug">{b.beskr}</p>
+                                  </div>
                                 </div>
                               ))}
-                              <p className="text-xs text-gray-500 mt-2 italic">Kjerne: bred eksponering med diversifisering. Spisset: målrettet sektor-, tema- eller regionseksponering.</p>
+                              <p className="text-[11px] text-gray-400 italic mt-2">Kjernen er fundamentet, stabilisator demper svingninger og spissede satellitter løfter avkastningspotensialet.</p>
                             </div>
                           </div>
                         </div>
