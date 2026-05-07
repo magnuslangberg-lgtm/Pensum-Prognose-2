@@ -684,13 +684,13 @@ export default function PensumPrognoseModell() {
   }, [pensumAllokering, pensumProdukter, produktHistorikk]);
 
   // Beregn aktivafordeling (aksjer vs renter vs alternativer)
+  // Pensum Basis (aktivatype 'dynamisk'/'blandet') splittes 50/50 mellom aksjer og renter.
   const pensumAktivafordeling = useMemo(() => {
     const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     let aksjeVekt = 0;
     let renteVekt = 0;
     let alternativVekt = 0;
-    let blandetVekt = 0;
-    
+
     pensumAllokering.forEach(allok => {
       const produkt = alleProdukt.find(p => p.id === allok.id);
       if (produkt && allok.vekt > 0) {
@@ -700,17 +700,17 @@ export default function PensumPrognoseModell() {
           renteVekt += allok.vekt;
         } else if (produkt.aktivatype === 'alternativ') {
           alternativVekt += allok.vekt;
-        } else if (produkt.aktivatype === 'blandet') {
-          blandetVekt += allok.vekt;
+        } else if (produkt.aktivatype === 'blandet' || produkt.aktivatype === 'dynamisk') {
+          aksjeVekt += allok.vekt * 0.5;
+          renteVekt += allok.vekt * 0.5;
         }
       }
     });
-    
+
     return [
       { name: 'Aksjer', value: parseFloat(aksjeVekt.toFixed(1)), color: PENSUM_COLORS.darkBlue },
       { name: 'Renter', value: parseFloat(renteVekt.toFixed(1)), color: PENSUM_COLORS.salmon },
-      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal },
-      { name: 'Blandet', value: parseFloat(blandetVekt.toFixed(1)), color: PENSUM_COLORS.gold }
+      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal }
     ];
   }, [pensumAllokering, pensumProdukter]);
 
@@ -5775,7 +5775,13 @@ export default function PensumPrognoseModell() {
                         if (a.vekt <= 0) return;
                         const p = alleProd.find(pp => pp.id === a.id);
                         if (!p) return;
-                        if (p.aktivatype === 'rente' || p.aktivatype === 'dynamisk' || p.aktivatype === 'blandet') {
+                        // Basis (blandet/dynamisk) splittes 50/50: aksjedelen → kjerne, rentedelen → stabilisator
+                        if (p.aktivatype === 'blandet' || p.aktivatype === 'dynamisk') {
+                          kjerneSum += a.vekt * 0.5;
+                          stabSum += a.vekt * 0.5;
+                          kjerneNavn.push(`${p.navn} (50% aksjedel)`);
+                          stabNavn.push(`${p.navn} (50% rentedel)`);
+                        } else if (p.aktivatype === 'rente') {
                           stabSum += a.vekt;
                           stabNavn.push(p.navn);
                         } else if (p.rolle === 'spisset' || p.aktivatype === 'alternativ') {
