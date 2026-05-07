@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
@@ -6401,10 +6401,11 @@ export default function PensumPrognoseModell() {
               );
             })()}
 
-            {/* Historisk avkastning */}
+            {/* Avkastningsestimat */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                <h3 className="text-lg font-semibold text-white">Historisk avkastning</h3>
+                <h3 className="text-lg font-semibold text-white">Avkastningsestimat</h3>
+                <p className="text-xs text-blue-200 mt-0.5">Forventet avkastning er basert på CMA-metodikk (BlackRock, Vanguard, J.P. Morgan + nordisk overlay). Historiske tall er beregnet fra månedlig kursutvikling.</p>
               </div>
               <div className="p-6">
                 {/* Vektet porteføljeavkastning */}
@@ -6494,7 +6495,7 @@ export default function PensumPrognoseModell() {
                         const pStat = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
                           <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
@@ -6524,7 +6525,7 @@ export default function PensumPrognoseModell() {
                         const pStat = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
                           <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
@@ -6554,7 +6555,7 @@ export default function PensumPrognoseModell() {
                         const pStat = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                          <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
                           <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1) + '%' : '—'}</td>
                           <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1) + '%' : '—'}</td>
@@ -6580,7 +6581,7 @@ export default function PensumPrognoseModell() {
                             const fYield = p.forventetYield;
                             return (
                             <tr key={p.id} className={idx % 2 === 0 ? 'bg-amber-50' : 'bg-white'}>
-                              <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}</td>
+                              <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
                               <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1) + '%' : '—'}</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
@@ -6601,7 +6602,10 @@ export default function PensumPrognoseModell() {
                     </tbody>
                   </table>
                 </div>
-
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-gray-700 space-y-1.5">
+                  <p><sup className="text-amber-600 font-bold">*</sup> Kort historikk: avkastningstall er estimerte eller mangler for hele perioden.</p>
+                  <p><strong>Forventet avkastning</strong> er basert på CMA-metodikk (Capital Market Assumptions) — institusjonell konsensus fra <a href="https://www.blackrock.com/us/financial-professionals/insights/capital-market-assumptions" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">BlackRock</a>, <a href="https://corporate.vanguard.com/content/corporatesite/us/en/corp/vemo/vemo-return-forecasts.html" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">Vanguard</a> og <a href="https://am.jpmorgan.com/content/dam/jpm-am-aem/americas/us/en/institutional/insights/portfolio-insights/ltcma-full-report.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">J.P. Morgan Asset Management</a>, supplert med en eksplisitt nordisk/norsk overlay. Se metodikkdokumentasjon for full beskrivelse.</p>
+                </div>
               </div>
             </div>
 
@@ -6768,6 +6772,75 @@ export default function PensumPrognoseModell() {
                       <p className="text-[10px] text-gray-400 italic">Scenarioene er modellbaserte illustrasjoner. Faktisk avkastning vil kunne avvike vesentlig.</p>
                     </div>
                   )}
+                </div>
+              );
+            })()}
+
+            {/* Scatter plot: avkastning vs risiko (3 og 5 år) */}
+            {(() => {
+              const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])];
+              // Bygg datapunkter for hvert produkt med tilstrekkelig historikk
+              const data3yr = [];
+              const data5yr = [];
+              alleProd.forEach(p => {
+                const stat3 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+                const stat5 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+                if (stat3 && erGyldigTall(stat3.aarligAvkastning) && erGyldigTall(stat3.standardavvik)) {
+                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: p.navn, id: p.id });
+                }
+                if (stat5 && erGyldigTall(stat5.aarligAvkastning) && erGyldigTall(stat5.standardavvik)) {
+                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: p.navn, id: p.id });
+                }
+              });
+              if (data3yr.length === 0 && data5yr.length === 0) return null;
+              const farge = PENSUM_COLORS.darkBlue;
+              const renderScatter = (data, periode) => (
+                <div className="rounded-lg border border-gray-100 bg-white p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} />
+                      <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
+                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
+                        formatter={(v, n) => [v.toFixed(1) + '%', n === 'x' ? 'Volatilitet' : 'Avkastning']}
+                        labelFormatter={() => ''}
+                        content={({ payload }) => {
+                          if (!payload?.length) return null;
+                          const d = payload[0].payload;
+                          return <div className="bg-white p-2 rounded border border-gray-200 text-xs"><div className="font-semibold">{d.navn}</div><div>Volatilitet: {d.x.toFixed(1)}%</div><div>Avkastning: {d.y.toFixed(1)}%</div></div>;
+                        }}
+                      />
+                      <Scatter data={data} fill={farge}>
+                        {data.map((entry, idx) => (
+                          <Cell key={idx} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.salmon, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.lightBlue][idx % 7]} />
+                        ))}
+                      </Scatter>
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-2 gap-1 mt-2">
+                    {data.map((d, i) => (
+                      <div key={d.id} className="flex items-center gap-1.5 text-[10px] truncate">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.salmon, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.lightBlue][i % 7] }}></div>
+                        <span className="text-gray-600 truncate">{d.navn}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+              return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                    <h3 className="text-lg font-semibold text-white">Avkastning vs. risiko</h3>
+                    <p className="text-xs text-blue-200 mt-0.5">Annualisert avkastning og volatilitet per produkt. Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {data3yr.length > 0 && renderScatter(data3yr, '3 år')}
+                      {data5yr.length > 0 && renderScatter(data5yr, '5 år')}
+                    </div>
+                    <p className="text-[10px] text-gray-500 italic mt-3">Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Avkastning er annualisert geometrisk over perioden.</p>
+                  </div>
                 </div>
               );
             })()}
