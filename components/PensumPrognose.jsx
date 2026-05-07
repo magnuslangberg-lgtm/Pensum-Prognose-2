@@ -5812,67 +5812,55 @@ export default function PensumPrognoseModell() {
                       const total = kjerneSum + stabSum + spissetSum;
                       if (total === 0) return null;
 
-                      // Sirkler bygges fra bunn (størst) til topp (minst)
+                      // Bunn til topp (kjerne størst nederst)
                       const blokker = [
                         { navn: 'Kjerne', kort: 'KJERNE', verdi: kjerneSum, farge: PENSUM_COLORS.darkBlue, items: kjerneNavn, beskr: 'Bred kvalitetseksponering — langsiktig grunnmur',
-                          ikon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 21V8l3-2 3 2v13M3 21h18M9 21V3l3-2 3 2v18M15 21V9l3-2 3 2v12M9 7h.01M9 11h.01M9 15h.01M15 13h.01M15 17h.01" /></svg> },
+                          ikon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 21V8l3-2 3 2v13M3 21h18M9 21V3l3-2 3 2v18M15 21V9l3-2 3 2v12M9 7h.01M9 11h.01M9 15h.01M15 13h.01M15 17h.01" /></svg> },
                         { navn: 'Stabilisator', kort: 'STABILISATOR', verdi: stabSum, farge: PENSUM_COLORS.salmon, items: stabNavn, beskr: 'Renter for løpende avkastning og lavere svingninger',
-                          ikon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> },
+                          ikon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> },
                         { navn: 'Spisset / satellitter', kort: 'SPISSET', verdi: spissetSum, farge: PENSUM_COLORS.gold, items: spissetNavn, beskr: 'Målrettet sektor-, tema- eller regionseksponering for meravkastning',
-                          ikon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={1.8} /><circle cx="12" cy="12" r="5.5" strokeWidth={1.8} /><circle cx="12" cy="12" r="2" strokeWidth={1.8} fill="currentColor" /><path strokeLinecap="round" strokeWidth={1.8} d="M19 5l-3 3" /></svg> },
+                          ikon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={1.8} /><circle cx="12" cy="12" r="5.5" strokeWidth={1.8} /><circle cx="12" cy="12" r="2" strokeWidth={1.8} fill="currentColor" /></svg> },
                       ].filter(b => b.verdi > 0);
 
-                      // Bygges fra bunn til topp, så reverser for visning (største nederst)
-                      const sortertNedTilOpp = [...blokker].reverse(); // Spisset på topp i array
-                      const fraTopp = sortertNedTilOpp; // [spisset, stab, kjerne]
+                      const fraTopp = [...blokker].reverse(); // for legend: spisset, stab, kjerne
 
-                      // Diameter proporsjonal med verdi: d = 110 + value * 2.4
-                      const diameter = (v) => 110 + v * 2.4;
+                      // Smaller diameters to fit narrow right column
+                      const diameter = (v) => 70 + v * 1.4;
+                      const containerWidth = 200;
 
-                      // Posisjoner: bunn-anchor, sirkler stables med ~45% overlap (top-circle bottom = bottom-circle's upper area)
-                      const containerHeight = 420;
-                      const containerWidth = 320;
-
-                      // Sett y-koordinat (top av sirkel) for hver - kjerne nederst
-                      // bottom edge of bottom = containerHeight
-                      // each circle's y_top = previousBottom - 0.55 * d_curr
-                      let bottomEdge = containerHeight;
-                      const sirkelPos = []; // bottom-up
-                      blokker.forEach((b, idx) => {
+                      // Posisjoner: bunn-anchor, hvert ikke-toppsirkel har topp 50% dekket av sirkelen over
+                      const overlap = 0.5;
+                      let bottomEdge = 0; // y-koord der bunn-kanten skal være (settes etter)
+                      const sirkelPos = [];
+                      blokker.forEach((b) => {
                         const d = diameter(b.verdi);
-                        // y_top = bottomEdge - d (full height from edge)
-                        const y_top = bottomEdge - d;
-                        const cx = containerWidth / 2;
-                        const cy = y_top + d / 2;
-                        sirkelPos.push({ ...b, d, cx, cy, y_top });
-                        // Neste sirkel starter med bunnkant ved 0.45 * d ned i denne sirkelen
-                        bottomEdge = y_top + d * 0.45;
+                        sirkelPos.push({ ...b, d });
+                      });
+                      // Container-høyde = d_kjerne + sum(0.5 * d for stab+spisset)
+                      const containerHeight = sirkelPos[0].d + sirkelPos.slice(1).reduce((s, c) => s + c.d * 0.5, 0) + 8;
+                      // Place each circle from bottom up
+                      bottomEdge = containerHeight;
+                      sirkelPos.forEach((s, idx) => {
+                        s.y_top = bottomEdge - s.d;
+                        s.cx = containerWidth / 2;
+                        bottomEdge = s.y_top + s.d * overlap; // neste sirkel-bunn lander her
                       });
 
-                      // Justér y-offset så øverste sirkel ikke går over toppen
-                      const minY = Math.min(...sirkelPos.map(s => s.y_top));
-                      const yOffset = minY < 8 ? (8 - minY) : 0;
-                      sirkelPos.forEach(s => { s.y_top += yOffset; s.cy += yOffset; });
-
-                      // Tegn først kjernen (bunn), så de over slik at de overlapper riktig
-                      // Faktisk z-index: spisset (øverst) skal være over stabilisator skal være over kjerne
-                      // Så vi tegner bunn først, så lag på lag
-                      const tegnRekkefolge = [...sirkelPos]; // [kjerne, stab, spisset]
-
-                      const totalH = Math.max(containerHeight, ...sirkelPos.map(s => s.y_top + s.d)) + yOffset;
-
+                      // Tegn fra bunn (kjerne) til topp (spisset) for riktig z-stacking
                       return (
                         <div className="rounded-xl border border-gray-100 bg-white p-5">
                           <div className="flex items-center gap-2 mb-4">
                             <div className="h-5 w-1 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
                             <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponeringsroller — byggesett</h4>
                           </div>
-                          <div className="flex items-center gap-8 flex-wrap lg:flex-nowrap">
+                          <div className="flex items-start gap-4">
                             {/* Stablede sirkler */}
-                            <div className="shrink-0 mx-auto" style={{ position: 'relative', width: containerWidth, height: totalH }}>
-                              {tegnRekkefolge.map((s, idx) => {
-                                const labelStor = s.d >= 130;
-                                const beskrStor = s.d >= 170;
+                            <div className="shrink-0" style={{ position: 'relative', width: containerWidth, height: containerHeight }}>
+                              {sirkelPos.map((s, idx) => {
+                                const isTop = idx === sirkelPos.length - 1;
+                                const labelStor = s.d >= 100;
+                                // For ikke-topp sirkel: skyv innholdet ned i synlig (nedre) halvdel
+                                const paddingTop = isTop ? 0 : s.d * overlap;
                                 return (
                                   <div
                                     key={s.navn}
@@ -5885,46 +5873,44 @@ export default function PensumPrognoseModell() {
                                       height: s.d,
                                       borderRadius: '50%',
                                       backgroundColor: s.farge,
-                                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                      border: '4px solid white',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
+                                      boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                                      border: '3px solid white',
                                       color: '#fff',
                                       textAlign: 'center',
-                                      padding: '0 12px',
+                                      paddingTop: paddingTop + 'px',
                                       zIndex: idx + 1,
-                                      transition: 'transform 0.2s'
+                                      transition: 'transform 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
                                     }}
                                     className="hover:scale-105"
                                   >
-                                    <div className="flex flex-col items-center gap-0.5" style={{ marginTop: idx === tegnRekkefolge.length - 1 ? 0 : (-s.d * 0.15) }}>
-                                      <div className="text-3xl font-bold leading-none tabular-nums">{s.verdi.toFixed(0)}%</div>
-                                      {labelStor && <div className="text-[11px] font-bold tracking-wide uppercase mt-1 leading-tight">{s.kort}</div>}
-                                      {beskrStor && <div className="text-[10px] opacity-95 mt-1 leading-tight max-w-[75%]">{s.beskr}</div>}
+                                    <div className="flex flex-col items-center justify-center w-full px-2">
+                                      <div className="text-2xl font-bold leading-none tabular-nums">{s.verdi.toFixed(0)}%</div>
+                                      {labelStor && <div className="text-[10px] font-bold tracking-wide uppercase mt-1 leading-tight whitespace-nowrap">{s.kort}</div>}
                                     </div>
                                   </div>
                                 );
                               })}
                             </div>
-                            {/* Beskrivelser med ikoner — øverst (spisset), nederst (kjerne) */}
-                            <div className="flex-1 min-w-[260px] space-y-3 self-stretch py-2">
+                            {/* Beskrivelser-liste — øverst spisset, nederst kjerne */}
+                            <div className="flex-1 min-w-0 space-y-2.5 py-1">
                               {fraTopp.map((b, idx) => (
                                 <div key={b.navn}>
-                                  <div className="flex items-start gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: b.farge }}></div>
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border" style={{ borderColor: b.farge + '40', color: b.farge, backgroundColor: b.farge + '10' }}>
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 border" style={{ borderColor: b.farge + '40', color: b.farge, backgroundColor: b.farge + '15' }}>
                                       {b.ikon}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between gap-2">
-                                        <span className="font-bold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>{b.kort.replace('SPISSET', 'SPISSET / SATELLITTER')}</span>
-                                        <span className="font-bold text-base tabular-nums" style={{ color: b.farge }}>{b.verdi.toFixed(0)}%</span>
+                                        <span className="font-bold text-[11px] tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>{b.navn === 'Spisset / satellitter' ? 'Spisset' : b.navn}</span>
+                                        <span className="font-bold text-sm tabular-nums" style={{ color: b.farge }}>{b.verdi.toFixed(0)}%</span>
                                       </div>
-                                      <p className="text-xs text-gray-600 mt-1 leading-snug">{b.beskr}</p>
+                                      <p className="text-[10px] text-gray-600 mt-0.5 leading-snug">{b.beskr}</p>
                                     </div>
                                   </div>
-                                  {idx < fraTopp.length - 1 && <div className="border-b border-gray-100 mt-3"></div>}
+                                  {idx < fraTopp.length - 1 && <div className="border-b border-gray-100 mt-2"></div>}
                                 </div>
                               ))}
                             </div>
