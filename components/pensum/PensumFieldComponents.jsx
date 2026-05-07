@@ -48,7 +48,7 @@ export function CollapsibleSection({ title, isOpen, onToggle, sum, children }) {
   );
 }
 
-export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning, avkastningLaast }) {
+export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning, avkastningLaast, onRemove }) {
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
@@ -56,6 +56,12 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
   const pctFilled = Math.min(100, Math.max(0, dragVekt));
   return (
     <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-gray-100 hover:bg-gray-50/50 transition-all">
+      {/* Remove button */}
+      {onRemove && (
+        <button onClick={onRemove} className="text-red-400 hover:text-red-600 flex-shrink-0 transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      )}
       {/* Name */}
       <div className="flex items-center gap-2.5 min-w-0" style={{ width: '140px' }}>
         <div className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm" style={{ backgroundColor: itemColor }}></div>
