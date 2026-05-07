@@ -487,68 +487,23 @@ export default function PensumPrognoseModell() {
     { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' }
   ]);
 
-  // Standardporteføljer MED Basis
-  const pensumStandardPortefoljerMedBasis = {
-    'Defensiv': [
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 45, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Moderat': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Dynamisk': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 15, kategori: 'fondsportefoljer' }
-    ],
-    'Offensiv': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 35, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 25, kategori: 'enkeltfond' },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', vekt: 20, kategori: 'enkeltfond' }
-    ]
-  };
-
-  // Standardporteføljer UTEN Basis
-  const pensumStandardPortefoljerUtenBasis = {
-    'Defensiv': [
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 50, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 5, kategori: 'fondsportefoljer' }
-    ],
-    'Moderat': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 15, kategori: 'enkeltfond' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Dynamisk': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 35, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 25, kategori: 'enkeltfond' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 20, kategori: 'fondsportefoljer' }
-    ],
-    'Offensiv': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 40, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', vekt: 15, kategori: 'enkeltfond' }
-    ]
-  };
-
-  // Standardporteføljer-knapper bruker alltid varianten med Basis;
-  // Definerte porteføljer (dropdown) tilbyr m/u Basis-varianter.
-  const pensumStandardPortefoljer = pensumStandardPortefoljerMedBasis;
+  // Standardporteføljer-knapper (Defensiv/Moderat/Dynamisk/Offensiv)
+  // bruker "uten basis"-variantene med Allokering 1 (Kjerne) fra Definerte porteføljer.
+  // Definerte porteføljer-dropdown gir bredere utvalg (m/u Basis, Allok 2 og 3).
+  const pensumStandardPortefoljer = useMemo(() => {
+    const alleProdukter = [...defaultPensumProdukter.enkeltfond, ...defaultPensumProdukter.fondsportefoljer, ...(defaultPensumProdukter.eksterneFond || []), ...defaultPensumProdukter.alternative];
+    const tilAllokering = (rader) => rader.map(r => {
+      const prod = alleProdukter.find(p => p.id === r.id);
+      return { id: r.id, navn: prod ? prod.navn : r.id, vekt: r.vekt, kategori: r.kategori };
+    });
+    const losning = (navn) => defaultPensumStandardLosninger[navn]?.allokeringer['Allokering 1 (Kjerne)'] || [];
+    return {
+      'Defensiv': tilAllokering(losning('30/70 u basis')),
+      'Moderat': tilAllokering(losning('50/50 u basis')),
+      'Dynamisk': tilAllokering(losning('70/30 u basis')),
+      'Offensiv': tilAllokering(losning('100% Aksjer'))
+    };
+  }, []);
 
   const [valgtPensumProfil, setValgtPensumProfil] = useState('Moderat');
 
