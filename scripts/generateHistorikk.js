@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_PATH = path.join(__dirname, '..', 'uploads', 'Datafeed til rådgiververktøy.xlsx');
+const XLSX_PATH = path.join(__dirname, '..', 'uploads', 'Datafeed til rådgiververktøy-mai1.xlsx');
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'pensumDatafeedHistorikk.js');
 
 // Excel serial number -> YYYY-MM-DD
@@ -30,6 +30,7 @@ const PRODUKT_MAP = [
   { col: 13, key: 'banking-d' },
   { col: 15, key: 'nordisk-hoyrente' },
   { col: 17, key: 'norge-a' },
+  { col: 19, key: 'kairos-a' },
 ];
 
 // --- Index mapping (indekser) ---
@@ -78,11 +79,23 @@ const wb = XLSX.readFile(XLSX_PATH);
 
 const indekserRows = XLSX.utils.sheet_to_json(wb.Sheets['indekser'], { header: 1, defval: null });
 const produktRows = XLSX.utils.sheet_to_json(wb.Sheets['Pensumløsninger'], { header: 1, defval: null });
+const eksternRows = wb.Sheets['Fondsfokuslisten'] ? XLSX.utils.sheet_to_json(wb.Sheets['Fondsfokuslisten'], { header: 1, defval: null }) : [];
 
 console.log('indekser rows:', indekserRows.length);
 console.log('Pensumløsninger rows:', produktRows.length);
+console.log('Fondsfokuslisten rows:', eksternRows.length);
 
-const produktHistorikk = parseSheet(produktRows, PRODUKT_MAP);
+const EKSTERN_MAP = [
+  { col: 1, key: 'acadian-global-equity' },
+  { col: 3, key: 'capital-group-new-pers' },
+  { col: 5, key: 'dnb-global-enhanced' },
+  { col: 7, key: 'guinness-global-equity-income' },
+  { col: 9, key: 'janus-henderson-glb-sc' },
+];
+
+const produktHistorikkBase = parseSheet(produktRows, PRODUKT_MAP);
+const eksternHistorikk = eksternRows.length > 0 ? parseSheet(eksternRows, EKSTERN_MAP) : {};
+const produktHistorikk = { ...produktHistorikkBase, ...eksternHistorikk };
 const indeksHistorikk = parseSheet(indekserRows, INDEKS_MAP);
 
 // Report
@@ -94,8 +107,8 @@ for (const [k, v] of Object.entries(indeksHistorikk)) {
 }
 
 // --- Generate output ---
-const output = `// Generert fra uploads/Datafeed til rådgiververktøy.xlsx - DAGLIGE datapunkter
-export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy.xlsx";
+const output = `// Generert fra uploads/Datafeed til rådgiververktøy-mai1.xlsx - DAGLIGE datapunkter
+export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai1.xlsx";
 
 export const DATAFEED_PRODUKT_HISTORIKK = ${JSON.stringify(produktHistorikk, null, 2)};
 
