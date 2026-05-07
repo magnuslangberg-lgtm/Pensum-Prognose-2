@@ -1180,15 +1180,57 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
 // ===== VALUTAHEDGE-SEKSJON =====
 // Viser effekten av valutahedge på et lån i fremmed valuta
+// Historisk årlig volatilitet (illustrative tall) for hovedvalutaer mot NOK,
+// brukt i anbefalingsmotor og forventet bevegelse-tabeller.
+const FX_VOL_VS_NOK = {
+  EUR: 7,   // EUR/NOK årlig volatilitet, %
+  USD: 11,  // USD/NOK
+  SEK: 5,   // SEK/NOK
+  GBP: 9,
+  CHF: 9,
+  JPY: 12
+};
+
 const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRente, rentepaaslag, tidshorisont, formatNOK, formatProsent }) => {
-  const [hedgeAktiv, setHedgeAktiv] = useState(true);
-  const [hedgeKostnad, setHedgeKostnad] = useState(0.5); // Hedgekostnad i prosent p.a. (FX-forward / cross-currency basis)
-  const [valutaSensitivitet, setValutaSensitivitet] = useState(10); // % bevegelse i valutakursen som scenario
+  const [hedgeRatio, setHedgeRatio] = useState(100); // 0-100 % hedge
+  const [hedgeKostnad, setHedgeKostnad] = useState(0.5); // hedgekost p.a. i prosent
+  const [valutaSensitivitet, setValutaSensitivitet] = useState(10);
+  const [inkluderISlide, setInkluderISlide] = useState(false);
+
+  const baseRente = baserenter[valuta]?.rate || 0;
+  const NOKRente = baserenter['NOK']?.rate || 0;
+  const renteForskjell = NOKRente - baseRente; // Positivt: NOK høyere rente, negativ carry å hedge inn til NOK
+  // Implied carry-cost / -gevinst ved å "låse inn" NOK-vekslingskurs
+  const carryEstimat = renteForskjell;
+  const effektivRenteHedget = totalRente + (hedgeRatio / 100) * (hedgeKostnad + Math.max(0, renteForskjell - hedgeKostnad));
+
+  // Forventet historisk FX-volatilitet
+  const fxVol = FX_VOL_VS_NOK[valuta] || 8;
+  // Break-even FX-bevegelse: FX-bevegelse som tilsvarer hedge-kostnaden over tidshorisonten
+  const totalHedgeCostPct = hedgeKostnad * tidshorisont;
+  const breakEvenFX = totalHedgeCostPct;
+
+  // Anbefalingsmotor — baseres på lånebeløp, FX-vol, tidshorisont og hedgekostnad
+  const anbefaling = useMemo(() => {
+    if (valuta === 'NOK' || lanebelop <= 0) return null;
+    const forventetTap1Sigma = lanebelop * (fxVol / 100); // 1-sigma årlig tap i NOK
+    const arligHedgeKost = lanebelop * (hedgeKostnad / 100);
+    const score = forventetTap1Sigma / Math.max(arligHedgeKost, 1); // hvor mange ganger hedge-kost dekker en 1σ-bevegelse
+    if (score >= 6) return {
+      tittel: 'Anbefaler full hedge', farge: colors.success, tekst: `FX-volatiliteten i ${valuta}/NOK er høy (~${fxVol}% p.a.) sammenlignet med hedge-kostnaden. Forsikringspremien er lav i forhold til risikoen.`
+    };
+    if (score >= 3) return {
+      tittel: 'Vurder delvis hedge (50–75%)', farge: colors.accent, tekst: `Balansert risikobilde. Delvis hedge gir reduksjon av halen samtidig som man beholder noe oppside ved gunstig valutautvikling.`
+    };
+    return {
+      tittel: 'Hedge er ikke kritisk', farge: colors.primaryLight, tekst: `Hedge-kostnad (${hedgeKostnad.toFixed(2)}% p.a.) er høy i forhold til forventet FX-bevegelse. Aktuelt kun ved kort horisont eller spesifikk risikoaversjon.`
+    };
+  }, [valuta, lanebelop, fxVol, hedgeKostnad, colors]);
 
   if (valuta === 'NOK' || lanebelop <= 0) {
     return (
       <div className="pensum-card" style={{ marginTop: '20px' }}>
-        <h2 className="section-title">Valutahedge</h2>
+        <h2 className="section-title">🌍 Valutahedge</h2>
         <div style={{ fontSize: '12px', color: colors.textMuted, padding: '14px 16px', background: colors.lightGray, borderRadius: '6px' }}>
           {valuta === 'NOK'
             ? 'Lånet er i NOK — ingen valutaeksponering eller hedge er nødvendig. Bytt valuta i "Lånerente"-seksjonen for å se effekten av valutahedge.'
@@ -1198,98 +1240,189 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
     );
   }
 
-  const baseRente = baserenter[valuta]?.rate || 0;
-  const NOKRente = baserenter['NOK']?.rate || 0;
-  // Cross-currency basis-estimat: differanse mellom NOK og lånevaluta-baserente, justert for hedge-kostnad
-  const renteForskjell = NOKRente - baseRente;
-  const effektivRenteHedget = baseRente + rentepaaslag + hedgeKostnad + Math.max(0, renteForskjell);
+  // Time-series: lån i NOK over tid under tre FX-scenarier (med vs uten hedge)
+  const tidsSerie = [];
+  for (let ar = 0; ar <= tidshorisont; ar++) {
+    // Skaler FX-bevegelse over tid (cumulative, scaled by tidshorisont)
+    const skalering = ar / tidshorisont;
+    const styrkesFX = valutaSensitivitet * skalering;
+    const svekkesFX = -valutaSensitivitet * skalering;
+    // Akkumulert hedge-kostnad
+    const hedgeKostAkk = lanebelop * (hedgeKostnad / 100) * ar;
 
-  // Scenarier: lånet er i fremmed valuta, lånet vokser/krymper i NOK når valutakursen endres
-  const scenarier = [
-    { navn: `Valutaen styrkes ${valutaSensitivitet}% (lånet blir dyrere i NOK)`, fxEffekt: valutaSensitivitet, farge: colors.danger },
-    { navn: 'Uendret valuta', fxEffekt: 0, farge: colors.primary },
-    { navn: `Valutaen svekkes ${valutaSensitivitet}% (lånet blir billigere i NOK)`, fxEffekt: -valutaSensitivitet, farge: colors.success }
-  ];
+    tidsSerie.push({
+      ar,
+      label: ar === 0 ? 'Start' : `År ${ar}`,
+      utenHedgeStyrkes: lanebelop * (1 + styrkesFX / 100),
+      utenHedgeUendret: lanebelop,
+      utenHedgeSvekkes: lanebelop * (1 + svekkesFX / 100),
+      // Med hedge: lånet i NOK uendret av FX, men hedge-kost trekkes
+      medHedge: lanebelop + (hedgeRatio / 100) * hedgeKostAkk,
+      // Med delvis hedge: hedgeRatio * fast NOK + (1-ratio) * FX-eksponert ved styrkes
+      medHedgeStyrkes: lanebelop * (hedgeRatio / 100) + lanebelop * (1 - hedgeRatio / 100) * (1 + styrkesFX / 100) + (hedgeRatio / 100) * hedgeKostAkk
+    });
+  }
 
-  const scenarierData = scenarier.map(s => {
-    // Uten hedge: lånet eksponert mot valutakurssvingning
-    const utenHedgeNyLan = lanebelop * (1 + s.fxEffekt / 100);
-    const utenHedgeFXEffekt = utenHedgeNyLan - lanebelop; // tap (positivt) eller gevinst (negativt) i NOK
-    // Med hedge: ingen FX-effekt på lånet, men hedgekostnad
-    const medHedgeKost = lanebelop * (hedgeKostnad / 100) * tidshorisont;
-    return { ...s, utenHedge: utenHedgeFXEffekt, medHedge: medHedgeKost };
+  // Sensitivitet: matrix av FX-bevegelse × tid
+  const fxSteps = [-20, -10, -5, 0, 5, 10, 20];
+  const sensitivitetData = fxSteps.map(fx => {
+    const utenHedge = lanebelop * (fx / 100); // tap eller gevinst i NOK
+    const medHedge = -lanebelop * (hedgeRatio / 100) * (hedgeKostnad / 100) * tidshorisont; // hedge-kostnad over horisonten
+    const medHedgeRest = lanebelop * (1 - hedgeRatio / 100) * (fx / 100); // ikke-hedget del eksponert
+    const medHedgeNetto = medHedge + medHedgeRest;
+    return { fx, utenHedge, medHedge: medHedgeNetto, diff: medHedgeNetto - utenHedge };
   });
 
   return (
-    <div className="pensum-card" style={{ marginTop: '20px' }}>
-      <h2 className="section-title">🌍 Valutahedge — effekt på lån i {valuta}</h2>
-
-      <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px', lineHeight: 1.5 }}>
-        Når lånet tas opp i {valuta} (basert på {baserenter[valuta]?.navn}), eksponeres porteføljen for valutarisiko mot NOK.
-        En valutahedge (FX-forward / cross-currency swap) låser inn vekslingskursen og fjerner FX-risikoen, men medfører en hedgekostnad
-        som typisk reflekterer renteforskjellen mellom landene + en likviditetspremie.
+    <div id="valutahedge-slide" className="pensum-card" style={{ marginTop: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${colors.mediumGray}` }}>
+        <div>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — analyse for rådgiver</h2>
+          <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Lån i {valuta} ({baserenter[valuta]?.navn}) — illustrativ effekt av FX-hedge mot NOK</div>
+        </div>
+        <label style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer', fontSize: '11px', color: colors.primary, padding: '6px 10px', background: inkluderISlide ? `${colors.accent}15` : colors.lightGray, border: `1px solid ${inkluderISlide ? colors.accent : colors.mediumGray}`, borderRadius: '6px' }}>
+          <input type="checkbox" checked={inkluderISlide} onChange={(e) => setInkluderISlide(e.target.checked)} style={{ width: '14px', height: '14px', accentColor: colors.accent }} />
+          <span>Inkluder som slide i investeringsforslag</span>
+        </label>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+      {/* Klientvenlig forklaring */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ padding: '12px', background: colors.lightGray, borderRadius: '6px', borderLeft: `3px solid ${colors.primary}` }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: colors.primary, marginBottom: '4px' }}>Hva er valutahedge?</div>
+          <div style={{ fontSize: '10px', color: colors.textMuted, lineHeight: 1.5 }}>Et finansielt instrument (FX-forward eller cross-currency swap) som låser fremtidig vekslingskurs og fjerner usikkerheten om hva lånet vil koste i NOK.</div>
+        </div>
+        <div style={{ padding: '12px', background: colors.lightGray, borderRadius: '6px', borderLeft: `3px solid ${colors.accent}` }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: colors.accent, marginBottom: '4px' }}>Hva koster det?</div>
+          <div style={{ fontSize: '10px', color: colors.textMuted, lineHeight: 1.5 }}>Hedge-kostnad reflekterer renteforskjellen mellom NOK og lånevalutaen + en likviditetspremie. Typisk 0.3–1.5% p.a.</div>
+        </div>
+        <div style={{ padding: '12px', background: colors.lightGray, borderRadius: '6px', borderLeft: `3px solid ${colors.success}` }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: colors.success, marginBottom: '4px' }}>Hvorfor velge hedge?</div>
+          <div style={{ fontSize: '10px', color: colors.textMuted, lineHeight: 1.5 }}>For å fjerne valutarisikoen i lånet — viktig hvis kunden ønsker forutsigbarhet eller har begrenset risikoevne på FX-svingninger.</div>
+        </div>
+      </div>
+
+      {/* Anbefalingsmotor */}
+      {anbefaling && (
+        <div style={{ marginBottom: '16px', padding: '14px 16px', background: `${anbefaling.farge}10`, border: `2px solid ${anbefaling.farge}`, borderRadius: '8px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: anbefaling.farge, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '14px', flexShrink: 0 }}>P</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: '800', color: anbefaling.farge, marginBottom: '4px' }}>Pensums anbefaling: {anbefaling.tittel}</div>
+            <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5 }}>{anbefaling.tekst}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Nøkkeltall */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
         <div className="result-box">
-          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Lånebeløp i {valuta}</div>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: colors.primary }}>{formatNOK(lanebelop)}</div>
-          <div style={{ fontSize: '9px', color: colors.textMuted }}>Total rente: {totalRente.toFixed(2)}%</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Lånebeløp</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary }}>{formatNOK(lanebelop)}</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>i {valuta}</div>
         </div>
         <div className="result-box highlight">
-          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Effektiv rente m/hedge</div>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2)}%</div>
-          <div style={{ fontSize: '9px', color: colors.textMuted }}>Inkl. hedgekostnad +{hedgeKostnad.toFixed(2)}%</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Effektiv rente m/{hedgeRatio}% hedge</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2)}%</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>Uten hedge: {totalRente.toFixed(2)}%</div>
         </div>
         <div className="result-box">
-          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>NOK-{baserenter['NOK']?.navn} vs. {valuta}</div>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: colors.primary }}>{(NOKRente - baseRente >= 0 ? '+' : '')}{(NOKRente - baseRente).toFixed(2)}%</div>
-          <div style={{ fontSize: '9px', color: colors.textMuted }}>Renteforskjell — driver hedgekostnad</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Hist. FX-vol {valuta}/NOK</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary }}>~{fxVol}%</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>1-sigma p.a. årlig</div>
+        </div>
+        <div className="result-box">
+          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Break-even FX-bevegelse</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary }}>±{breakEvenFX.toFixed(1)}%</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>Over {tidshorisont} år ved {hedgeKostnad.toFixed(2)}%/år</div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <span className="label-text">Hedgekostnad p.a.</span>
-            <span className="value-text">{hedgeKostnad.toFixed(2)}%</span>
-          </label>
-          <input type="range" min="0" max="3" step="0.05" value={hedgeKostnad} onChange={(e) => setHedgeKostnad(Number(e.target.value))} />
-        </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <span className="label-text">Valuta-scenario (±%)</span>
-            <span className="value-text">±{valutaSensitivitet}%</span>
-          </label>
-          <input type="range" min="2" max="30" step="1" value={valutaSensitivitet} onChange={(e) => setValutaSensitivitet(Number(e.target.value))} />
+      {/* Kontroller — hedge-ratio + kost + scenario */}
+      <div style={{ background: colors.lightGray, padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: colors.primary, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Justér parametre</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span className="label-text">Hedge-andel</span>
+              <span className="value-text">{hedgeRatio}%</span>
+            </label>
+            <input type="range" min="0" max="100" step="5" value={hedgeRatio} onChange={(e) => setHedgeRatio(Number(e.target.value))} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: colors.textMuted }}>
+              <span>Ingen</span><span>Delvis</span><span>Full</span>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span className="label-text">Hedgekostnad p.a.</span>
+              <span className="value-text">{hedgeKostnad.toFixed(2)}%</span>
+            </label>
+            <input type="range" min="0" max="3" step="0.05" value={hedgeKostnad} onChange={(e) => setHedgeKostnad(Number(e.target.value))} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span className="label-text">Stress-scenario (±%)</span>
+              <span className="value-text">±{valutaSensitivitet}%</span>
+            </label>
+            <input type="range" min="2" max="30" step="1" value={valutaSensitivitet} onChange={(e) => setValutaSensitivitet(Number(e.target.value))} />
+          </div>
         </div>
       </div>
 
-      <h3 style={{ fontSize: '13px', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>
-        Scenarier — uten vs. med valutahedge ({tidshorisont} år)
-      </h3>
-      <div style={{ overflowX: 'auto' }}>
+      {/* Time-series graf */}
+      <h3 style={{ fontSize: '13px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Lånets verdi i NOK over tid — med vs. uten hedge</h3>
+      <div style={{ height: '260px', marginBottom: '14px' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={tidsSerie} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.mediumGray} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: colors.textMuted }} />
+            <YAxis tickFormatter={(v) => (v / 1000000).toFixed(1) + 'M'} tick={{ fontSize: 10, fill: colors.textMuted }} domain={['auto', 'auto']} />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div style={{ background: 'white', border: `1px solid ${colors.mediumGray}`, borderRadius: '6px', padding: '10px 12px', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 700, marginBottom: 4, color: colors.primary }}>{label}</div>
+                    {payload.map((p, i) => (
+                      <div key={i} style={{ color: p.color, display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                        <span>{p.name}</span><span style={{ fontWeight: 600 }}>{formatNOK(p.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '11px' }} iconType="line" />
+            <Line type="monotone" dataKey="utenHedgeStyrkes" name={`Uten hedge — ${valuta} styrkes ${valutaSensitivitet}%`} stroke={colors.danger} strokeWidth={2} dot={false} strokeDasharray="6 3" />
+            <Line type="monotone" dataKey="utenHedgeSvekkes" name={`Uten hedge — ${valuta} svekkes ${valutaSensitivitet}%`} stroke={colors.success} strokeWidth={2} dot={false} strokeDasharray="6 3" />
+            <Line type="monotone" dataKey="utenHedgeUendret" name="Uten hedge — uendret" stroke={colors.textMuted} strokeWidth={1.5} dot={false} strokeDasharray="2 2" />
+            <Line type="monotone" dataKey="medHedge" name={`Med ${hedgeRatio}% hedge`} stroke={colors.primary} strokeWidth={3} dot={{ r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sensitivitetsmatrix */}
+      <h3 style={{ fontSize: '13px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>Sensitivitet — netto NOK-effekt over {tidshorisont} år</h3>
+      <div style={{ overflowX: 'auto', marginBottom: '14px' }}>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Scenario</th>
-              <th>Uten hedge — FX-effekt</th>
-              <th>Med hedge — hedgekostnad</th>
-              <th>Differanse (hedge vs ikke)</th>
+              <th>{valuta}/NOK-bevegelse</th>
+              <th>Uten hedge (FX-effekt)</th>
+              <th>Med {hedgeRatio}% hedge</th>
+              <th>Differanse</th>
+              <th>Hedge lønner seg?</th>
             </tr>
           </thead>
           <tbody>
-            {scenarierData.map((s, idx) => {
-              const diff = s.medHedge - Math.abs(s.utenHedge); // positivt: hedge dyrere, negativt: hedge billigere
-              const utenHedgeBeskr = s.utenHedge > 0 ? `−${formatNOK(s.utenHedge)} (tap)` : s.utenHedge < 0 ? `+${formatNOK(-s.utenHedge)} (gevinst)` : formatNOK(0);
+            {sensitivitetData.map((d, idx) => {
+              const lonner = d.medHedge > d.utenHedge; // mindre tap eller mer gevinst med hedge = lønner seg
               return (
-                <tr key={idx}>
-                  <td style={{ color: s.farge, fontWeight: 500 }}>{s.navn}</td>
-                  <td className={s.utenHedge > 0 ? 'negative' : (s.utenHedge < 0 ? 'positive' : '')}>{utenHedgeBeskr}</td>
-                  <td className="negative">−{formatNOK(s.medHedge)}</td>
-                  <td style={{ color: diff < 0 ? colors.success : colors.danger, fontWeight: 600 }}>
-                    {diff < 0 ? `Hedge sparer ${formatNOK(-diff)}` : `Hedge koster ${formatNOK(diff)} mer`}
-                  </td>
+                <tr key={idx} style={{ background: d.fx === 0 ? colors.lightGray : undefined }}>
+                  <td style={{ fontWeight: d.fx === 0 ? 700 : 500 }}>{d.fx > 0 ? `+${d.fx}%` : `${d.fx}%`}{d.fx === 0 && <span style={{ fontSize: '9px', color: colors.textMuted }}> (uendret)</span>}</td>
+                  <td className={d.utenHedge < 0 ? 'negative' : (d.utenHedge > 0 ? 'positive' : '')}>{d.utenHedge >= 0 ? '+' : ''}{formatNOK(d.utenHedge)}</td>
+                  <td className={d.medHedge < 0 ? 'negative' : (d.medHedge > 0 ? 'positive' : '')}>{d.medHedge >= 0 ? '+' : ''}{formatNOK(d.medHedge)}</td>
+                  <td style={{ fontWeight: 600, color: d.diff > 0 ? colors.success : (d.diff < 0 ? colors.danger : colors.textMuted) }}>{d.diff > 0 ? '+' : ''}{formatNOK(d.diff)}</td>
+                  <td style={{ textAlign: 'center', fontSize: '14px' }}>{lonner ? '✓' : '—'}</td>
                 </tr>
               );
             })}
@@ -1297,11 +1430,46 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
         </table>
       </div>
 
-      <div className="info-box" style={{ marginTop: '14px' }}>
+      {/* Carry-analyse */}
+      <div style={{ background: carryEstimat > 0 ? `${colors.danger}10` : `${colors.success}10`, padding: '12px 14px', borderRadius: '6px', border: `1px solid ${carryEstimat > 0 ? colors.danger : colors.success}30`, marginBottom: '14px' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>Carry-analyse</div>
         <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5 }}>
-          <strong>Tommelfingerregel:</strong> Hedge er forsikring mot uventet valutabevegelse, men reduserer forventet avkastning når
-          renteforskjellen er negativ (du betaler "carry"). Vurder hedge når lånet utgjør en stor del av total formue, eller når
-          valutaen historisk har vist høy volatilitet mot NOK. Pensum kan tilby strukturerte løsninger for delvis hedge (f.eks. 50% hedge ratio).
+          NOK ({baserenter['NOK']?.navn}: {NOKRente.toFixed(2)}%) vs {valuta} ({baserenter[valuta]?.navn}: {baseRente.toFixed(2)}%) — renteforskjell <strong style={{ color: carryEstimat > 0 ? colors.danger : colors.success }}>{carryEstimat >= 0 ? '+' : ''}{carryEstimat.toFixed(2)}%</strong>.{' '}
+          {carryEstimat > 0
+            ? `Du betaler "negativ carry" på hedge — markedet priser inn at NOK skal svekkes (eller at hedge-tilbyder skal ha forskjellen).`
+            : `Du mottar "positiv carry" på hedge — det er teoretisk gratis å hedge inn til NOK fordi NOK har lavere rente.`}
+        </div>
+      </div>
+
+      {/* Kunderapport-summary (vises hvis "inkluder slide" er huket av) */}
+      {inkluderISlide && (
+        <div style={{ marginTop: '20px', padding: '20px', background: 'white', border: `2px dashed ${colors.accent}`, borderRadius: '8px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: colors.accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Slide-grunnlag for kunderapport</div>
+          <h3 style={{ fontSize: '18px', fontWeight: '800', color: colors.primary, margin: 0, marginBottom: '12px' }}>Valutahedge: {hedgeRatio}% hedge på {valuta}-lån</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: colors.textMuted }}>Lånebeløp i {valuta}</div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: colors.primary }}>{formatNOK(lanebelop)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: colors.textMuted }}>Effektiv lånerente m/hedge</div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2)}%</div>
+            </div>
+          </div>
+          <ul style={{ fontSize: '12px', color: colors.textMuted, lineHeight: 1.7, paddingLeft: '20px', margin: 0 }}>
+            <li><strong>Hedge-kostnad:</strong> {hedgeKostnad.toFixed(2)}% p.a. ({formatNOK(lanebelop * (hedgeRatio/100) * (hedgeKostnad/100))} per år ved {hedgeRatio}% hedge)</li>
+            <li><strong>Forventet FX-volatilitet:</strong> ~{fxVol}% p.a. for {valuta}/NOK</li>
+            <li><strong>Break-even:</strong> Hedge lønner seg hvis valutaen beveger seg mer enn ±{breakEvenFX.toFixed(1)}% over horisonten</li>
+            <li><strong>Anbefaling:</strong> {anbefaling?.tittel}</li>
+            <li>Carry-effekt: {carryEstimat >= 0 ? `negativ ${carryEstimat.toFixed(2)}% (kostnad)` : `positiv ${Math.abs(carryEstimat).toFixed(2)}% (gevinst)`}</li>
+          </ul>
+        </div>
+      )}
+
+      <div className="info-box" style={{ marginTop: '14px' }}>
+        <div style={{ fontSize: '10px', color: colors.textMuted, lineHeight: 1.5 }}>
+          <strong>Forutsetninger:</strong> Historisk volatilitet er illustrative tall basert på siste 5 års data. Hedge-kostnaden settes manuelt — Pensum kan tilby konkrete priser basert på dagens markedssituasjon.
+          Beregningene tar ikke hensyn til skatt, gebyrer, eller forskjeller mellom forwards og swaps. Pensum kan tilby strukturerte løsninger for delvis hedge (f.eks. 50% hedge ratio) og rullende hedge-strategier.
         </div>
       </div>
     </div>
