@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
+import PensumBelaning from './PensumBelaning';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
@@ -486,68 +487,23 @@ export default function PensumPrognoseModell() {
     { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' }
   ]);
 
-  // Standardporteføljer MED Basis
-  const pensumStandardPortefoljerMedBasis = {
-    'Defensiv': [
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 45, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Moderat': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Dynamisk': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'basis', navn: 'Pensum Basis', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 15, kategori: 'fondsportefoljer' }
-    ],
-    'Offensiv': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 35, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 25, kategori: 'enkeltfond' },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', vekt: 20, kategori: 'enkeltfond' }
-    ]
-  };
-
-  // Standardporteføljer UTEN Basis
-  const pensumStandardPortefoljerUtenBasis = {
-    'Defensiv': [
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 50, kategori: 'fondsportefoljer' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 5, kategori: 'fondsportefoljer' }
-    ],
-    'Moderat': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 30, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 15, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 15, kategori: 'enkeltfond' },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', vekt: 10, kategori: 'fondsportefoljer' }
-    ],
-    'Dynamisk': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 35, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 20, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 25, kategori: 'enkeltfond' },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', vekt: 20, kategori: 'fondsportefoljer' }
-    ],
-    'Offensiv': [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', vekt: 40, kategori: 'fondsportefoljer' },
-      { id: 'global-edge', navn: 'Pensum Global Edge', vekt: 25, kategori: 'fondsportefoljer' },
-      { id: 'norge-a', navn: 'Pensum Norge A', vekt: 20, kategori: 'enkeltfond' },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', vekt: 15, kategori: 'enkeltfond' }
-    ]
-  };
-
-  // Standardporteføljer-knapper bruker alltid varianten med Basis;
-  // Definerte porteføljer (dropdown) tilbyr m/u Basis-varianter.
-  const pensumStandardPortefoljer = pensumStandardPortefoljerMedBasis;
+  // Standardporteføljer-knapper (Defensiv/Moderat/Dynamisk/Offensiv)
+  // bruker "uten basis"-variantene med Allokering 1 (Kjerne) fra Definerte porteføljer.
+  // Definerte porteføljer-dropdown gir bredere utvalg (m/u Basis, Allok 2 og 3).
+  const pensumStandardPortefoljer = useMemo(() => {
+    const alleProdukter = [...defaultPensumProdukter.enkeltfond, ...defaultPensumProdukter.fondsportefoljer, ...(defaultPensumProdukter.eksterneFond || []), ...defaultPensumProdukter.alternative];
+    const tilAllokering = (rader) => rader.map(r => {
+      const prod = alleProdukter.find(p => p.id === r.id);
+      return { id: r.id, navn: prod ? prod.navn : r.id, vekt: r.vekt, kategori: r.kategori };
+    });
+    const losning = (navn) => defaultPensumStandardLosninger[navn]?.allokeringer['Allokering 1 (Kjerne)'] || [];
+    return {
+      'Defensiv': tilAllokering(losning('30/70 u basis')),
+      'Moderat': tilAllokering(losning('50/50 u basis')),
+      'Dynamisk': tilAllokering(losning('70/30 u basis')),
+      'Offensiv': tilAllokering(losning('100% Aksjer'))
+    };
+  }, []);
 
   const [valgtPensumProfil, setValgtPensumProfil] = useState('Moderat');
 
@@ -728,13 +684,13 @@ export default function PensumPrognoseModell() {
   }, [pensumAllokering, pensumProdukter, produktHistorikk]);
 
   // Beregn aktivafordeling (aksjer vs renter vs alternativer)
+  // Pensum Basis (aktivatype 'dynamisk'/'blandet') splittes 50/50 mellom aksjer og renter.
   const pensumAktivafordeling = useMemo(() => {
     const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
     let aksjeVekt = 0;
     let renteVekt = 0;
     let alternativVekt = 0;
-    let blandetVekt = 0;
-    
+
     pensumAllokering.forEach(allok => {
       const produkt = alleProdukt.find(p => p.id === allok.id);
       if (produkt && allok.vekt > 0) {
@@ -744,17 +700,17 @@ export default function PensumPrognoseModell() {
           renteVekt += allok.vekt;
         } else if (produkt.aktivatype === 'alternativ') {
           alternativVekt += allok.vekt;
-        } else if (produkt.aktivatype === 'blandet') {
-          blandetVekt += allok.vekt;
+        } else if (produkt.aktivatype === 'blandet' || produkt.aktivatype === 'dynamisk') {
+          aksjeVekt += allok.vekt * 0.5;
+          renteVekt += allok.vekt * 0.5;
         }
       }
     });
-    
+
     return [
       { name: 'Aksjer', value: parseFloat(aksjeVekt.toFixed(1)), color: PENSUM_COLORS.darkBlue },
       { name: 'Renter', value: parseFloat(renteVekt.toFixed(1)), color: PENSUM_COLORS.salmon },
-      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal },
-      { name: 'Blandet', value: parseFloat(blandetVekt.toFixed(1)), color: PENSUM_COLORS.gold }
+      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal }
     ];
   }, [pensumAllokering, pensumProdukter]);
 
@@ -4298,9 +4254,9 @@ export default function PensumPrognoseModell() {
         <div style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
-              {['input', 'losninger', 'allokering', 'scenario', 'rapport'].map(tab => (
+              {['input', 'losninger', 'allokering', 'scenario', 'belaning', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Historisk sammenligning' : 'Investeringsforslag'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Historisk sammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -5819,7 +5775,13 @@ export default function PensumPrognoseModell() {
                         if (a.vekt <= 0) return;
                         const p = alleProd.find(pp => pp.id === a.id);
                         if (!p) return;
-                        if (p.aktivatype === 'rente' || p.aktivatype === 'dynamisk' || p.aktivatype === 'blandet') {
+                        // Basis (blandet/dynamisk) splittes 50/50: aksjedelen → kjerne, rentedelen → stabilisator
+                        if (p.aktivatype === 'blandet' || p.aktivatype === 'dynamisk') {
+                          kjerneSum += a.vekt * 0.5;
+                          stabSum += a.vekt * 0.5;
+                          kjerneNavn.push(`${p.navn} (50% aksjedel)`);
+                          stabNavn.push(`${p.navn} (50% rentedel)`);
+                        } else if (p.aktivatype === 'rente') {
                           stabSum += a.vekt;
                           stabNavn.push(p.navn);
                         } else if (p.rolle === 'spisset' || p.aktivatype === 'alternativ') {
@@ -5845,26 +5807,31 @@ export default function PensumPrognoseModell() {
 
                       const fraTopp = [...blokker].reverse(); // for legend: spisset, stab, kjerne
 
-                      // Smaller diameters to fit narrow right column
-                      const diameter = (v) => 70 + v * 1.4;
-                      const containerWidth = 200;
+                      // Diameter-skala: kompakt slik at maks-sirkel passer i container,
+                      // og forskjellen mellom min og maks er moderat (linær 65→155)
+                      const containerWidth = 180;
+                      const maxDiameter = 150; // maks så vi har 15px buffer på hver side
+                      const minDiameter = 70;  // sikrer at små verdier fortsatt er lesbare
+                      const diameter = (v) => Math.min(maxDiameter, Math.max(minDiameter, minDiameter + v * 0.95));
 
-                      // Posisjoner: bunn-anchor, hvert ikke-toppsirkel har topp 50% dekket av sirkelen over
-                      const overlap = 0.5;
-                      let bottomEdge = 0; // y-koord der bunn-kanten skal være (settes etter)
-                      const sirkelPos = [];
-                      blokker.forEach((b) => {
-                        const d = diameter(b.verdi);
-                        sirkelPos.push({ ...b, d });
-                      });
-                      // Container-høyde = d_kjerne + sum(0.5 * d for stab+spisset)
-                      const containerHeight = sirkelPos[0].d + sirkelPos.slice(1).reduce((s, c) => s + c.d * 0.5, 0) + 8;
-                      // Place each circle from bottom up
-                      bottomEdge = containerHeight;
-                      sirkelPos.forEach((s, idx) => {
+                      const overlap = 0.5; // hver ikke-topp sirkel har topp 50% dekket av sirkelen over
+                      const sirkelPos = blokker.map(b => ({ ...b, d: diameter(b.verdi) }));
+
+                      // Riktig containerhøyde:
+                      // sum av 0.5*d for ALLE bortsett fra topp-sirkelen, pluss full d for topp-sirkelen
+                      // Bunn-sirkelen er anchored til container-bunn med full d
+                      // Generell formel for stack med 50% overlapp:
+                      //   container.h = topp.d + 0.5 * sum(d for ikke-topp)
+                      const sirkelTopIdx = sirkelPos.length - 1;
+                      const containerHeight = sirkelPos[sirkelTopIdx].d
+                        + sirkelPos.slice(0, -1).reduce((s, c) => s + c.d * overlap, 0)
+                        + 16;
+                      // Plassér fra bunn opp
+                      let bottomEdge = containerHeight - 8; // 8px buffer på bunn
+                      sirkelPos.forEach((s) => {
                         s.y_top = bottomEdge - s.d;
                         s.cx = containerWidth / 2;
-                        bottomEdge = s.y_top + s.d * overlap; // neste sirkel-bunn lander her
+                        bottomEdge = s.y_top + s.d * overlap;
                       });
 
                       // Tegn fra bunn (kjerne) til topp (spisset) for riktig z-stacking
@@ -6321,6 +6288,56 @@ export default function PensumPrognoseModell() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Detaljert verdiutvikling — viser uttak/innskudd og vekt per produkt år for år */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Detaljert verdiutvikling</h3>
+                <p className="text-xs text-blue-200 mt-0.5">Inkluderer årlig kontantstrøm{pensumRebalanseringAktiv && pensumRebalanseringer.length > 0 ? ' og rebalanseringer' : ''}.</p>
+              </div>
+              <div className="p-6 overflow-x-auto">
+                {(() => {
+                  const valgte = pensumAllokering.filter(a => a.vekt > 0);
+                  if (valgte.length === 0 || pensumPrognose.length === 0) {
+                    return <p className="text-sm text-gray-500 italic">Legg til produkter for å se detaljert verdiutvikling.</p>;
+                  }
+                  return (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                          <th className="py-3 px-4 text-left text-white">År</th>
+                          <th className="py-3 px-3 text-right text-white">Innskudd/uttak</th>
+                          {valgte.map(a => <th key={a.id} className="py-3 px-3 text-right text-white">{a.navn}</th>)}
+                          <th className="py-3 px-4 text-right text-white font-bold">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pensumPrognose.map((row, idx) => (
+                          <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
+                            <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
+                            <td className={"py-3 px-3 text-right tabular-nums " + (idx === 0 ? "text-gray-400" : (nettoKontantstrom > 0 ? "text-green-600" : (nettoKontantstrom < 0 ? "text-red-600" : "text-gray-400")))}>
+                              {idx === 0 ? '—' : (nettoKontantstrom !== 0 ? formatCurrency(nettoKontantstrom) : '—')}
+                            </td>
+                            {valgte.map(a => <td key={a.id} className="py-3 px-3 text-right text-gray-600 tabular-nums">{formatCurrency(row[a.navn] || 0)}</td>)}
+                            <td className="py-3 px-4 text-right font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.verdi)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+                {pensumRebalanseringAktiv && pensumRebalanseringer.length > 0 && (
+                  <div className="mt-4 p-3 rounded-lg border border-blue-100 bg-blue-50 text-xs text-gray-700">
+                    <strong style={{ color: PENSUM_COLORS.darkBlue }}>Aktive rebalanseringsregler:</strong>{' '}
+                    {pensumRebalanseringer.map((reb, i) => {
+                      const fra = pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?';
+                      const til = pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?';
+                      return <span key={i}>{i > 0 ? ' · ' : ''}{reb.prosentPerAar}% av {fra} → {til}</span>;
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
@@ -9550,6 +9567,12 @@ export default function PensumPrognoseModell() {
             </div>
           );
         })()}
+
+        {activeTab === 'belaning' && (
+          <div className="max-w-7xl mx-auto p-6">
+            <PensumBelaning defaultPortfolioValue={investertBelop !== null ? investertBelop : totalKapital} />
+          </div>
+        )}
 
         {activeTab === 'rapport' && (() => {
           // Beregn alle data for rapporten
