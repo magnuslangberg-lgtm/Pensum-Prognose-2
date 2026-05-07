@@ -6875,67 +6875,114 @@ export default function PensumPrognoseModell() {
             {/* Scatter plot: avkastning vs risiko (3 og 5 år) */}
             {(() => {
               const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])];
-              // Bygg datapunkter for hvert produkt med tilstrekkelig historikk
+              // Bare produkter som faktisk er i porteføljen (vekt > 0)
+              const valgtePIder = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+              const valgteProdukter = alleProd.filter(p => valgtePIder.includes(p.id));
+
+              // Indekser fra avkastningsgrafen (samme tre som default i Historisk sammenligning)
+              const indekser = [
+                { navn: 'MSCI World', feedKey: 'msci-world', farge: PENSUM_COLORS.lightBlue },
+                { navn: 'Oslo Børs', feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon },
+                { navn: 'Norske Statsobl.', feedKey: 'norske-statsobl', farge: PENSUM_COLORS.gray }
+              ];
+
+              // Bygg datapunkter
               const data3yr = [];
               const data5yr = [];
-              alleProd.forEach(p => {
+              valgteProdukter.forEach((p, i) => {
+                const farge = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.gold][i % 5];
                 const stat3 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 const stat5 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 if (stat3 && erGyldigTall(stat3.aarligAvkastning) && erGyldigTall(stat3.standardavvik)) {
-                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: p.navn, id: p.id });
+                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: p.navn, id: p.id, type: 'produkt', farge });
                 }
                 if (stat5 && erGyldigTall(stat5.aarligAvkastning) && erGyldigTall(stat5.standardavvik)) {
-                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: p.navn, id: p.id });
+                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: p.navn, id: p.id, type: 'produkt', farge });
+                }
+              });
+              indekser.forEach(idx => {
+                const hist = DATAFEED_INDEKS_HISTORIKK?.[idx.feedKey];
+                if (!hist) return;
+                const stat3 = beregnProduktStatistikk(hist, new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+                const stat5 = beregnProduktStatistikk(hist, new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
+                if (stat3 && erGyldigTall(stat3.aarligAvkastning) && erGyldigTall(stat3.standardavvik)) {
+                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: idx.navn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
+                }
+                if (stat5 && erGyldigTall(stat5.aarligAvkastning) && erGyldigTall(stat5.standardavvik)) {
+                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: idx.navn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
                 }
               });
               if (data3yr.length === 0 && data5yr.length === 0) return null;
-              const farge = PENSUM_COLORS.darkBlue;
-              const renderScatter = (data, periode) => (
-                <div className="rounded-lg border border-gray-100 bg-white p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} />
-                      <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
-                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
-                        formatter={(v, n) => [v.toFixed(1) + '%', n === 'x' ? 'Volatilitet' : 'Avkastning']}
-                        labelFormatter={() => ''}
-                        content={({ payload }) => {
-                          if (!payload?.length) return null;
-                          const d = payload[0].payload;
-                          return <div className="bg-white p-2 rounded border border-gray-200 text-xs"><div className="font-semibold">{d.navn}</div><div>Volatilitet: {d.x.toFixed(1)}%</div><div>Avkastning: {d.y.toFixed(1)}%</div></div>;
-                        }}
-                      />
-                      <Scatter data={data} fill={farge}>
-                        {data.map((entry, idx) => (
-                          <Cell key={idx} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.salmon, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.lightBlue][idx % 7]} />
-                        ))}
-                      </Scatter>
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-1 mt-2">
-                    {data.map((d, i) => (
-                      <div key={d.id} className="flex items-center gap-1.5 text-[10px] truncate">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.salmon, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.lightBlue][i % 7] }}></div>
-                        <span className="text-gray-600 truncate">{d.navn}</span>
-                      </div>
-                    ))}
+
+              const renderScatter = (data, periode) => {
+                const produkter = data.filter(d => d.type === 'produkt');
+                const indeksDP = data.filter(d => d.type === 'indeks');
+                return (
+                  <div className="rounded-lg border border-gray-100 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} />
+                        <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
+                          content={({ payload }) => {
+                            if (!payload?.length) return null;
+                            const d = payload[0].payload;
+                            return <div className="bg-white p-2 rounded border border-gray-200 text-xs"><div className="font-semibold">{d.navn}{d.type === 'indeks' ? ' (indeks)' : ''}</div><div>Volatilitet: {d.x.toFixed(1)}%</div><div>Avkastning: {d.y.toFixed(1)}%</div></div>;
+                          }}
+                        />
+                        {/* Produkter — fylt sirkel */}
+                        <Scatter name="Porteføljekomponenter" data={produkter} shape="circle">
+                          {produkter.map((entry, idx) => (
+                            <Cell key={'p' + idx} fill={entry.farge} />
+                          ))}
+                        </Scatter>
+                        {/* Indekser — diamant-form for å skille visuelt */}
+                        <Scatter name="Indekser" data={indeksDP} shape="diamond">
+                          {indeksDP.map((entry, idx) => (
+                            <Cell key={'i' + idx} fill={entry.farge} stroke="#0D2240" strokeWidth={2} />
+                          ))}
+                        </Scatter>
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                    <div className="mt-3 space-y-1.5">
+                      {produkter.length > 0 && (
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {produkter.map((d) => (
+                            <div key={d.id} className="flex items-center gap-1.5 text-[10px] truncate">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.farge }}></div>
+                              <span className="text-gray-700 truncate">{d.navn}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {indeksDP.length > 0 && (
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 border-t border-gray-100">
+                          {indeksDP.map((d) => (
+                            <div key={d.id} className="flex items-center gap-1.5 text-[10px]">
+                              <div className="w-2.5 h-2.5 shrink-0 transform rotate-45" style={{ backgroundColor: d.farge, border: '1.5px solid #0D2240' }}></div>
+                              <span className="text-gray-700 italic">{d.navn}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
+                );
+              };
               return (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                     <h3 className="text-lg font-semibold text-white">Avkastning vs. risiko</h3>
-                    <p className="text-xs text-blue-200 mt-0.5">Annualisert avkastning og volatilitet per produkt. Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
+                    <p className="text-xs text-blue-200 mt-0.5">Porteføljekomponenter (sirkler) sammenlignet med referanseindekser (diamanter). Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
                   </div>
                   <div className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {data3yr.length > 0 && renderScatter(data3yr, '3 år')}
                       {data5yr.length > 0 && renderScatter(data5yr, '5 år')}
                     </div>
-                    <p className="text-[10px] text-gray-500 italic mt-3">Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Avkastning er annualisert geometrisk over perioden.</p>
+                    <p className="text-[10px] text-gray-500 italic mt-3">Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Avkastning er annualisert geometrisk over perioden. Bare komponenter med vekt &gt; 0 vises.</p>
                   </div>
                 </div>
               );
