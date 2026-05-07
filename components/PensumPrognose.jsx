@@ -261,6 +261,8 @@ export default function PensumPrognoseModell() {
   const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
 
   // Rebalansering - årlig endring i allokering
+  const [pensumRebalanseringAktiv, setPensumRebalanseringAktiv] = useState(false);
+  const [pensumRebalanseringer, setPensumRebalanseringer] = useState([]);
   const [rebalanseringAktiv, setRebalanseringAktiv] = useState(false);
   const [rebalanseringer, setRebalanseringer] = useState([
     { fraAktiva: 'Eiendom', tilAktiva: 'Globale Aksjer', prosentPerAar: 10 }
@@ -1255,9 +1257,28 @@ export default function PensumPrognoseModell() {
 
     for (let i = 0; i <= horisont; i++) {
       const row = { year: new Date().getFullYear() + i };
+
+      // Apply yearly rebalansering before growth (skip year 0)
+      if (pensumRebalanseringAktiv && i > 0 && pensumRebalanseringer.length > 0) {
+        pensumRebalanseringer.forEach(reb => {
+          const fra = produkterMedAvk.find(p => p.id === reb.fraId);
+          const til = produkterMedAvk.find(p => p.id === reb.tilId);
+          if (!fra || !til) return;
+          const flyttBelop = (verdier[fra.id] || 0) * ((reb.prosentPerAar || 0) / 100);
+          verdier[fra.id] = (verdier[fra.id] || 0) - flyttBelop;
+          verdier[til.id] = (verdier[til.id] || 0) + flyttBelop;
+        });
+      }
+
       let total = 0;
       produkterMedAvk.forEach(p => {
-        if (i > 0) verdier[p.id] = verdier[p.id] * (1 + p.avkastning);
+        if (i > 0) {
+          // Apply net cash flow proportionally to current weights
+          const sumNa = produkterMedAvk.reduce((s, q) => s + (verdier[q.id] || 0), 0) || 1;
+          const naVekt = (verdier[p.id] || 0) / sumNa;
+          const cashflow = nettoKontantstrom * naVekt;
+          verdier[p.id] = (verdier[p.id] + cashflow) * (1 + p.avkastning);
+        }
         row[p.navn] = Math.round(verdier[p.id]);
         total += verdier[p.id];
       });
@@ -1265,7 +1286,7 @@ export default function PensumPrognoseModell() {
       prognose.push(row);
     }
     return prognose;
-  }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, erGyldigTall]);
+  }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, nettoKontantstrom, pensumRebalanseringAktiv, pensumRebalanseringer]);
 
   const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
@@ -6224,7 +6245,82 @@ export default function PensumPrognoseModell() {
                     {valgteProdukterForChart.map((p, idx) => <Bar key={p.id} dataKey={p.navn} stackId="a" fill={pensumProduktFarger[idx % pensumProduktFarger.length]} />)}
                   </BarChart>
                 </ResponsiveContainer>
+                {nettoKontantstrom !== 0 && (
+                  <div className="mt-3 p-3 rounded-lg border border-blue-100 bg-blue-50 text-xs text-gray-700">
+                    Årlig netto kontantstrøm fra kundeinformasjon: <strong style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(nettoKontantstrom)}</strong>
+                    {innskudd > 0 && <span> ({formatCurrency(innskudd)} innskudd</span>}
+                    {innskudd > 0 && uttak > 0 && <span>, </span>}
+                    {uttak > 0 && <span>{innskudd > 0 ? '' : '('}{formatCurrency(uttak)} uttak</span>}
+                    {(innskudd > 0 || uttak > 0) && <span>)</span>}
+                    . Endre på Kundeinformasjon-fanen.
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Årlig rebalansering for Pensum-portefølje */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setPensumRebalanseringAktiv(!pensumRebalanseringAktiv)}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-white">Årlig rebalansering</h3>
+                  {!pensumRebalanseringAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-sm text-white">{pensumRebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                  <div className="relative">
+                    <input type="checkbox" checked={pensumRebalanseringAktiv} onChange={(e) => setPensumRebalanseringAktiv(e.target.checked)} className="sr-only" />
+                    <div className={"w-11 h-6 rounded-full transition-colors " + (pensumRebalanseringAktiv ? "bg-green-500" : "bg-gray-400")}></div>
+                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (pensumRebalanseringAktiv ? "translate-x-5" : "")}></div>
+                  </div>
+                </label>
+              </div>
+              {pensumRebalanseringAktiv && (
+                <div className="p-6 space-y-4">
+                  {pensumRebalanseringer.length === 0 && (
+                    <p className="text-sm text-gray-500 italic">Ingen rebalanseringsregler — legg til en regel for å flytte vekt mellom Pensum-produkter hvert år.</p>
+                  )}
+                  {pensumRebalanseringer.map((reb, rebIdx) => {
+                    const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
+                    return (
+                      <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div>
+                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Selg fra</label>}
+                          <select value={reb.fraId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, fraId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                            {valgteProd.map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Kjøp til</label>}
+                          <select value={reb.tilId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, tilId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                            {valgteProd.filter(a => a.id !== reb.fraId).map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Andel per år</label>}
+                          <div className="relative">
+                            <input type="number" min="1" max="100" value={reb.prosentPerAar} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, prosentPerAar: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-8 text-sm" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
+                          <p>{reb.prosentPerAar}% av {pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?'} → {pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?'}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setPensumRebalanseringer(prev => prev.filter((_, i) => i !== rebIdx))} className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded border border-red-200 hover:bg-red-50">Fjern</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {pensumAllokering.filter(a => a.vekt > 0).length >= 2 && (
+                    <button onClick={() => {
+                      const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
+                      setPensumRebalanseringer(prev => [...prev, { fraId: valgteProd[0].id, tilId: valgteProd[1].id, prosentPerAar: 5 }]);
+                    }} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+                      + Legg til regel
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
