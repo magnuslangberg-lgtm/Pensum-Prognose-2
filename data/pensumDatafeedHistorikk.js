@@ -1,5 +1,5 @@
-// Generert fra uploads/Datafeed til rådgiververktøy-mai.xlsx - DAGLIGE datapunkter
-export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai.xlsx";
+// Generert fra uploads/Datafeed til rådgiververktøy-mai1.xlsx - DAGLIGE datapunkter
+export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai1.xlsx";
 
 export const DATAFEED_PRODUKT_HISTORIKK = {
   "basis": {
@@ -98488,6 +98488,75 @@ export const DATAFEED_PRODUKT_HISTORIKK = {
       {
         "dato": "2026-04-30",
         "verdi": 542.91
+      }
+    ]
+  },
+  "kairos-a": {
+    "startDato": "2026-04-15",
+    "data": [
+      {
+        "dato": "2026-04-15",
+        "verdi": 100
+      },
+      {
+        "dato": "2026-04-16",
+        "verdi": 99.59
+      },
+      {
+        "dato": "2026-04-17",
+        "verdi": 100.35
+      },
+      {
+        "dato": "2026-04-18",
+        "verdi": 100.35
+      },
+      {
+        "dato": "2026-04-19",
+        "verdi": 100.35
+      },
+      {
+        "dato": "2026-04-20",
+        "verdi": 100.1
+      },
+      {
+        "dato": "2026-04-21",
+        "verdi": 98.63
+      },
+      {
+        "dato": "2026-04-22",
+        "verdi": 98.9
+      },
+      {
+        "dato": "2026-04-23",
+        "verdi": 99.06
+      },
+      {
+        "dato": "2026-04-24",
+        "verdi": 99.03
+      },
+      {
+        "dato": "2026-04-25",
+        "verdi": 99.03
+      },
+      {
+        "dato": "2026-04-26",
+        "verdi": 99.03
+      },
+      {
+        "dato": "2026-04-27",
+        "verdi": 99.27
+      },
+      {
+        "dato": "2026-04-28",
+        "verdi": 98.32
+      },
+      {
+        "dato": "2026-04-29",
+        "verdi": 97.88
+      },
+      {
+        "dato": "2026-04-30",
+        "verdi": 99.92
       }
     ]
   },

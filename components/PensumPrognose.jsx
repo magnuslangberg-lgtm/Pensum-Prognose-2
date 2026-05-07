@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
-import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta } from '../data/pensumDefaults';
+import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
@@ -548,10 +548,30 @@ export default function PensumPrognoseModell() {
   const pensumStandardPortefoljer = brukBasis ? pensumStandardPortefoljerMedBasis : pensumStandardPortefoljerUtenBasis;
 
   const [valgtPensumProfil, setValgtPensumProfil] = useState('Moderat');
-  
+
+  // Definerte porteføljer fra Pensum (skisse)
+  const [valgtStandardLosning, setValgtStandardLosning] = useState(null);
+  const [valgtAllokering, setValgtAllokering] = useState('Allokering 1 (Kjerne)');
+
   const velgPensumStandardPortefolje = (profil) => {
     setValgtPensumProfil(profil);
+    setValgtStandardLosning(null);
     setPensumAllokering(pensumStandardPortefoljer[profil]);
+  };
+
+  const velgDefinertPortefolje = (losningNavn, allokNavn) => {
+    const losning = defaultPensumStandardLosninger[losningNavn];
+    if (!losning) return;
+    const allok = losning.allokeringer[allokNavn];
+    if (!allok) return;
+    const allleProdukter = [...defaultPensumProdukter.enkeltfond, ...defaultPensumProdukter.fondsportefoljer, ...(defaultPensumProdukter.eksterneFond || []), ...defaultPensumProdukter.alternative];
+    const ny = allok.map(item => {
+      const prod = allleProdukter.find(p => p.id === item.id);
+      return { id: item.id, navn: prod ? prod.navn : item.id, vekt: item.vekt, kategori: item.kategori };
+    });
+    setValgtStandardLosning(losningNavn);
+    setValgtAllokering(allokNavn);
+    setPensumAllokering(ny);
   };
 
   const leggTilPensumProdukt = (produkt, kategori) => {
@@ -5515,12 +5535,47 @@ export default function PensumPrognoseModell() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-blue-200">Standardportefølje:</span>
                       {Object.keys(pensumStandardPortefoljer).map(profil => (
-                        <button key={profil} onClick={() => velgPensumStandardPortefolje(profil)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (valgtPensumProfil === profil ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}>
+                        <button key={profil} onClick={() => velgPensumStandardPortefolje(profil)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (valgtPensumProfil === profil && !valgtStandardLosning ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}>
                           {profil}
                         </button>
                       ))}
                     </div>
                   </div>
+                </div>
+                {/* Definerte porteføljer (fra Pensum-skissen) */}
+                <div className="mt-3 pt-3 border-t border-blue-700 flex flex-wrap items-center gap-3">
+                  <span className="text-sm text-blue-200">Definerte porteføljer:</span>
+                  <select
+                    value={valgtStandardLosning || ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v) velgDefinertPortefolje(v, valgtAllokering);
+                      else setValgtStandardLosning(null);
+                    }}
+                    className="px-3 py-1.5 rounded text-xs font-medium bg-blue-800 text-white border border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">— Velg portefølje —</option>
+                    {Object.keys(defaultPensumStandardLosninger).map(navn => (
+                      <option key={navn} value={navn}>{navn}</option>
+                    ))}
+                  </select>
+                  {valgtStandardLosning && (
+                    <>
+                      <span className="text-sm text-blue-200">Allokering:</span>
+                      <div className="flex items-center gap-1">
+                        {Object.keys(defaultPensumStandardLosninger[valgtStandardLosning].allokeringer).map(allokNavn => (
+                          <button
+                            key={allokNavn}
+                            onClick={() => velgDefinertPortefolje(valgtStandardLosning, allokNavn)}
+                            className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (valgtAllokering === allokNavn ? "bg-white text-blue-900" : "bg-blue-800 text-white hover:bg-blue-700")}
+                          >
+                            {allokNavn.replace('Allokering ', '')}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-xs text-blue-300 italic flex-1">{defaultPensumStandardLosninger[valgtStandardLosning].beskrivelse}</span>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -5737,6 +5792,50 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Kjerne vs Spisset eksponering */}
+                    {(() => {
+                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                      let kjerneSum = 0, spissetSum = 0;
+                      pensumAllokering.forEach(a => {
+                        if (a.vekt <= 0) return;
+                        const p = alleProd.find(pp => pp.id === a.id);
+                        if (!p) return;
+                        if (p.rolle === 'spisset') spissetSum += a.vekt;
+                        else kjerneSum += a.vekt;
+                      });
+                      const data = [];
+                      if (kjerneSum > 0) data.push({ name: 'Kjerneeksponering', value: kjerneSum, color: PENSUM_COLORS.darkBlue });
+                      if (spissetSum > 0) data.push({ name: 'Spisset eksponering', value: spissetSum, color: PENSUM_COLORS.teal });
+                      if (data.length === 0) return null;
+                      return (
+                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                          <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponeringsroller</h4>
+                          <div className="flex items-center gap-6">
+                            <div className="shrink-0">
+                              <ResponsiveContainer width={160} height={160}>
+                                <PieChart>
+                                  <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                    {data.map(e => <Cell key={e.name} fill={e.color} />)}
+                                  </Pie>
+                                  <Tooltip formatter={(v) => v.toFixed(1) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="space-y-2.5 flex-1">
+                              {data.map(d => (
+                                <div key={d.name} className="flex items-center gap-2.5 text-sm">
+                                  <div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div>
+                                  <span className="flex-1 text-gray-700">{d.name}</span>
+                                  <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(1)}%</span>
+                                </div>
+                              ))}
+                              <p className="text-xs text-gray-500 mt-2 italic">Kjerne: bred eksponering med diversifisering. Spisset: målrettet sektor-, tema- eller regionseksponering.</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Vis likviditet toggle */}
                     <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer px-1">

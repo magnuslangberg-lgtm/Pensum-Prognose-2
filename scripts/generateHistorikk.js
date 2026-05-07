@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_PATH = path.join(__dirname, '..', 'uploads', 'Datafeed til rådgiververktøy-mai.xlsx');
+const XLSX_PATH = path.join(__dirname, '..', 'uploads', 'Datafeed til rådgiververktøy-mai1.xlsx');
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'pensumDatafeedHistorikk.js');
 
 // Excel serial number -> YYYY-MM-DD
@@ -30,6 +30,7 @@ const PRODUKT_MAP = [
   { col: 13, key: 'banking-d' },
   { col: 15, key: 'nordisk-hoyrente' },
   { col: 17, key: 'norge-a' },
+  { col: 19, key: 'kairos-a' },
 ];
 
 // --- Index mapping (indekser) ---
@@ -106,8 +107,8 @@ for (const [k, v] of Object.entries(indeksHistorikk)) {
 }
 
 // --- Generate output ---
-const output = `// Generert fra uploads/Datafeed til rådgiververktøy-mai.xlsx - DAGLIGE datapunkter
-export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai.xlsx";
+const output = `// Generert fra uploads/Datafeed til rådgiververktøy-mai1.xlsx - DAGLIGE datapunkter
+export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai1.xlsx";
 
 export const DATAFEED_PRODUKT_HISTORIKK = ${JSON.stringify(produktHistorikk, null, 2)};
 
