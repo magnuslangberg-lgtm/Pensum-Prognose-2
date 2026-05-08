@@ -5601,7 +5601,8 @@ export default function PensumPrognoseModell() {
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
                         const beskr = produktBeskrivelser?.[produkt.id];
-                        // Rolle-basert bakgrunn: kjerne (mørkeblå-tint), stabilisator (salmon), spisset (gull)
+                        // Rolle-basert bakgrunn: kjerne (mørkeblå), stabilisator (salmon/varm), spisset (teal/kjølig)
+                        // Teal valgt fremfor gold for å gi tydelig kontrast mot stabilisator-salmon
                         let rolleBg = 'bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50';
                         let rolleStripe = '#9CA3AF';
                         if (erIllikvid) {
@@ -5612,12 +5613,12 @@ export default function PensumPrognoseModell() {
                           rolleStripe = PENSUM_COLORS.salmon;
                         } else if (produktInfo?.rolle === 'spisset') {
                           rolleBg = 'border';
-                          rolleStripe = PENSUM_COLORS.gold;
+                          rolleStripe = PENSUM_COLORS.teal;
                         } else if (produktInfo?.rolle === 'kjerne') {
                           rolleBg = 'border';
                           rolleStripe = PENSUM_COLORS.darkBlue;
                         }
-                        const rolleStyle = !erIllikvid && rolleBg === 'border' ? { backgroundColor: rolleStripe + '10', borderColor: rolleStripe + '40', borderLeftWidth: '4px', borderLeftColor: rolleStripe } : undefined;
+                        const rolleStyle = !erIllikvid && rolleBg === 'border' ? { backgroundColor: rolleStripe + '12', borderColor: rolleStripe + '40', borderLeftWidth: '5px', borderLeftColor: rolleStripe } : undefined;
                         const tooltipTekst = beskr ? `${beskr.rolle} — ${beskr.kategoriBeskrivelse}\n\n${beskr.beskrivelse}` : null;
                         return (
                           <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + rolleBg} style={rolleStyle}>
