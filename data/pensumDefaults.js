@@ -59,7 +59,7 @@ export const defaultPensumStandardLosninger = {
       ]
     }
   },
-  '70/30 m basis': {
+  '70/30 med basis': {
     beskrivelse: 'Balansert med Pensum Basis som grunnmur. 70% aksjeeksponering, 30% renter',
     allokeringer: {
       'Allokering 1 (Kjerne)': [
@@ -95,7 +95,7 @@ export const defaultPensumStandardLosninger = {
       ]
     }
   },
-  '70/30 u basis': {
+  '70/30 uten basis': {
     beskrivelse: '70% aksjer, 30% renter uten Pensum Basis. Direkte bygging av aksje- og rentedelen',
     allokeringer: {
       'Allokering 1 (Kjerne)': [
@@ -127,74 +127,7 @@ export const defaultPensumStandardLosninger = {
       ]
     }
   },
-  '30/70 m basis': {
-    beskrivelse: 'Konservativ med Pensum Basis. 30% aksjer, 70% renter',
-    allokeringer: {
-      'Allokering 1 (Kjerne)': [
-        { id: 'basis', vekt: 25, kategori: 'fondsportefoljer' },
-        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 50, kategori: 'fondsportefoljer' },
-        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' }
-      ],
-      'Allokering 2 (Kjerne +)': [
-        { id: 'basis', vekt: 15, kategori: 'fondsportefoljer' },
-        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 35, kategori: 'fondsportefoljer' },
-        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
-        { id: 'norge-a', vekt: 7.5, kategori: 'enkeltfond' },
-        { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
-        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
-      ],
-      'Allokering 3 (Kjerne ++)': [
-        { id: 'basis', vekt: 10, kategori: 'fondsportefoljer' },
-        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
-        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
-        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
-      ]
-    }
-  },
-  '30/70 u basis': {
-    beskrivelse: '30% aksjer, 70% renter uten Pensum Basis',
-    allokeringer: {
-      'Allokering 1 (Kjerne)': [
-        { id: 'global-core-active', vekt: 12.5, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 12.5, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 60, kategori: 'fondsportefoljer' },
-        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
-      ],
-      'Allokering 2 (Kjerne +)': [
-        { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 40, kategori: 'fondsportefoljer' },
-        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
-        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'banking-d', vekt: 2.5, kategori: 'enkeltfond' },
-        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
-        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
-      ],
-      'Allokering 3 (Kjerne ++)': [
-        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
-        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
-        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
-        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
-        { id: 'nordisk-hoyrente', vekt: 25, kategori: 'fondsportefoljer' },
-        { id: 'financial-d', vekt: 15, kategori: 'enkeltfond' }
-      ]
-    }
-  },
-  '50/50 m basis': {
+  '50/50 med basis': {
     beskrivelse: 'Balansert med Pensum Basis. 50% aksjer, 50% renter',
     allokeringer: {
       'Allokering 1 (Kjerne)': [
@@ -229,7 +162,7 @@ export const defaultPensumStandardLosninger = {
       ]
     }
   },
-  '50/50 u basis': {
+  '50/50 uten basis': {
     beskrivelse: '50% aksjer, 50% renter uten Pensum Basis',
     allokeringer: {
       'Allokering 1 (Kjerne)': [
@@ -259,6 +192,73 @@ export const defaultPensumStandardLosninger = {
         { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
         { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ]
+    }
+  },
+  '30/70 med basis': {
+    beskrivelse: 'Konservativ med Pensum Basis. 30% aksjer, 70% renter',
+    allokeringer: {
+      'Allokering 1 (Kjerne)': [
+        { id: 'basis', vekt: 25, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 50, kategori: 'fondsportefoljer' },
+        { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 2 (Kjerne +)': [
+        { id: 'basis', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 35, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 7.5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 3 (Kjerne ++)': [
+        { id: 'basis', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ]
+    }
+  },
+  '30/70 uten basis': {
+    beskrivelse: '30% aksjer, 70% renter uten Pensum Basis',
+    allokeringer: {
+      'Allokering 1 (Kjerne)': [
+        { id: 'global-core-active', vekt: 12.5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 12.5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 60, kategori: 'fondsportefoljer' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
+      ],
+      'Allokering 2 (Kjerne +)': [
+        { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 40, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 2.5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
+      ],
+      'Allokering 3 (Kjerne ++)': [
+        { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
+        { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
+        { id: 'kairos-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'banking-d', vekt: 5, kategori: 'enkeltfond' },
+        { id: 'nordisk-hoyrente', vekt: 25, kategori: 'fondsportefoljer' },
+        { id: 'financial-d', vekt: 15, kategori: 'enkeltfond' }
       ]
     }
   }

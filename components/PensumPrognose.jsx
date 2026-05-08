@@ -498,9 +498,9 @@ export default function PensumPrognoseModell() {
     });
     const losning = (navn) => defaultPensumStandardLosninger[navn]?.allokeringer['Allokering 1 (Kjerne)'] || [];
     return {
-      'Defensiv': tilAllokering(losning('30/70 u basis')),
-      'Moderat': tilAllokering(losning('50/50 u basis')),
-      'Dynamisk': tilAllokering(losning('70/30 u basis')),
+      'Defensiv': tilAllokering(losning('30/70 uten basis')),
+      'Moderat': tilAllokering(losning('50/50 uten basis')),
+      'Dynamisk': tilAllokering(losning('70/30 uten basis')),
       'Offensiv': tilAllokering(losning('100% Aksjer'))
     };
   }, []);
@@ -4256,7 +4256,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'losninger', 'allokering', 'scenario', 'belaning', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Historisk sammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
