@@ -5600,26 +5600,60 @@ export default function PensumPrognoseModell() {
                         const produktInfo = alleProdukt.find(p => p.id === produkt.id);
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
+                        const beskr = produktBeskrivelser?.[produkt.id];
+                        // Rolle-basert bakgrunn: kjerne (mørkeblå-tint), stabilisator (salmon), spisset (gull)
+                        let rolleBg = 'bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50';
+                        let rolleStripe = '#9CA3AF';
+                        if (erIllikvid) {
+                          rolleBg = 'bg-amber-50/80 border border-amber-200';
+                          rolleStripe = PENSUM_COLORS.gold;
+                        } else if (produktInfo?.aktivatype === 'rente' || produktInfo?.aktivatype === 'dynamisk' || produktInfo?.aktivatype === 'blandet') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.salmon;
+                        } else if (produktInfo?.rolle === 'spisset') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.gold;
+                        } else if (produktInfo?.rolle === 'kjerne') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.darkBlue;
+                        }
+                        const rolleStyle = !erIllikvid && rolleBg === 'border' ? { backgroundColor: rolleStripe + '10', borderColor: rolleStripe + '40', borderLeftWidth: '4px', borderLeftColor: rolleStripe } : undefined;
+                        const tooltipTekst = beskr ? `${beskr.rolle} — ${beskr.kategoriBeskrivelse}\n\n${beskr.beskrivelse}` : null;
                         return (
-                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + (erIllikvid ? "bg-amber-50/80 border border-amber-200" : "bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50")}>
+                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + rolleBg} style={rolleStyle}>
                             <button onClick={() => fjernPensumProdukt(produkt.id)} className="text-red-500 hover:text-red-700">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                             <div className="flex-1">
                               <p className="font-medium text-sm flex items-center gap-2" style={{ color: PENSUM_COLORS.darkBlue }}>
-                                <button 
-                                  onClick={() => setValgtProduktDetalj(produktInfo)} 
+                                <button
+                                  onClick={() => setValgtProduktDetalj(produktInfo)}
                                   className={"hover:underline " + (harEksponering ? "cursor-pointer" : "")}
                                   title={harEksponering ? "Klikk for å se detaljer" : ""}
                                 >
                                   {produkt.navn}
                                 </button>
-                                {harEksponering && (
-                                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {tooltipTekst && (
+                                  <span className="relative group inline-flex items-center">
+                                    <svg className="w-4 h-4 text-blue-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24" onClick={() => harEksponering && setValgtProduktDetalj(produktInfo)}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div className="invisible group-hover:visible absolute left-0 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg bg-white border border-gray-200" style={{ pointerEvents: 'none' }}>
+                                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: rolleStripe }}>{beskr.rolle} · {beskr.kategoriBeskrivelse}</div>
+                                      <div className="text-xs text-gray-700 leading-relaxed">{beskr.beskrivelse}</div>
+                                      {erGyldigTall(produktInfo?.forventetAvkastning) && (
+                                        <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                                          Forv. avkastning: <strong style={{ color: PENSUM_COLORS.green }}>{produktInfo.forventetAvkastning}%</strong>
+                                          {erGyldigTall(produktInfo?.forventetYield) && <> · Yield: <strong style={{ color: PENSUM_COLORS.teal }}>{produktInfo.forventetYield}%</strong></>}
+                                          {erGyldigTall(produktInfo?.forventetRisiko) && <> · Vol: <strong>{produktInfo.forventetRisiko}%</strong></>}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </span>
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : 'Fondsportefølje'}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : 'Fondsportefølje'}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
@@ -5846,13 +5880,16 @@ export default function PensumPrognoseModell() {
                             <div className="shrink-0" style={{ position: 'relative', width: containerWidth, height: containerHeight }}>
                               {sirkelPos.map((s, idx) => {
                                 const isTop = idx === sirkelPos.length - 1;
-                                const labelStor = s.d >= 100;
+                                // Adaptiv tekststørrelse basert på diameter
+                                const pctSize = s.d >= 130 ? '24px' : s.d >= 100 ? '20px' : '17px';
+                                const labelSize = s.d >= 130 ? '11px' : s.d >= 100 ? '10px' : '9px';
+                                const visLabel = s.d >= 80; // Vis label hvis sirkelen er stor nok
                                 // For ikke-topp sirkel: skyv innholdet ned i synlig (nedre) halvdel
                                 const paddingTop = isTop ? 0 : s.d * overlap;
                                 return (
                                   <div
                                     key={s.navn}
-                                    title={s.items.join(', ')}
+                                    title={`${s.kort}: ${s.verdi.toFixed(1)}%\n${s.items.join(', ')}`}
                                     style={{
                                       position: 'absolute',
                                       left: s.cx - s.d / 2,
@@ -5875,8 +5912,8 @@ export default function PensumPrognoseModell() {
                                     className="hover:scale-105"
                                   >
                                     <div className="flex flex-col items-center justify-center w-full px-2">
-                                      <div className="text-2xl font-bold leading-none tabular-nums">{s.verdi.toFixed(0)}%</div>
-                                      {labelStor && <div className="text-[10px] font-bold tracking-wide uppercase mt-1 leading-tight whitespace-nowrap">{s.kort}</div>}
+                                      <div className="font-bold leading-none tabular-nums" style={{ fontSize: pctSize }}>{s.verdi.toFixed(0)}%</div>
+                                      {visLabel && <div className="font-bold tracking-wide uppercase mt-1 leading-tight whitespace-nowrap" style={{ fontSize: labelSize, opacity: 0.95 }}>{s.kort}</div>}
                                     </div>
                                   </div>
                                 );
