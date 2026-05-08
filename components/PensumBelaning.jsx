@@ -1210,20 +1210,24 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
   const totalHedgeCostPct = hedgeKostnad * tidshorisont;
   const breakEvenFX = totalHedgeCostPct;
 
-  // Anbefalingsmotor — baseres på lånebeløp, FX-vol, tidshorisont og hedgekostnad
-  const anbefaling = useMemo(() => {
+  // Risiko-/kostnadsbilde — beskriver forholdet mellom volatilitet og hedgekostnad,
+  // uten å gi konkrete anbefalinger. Rådgiver må selv vurdere kunden sin situasjon.
+  const risikoBilde = useMemo(() => {
     if (valuta === 'NOK' || lanebelop <= 0) return null;
-    const forventetTap1Sigma = lanebelop * (fxVol / 100); // 1-sigma årlig tap i NOK
+    const forventetTap1Sigma = lanebelop * (fxVol / 100);
     const arligHedgeKost = lanebelop * (hedgeKostnad / 100);
-    const score = forventetTap1Sigma / Math.max(arligHedgeKost, 1); // hvor mange ganger hedge-kost dekker en 1σ-bevegelse
-    if (score >= 6) return {
-      tittel: 'Anbefaler full hedge', farge: colors.success, tekst: `FX-volatiliteten i ${valuta}/NOK er høy (~${fxVol}% p.a.) sammenlignet med hedge-kostnaden. Forsikringspremien er lav i forhold til risikoen.`
+    const ratio = forventetTap1Sigma / Math.max(arligHedgeKost, 1);
+    if (ratio >= 6) return {
+      tittel: 'Høy FX-volatilitet relativt til hedgekostnad', farge: colors.primary,
+      tekst: `Historisk volatilitet i ${valuta}/NOK (~${fxVol}% p.a.) er betydelig høyere enn årlig hedgekostnad. Dette er en faktor som taler for å vurdere hedge — men endelig valg avhenger av kundens risikoevne, horisont og syn på valutautvikling.`
     };
-    if (score >= 3) return {
-      tittel: 'Vurder delvis hedge (50–75%)', farge: colors.accent, tekst: `Balansert risikobilde. Delvis hedge gir reduksjon av halen samtidig som man beholder noe oppside ved gunstig valutautvikling.`
+    if (ratio >= 3) return {
+      tittel: 'Moderat forhold mellom risiko og kostnad', farge: colors.accent,
+      tekst: `FX-volatiliteten og hedgekostnaden er i samme størrelsesorden. Delvis hedge er én tilnærming for å redusere halerisiko samtidig som man beholder noe oppside. Vurder kundens preferanser og horisont.`
     };
     return {
-      tittel: 'Hedge er ikke kritisk', farge: colors.primaryLight, tekst: `Hedge-kostnad (${hedgeKostnad.toFixed(2)}% p.a.) er høy i forhold til forventet FX-bevegelse. Aktuelt kun ved kort horisont eller spesifikk risikoaversjon.`
+      tittel: 'Hedgekostnad høy relativt til forventet FX-bevegelse', farge: colors.primaryLight,
+      tekst: `Hedgekostnad (${hedgeKostnad.toFixed(2)}% p.a.) er høy sammenlignet med historisk volatilitet i ${valuta}/NOK. Hedge gir lavere forventet avkastning, men kan likevel være aktuelt for kunder med lav risikoevne eller behov for forutsigbarhet.`
     };
   }, [valuta, lanebelop, fxVol, hedgeKostnad, colors]);
 
@@ -1243,7 +1247,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
           {valuta === 'NOK'
             ? <>
                 <strong>Lånet er i NOK</strong> — ingen valutaeksponering eller hedge er nødvendig.<br/><br/>
-                <span style={{ color: colors.textMuted, fontSize: '12px' }}>For å se verktøyet for valutahedge, bytt valuta i <strong>"Lånerente"-seksjonen</strong> over (EUR, USD eller SEK). Da får du tilgang til full hedge-analyse med anbefaling, scenarioer og slide-grunnlag for kunderapport.</span>
+                <span style={{ color: colors.textMuted, fontSize: '12px' }}>For å se verktøyet for valutahedge, bytt valuta i <strong>"Lånerente"-seksjonen</strong> over (EUR, USD eller SEK). Da får du tilgang til full hedge-analyse med risikobilde, scenarioer og slide-grunnlag for kunderapport.</span>
               </>
             : <>
                 <strong>Velg en aktivaklasse og en LTV &gt; 0</strong> for å se valutahedge-analyse.
@@ -1291,8 +1295,8 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
     <div id="valutahedge-slide" className="pensum-card" style={{ marginTop: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${colors.mediumGray}` }}>
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — analyse for rådgiver</h2>
-          <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Lån i {valuta} ({baserenter[valuta]?.navn}) — illustrativ effekt av FX-hedge mot NOK</div>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — illustrativ analyse</h2>
+          <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Lån i {valuta} ({baserenter[valuta]?.navn}) — illustrativ effekt av FX-hedge mot NOK. Tallene er beregningsgrunnlag, ikke anbefalinger.</div>
         </div>
         <label style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer', fontSize: '11px', color: colors.primary, padding: '6px 10px', background: inkluderISlide ? `${colors.accent}15` : colors.lightGray, border: `1px solid ${inkluderISlide ? colors.accent : colors.mediumGray}`, borderRadius: '6px' }}>
           <input type="checkbox" checked={inkluderISlide} onChange={(e) => setInkluderISlide(e.target.checked)} style={{ width: '14px', height: '14px', accentColor: colors.accent }} />
@@ -1316,14 +1320,12 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
         </div>
       </div>
 
-      {/* Anbefalingsmotor */}
-      {anbefaling && (
-        <div style={{ marginBottom: '16px', padding: '14px 16px', background: `${anbefaling.farge}10`, border: `2px solid ${anbefaling.farge}`, borderRadius: '8px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: anbefaling.farge, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '14px', flexShrink: 0 }}>P</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: '800', color: anbefaling.farge, marginBottom: '4px' }}>Pensums anbefaling: {anbefaling.tittel}</div>
-            <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5 }}>{anbefaling.tekst}</div>
-          </div>
+      {/* Risiko-/kostnadsbilde — beskrivende, ikke en anbefaling */}
+      {risikoBilde && (
+        <div style={{ marginBottom: '16px', padding: '14px 16px', background: `${risikoBilde.farge}10`, border: `1px solid ${risikoBilde.farge}40`, borderLeft: `4px solid ${risikoBilde.farge}`, borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: colors.textMuted, marginBottom: '4px' }}>Til vurdering</div>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: risikoBilde.farge, marginBottom: '4px' }}>{risikoBilde.tittel}</div>
+          <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5 }}>{risikoBilde.tekst}</div>
         </div>
       )}
 
@@ -1474,7 +1476,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
             <li><strong>Hedge-kostnad:</strong> {hedgeKostnad.toFixed(2)}% p.a. ({formatNOK(lanebelop * (hedgeRatio/100) * (hedgeKostnad/100))} per år ved {hedgeRatio}% hedge)</li>
             <li><strong>Forventet FX-volatilitet:</strong> ~{fxVol}% p.a. for {valuta}/NOK</li>
             <li><strong>Break-even:</strong> Hedge lønner seg hvis valutaen beveger seg mer enn ±{breakEvenFX.toFixed(1)}% over horisonten</li>
-            <li><strong>Anbefaling:</strong> {anbefaling?.tittel}</li>
+            <li><strong>Til vurdering:</strong> {risikoBilde?.tittel}</li>
             <li>Carry-effekt: {carryEstimat >= 0 ? `negativ ${carryEstimat.toFixed(2)}% (kostnad)` : `positiv ${Math.abs(carryEstimat).toFixed(2)}% (gevinst)`}</li>
           </ul>
         </div>

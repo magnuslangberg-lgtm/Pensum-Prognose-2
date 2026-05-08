@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
@@ -498,9 +498,9 @@ export default function PensumPrognoseModell() {
     });
     const losning = (navn) => defaultPensumStandardLosninger[navn]?.allokeringer['Allokering 1 (Kjerne)'] || [];
     return {
-      'Defensiv': tilAllokering(losning('30/70 u basis')),
-      'Moderat': tilAllokering(losning('50/50 u basis')),
-      'Dynamisk': tilAllokering(losning('70/30 u basis')),
+      'Defensiv': tilAllokering(losning('30/70 uten basis')),
+      'Moderat': tilAllokering(losning('50/50 uten basis')),
+      'Dynamisk': tilAllokering(losning('70/30 uten basis')),
       'Offensiv': tilAllokering(losning('100% Aksjer'))
     };
   }, []);
@@ -4256,7 +4256,7 @@ export default function PensumPrognoseModell() {
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {['input', 'losninger', 'allokering', 'scenario', 'belaning', 'rapport'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Historisk sammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -5600,26 +5600,60 @@ export default function PensumPrognoseModell() {
                         const produktInfo = alleProdukt.find(p => p.id === produkt.id);
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
+                        const beskr = produktBeskrivelser?.[produkt.id];
+                        // Rolle-basert bakgrunn: kjerne (mørkeblå-tint), stabilisator (salmon), spisset (gull)
+                        let rolleBg = 'bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50';
+                        let rolleStripe = '#9CA3AF';
+                        if (erIllikvid) {
+                          rolleBg = 'bg-amber-50/80 border border-amber-200';
+                          rolleStripe = PENSUM_COLORS.gold;
+                        } else if (produktInfo?.aktivatype === 'rente' || produktInfo?.aktivatype === 'dynamisk' || produktInfo?.aktivatype === 'blandet') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.salmon;
+                        } else if (produktInfo?.rolle === 'spisset') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.gold;
+                        } else if (produktInfo?.rolle === 'kjerne') {
+                          rolleBg = 'border';
+                          rolleStripe = PENSUM_COLORS.darkBlue;
+                        }
+                        const rolleStyle = !erIllikvid && rolleBg === 'border' ? { backgroundColor: rolleStripe + '10', borderColor: rolleStripe + '40', borderLeftWidth: '4px', borderLeftColor: rolleStripe } : undefined;
+                        const tooltipTekst = beskr ? `${beskr.rolle} — ${beskr.kategoriBeskrivelse}\n\n${beskr.beskrivelse}` : null;
                         return (
-                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + (erIllikvid ? "bg-amber-50/80 border border-amber-200" : "bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50")}>
+                          <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + rolleBg} style={rolleStyle}>
                             <button onClick={() => fjernPensumProdukt(produkt.id)} className="text-red-500 hover:text-red-700">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                             <div className="flex-1">
                               <p className="font-medium text-sm flex items-center gap-2" style={{ color: PENSUM_COLORS.darkBlue }}>
-                                <button 
-                                  onClick={() => setValgtProduktDetalj(produktInfo)} 
+                                <button
+                                  onClick={() => setValgtProduktDetalj(produktInfo)}
                                   className={"hover:underline " + (harEksponering ? "cursor-pointer" : "")}
                                   title={harEksponering ? "Klikk for å se detaljer" : ""}
                                 >
                                   {produkt.navn}
                                 </button>
-                                {harEksponering && (
-                                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {tooltipTekst && (
+                                  <span className="relative group inline-flex items-center">
+                                    <svg className="w-4 h-4 text-blue-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24" onClick={() => harEksponering && setValgtProduktDetalj(produktInfo)}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div className="invisible group-hover:visible absolute left-0 top-full mt-1 z-50 w-72 p-3 rounded-lg shadow-lg bg-white border border-gray-200" style={{ pointerEvents: 'none' }}>
+                                      <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: rolleStripe }}>{beskr.rolle} · {beskr.kategoriBeskrivelse}</div>
+                                      <div className="text-xs text-gray-700 leading-relaxed">{beskr.beskrivelse}</div>
+                                      {erGyldigTall(produktInfo?.forventetAvkastning) && (
+                                        <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                                          Forv. avkastning: <strong style={{ color: PENSUM_COLORS.green }}>{produktInfo.forventetAvkastning}%</strong>
+                                          {erGyldigTall(produktInfo?.forventetYield) && <> · Yield: <strong style={{ color: PENSUM_COLORS.teal }}>{produktInfo.forventetYield}%</strong></>}
+                                          {erGyldigTall(produktInfo?.forventetRisiko) && <> · Vol: <strong>{produktInfo.forventetRisiko}%</strong></>}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </span>
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : 'Fondsportefølje'}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : 'Fondsportefølje'}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
@@ -5846,13 +5880,16 @@ export default function PensumPrognoseModell() {
                             <div className="shrink-0" style={{ position: 'relative', width: containerWidth, height: containerHeight }}>
                               {sirkelPos.map((s, idx) => {
                                 const isTop = idx === sirkelPos.length - 1;
-                                const labelStor = s.d >= 100;
+                                // Adaptiv tekststørrelse basert på diameter
+                                const pctSize = s.d >= 130 ? '24px' : s.d >= 100 ? '20px' : '17px';
+                                const labelSize = s.d >= 130 ? '11px' : s.d >= 100 ? '10px' : '9px';
+                                const visLabel = s.d >= 80; // Vis label hvis sirkelen er stor nok
                                 // For ikke-topp sirkel: skyv innholdet ned i synlig (nedre) halvdel
                                 const paddingTop = isTop ? 0 : s.d * overlap;
                                 return (
                                   <div
                                     key={s.navn}
-                                    title={s.items.join(', ')}
+                                    title={`${s.kort}: ${s.verdi.toFixed(1)}%\n${s.items.join(', ')}`}
                                     style={{
                                       position: 'absolute',
                                       left: s.cx - s.d / 2,
@@ -5875,8 +5912,8 @@ export default function PensumPrognoseModell() {
                                     className="hover:scale-105"
                                   >
                                     <div className="flex flex-col items-center justify-center w-full px-2">
-                                      <div className="text-2xl font-bold leading-none tabular-nums">{s.verdi.toFixed(0)}%</div>
-                                      {labelStor && <div className="text-[10px] font-bold tracking-wide uppercase mt-1 leading-tight whitespace-nowrap">{s.kort}</div>}
+                                      <div className="font-bold leading-none tabular-nums" style={{ fontSize: pctSize }}>{s.verdi.toFixed(0)}%</div>
+                                      {visLabel && <div className="font-bold tracking-wide uppercase mt-1 leading-tight whitespace-nowrap" style={{ fontSize: labelSize, opacity: 0.95 }}>{s.kort}</div>}
                                     </div>
                                   </div>
                                 );
@@ -6974,29 +7011,53 @@ export default function PensumPrognoseModell() {
             {/* Scatter plot: avkastning vs risiko (3 og 5 år) */}
             {(() => {
               const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || [])];
-              // Bare produkter som faktisk er i porteføljen (vekt > 0)
               const valgtePIder = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
               const valgteProdukter = alleProd.filter(p => valgtePIder.includes(p.id));
 
-              // Indekser fra avkastningsgrafen (samme tre som default i Historisk sammenligning)
               const indekser = [
-                { navn: 'MSCI World', feedKey: 'msci-world', farge: PENSUM_COLORS.lightBlue },
-                { navn: 'Oslo Børs', feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon },
-                { navn: 'Norske Statsobl.', feedKey: 'norske-statsobl', farge: PENSUM_COLORS.gray }
+                { navn: 'MSCI World', kortNavn: 'MSCI World', feedKey: 'msci-world', farge: PENSUM_COLORS.lightBlue },
+                { navn: 'Oslo Børs', kortNavn: 'Oslo Børs', feedKey: 'oslo-bors', farge: PENSUM_COLORS.salmon },
+                { navn: 'Norske Statsobl.', kortNavn: 'Statsobl.', feedKey: 'norske-statsobl', farge: PENSUM_COLORS.gray }
               ];
 
-              // Bygg datapunkter
+              const fargePalett = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.gold, PENSUM_COLORS.midBlue, '#7C3AED', '#059669'];
+
+              // Build short navn for chart labels
+              const kortNavn = (navn) => {
+                if (!navn) return '';
+                return navn.replace('Pensum ', '').replace(/Index|UCITS|Fund|EUR|USD|NOK|Acc|Class|Hrzn|Glb SC|IU2|Y/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
+              };
+
+              // Compute weighted portfolio statistics from actual historikk
+              // Approximation: vektet gjennomsnitt av komponentenes avk og vol (uten korrelasjoner)
+              const beregnPensumPortStat = (periode) => {
+                const start = new Date(RAPPORT_DATO_OBJEKT.getFullYear() - periode, RAPPORT_DATO_OBJEKT.getMonth(), 1);
+                let sumVekt = 0, sumAvk = 0, sumVol = 0, harData = false;
+                valgteProdukter.forEach(p => {
+                  const stat = beregnProduktStatistikk(produktHistorikk[p.id], start);
+                  const allokVekt = pensumAllokering.find(a => a.id === p.id)?.vekt || 0;
+                  if (stat && erGyldigTall(stat.aarligAvkastning) && erGyldigTall(stat.standardavvik) && allokVekt > 0) {
+                    sumVekt += allokVekt;
+                    sumAvk += allokVekt * stat.aarligAvkastning;
+                    sumVol += allokVekt * stat.standardavvik;
+                    harData = true;
+                  }
+                });
+                if (!harData || sumVekt === 0) return null;
+                return { x: sumVol / sumVekt, y: sumAvk / sumVekt };
+              };
+
               const data3yr = [];
               const data5yr = [];
               valgteProdukter.forEach((p, i) => {
-                const farge = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.teal, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.gold][i % 5];
+                const farge = fargePalett[i % fargePalett.length];
                 const stat3 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 const stat5 = beregnProduktStatistikk(produktHistorikk[p.id], new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 if (stat3 && erGyldigTall(stat3.aarligAvkastning) && erGyldigTall(stat3.standardavvik)) {
-                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: p.navn, id: p.id, type: 'produkt', farge });
+                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: p.navn, label: kortNavn(p.navn), id: p.id, type: 'produkt', farge });
                 }
                 if (stat5 && erGyldigTall(stat5.aarligAvkastning) && erGyldigTall(stat5.standardavvik)) {
-                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: p.navn, id: p.id, type: 'produkt', farge });
+                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: p.navn, label: kortNavn(p.navn), id: p.id, type: 'produkt', farge });
                 }
               });
               indekser.forEach(idx => {
@@ -7005,53 +7066,113 @@ export default function PensumPrognoseModell() {
                 const stat3 = beregnProduktStatistikk(hist, new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 3, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 const stat5 = beregnProduktStatistikk(hist, new Date(RAPPORT_DATO_OBJEKT.getFullYear() - 5, RAPPORT_DATO_OBJEKT.getMonth(), 1));
                 if (stat3 && erGyldigTall(stat3.aarligAvkastning) && erGyldigTall(stat3.standardavvik)) {
-                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: idx.navn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
+                  data3yr.push({ x: stat3.standardavvik, y: stat3.aarligAvkastning, navn: idx.navn, label: idx.kortNavn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
                 }
                 if (stat5 && erGyldigTall(stat5.aarligAvkastning) && erGyldigTall(stat5.standardavvik)) {
-                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: idx.navn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
+                  data5yr.push({ x: stat5.standardavvik, y: stat5.aarligAvkastning, navn: idx.navn, label: idx.kortNavn, id: idx.feedKey, type: 'indeks', farge: idx.farge });
                 }
               });
+              // Pensum-portefølje (vektet)
+              const portStat3 = beregnPensumPortStat(3);
+              const portStat5 = beregnPensumPortStat(5);
+              if (portStat3) data3yr.push({ x: portStat3.x, y: portStat3.y, navn: 'Pensum-porteføljen', label: 'PENSUM-PORT', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
+              if (portStat5) data5yr.push({ x: portStat5.x, y: portStat5.y, navn: 'Pensum-porteføljen', label: 'PENSUM-PORT', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
+
               if (data3yr.length === 0 && data5yr.length === 0) return null;
+
+              // Custom shape renderers
+              const ProduktDot = (props) => {
+                const { cx, cy, fill } = props;
+                if (cx == null || cy == null) return null;
+                return <circle cx={cx} cy={cy} r={9} fill={fill} stroke="white" strokeWidth={2} />;
+              };
+              const IndeksDiamond = (props) => {
+                const { cx, cy, fill } = props;
+                if (cx == null || cy == null) return null;
+                const s = 10;
+                return <polygon points={`${cx},${cy-s} ${cx+s},${cy} ${cx},${cy+s} ${cx-s},${cy}`} fill={fill} stroke="#0D2240" strokeWidth={2} />;
+              };
+              const PortStar = (props) => {
+                const { cx, cy, fill } = props;
+                if (cx == null || cy == null) return null;
+                // 5-spiss stjerne
+                const r1 = 14, r2 = 6, n = 5;
+                const points = [];
+                for (let i = 0; i < n * 2; i++) {
+                  const r = i % 2 === 0 ? r1 : r2;
+                  const ang = (Math.PI / n) * i - Math.PI / 2;
+                  points.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
+                }
+                return <polygon points={points.join(' ')} fill={fill} stroke="white" strokeWidth={2} />;
+              };
 
               const renderScatter = (data, periode) => {
                 const produkter = data.filter(d => d.type === 'produkt');
                 const indeksDP = data.filter(d => d.type === 'indeks');
+                const portDP = data.filter(d => d.type === 'portefolje');
                 return (
                   <div className="rounded-lg border border-gray-100 bg-white p-4">
                     <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 30 }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} />
-                        <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
-                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
+                        <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} domain={[0, 'dataMax + 2']} />
+                        <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} domain={['dataMin - 2', 'dataMax + 2']} />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }}
                           content={({ payload }) => {
                             if (!payload?.length) return null;
                             const d = payload[0].payload;
-                            return <div className="bg-white p-2 rounded border border-gray-200 text-xs"><div className="font-semibold">{d.navn}{d.type === 'indeks' ? ' (indeks)' : ''}</div><div>Volatilitet: {d.x.toFixed(1)}%</div><div>Avkastning: {d.y.toFixed(1)}%</div></div>;
+                            const typeLabel = d.type === 'indeks' ? 'Indeks' : (d.type === 'portefolje' ? 'Vektet portefølje (uten korrelasjoner)' : 'Komponent');
+                            return <div className="bg-white p-2 rounded border border-gray-200 text-xs shadow-lg">
+                              <div className="font-semibold">{d.navn}</div>
+                              <div className="text-[10px] text-gray-500 mb-1">{typeLabel}</div>
+                              <div>Volatilitet: <strong>{d.x.toFixed(1)}%</strong></div>
+                              <div>Avkastning: <strong>{d.y.toFixed(1)}%</strong></div>
+                            </div>;
                           }}
                         />
-                        {/* Produkter — fylt sirkel */}
-                        <Scatter name="Porteføljekomponenter" data={produkter} shape="circle">
-                          {produkter.map((entry, idx) => (
-                            <Cell key={'p' + idx} fill={entry.farge} />
-                          ))}
+                        {/* Indekser — bak (lavest z-order) */}
+                        <Scatter name="Indekser" data={indeksDP} shape={IndeksDiamond}>
+                          {indeksDP.map((entry, idx) => <Cell key={'i' + idx} fill={entry.farge} />)}
+                          <LabelList dataKey="label" position="top" offset={12} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
                         </Scatter>
-                        {/* Indekser — diamant-form for å skille visuelt */}
-                        <Scatter name="Indekser" data={indeksDP} shape="diamond">
-                          {indeksDP.map((entry, idx) => (
-                            <Cell key={'i' + idx} fill={entry.farge} stroke="#0D2240" strokeWidth={2} />
-                          ))}
+                        {/* Produkter */}
+                        <Scatter name="Komponenter" data={produkter} shape={ProduktDot}>
+                          {produkter.map((entry, idx) => <Cell key={'p' + idx} fill={entry.farge} />)}
+                          <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
+                        </Scatter>
+                        {/* Pensum-porteføljen — øverst (stjerne) */}
+                        <Scatter name="Pensum-porteføljen" data={portDP} shape={PortStar}>
+                          {portDP.map((entry, idx) => <Cell key={'pf' + idx} fill={PENSUM_COLORS.gold} />)}
+                          <LabelList dataKey="label" position="top" offset={16} fontSize={11} fontWeight={700} fill={PENSUM_COLORS.gold} />
                         </Scatter>
                       </ScatterChart>
                     </ResponsiveContainer>
-                    <div className="mt-3 space-y-1.5">
+                    {/* Legende */}
+                    <div className="mt-3 space-y-2">
+                      {/* Symbol-forklaring */}
+                      <div className="flex flex-wrap gap-4 pb-2 border-b border-gray-100 text-[10px]">
+                        <div className="flex items-center gap-1.5">
+                          <svg width="16" height="16"><polygon points="8,1 14,8 8,15 2,8" fill={PENSUM_COLORS.gold} stroke="white" strokeWidth="1.5" /></svg>
+                          <span className="font-semibold" style={{ color: PENSUM_COLORS.gold }}>★ Pensum-porteføljen (vektet)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
+                          <span className="text-gray-600">Sirkel = porteføljekomponent</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 transform rotate-45" style={{ backgroundColor: PENSUM_COLORS.lightBlue, border: '1px solid #0D2240' }}></span>
+                          <span className="text-gray-600">Diamant = referanseindeks</span>
+                        </div>
+                      </div>
+                      {/* Komponenter */}
                       {produkter.length > 0 && (
                         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                           {produkter.map((d) => (
                             <div key={d.id} className="flex items-center gap-1.5 text-[10px] truncate">
                               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.farge }}></div>
                               <span className="text-gray-700 truncate">{d.navn}</span>
+                              <span className="text-gray-400 tabular-nums ml-auto">{d.y.toFixed(1)}% / {d.x.toFixed(1)}%</span>
                             </div>
                           ))}
                         </div>
@@ -7062,6 +7183,7 @@ export default function PensumPrognoseModell() {
                             <div key={d.id} className="flex items-center gap-1.5 text-[10px]">
                               <div className="w-2.5 h-2.5 shrink-0 transform rotate-45" style={{ backgroundColor: d.farge, border: '1.5px solid #0D2240' }}></div>
                               <span className="text-gray-700 italic">{d.navn}</span>
+                              <span className="text-gray-400 tabular-nums">({d.y.toFixed(1)}% / {d.x.toFixed(1)}%)</span>
                             </div>
                           ))}
                         </div>
@@ -7074,14 +7196,18 @@ export default function PensumPrognoseModell() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                     <h3 className="text-lg font-semibold text-white">Avkastning vs. risiko</h3>
-                    <p className="text-xs text-blue-200 mt-0.5">Porteføljekomponenter (sirkler) sammenlignet med referanseindekser (diamanter). Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
+                    <p className="text-xs text-blue-200 mt-0.5">★ Pensum-porteføljen (vektet) · ● komponenter · ◆ referanseindekser. Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
                   </div>
                   <div className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {data3yr.length > 0 && renderScatter(data3yr, '3 år')}
                       {data5yr.length > 0 && renderScatter(data5yr, '5 år')}
                     </div>
-                    <p className="text-[10px] text-gray-500 italic mt-3">Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Avkastning er annualisert geometrisk over perioden. Bare komponenter med vekt &gt; 0 vises.</p>
+                    <p className="text-[10px] text-gray-500 italic mt-3">
+                      Volatilitet er annualisert standardavvik basert på månedlige avkastninger; avkastning er annualisert geometrisk over perioden.
+                      Pensum-porteføljen er vektet gjennomsnitt av komponentene (uten korrelasjoner — faktisk porteføljevolatilitet kan være noe lavere pga. diversifisering).
+                      Bare komponenter med vekt &gt; 0 vises.
+                    </p>
                   </div>
                 </div>
               );
