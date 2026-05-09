@@ -264,6 +264,8 @@ export default function PensumPrognoseModell() {
   // Rebalansering - årlig endring i allokering
   const [pensumRebalanseringAktiv, setPensumRebalanseringAktiv] = useState(false);
   const [pensumRebalanseringer, setPensumRebalanseringer] = useState([]);
+  // Scatter plot: hvilke komponenter er på (default: ingen — kun Pensum-port + indekser vises)
+  const [scatterAktiveKomponenter, setScatterAktiveKomponenter] = useState({});
   const [rebalanseringAktiv, setRebalanseringAktiv] = useState(false);
   const [rebalanseringer, setRebalanseringer] = useState([
     { fraAktiva: 'Eiendom', tilAktiva: 'Globale Aksjer', prosentPerAar: 10 }
@@ -5830,8 +5832,8 @@ export default function PensumPrognoseModell() {
                       if (total === 0) return null;
 
                       // Beregn høyder (proporsjonale med min-floor for synlighet)
-                      const totalH = 280;
-                      const minSection = 38;
+                      const totalH = 200;
+                      const minSection = 32;
                       const aktive = [
                         { key: 'kjerne', verdi: kjerneSum, items: kjerneNavn },
                         { key: 'stab', verdi: stabSum, items: stabNavn },
@@ -5843,10 +5845,10 @@ export default function PensumPrognoseModell() {
                         hoyder[b.key] = minSection + (b.verdi / total) * tilgjengelig;
                       });
 
-                      const svgWidth = 220;
-                      const baseW = 200;       // grunnmur (kjerne) bredde
-                      const stabW = 168;       // midt (stabilisator) bredde
-                      const taklednW = 176;    // takfeste bredde
+                      const svgWidth = 200;
+                      const baseW = 184;       // grunnmur (kjerne) bredde
+                      const stabW = 152;       // midt (stabilisator) bredde
+                      const taklednW = 160;    // takfeste bredde
                       const cx = svgWidth / 2;
 
                       const kjerneH = hoyder.kjerne || 0;
@@ -5880,10 +5882,10 @@ export default function PensumPrognoseModell() {
 
                       // Tekst-størrelse adaptiv for hver seksjon
                       const tekstFor = (h) => {
-                        if (h >= 90) return { pct: 28, label: 12 };
-                        if (h >= 60) return { pct: 22, label: 11 };
-                        if (h >= 45) return { pct: 17, label: 9 };
-                        return { pct: 13, label: 8 };
+                        if (h >= 70) return { pct: 22, label: 10 };
+                        if (h >= 48) return { pct: 18, label: 9 };
+                        if (h >= 36) return { pct: 14, label: 8 };
+                        return { pct: 11, label: 7 };
                       };
 
                       return (
@@ -5908,17 +5910,17 @@ export default function PensumPrognoseModell() {
                                   const t = tekstFor(kjerneH);
                                   const yMidt = yKjerneTop + kjerneH / 2;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yMidt - 2} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{kjerneSum.toFixed(0)}%</text>
-                                    {kjerneH >= 60 && <text x={cx} y={yMidt + 14} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>KJERNE</text>}
+                                    <text x={cx} y={yMidt - (kjerneH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{kjerneSum.toFixed(0)}%</text>
+                                    {kjerneH >= 48 && <text x={cx} y={yMidt + 12} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>KJERNE</text>}
                                   </g>;
                                 })()}
                                 {/* Stabilisator — midt-etasje */}
                                 {stabH > 0 && <>
                                   <rect x={cx - stabW / 2} y={yStabTop} width={stabW} height={stabH} fill={PENSUM_COLORS.salmon} rx={1} />
                                   {/* Vinduer-dekorasjon */}
-                                  {stabH >= 70 && <>
-                                    <rect x={cx - stabW / 2 + 22} y={yStabTop + stabH * 0.30} width={20} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
-                                    <rect x={cx + stabW / 2 - 42} y={yStabTop + stabH * 0.30} width={20} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
+                                  {stabH >= 50 && <>
+                                    <rect x={cx - stabW / 2 + 18} y={yStabTop + stabH * 0.30} width={16} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
+                                    <rect x={cx + stabW / 2 - 34} y={yStabTop + stabH * 0.30} width={16} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
                                   </>}
                                   {/* Avsats over stabilisator (gulvkant før tak) */}
                                   <rect x={cx - (stabW + 8) / 2} y={yStabLedge} width={stabW + 8} height={ledgeH} fill="#FFFFFF" stroke="#E5E7EB" strokeWidth={0.5} />
@@ -5928,8 +5930,8 @@ export default function PensumPrognoseModell() {
                                   const t = tekstFor(stabH);
                                   const yMidt = yStabTop + stabH / 2;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yMidt - 2} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{stabSum.toFixed(0)}%</text>
-                                    {stabH >= 60 && <text x={cx} y={yMidt + 14} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>STABILISATOR</text>}
+                                    <text x={cx} y={yMidt - (stabH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{stabSum.toFixed(0)}%</text>
+                                    {stabH >= 48 && <text x={cx} y={yMidt + 12} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>STABILISATOR</text>}
                                   </g>;
                                 })()}
                                 {/* Spisset — tak (trekant) */}
@@ -5943,10 +5945,10 @@ export default function PensumPrognoseModell() {
                                 {spissetH > 0 && (() => {
                                   const t = tekstFor(spissetH);
                                   // Plassér tekst i øvre del av taket
-                                  const yTekst = yRoofBase - spissetH * 0.35;
+                                  const yTekst = yRoofBase - spissetH * 0.40;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yTekst - 2} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{spissetSum.toFixed(0)}%</text>
-                                    {spissetH >= 50 && <text x={cx} y={yTekst + 12} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>SPISSET</text>}
+                                    <text x={cx} y={yTekst - (spissetH >= 40 ? 1 : 3)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{spissetSum.toFixed(0)}%</text>
+                                    {spissetH >= 40 && <text x={cx} y={yTekst + 11} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>SPISSET</text>}
                                   </g>;
                                 })()}
                               </svg>
@@ -7139,14 +7141,16 @@ export default function PensumPrognoseModell() {
               };
 
               const renderScatter = (data, periode) => {
-                const produkter = data.filter(d => d.type === 'produkt');
+                // Filtrer komponenter etter toggle-state
+                const alleProdukter = data.filter(d => d.type === 'produkt');
                 const indeksDP = data.filter(d => d.type === 'indeks');
                 const portDP = data.filter(d => d.type === 'portefolje');
+                const synligeKomp = alleProdukter.filter(p => scatterAktiveKomponenter[p.id]);
                 return (
                   <div className="rounded-lg border border-gray-100 bg-white p-4">
                     <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 30 }}>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <ScatterChart margin={{ top: 20, right: 80, bottom: 30, left: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                         <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} domain={[0, 'dataMax + 2']} />
                         <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} domain={['dataMin - 2', 'dataMax + 2']} />
@@ -7154,7 +7158,7 @@ export default function PensumPrognoseModell() {
                           content={({ payload }) => {
                             if (!payload?.length) return null;
                             const d = payload[0].payload;
-                            const typeLabel = d.type === 'indeks' ? 'Indeks' : (d.type === 'portefolje' ? 'Vektet portefølje (uten korrelasjoner)' : 'Komponent');
+                            const typeLabel = d.type === 'indeks' ? 'Indeks' : (d.type === 'portefolje' ? 'Vektet portefølje' : 'Komponent');
                             return <div className="bg-white p-2 rounded border border-gray-200 text-xs shadow-lg">
                               <div className="font-semibold">{d.navn}</div>
                               <div className="text-[10px] text-gray-500 mb-1">{typeLabel}</div>
@@ -7163,60 +7167,68 @@ export default function PensumPrognoseModell() {
                             </div>;
                           }}
                         />
-                        {/* Indekser — bak (lavest z-order) */}
+                        {/* Indekser — diamant med inline label */}
                         <Scatter name="Indekser" data={indeksDP} shape={IndeksDiamond}>
                           {indeksDP.map((entry, idx) => <Cell key={'i' + idx} fill={entry.farge} />)}
+                          <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
                         </Scatter>
-                        {/* Produkter */}
-                        <Scatter name="Komponenter" data={produkter} shape={ProduktDot}>
-                          {produkter.map((entry, idx) => <Cell key={'p' + idx} fill={entry.farge} />)}
-                        </Scatter>
+                        {/* Synlige komponenter — kun de som er huket av */}
+                        {synligeKomp.length > 0 && (
+                          <Scatter name="Komponenter" data={synligeKomp} shape={ProduktDot}>
+                            {synligeKomp.map((entry, idx) => <Cell key={'p' + idx} fill={entry.farge} />)}
+                            <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
+                          </Scatter>
+                        )}
                         {/* Pensum-porteføljen — øverst (stjerne) */}
                         <Scatter name="Pensum-porteføljen" data={portDP} shape={PortStar}>
                           {portDP.map((entry, idx) => <Cell key={'pf' + idx} fill={PENSUM_COLORS.gold} />)}
+                          <LabelList dataKey="label" position="right" offset={14} fontSize={10} fontWeight={700} fill={PENSUM_COLORS.gold} />
                         </Scatter>
                       </ScatterChart>
                     </ResponsiveContainer>
-                    {/* Legende */}
-                    <div className="mt-3 space-y-2">
-                      {/* Symbol-forklaring */}
-                      <div className="flex flex-wrap gap-4 pb-2 border-b border-gray-100 text-[10px]">
-                        <div className="flex items-center gap-1.5">
-                          <svg width="16" height="16"><polygon points="8,1 14,8 8,15 2,8" fill={PENSUM_COLORS.gold} stroke="white" strokeWidth="1.5" /></svg>
-                          <span className="font-semibold" style={{ color: PENSUM_COLORS.gold }}>★ Pensum-porteføljen (vektet)</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                          <span className="text-gray-600">Sirkel = porteføljekomponent</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-3 h-3 transform rotate-45" style={{ backgroundColor: PENSUM_COLORS.lightBlue, border: '1px solid #0D2240' }}></span>
-                          <span className="text-gray-600">Diamant = referanseindeks</span>
-                        </div>
+                  </div>
+                );
+              };
+
+              // Komponent-toggles + felles legend
+              const renderToggles = (data) => {
+                const alleProdukter = data.filter(d => d.type === 'produkt');
+                if (alleProdukter.length === 0) return null;
+                const alleAktiv = alleProdukter.every(p => scatterAktiveKomponenter[p.id]);
+                return (
+                  <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-slate-700">Vis individuelle komponenter</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const ny = {};
+                            alleProdukter.forEach(p => { ny[p.id] = !alleAktiv; });
+                            setScatterAktiveKomponenter(ny);
+                          }}
+                          className="text-[10px] px-2 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+                        >
+                          {alleAktiv ? 'Skjul alle' : 'Vis alle'}
+                        </button>
                       </div>
-                      {/* Komponenter */}
-                      {produkter.length > 0 && (
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                          {produkter.map((d) => (
-                            <div key={d.id} className="flex items-center gap-1.5 text-[10px] truncate">
-                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.farge }}></div>
-                              <span className="text-gray-700 truncate">{d.navn}</span>
-                              <span className="text-gray-400 tabular-nums ml-auto">{d.y.toFixed(1)}% / {d.x.toFixed(1)}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {indeksDP.length > 0 && (
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 border-t border-gray-100">
-                          {indeksDP.map((d) => (
-                            <div key={d.id} className="flex items-center gap-1.5 text-[10px]">
-                              <div className="w-2.5 h-2.5 shrink-0 transform rotate-45" style={{ backgroundColor: d.farge, border: '1.5px solid #0D2240' }}></div>
-                              <span className="text-gray-700 italic">{d.navn}</span>
-                              <span className="text-gray-400 tabular-nums">({d.y.toFixed(1)}% / {d.x.toFixed(1)}%)</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      {alleProdukter.map(p => {
+                        const aktiv = !!scatterAktiveKomponenter[p.id];
+                        return (
+                          <label key={p.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-white/50 px-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={aktiv}
+                              onChange={(e) => setScatterAktiveKomponenter(prev => ({ ...prev, [p.id]: e.target.checked }))}
+                              className="w-3 h-3 rounded"
+                              style={{ accentColor: p.farge }}
+                            />
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: aktiv ? p.farge : '#CBD5E1' }}></span>
+                            <span className={"truncate " + (aktiv ? "text-gray-800 font-medium" : "text-gray-500")}>{p.navn}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -7232,6 +7244,8 @@ export default function PensumPrognoseModell() {
                       {data3yr.length > 0 && renderScatter(data3yr, '3 år')}
                       {data5yr.length > 0 && renderScatter(data5yr, '5 år')}
                     </div>
+                    {/* Felles komponent-toggles — påvirker begge grafer */}
+                    {renderToggles(data3yr.length > 0 ? data3yr : data5yr)}
                     <p className="text-[10px] text-gray-500 italic mt-3">
                       Volatilitet er annualisert standardavvik basert på månedlige avkastninger; avkastning er annualisert geometrisk over perioden.
                       Pensum-porteføljen er vektet gjennomsnitt av komponentene (uten korrelasjoner — faktisk porteføljevolatilitet kan være noe lavere pga. diversifisering).
