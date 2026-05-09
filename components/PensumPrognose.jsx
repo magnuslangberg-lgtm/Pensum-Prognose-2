@@ -5603,24 +5603,30 @@ export default function PensumPrognoseModell() {
                         const erIllikvid = produktInfo?.likviditet === 'illikvid';
                         const harEksponering = produktEksponering[produkt.id];
                         const beskr = produktBeskrivelser?.[produkt.id];
-                        // Rolle-basert bakgrunn: kjerne (mørkeblå), stabilisator (salmon/varm), spisset (teal/kjølig)
-                        // Teal valgt fremfor gold for å gi tydelig kontrast mot stabilisator-salmon
-                        let rolleBg = 'bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50';
+                        // Rolle-fargene matcher byggverket (Kjerne=mørkeblå, Stabilisator=salmon, Spisset=gull),
+                        // men med rene, klart distinkte pastell-bakgrunner som ikke gjør stab og spisset like.
                         let rolleStripe = '#9CA3AF';
+                        let rolleBgFarge = '#F8FAFC'; // default lett grå
+                        let bruktRolle = false;
                         if (erIllikvid) {
-                          rolleBg = 'bg-amber-50/80 border border-amber-200';
                           rolleStripe = PENSUM_COLORS.gold;
+                          rolleBgFarge = '#FFFBEB'; // amber-50, varm krem
+                          bruktRolle = true;
                         } else if (produktInfo?.aktivatype === 'rente' || produktInfo?.aktivatype === 'dynamisk' || produktInfo?.aktivatype === 'blandet') {
-                          rolleBg = 'border';
                           rolleStripe = PENSUM_COLORS.salmon;
+                          rolleBgFarge = '#FFF1F2'; // rose-50, lett rosa
+                          bruktRolle = true;
                         } else if (produktInfo?.rolle === 'spisset') {
-                          rolleBg = 'border';
-                          rolleStripe = PENSUM_COLORS.teal;
+                          rolleStripe = PENSUM_COLORS.gold;
+                          rolleBgFarge = '#FEF9C3'; // yellow-100, lett gul — tydelig forskjellig fra salmon-rosa
+                          bruktRolle = true;
                         } else if (produktInfo?.rolle === 'kjerne') {
-                          rolleBg = 'border';
                           rolleStripe = PENSUM_COLORS.darkBlue;
+                          rolleBgFarge = '#EFF6FF'; // blue-50, lett blå
+                          bruktRolle = true;
                         }
-                        const rolleStyle = !erIllikvid && rolleBg === 'border' ? { backgroundColor: rolleStripe + '12', borderColor: rolleStripe + '40', borderLeftWidth: '5px', borderLeftColor: rolleStripe } : undefined;
+                        const rolleBg = bruktRolle ? '' : 'bg-gray-50/80 border border-gray-100 hover:bg-gray-100/50';
+                        const rolleStyle = bruktRolle ? { backgroundColor: rolleBgFarge, borderTop: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', borderLeftWidth: '6px', borderLeftStyle: 'solid', borderLeftColor: rolleStripe } : undefined;
                         const tooltipTekst = beskr ? `${beskr.rolle} — ${beskr.kategoriBeskrivelse}\n\n${beskr.beskrivelse}` : null;
                         return (
                           <div key={produkt.id} className={"flex items-center gap-3 p-3 rounded-xl transition-colors " + rolleBg} style={rolleStyle}>
@@ -7146,14 +7152,26 @@ export default function PensumPrognoseModell() {
                 const indeksDP = data.filter(d => d.type === 'indeks');
                 const portDP = data.filter(d => d.type === 'portefolje');
                 const synligeKomp = alleProdukter.filter(p => scatterAktiveKomponenter[p.id]);
+
+                // Beregn rene domener basert på data som faktisk vises
+                const synligData = [...indeksDP, ...synligeKomp, ...portDP];
+                const xVerdier = synligData.map(d => d.x);
+                const yVerdier = synligData.map(d => d.y);
+                const xMax = xVerdier.length > 0 ? Math.ceil((Math.max(...xVerdier) + 2) / 2) * 2 : 20;
+                const yMin = yVerdier.length > 0 ? Math.min(...yVerdier) : 0;
+                const yMax = yVerdier.length > 0 ? Math.max(...yVerdier) : 20;
+                const yDomMin = Math.floor(Math.min(0, yMin - 2));
+                const yDomMax = Math.ceil((yMax + 2) / 2) * 2;
+                const tickFmt = (v) => Math.round(v) + '%';
+
                 return (
                   <div className="rounded-lg border border-gray-100 bg-white p-4">
                     <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>{periode} — avkastning vs. risiko</p>
-                    <ResponsiveContainer width="100%" height={280}>
-                      <ScatterChart margin={{ top: 20, right: 80, bottom: 30, left: 30 }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ScatterChart margin={{ top: 20, right: 100, bottom: 30, left: 40 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis type="number" dataKey="x" name="Volatilitet" unit="%" tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} domain={[0, 'dataMax + 2']} />
-                        <YAxis type="number" dataKey="y" name="Avkastning p.a." unit="%" tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} domain={['dataMin - 2', 'dataMax + 2']} />
+                        <XAxis type="number" dataKey="x" name="Volatilitet" tickFormatter={tickFmt} tick={{ fontSize: 11 }} label={{ value: 'Volatilitet (%)', position: 'insideBottom', offset: -10, fontSize: 11 }} domain={[0, xMax]} />
+                        <YAxis type="number" dataKey="y" name="Avkastning p.a." tickFormatter={tickFmt} tick={{ fontSize: 11 }} label={{ value: 'Avkastning p.a. (%)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} domain={[yDomMin, yDomMax]} />
                         <Tooltip cursor={{ strokeDasharray: '3 3' }}
                           content={({ payload }) => {
                             if (!payload?.length) return null;
