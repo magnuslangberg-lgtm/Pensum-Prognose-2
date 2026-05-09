@@ -266,6 +266,9 @@ export default function PensumPrognoseModell() {
   const [pensumRebalanseringer, setPensumRebalanseringer] = useState([]);
   // Scatter plot: hvilke komponenter er på (default: ingen — kun Pensum-port + indekser vises)
   const [scatterAktiveKomponenter, setScatterAktiveKomponenter] = useState({});
+  // Scatter plot: vis/skjul Pensum-portefølje og indekser (default: alle på)
+  const [scatterVisPort, setScatterVisPort] = useState(true);
+  const [scatterAktiveIndekser, setScatterAktiveIndekser] = useState({ 'msci-world': true, 'oslo-bors': true, 'norske-statsobl': true });
   const [rebalanseringAktiv, setRebalanseringAktiv] = useState(false);
   const [rebalanseringer, setRebalanseringer] = useState([
     { fraAktiva: 'Eiendom', tilAktiva: 'Globale Aksjer', prosentPerAar: 10 }
@@ -5838,8 +5841,8 @@ export default function PensumPrognoseModell() {
                       if (total === 0) return null;
 
                       // Beregn høyder (proporsjonale med min-floor for synlighet)
-                      const totalH = 200;
-                      const minSection = 32;
+                      const totalH = 240;
+                      const minSection = 36;
                       const aktive = [
                         { key: 'kjerne', verdi: kjerneSum, items: kjerneNavn },
                         { key: 'stab', verdi: stabSum, items: stabNavn },
@@ -5851,16 +5854,20 @@ export default function PensumPrognoseModell() {
                         hoyder[b.key] = minSection + (b.verdi / total) * tilgjengelig;
                       });
 
-                      const svgWidth = 200;
-                      const baseW = 184;       // grunnmur (kjerne) bredde
-                      const stabW = 152;       // midt (stabilisator) bredde
-                      const taklednW = 160;    // takfeste bredde
+                      // Klassisk byggverk-proporsjoner: bred grunnmur, smalere midt-etasje, bredt saltak
+                      const svgWidth = 220;
+                      const stabW = 170;       // midt (stabilisator) bredde — selve "huset"
+                      const baseW = 200;       // grunnmur/pedestal — bredere enn huset
+                      const baseInnerW = 184;  // pedestalens øvre del (litt smalere enn ytterkant)
+                      const taklednW = 200;    // saltakets bredde nederst — bredere enn huset for overhang
                       const cx = svgWidth / 2;
 
                       const kjerneH = hoyder.kjerne || 0;
                       const stabH = hoyder.stab || 0;
                       const spissetH = hoyder.spisset || 0;
-                      const ledgeH = 6; // tynn avsats mellom etasjene
+                      const ledgeH = 7; // tynn avsats mellom etasjene
+                      const baseLip = 5; // pedestalens øvre kant-lipp
+                      const baseFoot = 4; // pedestalens nedre fotlist
 
                       // y-koordinater (fra topp av SVG)
                       const yKjerneTop = totalH - kjerneH;
@@ -5903,58 +5910,79 @@ export default function PensumPrognoseModell() {
                           <div className="flex items-start gap-4">
                             {/* SVG-byggverk */}
                             <div className="shrink-0 mx-auto">
-                              <svg width={svgWidth} height={totalH} viewBox={`0 0 ${svgWidth} ${totalH}`} style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.10))' }}>
-                                {/* Kjerne — grunnmur (bredt fundament) */}
+                              <svg width={svgWidth} height={totalH} viewBox={`0 0 ${svgWidth} ${totalH}`} style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.10))' }}>
+                                {/* Kjerne — pedestal/grunnmur med fotlist */}
                                 {kjerneH > 0 && <>
-                                  <title>{tooltipFor('kjerne')}</title>
-                                  <rect x={cx - baseW / 2} y={yKjerneTop} width={baseW} height={kjerneH} fill={PENSUM_COLORS.darkBlue} rx={2} />
-                                  {/* Avsats over kjerne */}
-                                  <rect x={cx - (baseW + 4) / 2} y={yKjerneLedge} width={baseW + 4} height={ledgeH} fill="#FFFFFF" stroke="#E5E7EB" strokeWidth={0.5} />
+                                  {/* Pedestalens hoveddel */}
+                                  <rect x={cx - baseW / 2} y={yKjerneTop + baseLip} width={baseW} height={kjerneH - baseLip - baseFoot} fill={PENSUM_COLORS.darkBlue} />
+                                  {/* Fotlist på bunnen — litt bredere overhang */}
+                                  <rect x={cx - (baseW + 6) / 2} y={yKjerneTop + kjerneH - baseFoot} width={baseW + 6} height={baseFoot} fill={PENSUM_COLORS.darkBlue} />
+                                  {/* Topplate på pedestalen — litt bredere */}
+                                  <rect x={cx - (baseW + 6) / 2} y={yKjerneTop} width={baseW + 6} height={baseLip} fill={PENSUM_COLORS.darkBlue} />
+                                  {/* Hvit avsats mellom pedestal og hus */}
+                                  <rect x={cx - baseInnerW / 2} y={yKjerneLedge} width={baseInnerW} height={ledgeH} fill="#FFFFFF" />
+                                  <line x1={cx - baseInnerW / 2} y1={yKjerneLedge + ledgeH} x2={cx + baseInnerW / 2} y2={yKjerneLedge + ledgeH} stroke="#D1D5DB" strokeWidth={0.5} />
                                 </>}
                                 {/* Tekst kjerne */}
                                 {kjerneH > 0 && (() => {
                                   const t = tekstFor(kjerneH);
-                                  const yMidt = yKjerneTop + kjerneH / 2;
+                                  const yMidt = yKjerneTop + (kjerneH - baseFoot) / 2 + baseLip / 2;
                                   return <g pointerEvents="none">
                                     <text x={cx} y={yMidt - (kjerneH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{kjerneSum.toFixed(0)}%</text>
-                                    {kjerneH >= 48 && <text x={cx} y={yMidt + 12} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>KJERNE</text>}
+                                    {kjerneH >= 48 && <text x={cx} y={yMidt + 13} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>KJERNE</text>}
                                   </g>;
                                 })()}
-                                {/* Stabilisator — midt-etasje */}
+                                {/* Stabilisator — selve "huset" med arkede vinduer */}
                                 {stabH > 0 && <>
-                                  <rect x={cx - stabW / 2} y={yStabTop} width={stabW} height={stabH} fill={PENSUM_COLORS.salmon} rx={1} />
-                                  {/* Vinduer-dekorasjon */}
-                                  {stabH >= 50 && <>
-                                    <rect x={cx - stabW / 2 + 18} y={yStabTop + stabH * 0.30} width={16} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
-                                    <rect x={cx + stabW / 2 - 34} y={yStabTop + stabH * 0.30} width={16} height={stabH * 0.40} fill="rgba(255,255,255,0.20)" rx={2} />
+                                  <rect x={cx - stabW / 2} y={yStabTop} width={stabW} height={stabH} fill={PENSUM_COLORS.salmon} />
+                                  {/* Arkede vinduer på sidene (kun hvis tilstrekkelig høyde) */}
+                                  {stabH >= 60 && <>
+                                    {(() => {
+                                      const winW = 18;
+                                      const winH = Math.min(stabH * 0.45, 50);
+                                      const winY = yStabTop + (stabH - winH) / 2;
+                                      const leftX = cx - stabW / 2 + 22;
+                                      const rightX = cx + stabW / 2 - 22 - winW;
+                                      // Arket vindu = rektangel med halvsirkel på toppen
+                                      return [leftX, rightX].map((wx, i) => (
+                                        <g key={i}>
+                                          <path
+                                            d={`M ${wx},${winY + winW/2} Q ${wx},${winY} ${wx + winW/2},${winY} Q ${wx + winW},${winY} ${wx + winW},${winY + winW/2} L ${wx + winW},${winY + winH} L ${wx},${winY + winH} Z`}
+                                            fill="rgba(255,255,255,0.22)"
+                                          />
+                                          <line x1={wx + winW/2} y1={winY + winW/2 - 2} x2={wx + winW/2} y2={winY + winH} stroke="rgba(255,255,255,0.30)" strokeWidth={1} />
+                                        </g>
+                                      ));
+                                    })()}
                                   </>}
-                                  {/* Avsats over stabilisator (gulvkant før tak) */}
-                                  <rect x={cx - (stabW + 8) / 2} y={yStabLedge} width={stabW + 8} height={ledgeH} fill="#FFFFFF" stroke="#E5E7EB" strokeWidth={0.5} />
+                                  {/* Hvit avsats/gesims mellom hus og tak */}
+                                  <rect x={cx - (stabW + 12) / 2} y={yStabLedge} width={stabW + 12} height={ledgeH} fill="#FFFFFF" />
+                                  <line x1={cx - (stabW + 12) / 2} y1={yStabLedge + ledgeH} x2={cx + (stabW + 12) / 2} y2={yStabLedge + ledgeH} stroke="#D1D5DB" strokeWidth={0.5} />
                                 </>}
-                                {/* Tekst stabilisator */}
+                                {/* Tekst stabilisator (mellom vinduene) */}
                                 {stabH > 0 && (() => {
                                   const t = tekstFor(stabH);
                                   const yMidt = yStabTop + stabH / 2;
                                   return <g pointerEvents="none">
                                     <text x={cx} y={yMidt - (stabH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{stabSum.toFixed(0)}%</text>
-                                    {stabH >= 48 && <text x={cx} y={yMidt + 12} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>STABILISATOR</text>}
+                                    {stabH >= 48 && <text x={cx} y={yMidt + 13} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>STABILISATOR</text>}
                                   </g>;
                                 })()}
-                                {/* Spisset — tak (trekant) */}
+                                {/* Spisset — saltak med svak overhang */}
                                 {spissetH > 0 && <>
                                   <polygon
                                     points={`${cx - taklednW / 2},${yRoofBase} ${cx},${yRoofPeak} ${cx + taklednW / 2},${yRoofBase}`}
                                     fill={PENSUM_COLORS.gold}
                                   />
                                 </>}
-                                {/* Tekst spisset (i taket) */}
+                                {/* Tekst spisset (sentrert i taket) */}
                                 {spissetH > 0 && (() => {
                                   const t = tekstFor(spissetH);
-                                  // Plassér tekst i øvre del av taket
+                                  // Plassér tekst slik at den ligger godt sentrert i den synlige delen av taket
                                   const yTekst = yRoofBase - spissetH * 0.40;
                                   return <g pointerEvents="none">
                                     <text x={cx} y={yTekst - (spissetH >= 40 ? 1 : 3)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{spissetSum.toFixed(0)}%</text>
-                                    {spissetH >= 40 && <text x={cx} y={yTekst + 11} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.2px' }}>SPISSET</text>}
+                                    {spissetH >= 40 && <text x={cx} y={yTekst + 11} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>SPISSET</text>}
                                   </g>;
                                 })()}
                               </svg>
@@ -7115,8 +7143,8 @@ export default function PensumPrognoseModell() {
               // Pensum-portefølje (vektet)
               const portStat3 = beregnPensumPortStat(3);
               const portStat5 = beregnPensumPortStat(5);
-              if (portStat3) data3yr.push({ x: portStat3.x, y: portStat3.y, navn: 'Pensum-porteføljen', label: 'PENSUM-PORT', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
-              if (portStat5) data5yr.push({ x: portStat5.x, y: portStat5.y, navn: 'Pensum-porteføljen', label: 'PENSUM-PORT', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
+              if (portStat3) data3yr.push({ x: portStat3.x, y: portStat3.y, navn: 'Pensum-porteføljen', label: 'Pensum-porteføljen', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
+              if (portStat5) data5yr.push({ x: portStat5.x, y: portStat5.y, navn: 'Pensum-porteføljen', label: 'Pensum-porteføljen', id: '__portfolio__', type: 'portefolje', farge: PENSUM_COLORS.darkBlue });
 
               if (data3yr.length === 0 && data5yr.length === 0) return null;
 
@@ -7147,14 +7175,16 @@ export default function PensumPrognoseModell() {
               };
 
               const renderScatter = (data, periode) => {
-                // Filtrer komponenter etter toggle-state
+                // Filtrer alle typer etter toggle-state
                 const alleProdukter = data.filter(d => d.type === 'produkt');
-                const indeksDP = data.filter(d => d.type === 'indeks');
-                const portDP = data.filter(d => d.type === 'portefolje');
+                const alleIndekser = data.filter(d => d.type === 'indeks');
+                const allePort = data.filter(d => d.type === 'portefolje');
                 const synligeKomp = alleProdukter.filter(p => scatterAktiveKomponenter[p.id]);
+                const synligeIndekser = alleIndekser.filter(i => scatterAktiveIndekser[i.id]);
+                const synligePort = scatterVisPort ? allePort : [];
 
                 // Beregn rene domener basert på data som faktisk vises
-                const synligData = [...indeksDP, ...synligeKomp, ...portDP];
+                const synligData = [...synligeIndekser, ...synligeKomp, ...synligePort];
                 const xVerdier = synligData.map(d => d.x);
                 const yVerdier = synligData.map(d => d.y);
                 const xMax = xVerdier.length > 0 ? Math.ceil((Math.max(...xVerdier) + 2) / 2) * 2 : 20;
@@ -7185,11 +7215,13 @@ export default function PensumPrognoseModell() {
                             </div>;
                           }}
                         />
-                        {/* Indekser — diamant med inline label */}
-                        <Scatter name="Indekser" data={indeksDP} shape={IndeksDiamond}>
-                          {indeksDP.map((entry, idx) => <Cell key={'i' + idx} fill={entry.farge} />)}
-                          <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
-                        </Scatter>
+                        {/* Synlige indekser — diamant med inline label */}
+                        {synligeIndekser.length > 0 && (
+                          <Scatter name="Indekser" data={synligeIndekser} shape={IndeksDiamond}>
+                            {synligeIndekser.map((entry, idx) => <Cell key={'i' + idx} fill={entry.farge} />)}
+                            <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
+                          </Scatter>
+                        )}
                         {/* Synlige komponenter — kun de som er huket av */}
                         {synligeKomp.length > 0 && (
                           <Scatter name="Komponenter" data={synligeKomp} shape={ProduktDot}>
@@ -7197,57 +7229,111 @@ export default function PensumPrognoseModell() {
                             <LabelList dataKey="label" position="right" offset={10} fontSize={10} fontWeight={500} fill={PENSUM_COLORS.darkBlue} />
                           </Scatter>
                         )}
-                        {/* Pensum-porteføljen — øverst (stjerne) */}
-                        <Scatter name="Pensum-porteføljen" data={portDP} shape={PortStar}>
-                          {portDP.map((entry, idx) => <Cell key={'pf' + idx} fill={PENSUM_COLORS.gold} />)}
-                          <LabelList dataKey="label" position="right" offset={14} fontSize={10} fontWeight={700} fill={PENSUM_COLORS.gold} />
-                        </Scatter>
+                        {/* Pensum-porteføljen — stjerne (kan skjules) */}
+                        {synligePort.length > 0 && (
+                          <Scatter name="Pensum-porteføljen" data={synligePort} shape={PortStar}>
+                            {synligePort.map((entry, idx) => <Cell key={'pf' + idx} fill={PENSUM_COLORS.gold} />)}
+                            <LabelList dataKey="label" position="right" offset={14} fontSize={10} fontWeight={700} fill={PENSUM_COLORS.gold} />
+                          </Scatter>
+                        )}
                       </ScatterChart>
                     </ResponsiveContainer>
                   </div>
                 );
               };
 
-              // Komponent-toggles + felles legend
+              // Toggle-panel — Pensum-portefølje, indekser og komponenter
               const renderToggles = (data) => {
                 const alleProdukter = data.filter(d => d.type === 'produkt');
-                if (alleProdukter.length === 0) return null;
-                const alleAktiv = alleProdukter.every(p => scatterAktiveKomponenter[p.id]);
+                const alleIndekser = data.filter(d => d.type === 'indeks');
+                const allePort = data.filter(d => d.type === 'portefolje');
+                if (alleProdukter.length === 0 && alleIndekser.length === 0 && allePort.length === 0) return null;
+                const alleKompAktiv = alleProdukter.length > 0 && alleProdukter.every(p => scatterAktiveKomponenter[p.id]);
                 return (
                   <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wide text-slate-700">Vis individuelle komponenter</span>
-                      <div className="flex gap-2">
+                    {/* Sammensatt portefølje + indekser */}
+                    <div className="pb-3 border-b border-slate-200">
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-700 mb-2">Sammensatt portefølje &amp; indekser</div>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-1.5">
+                        {allePort.length > 0 && (
+                          <label className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-white/50 px-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={scatterVisPort}
+                              onChange={(e) => setScatterVisPort(e.target.checked)}
+                              className="w-3 h-3 rounded"
+                              style={{ accentColor: PENSUM_COLORS.gold }}
+                            />
+                            <svg width="14" height="14" viewBox="0 0 14 14" className="shrink-0">
+                              <polygon
+                                points={(() => {
+                                  const cx = 7, cy = 7, r1 = 6, r2 = 2.6, n = 5;
+                                  const pts = [];
+                                  for (let i = 0; i < n * 2; i++) {
+                                    const r = i % 2 === 0 ? r1 : r2;
+                                    const ang = (Math.PI / n) * i - Math.PI / 2;
+                                    pts.push(`${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`);
+                                  }
+                                  return pts.join(' ');
+                                })()}
+                                fill={scatterVisPort ? PENSUM_COLORS.gold : '#CBD5E1'}
+                              />
+                            </svg>
+                            <span className={"font-medium " + (scatterVisPort ? "text-gray-800" : "text-gray-500")} style={{ color: scatterVisPort ? PENSUM_COLORS.gold : undefined }}>Pensum-porteføljen</span>
+                          </label>
+                        )}
+                        {alleIndekser.map(idx => {
+                          const aktiv = !!scatterAktiveIndekser[idx.id];
+                          return (
+                            <label key={idx.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-white/50 px-1 rounded">
+                              <input
+                                type="checkbox"
+                                checked={aktiv}
+                                onChange={(e) => setScatterAktiveIndekser(prev => ({ ...prev, [idx.id]: e.target.checked }))}
+                                className="w-3 h-3 rounded"
+                                style={{ accentColor: idx.farge }}
+                              />
+                              <span className="w-2.5 h-2.5 shrink-0 transform rotate-45" style={{ backgroundColor: aktiv ? idx.farge : '#CBD5E1', border: aktiv ? '1px solid #0D2240' : '1px solid #94A3B8' }}></span>
+                              <span className={"italic truncate " + (aktiv ? "text-gray-800" : "text-gray-500")}>{idx.navn}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Komponenter */}
+                    {alleProdukter.length > 0 && <div className="pt-3">
+                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-700">Individuelle komponenter</span>
                         <button
                           onClick={() => {
                             const ny = {};
-                            alleProdukter.forEach(p => { ny[p.id] = !alleAktiv; });
+                            alleProdukter.forEach(p => { ny[p.id] = !alleKompAktiv; });
                             setScatterAktiveKomponenter(ny);
                           }}
                           className="text-[10px] px-2 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
                         >
-                          {alleAktiv ? 'Skjul alle' : 'Vis alle'}
+                          {alleKompAktiv ? 'Skjul alle' : 'Vis alle'}
                         </button>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                      {alleProdukter.map(p => {
-                        const aktiv = !!scatterAktiveKomponenter[p.id];
-                        return (
-                          <label key={p.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-white/50 px-1 rounded">
-                            <input
-                              type="checkbox"
-                              checked={aktiv}
-                              onChange={(e) => setScatterAktiveKomponenter(prev => ({ ...prev, [p.id]: e.target.checked }))}
-                              className="w-3 h-3 rounded"
-                              style={{ accentColor: p.farge }}
-                            />
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: aktiv ? p.farge : '#CBD5E1' }}></span>
-                            <span className={"truncate " + (aktiv ? "text-gray-800 font-medium" : "text-gray-500")}>{p.navn}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {alleProdukter.map(p => {
+                          const aktiv = !!scatterAktiveKomponenter[p.id];
+                          return (
+                            <label key={p.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-white/50 px-1 rounded">
+                              <input
+                                type="checkbox"
+                                checked={aktiv}
+                                onChange={(e) => setScatterAktiveKomponenter(prev => ({ ...prev, [p.id]: e.target.checked }))}
+                                className="w-3 h-3 rounded"
+                                style={{ accentColor: p.farge }}
+                              />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: aktiv ? p.farge : '#CBD5E1' }}></span>
+                              <span className={"truncate " + (aktiv ? "text-gray-800 font-medium" : "text-gray-500")}>{p.navn}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>}
                   </div>
                 );
               };
@@ -7255,7 +7341,7 @@ export default function PensumPrognoseModell() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                     <h3 className="text-lg font-semibold text-white">Avkastning vs. risiko</h3>
-                    <p className="text-xs text-blue-200 mt-0.5">★ Pensum-porteføljen (vektet) · ● komponenter · ◆ referanseindekser. Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
+                    <p className="text-xs text-blue-200 mt-0.5">★ Pensum-porteføljen · ● komponenter · ◆ referanseindekser. Bruk panelet under for å vise/skjule punkter. Punkter øverst til venstre indikerer beste risikojusterte avkastning.</p>
                   </div>
                   <div className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
