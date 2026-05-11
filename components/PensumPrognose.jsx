@@ -11,7 +11,7 @@ const PENSUM_LOGO = 'data:image/webp;base64,UklGRrgYAABXRUJQVlA4WAoAAAAwAAAASwIA
 
 export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
-  const [showPessimistic, setShowPessimistic] = useState(false);
+  const [showPessimistic, setShowPessimistic] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
@@ -110,6 +110,7 @@ export default function PensumPrognoseModell() {
     // Standard-sider (alltid synlige, ikke fjernbare)
     { id: 'cover', label: 'Forside', standard: true, aktiv: true },
     { id: 'folgebrev', label: 'Personlig følgebrev', standard: true, aktiv: true },
+    { id: 'kundeprofil', label: 'Kundeprofil og egnethet', standard: true, aktiv: true },
     { id: 'utgangspunkt', label: 'Utgangspunkt og mandat', standard: true, aktiv: true },
     { id: 'byggesteiner', label: 'Hvordan porteføljen er bygget', standard: true, aktiv: true },
     { id: 'allokering', label: 'Allokering & sammensetning', standard: true, aktiv: true },
@@ -300,7 +301,7 @@ export default function PensumPrognoseModell() {
   const [historikkPeriode, setHistorikkPeriode] = useState('5y'); // 1y, 3y, 5y, max
   const [visScenarioanalyse, setVisScenarioanalyse] = useState(false);
   const [scenarioLosninger, setScenarioLosninger] = useState({ pessimistisk: null, optimistisk: null });
-  const [showPessimisticLosninger, setShowPessimisticLosninger] = useState(false);
+  const [showPessimisticLosninger, setShowPessimisticLosninger] = useState(true);
   const [visPortefoljSnapshots, setVisPortefoljSnapshots] = useState(false);
   const [valgteProdukterHistorikk, setValgteProdukterHistorikk] = useState(['global-core-active', 'global-edge', 'basis']);
   
@@ -1662,13 +1663,13 @@ export default function PensumPrognoseModell() {
                 <div className="space-y-6">
                   <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Takk for en god samtale. Basert på dine mål, din risikotoleranse og den investeringshorisonten vi har diskutert, har vi satt sammen et porteføljeforslag som vi mener gir deg den beste balansen mellom vekst og stabilitet.
+                    Takk for en god samtale. Basert på opplysningene du har gitt om mål, risikotoleranse, finansiell situasjon og investeringshorisont, har vi utarbeidet et porteføljeforslag som etter Pensums vurdering kan være egnet, forutsatt full egnethetsvurdering.
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Vi har bygget porteføljen rundt tre klare roller — en bred kjerne som driver langsiktig verdiskaping, en rentedel som stabiliserer og gir løpende kontantstrøm, og utvalgte satellitter som tilfører meravkastningspotensial.
+                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Porteføljen er bygget rundt tre roller — en bred kjerne som er sentral kilde til langsiktig avkastning, en rentedel som kan bidra til å dempe svingninger (men også kan falle i verdi), og utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    På de neste sidene går vi gjennom selve porteføljekonstruksjonen, historisk utvikling, risikoprofil, og de enkelte produktene i detalj. Ikke nøl med å ta kontakt dersom du har spørsmål.
+                    På de neste sidene gjennomgår vi porteføljekonstruksjonen, historisk utvikling, risikofaktorer og de enkelte produktene. Forventet avkastning, scenarioer og historikk er ingen garanti for fremtidig avkastning — kunden kan tape deler av investert kapital. Eventuell investering forutsetter gjennomført egnethetsvurdering, mottatt KID/prospekt og kostnadsoppstilling.
                   </p>
                 </div>
                 <div className="pt-6 mt-4 border-t border-gray-200">
@@ -1716,6 +1717,53 @@ export default function PensumPrognoseModell() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        );
+      }
+
+      case 'kundeprofil': {
+        const _belop = investertBelop !== null ? investertBelop : totalKapital;
+        const harBaerekraft = false; // Senere knyttes til faktisk kundeflagg
+        return (
+          <div data-rapport-slide="kundeprofil" className="page-break-before space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Kundeprofil og egnethetsgrunnlag</h2>
+              <p className="text-sm text-gray-600">Opplysninger lagt til grunn for Pensums vurdering av egnethet. Dersom opplysningene er ufullstendige eller endres, kan vurderingen og forslaget endres.</p>
+            </div>
+            <div className="rounded-xl border-2 border-blue-200 bg-blue-50/30 p-5">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                {[
+                  { label: 'Kunde', verdi: kundeNavn || kundeSelskap || '—' },
+                  { label: 'Kundeklassifisering', verdi: 'Ikke-profesjonell (med mindre annet er avtalt)' },
+                  { label: 'Investerbart beløp', verdi: formatCurrency(_belop) },
+                  { label: 'Tidshorisont', verdi: horisont + ' år' },
+                  { label: 'Risikoprofil', verdi: valgtPensumProfil || '—' },
+                  { label: 'Likviditetsbehov', verdi: likviditetsbehov || '—' },
+                  { label: 'Investeringsformål', verdi: investeringsFormaal || '—' },
+                  { label: 'Bærekraftspreferanser', verdi: harBaerekraft ? 'Hensyntatt' : 'Avklart — ingen særskilte preferanser' },
+                ].map(({ label, verdi }, i) => (
+                  <div key={i} className="border-b border-blue-100 pb-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+                    <p className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{verdi}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+              <h3 className="font-bold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Vurderingsgrunnlag</h3>
+              <p className="text-xs text-gray-700 leading-relaxed">
+                Pensum har på bakgrunn av kundens opplysninger om <strong>investeringsmål, tidshorisont, risikotoleranse, finansiell situasjon, evne til å bære tap, kunnskap og erfaring</strong> samt eventuelle bærekraftspreferanser, vurdert at det fremlagte forslaget kan være egnet — forutsatt at full egnethetsvurdering er gjennomført før eventuell ordre/tegning.
+              </p>
+              <p className="text-xs text-gray-700 leading-relaxed">
+                Eventuelle <strong>begrensninger</strong> (skatt, valuta, konsentrasjon, likviditet) skal være avklart i kundesamtalen og dokumentert i egen egnethetserklæring. Dersom kunden er en juridisk person, bekrefter rådgiver at fullmaktsforhold og representantens beslutningsrett er vurdert.
+              </p>
+            </div>
+            <div className="rounded-xl border-l-4 border-amber-300 border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-800 mb-1">Status</p>
+              <p className="text-xs text-amber-900 leading-relaxed">
+                Dette dokumentet er et investeringsforslag utarbeidet på bakgrunn av kundens opplysninger. <strong>Forslaget forutsetter at full egnethetsvurdering er gjennomført før eventuell investering.</strong> Dersom slik egnethetsvurdering ikke er gjennomført, er dokumentet kun et foreløpig diskusjonsgrunnlag og utgjør ikke en personlig investeringsanbefaling. Separat egnethetserklæring utleveres før eventuell ordre/tegning.
+              </p>
             </div>
           </div>
         );
@@ -3647,7 +3695,7 @@ export default function PensumPrognoseModell() {
               // Determine slide title based on chart type
               const chartType = card.getAttribute('data-chart-type');
               let slideTitle = 'Historisk avkastning — benchmark';
-              if (chartType === 'drawdown') slideTitle = 'Risiko og nedsidebeskyttelse';
+              if (chartType === 'drawdown') slideTitle = 'Sentrale risikofaktorer og mulige tap';
 
               // Create a temporary wrapper with the title above the card
               const titleEl = document.createElement('div');
@@ -6916,9 +6964,9 @@ export default function PensumPrognoseModell() {
               const pessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : Math.round((baseAvk * 0.45) * 10) / 10;
               const optAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : Math.round((baseAvk * 1.4) * 10) / 10;
               const scenarioer = [
-                { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: pessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
-                { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Forventet utfall', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Gradvis normalisering av renter, moderat global vekst, sterk aktiv fondsseleksjon som leverer meravkastning over indeks.' },
-                { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: optAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
+                { id: 'pessimistisk', tittel: 'Stress-scenario', undertittel: 'Negativ markedsutvikling', avk: pessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Kraftig markedsfall i deler av perioden. Aksjer faller betydelig, kredittspreader øker, og porteføljen kan gi negativ totalavkastning over perioden. Rentedelen kan dempe noen av svingningene, men kan også falle i verdi.' },
+                { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Modellbasert illustrasjon', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Modellbasert illustrasjon basert på CMA-forutsetninger. Ikke en prognose eller garanti for fremtidig avkastning.' },
+                { id: 'optimistisk', tittel: 'Positivt scenario', undertittel: 'Gunstig markedsutvikling', avk: optAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere markedsutvikling og vellykket aktiv fondsseleksjon enn modellforutsetningene. Satellittene gir positiv bidrag.' },
               ];
               const scData = [];
               for (let i = 0; i <= horisont; i++) {
@@ -7653,7 +7701,7 @@ export default function PensumPrognoseModell() {
                         <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                             <div>
-                              <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Risiko og nedsidebeskyttelse</h4>
+                              <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Sentrale risikofaktorer og mulige tap</h4>
                               <p className="text-xs text-gray-400 mt-0.5">Drawdown fra løpende toppverdi (0% = all-time high i perioden)</p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -9951,7 +9999,7 @@ export default function PensumPrognoseModell() {
                       <h3 className="text-lg font-bold mb-5" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljelogikk</h3>
                       <div className="space-y-5">
                         {[
-                          { num: '1', title: 'Bygg robust kjerne', desc: 'Kjerneporteføljen gir bred global eksponering og fungerer som hovedmotor for langsiktig verdiskaping.', color: PENSUM_COLORS.darkBlue },
+                          { num: '1', title: 'Bygg bred kjerne', desc: 'Kjerneporteføljen gir bred global eksponering og er sentral kilde til forventet langsiktig avkastning.', color: PENSUM_COLORS.darkBlue },
                           { num: '2', title: 'Stabiliser porteføljen', desc: 'Rentedelen skal bidra med løpende avkastning og redusere svingningene i samlet portefølje.', color: PENSUM_COLORS.teal },
                           { num: '3', title: 'Bruk satellitter selektivt', desc: 'Utvalgte satellitter brukes for å øke diversifiseringen og styrke avkastningspotensialet over tid.', color: PENSUM_COLORS.salmon },
                         ].map((step) => (
@@ -10025,7 +10073,7 @@ export default function PensumPrognoseModell() {
                         color: PENSUM_COLORS.darkBlue,
                         borderColor: PENSUM_COLORS.lightBlue,
                         tittel: kjerne.map(p => p.navn?.replace('Pensum ', '')).join(', ') || 'Kjerneeksponering',
-                        beskrivelse: 'Gir bred eksponering og fungerer som hovedmotor for langsiktig verdiskaping.',
+                        beskrivelse: 'Gir bred eksponering og er sentral kilde til forventet langsiktig avkastning.',
                         bidrag: ['Global basiseksponering', 'God forvalterdiversifisering', 'Tydelig rolle som hovedmotor']
                       },
                       {
@@ -10241,9 +10289,9 @@ export default function PensumPrognoseModell() {
                   const rapportPessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : Math.round((baseAvk * 0.45) * 10) / 10;
                   const rapportOptAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : Math.round((baseAvk * 1.4) * 10) / 10;
                   const scenarioer = [
-                    { id: 'pessimistisk', tittel: 'Pessimistisk', undertittel: 'Vedvarende uro', avk: rapportPessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Langvarig lavvekst, geopolitisk uro, utvidet volatilitet. Rentedelen beskytter, men aksjedelen gir begrenset avkastning.' },
-                    { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Forventet utfall', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Gradvis normalisering av renter, moderat global vekst, sterk aktiv fondsseleksjon som leverer meravkastning over indeks.' },
-                    { id: 'optimistisk', tittel: 'Optimistisk', undertittel: 'Sterk medvind', avk: rapportOptAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere vekst enn forventet, tiltagende produktivitet (AI), god renteutvikling. Satellittene kapitaliserer på oppside.' },
+                    { id: 'pessimistisk', tittel: 'Stress-scenario', undertittel: 'Negativ markedsutvikling', avk: rapportPessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: 'Kraftig markedsfall i deler av perioden. Aksjer faller betydelig, kredittspreader øker, og porteføljen kan gi negativ totalavkastning over perioden. Rentedelen kan dempe noen av svingningene, men kan også falle i verdi.' },
+                    { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Modellbasert illustrasjon', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Modellbasert illustrasjon basert på CMA-forutsetninger. Ikke en prognose eller garanti for fremtidig avkastning.' },
+                    { id: 'optimistisk', tittel: 'Positivt scenario', undertittel: 'Gunstig markedsutvikling', avk: rapportOptAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterkere markedsutvikling og vellykket aktiv fondsseleksjon enn modellforutsetningene. Satellittene gir positiv bidrag.' },
                   ];
                   // Generate scenario projection data for chart
                   const scenarioData = [];
@@ -10534,16 +10582,34 @@ export default function PensumPrognoseModell() {
                           <div data-chart-type="drawdown" className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                               <div>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Risiko og nedsidebeskyttelse</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">Ved markedsfall har porteføljen historisk falt klart mindre enn en ren aksjeeksponering.</p>
+                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Sentrale risikofaktorer og mulige tap</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">Historisk drawdown vist nedenfor er ingen garanti for fremtidig tap. Faktisk tap kan bli vesentlig høyere.</p>
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
-                                  Portefølje maks: {portMaxDDR.toFixed(1)}%
+                                  Historisk maks: {portMaxDDR.toFixed(1)}%
                                 </span>
                                 {Object.entries(indeksMaxDDR).map(([navn, dd]) => (
                                   <span key={navn} className="text-xs text-gray-500">{navn}: {dd.toFixed(1)}%</span>
                                 ))}
+                              </div>
+                            </div>
+                            {/* Risiko-boks med eksplisitte risikofaktorer */}
+                            <div className="px-5 pt-5 pb-2">
+                              <div className="rounded-lg border-l-4 border border-red-300 bg-red-50 p-4">
+                                <p className="text-xs font-bold uppercase tracking-wide text-red-700 mb-2">Mulighet for tap — viktige risikofaktorer</p>
+                                <p className="text-xs text-gray-700 leading-relaxed mb-2">
+                                  Porteføljen kan svinge betydelig, og kunden må kunne tåle perioder med vesentlige fall. <strong>Historiske fall begrenser ikke fremtidig tap</strong>. Ved markedsstress kan både aksjefond og rentefond falle samtidig. Kunden kan tape deler av investert kapital.
+                                </p>
+                                <ul className="text-[11px] text-gray-700 leading-relaxed pl-4 list-disc space-y-0.5">
+                                  <li><strong>Aksjemarkedsrisiko:</strong> Verdiene følger globale aksjemarkeder og kan falle raskt</li>
+                                  <li><strong>Kreditt- og spreadrisiko:</strong> Høyrente/IG-fond kan falle ved mislighold og spread-utvidelse</li>
+                                  <li><strong>Valutarisiko:</strong> Mange fond har eksponering mot fremmed valuta</li>
+                                  <li><strong>Konsentrasjonsrisiko:</strong> Eksponering mot Norge/Norden eller enkeltsektorer kan øke svingninger</li>
+                                  <li><strong>Aktiv forvalterrisiko:</strong> Aktive fond kan underprestere mot indeks</li>
+                                  <li><strong>Likviditetsrisiko:</strong> Underliggende posisjoner kan være illikvide i stress</li>
+                                  <li><strong>Modellrisiko:</strong> Scenarioer og forventet avkastning er modellbaserte illustrasjoner</li>
+                                </ul>
                               </div>
                             </div>
                             <div className="p-5">
@@ -10944,11 +11010,15 @@ export default function PensumPrognoseModell() {
                   <div className="flex justify-center mb-12">
                     <img src={PENSUM_LOGO} alt="Pensum Asset Management" className="h-16" style={{ opacity: 0.2 }} />
                   </div>
-                  <div className="border-t border-gray-200 pt-8 space-y-5 text-sm text-gray-500 leading-relaxed max-w-3xl mx-auto">
-                    <h3 className="font-bold text-base text-gray-700">Viktig informasjon</h3>
-                    <p>Denne prognosen er kun veiledende og basert på historiske avkastningsforventninger. Historisk avkastning er ingen garanti for fremtidig avkastning. Verdien av investeringer kan både øke og synke. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks Drawdown viser det største kursfallet fra topp til bunn. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
-                    <p>Pensum Asset Management AS er regulert av Finanstilsynet og innehar konsesjon som verdipapirforetak. Investeringsrådgivning gis i henhold til verdipapirhandelloven. Kostnader og gebyrer kan påvirke netto avkastning. For fullstendig informasjon om risiko, kostnader og vilkår, se Pensums nøkkelinformasjonsdokumenter (KID) og prospekter som er tilgjengelige på forespørsel.</p>
-                    <p>Dette dokumentet utgjør ikke et tilbud om kjøp eller salg av finansielle instrumenter, men er ment som beslutningsgrunnlag for diskusjon mellom rådgiver og kunde.</p>
+                  <div className="border-t border-gray-200 pt-8 space-y-4 text-sm text-gray-600 leading-relaxed max-w-3xl mx-auto">
+                    <h3 className="font-bold text-base text-gray-800">Viktig informasjon</h3>
+                    <p>Dette dokumentet er utarbeidet av Pensum Asset Management AS som ledd i en rådgivningsprosess. Forslaget bygger på de opplysninger kunden har gitt om blant annet investeringsmål, tidshorisont, risikotoleranse, finansiell situasjon, evne til å bære tap, kunnskap og erfaring samt eventuelle bærekraftspreferanser. Dersom opplysningene er ufullstendige eller endres, kan vurderingen og forslaget endres.</p>
+                    <p>Historisk avkastning, simuleringer, scenarioer og forventet avkastning er <strong>ikke garanti for fremtidig avkastning</strong>. Faktisk avkastning kan bli vesentlig lavere enn illustrert, og kunden kan tape deler av investert kapital. Verdien av investeringer kan svinge som følge av blant annet markedsutvikling, renter, valuta, kredittspreader, likviditet og forvaltervalg.</p>
+                    <p>Kostnader, gebyrer, skatt og valutaforhold vil påvirke nettoavkastningen. Før eventuell investering skal kunden motta relevant informasjon om kostnader, risiko, produktvilkår, KID/prospekt og Pensums vurdering av egnethet. Dokumentet utgjør ikke et bindende tilbud om kjøp eller salg av finansielle instrumenter. Eventuell investering forutsetter kundens beslutning, nødvendige avtaler, kundeetablering og gjennomført egnethetsvurdering.</p>
+                    <h4 className="font-semibold text-sm text-gray-800 mt-4">Produktunivers og interessekonflikt</h4>
+                    <p>Pensum anbefaler produkter fra eget/anbefalt produktunivers. Pensum kan ha økonomisk interesse i at kunden velger løsninger som Pensum rådgir, distribuerer eller forvalter. Pensum har rutiner for å identifisere og håndtere interessekonflikter, og anbefalingen skal være basert på kundens interesser og egnethet. Pensum yter ikke uavhengig rådgivning i lovens forstand.</p>
+                    <h4 className="font-semibold text-sm text-gray-800 mt-4">Regulatorisk informasjon</h4>
+                    <p>Pensum Asset Management AS er regulert av Finanstilsynet og innehar konsesjon som verdipapirforetak. Investeringsrådgivning gis i henhold til verdipapirhandelloven. Sharpe Ratio er beregnet med risikofri rente på 3% p.a. Volatilitet er annualisert standardavvik basert på månedlige avkastninger. Maks drawdown viser historisk største kursfall fra topp til bunn — det er ingen garanti mot større fall fremover. Avkastningstall er oppdatert til og med {RAPPORT_DATO}.</p>
                   </div>
                 </div>}
               </div>
