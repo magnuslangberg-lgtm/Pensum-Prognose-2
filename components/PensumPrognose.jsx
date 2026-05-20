@@ -14,6 +14,7 @@ export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
   const [showPessimistic, setShowPessimistic] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
+  const [visOptimistisk, setVisOptimistisk] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
@@ -2881,9 +2882,15 @@ export default function PensumPrognoseModell() {
   }, [sammenligningAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont]);
 
   const kombinertVerdiutvikling = useMemo(() => {
-    if (!showComparison) return verdiutvikling;
-    return verdiutvikling.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
-  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison]);
+    let data = verdiutvikling;
+    if (showComparison) {
+      data = data.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
+    }
+    if (visOptimistisk) {
+      data = data.map((row, idx) => ({ ...row, optimistiskTotal: scenarioData[idx]?.optimistisk || 0 }));
+    }
+    return data;
+  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison, visOptimistisk, scenarioData]);
 
   const scenarioData = useMemo(() => {
     const data = [];
@@ -5500,7 +5507,15 @@ export default function PensumPrognoseModell() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">{showComparison ? "Prognose - Sammenligning" : "Prognose på utvikling i formuesverdi"}</h3></div>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">{showComparison ? "Prognose - Sammenligning" : "Prognose på utvikling i formuesverdi"}</h3>
+                <button
+                  onClick={() => setVisOptimistisk(v => !v)}
+                  className={"text-xs px-3 py-1.5 rounded-lg font-medium transition-colors " + (visOptimistisk ? "bg-emerald-500 text-white" : "bg-white/15 text-blue-100 hover:bg-white/25")}
+                >
+                  {visOptimistisk ? `Optimistisk (${formatPercent(scenarioParams.optimistisk)})` : 'Vis optimistisk scenario'}
+                </button>
+              </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={400}>
                   <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
@@ -5523,11 +5538,12 @@ export default function PensumPrognoseModell() {
                       const nice = niceNumbers.find(n => n >= mantissa) || 10;
                       return nice * Math.pow(10, exp);
                     }]} />
-                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
+                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n === 'optimistiskTotal' ? `Optimistisk (${formatPercent(scenarioParams.optimistisk)})` : n]} />
                     <Legend iconType="circle" />
                     {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
+                    {visOptimistisk && <Line type="monotone" dataKey="optimistiskTotal" name={`Optimistisk (${formatPercent(scenarioParams.optimistisk)})`} stroke="#059669" strokeWidth={2} strokeDasharray="6 3" dot={false} />}
                     {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
