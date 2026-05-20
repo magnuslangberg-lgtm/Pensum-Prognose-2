@@ -2732,7 +2732,7 @@ export default function PensumPrognoseModell() {
 
   const pieData = useMemo(() => {
     const data = [];
-    kategorierData.forEach(cat => {
+    kategorierData.filter(cat => cat.kategori !== 'alternative').forEach(cat => {
       if (cat.vekt > 0) {
         if (cat.items.length > 1) {
           cat.items.filter(i => i.vekt > 0).forEach(item => data.push({ name: item.navn, value: item.vekt }));
