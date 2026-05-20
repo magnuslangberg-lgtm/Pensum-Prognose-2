@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
+import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ReferenceDot, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
@@ -18,6 +18,7 @@ export default function PensumPrognoseModell() {
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
   const [visDelmal, setVisDelmal] = useState(false);  // Vis delmål-seksjon
+  const [malAktiv, setMalAktiv] = useState(false);  // Hele mål-seksjonen aktiv (valgfri som lån/rebalansering)
   const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0, visIGraf: true, malAar: 0 });  // Hovedmål
   const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
@@ -4558,20 +4559,6 @@ export default function PensumPrognoseModell() {
                   </button>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Årlig kontantstrøm</h3></div>
-                <div className="p-6">
-                  <CurrencyInput label="Årlig innskudd" value={innskudd} onChange={setInnskudd} />
-                  <CurrencyInput label="Årlige uttak" value={uttak} onChange={setUttak} />
-                  <div className="border-t border-gray-100 pt-4 mt-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Netto kontantstrøm</span>
-                      <span className={"text-xl font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* ── Eksisterende portefølje ── */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
                 <button
@@ -5417,24 +5404,44 @@ export default function PensumPrognoseModell() {
               )}
             </div>
 
-            {/* Rebalansering panel */}
+            {/* Kontantstrøm + Rebalansering panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setRebalanseringAktiv(!rebalanseringAktiv)}>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-white">Årlig rebalansering</h3>
-                  {!rebalanseringAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-white">{rebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
-                  <div className="relative">
-                    <input type="checkbox" checked={rebalanseringAktiv} onChange={(e) => setRebalanseringAktiv(e.target.checked)} className="sr-only" />
-                    <div className={"w-11 h-6 rounded-full transition-colors " + (rebalanseringAktiv ? "bg-green-500" : "bg-gray-400")}></div>
-                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (rebalanseringAktiv ? "translate-x-5" : "")}></div>
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Årlig kontantstrøm og rebalansering</h3>
+              </div>
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig innskudd (kr)</label>
+                    <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                   </div>
-                </label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlige uttak (kr)</label>
+                    <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                  </div>
+                  <div className="rounded-lg p-3" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
+                    <div className="text-xs font-medium text-gray-500 mb-0.5">Netto kontantstrøm</div>
+                    <div className={"text-xl font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4 flex items-center justify-between cursor-pointer" onClick={() => setRebalanseringAktiv(!rebalanseringAktiv)}>
+                  <div className="flex items-center gap-3">
+                    <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig rebalansering</h4>
+                    {!rebalanseringAktiv && <span className="text-xs text-gray-400">(klikk for å aktivere)</span>}
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs text-gray-500">{rebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                    <div className="relative">
+                      <input type="checkbox" checked={rebalanseringAktiv} onChange={(e) => setRebalanseringAktiv(e.target.checked)} className="sr-only" />
+                      <div className={"w-11 h-6 rounded-full transition-colors " + (rebalanseringAktiv ? "bg-green-500" : "bg-gray-300")}></div>
+                      <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (rebalanseringAktiv ? "translate-x-5" : "")}></div>
+                    </div>
+                  </label>
+                </div>
               </div>
               {rebalanseringAktiv && (
-                <div className="p-6 space-y-4">
+                <div className="px-6 pb-6 space-y-4">
                   {rebalanseringer.map((reb, rebIdx) => (
                     <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                       <div>
@@ -5485,52 +5492,150 @@ export default function PensumPrognoseModell() {
               )}
             </div>
 
-            {/* ====== HOVEDMÅL ====== */}
-            {(() => {
-              const naarAarRow = hovedmal.belop > 0 ? verdiutvikling.find(r => r.total >= hovedmal.belop) : null;
-              const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
-              const fremgang = hovedmal.belop > 0 ? Math.min(100, (sluttverdi / hovedmal.belop) * 100) : 0;
-              const aarTilMaal = hovedmal.malAar > 0 ? hovedmal.malAar - new Date().getFullYear() : 0;
-              // Goal-seek: hvilken årlig avkastning trengs for å nå målet innen ønsket år?
-              // FV = PV*(1+r)^n + PMT*((1+r)^n - 1)/r   — løses numerisk
-              const beregnNoedvendigAvkastning = (FV, PV, PMT, n) => {
-                if (n <= 0 || FV <= 0 || PV < 0) return null;
-                if (PV === 0 && PMT === 0) return null;
-                let low = -0.5, high = 1.5;
-                for (let iter = 0; iter < 80; iter++) {
-                  const mid = (low + high) / 2;
-                  const fv = mid === 0
-                    ? PV + PMT * n
-                    : PV * Math.pow(1 + mid, n) + PMT * (Math.pow(1 + mid, n) - 1) / mid;
-                  if (fv < FV) low = mid; else high = mid;
-                  if (Math.abs(high - low) < 1e-7) break;
-                }
-                return (low + high) / 2 * 100;
-              };
-              const nettoKontantPMT = nettoKontantstrom - (akkumulerRenter ? 0 : aarligRentekostnad);
-              const noedvendigAvk = hovedmal.belop > 0 && aarTilMaal > 0
-                ? beregnNoedvendigAvkastning(hovedmal.belop, effektivtInvestertBelop, nettoKontantPMT, aarTilMaal)
-                : null;
-              const avkastningsDiff = noedvendigAvk != null ? noedvendigAvk - vektetAvkastning : null;
-              return (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                    <h3 className="text-lg font-semibold text-white">Mål & milepæler</h3>
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
-                        <span className="text-xs text-blue-100">Vis hovedmål i graf</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={visDelmal} onChange={(e) => setVisDelmal(e.target.checked)} className="w-4 h-4 rounded" />
-                        <span className="text-xs text-blue-100">Bruk delmål</span>
-                      </label>
-                      {hovedmal.belop > 0 && (naarAarRow
-                        ? <span className="text-sm font-medium text-emerald-300 bg-emerald-900/30 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
-                        : <span className="text-sm font-medium text-amber-300 bg-amber-900/30 px-3 py-1 rounded-full">Nås ikke innen {horisont} år</span>)}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
+              <StatCard label="Forventet avkastning" value={formatPercent(vektetAvkastning)} subtext="årlig" />
+              <StatCard label="Sluttverdi" value={formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)} subtext={"etter " + horisont + " år"} />
+              <StatCard label="Total avkastning" value={formatCurrency((verdiutvikling[verdiutvikling.length - 1]?.total || 0) - effektivtInvestertBelop - (nettoKontantstrom * horisont))} color={PENSUM_COLORS.green} />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">{showComparison ? "Prognose - Sammenligning" : "Prognose på utvikling i formuesverdi"}</h3></div>
+              <div className="p-6">
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
+                    <defs>
+                      <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                        <rect width="8" height="8" fill="#FEE2E2" />
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
+                      </pattern>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                    <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
+                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} domain={[0, (dataMax) => {
+                      const referanseVerdier = [dataMax, (malAktiv && hovedmal.visIGraf) ? hovedmal.belop : 0, totalLaan, ...(malAktiv && visDelmal ? delmal.map(m => m.belop || 0) : [])];
+                      const maxRef = Math.max(...referanseVerdier);
+                      if (maxRef <= 0) return 100;
+                      const buffer = maxRef * 1.08;
+                      const exp = Math.floor(Math.log10(buffer));
+                      const niceNumbers = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+                      const mantissa = buffer / Math.pow(10, exp);
+                      const nice = niceNumbers.find(n => n >= mantissa) || 10;
+                      return nice * Math.pow(10, exp);
+                    }]} />
+                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
+                    <Legend iconType="circle" />
+                    {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
+                    {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
+                    {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
+                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
+                    {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
+                    {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
+                      const naarRow = verdiutvikling.find(r => r.total >= hovedmal.belop);
+                      if (!naarRow) return null;
+                      return <ReferenceDot x={naarRow.year} y={hovedmal.belop} r={9} fill="#059669" stroke="#FFFFFF" strokeWidth={2} ifOverflow="extendDomain" label={{ value: '✓', position: 'center', fill: '#FFFFFF', fontSize: 11, fontWeight: 700 }} />;
+                    })()}
+                    {malAktiv && visDelmal && delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
+                  </ComposedChart>
+                </ResponsiveContainer>
+                {showComparison && (
+                  <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div><p className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</p><p className="text-xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)}</p></div>
+                      <div><p className="text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</p><p className="text-xl font-bold" style={{ color: PENSUM_COLORS.teal }}>{formatCurrency(sammenligningVerdiutvikling[sammenligningVerdiutvikling.length - 1]?.total || 0)}</p></div>
                     </div>
+                    <p className="text-center text-sm text-gray-500 mt-2">Differanse: <strong className={(sammenligningVerdiutvikling[sammenligningVerdiutvikling.length-1]?.total||0) > (verdiutvikling[verdiutvikling.length-1]?.total||0) ? "text-green-600" : "text-red-600"}>{formatCurrency(Math.abs((sammenligningVerdiutvikling[sammenligningVerdiutvikling.length-1]?.total||0) - (verdiutvikling[verdiutvikling.length-1]?.total||0)))}</strong></p>
                   </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Detaljert verdiutvikling</h3></div>
+              <div className="p-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                      <th className="py-3 px-4 text-left text-white">År</th>
+                      <th className="py-3 px-3 text-right text-white">Innskudd/uttak</th>
+                      {aktiveAktiva.map(a => <th key={a.navn} className="py-3 px-3 text-right text-white">{a.navn}</th>)}
+                      <th className="py-3 px-4 text-right text-white font-bold">Total</th>
+                      {totalLaan > 0 && <th className="py-3 px-3 text-right text-red-200">LTV</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {verdiutvikling.map((row, idx) => (
+                      <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
+                        <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
+                        <td className={"py-3 px-3 text-right " + (row.kontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{idx === 0 ? '—' : formatCurrency(row.kontantstrom)}</td>
+                        {aktiveAktiva.map(a => <td key={a.navn} className="py-3 px-3 text-right text-gray-600">{formatCurrency(row[a.navn] || 0)}</td>)}
+                        <td className="py-3 px-4 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.total)}</td>
+                        {totalLaan > 0 && <td className="py-3 px-3 text-right text-red-600 text-xs">{row.total > 0 ? formatPercent((totalLaan / row.total) * 100) : '—'}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ====== FINANSIELT MÅL OG BELØP (valgfri som lån/rebalansering) ====== */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setMalAktiv(!malAktiv)}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-white">Finansielt mål og beløp</h3>
+                  {!malAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-sm text-white">{malAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                  <div className="relative">
+                    <input type="checkbox" checked={malAktiv} onChange={(e) => setMalAktiv(e.target.checked)} className="sr-only" />
+                    <div className={"w-11 h-6 rounded-full transition-colors " + (malAktiv ? "bg-green-500" : "bg-gray-400")}></div>
+                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (malAktiv ? "translate-x-5" : "")}></div>
+                  </div>
+                </label>
+              </div>
+              {malAktiv && (() => {
+                const naarAarRow = hovedmal.belop > 0 ? verdiutvikling.find(r => r.total >= hovedmal.belop) : null;
+                const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
+                const fremgang = hovedmal.belop > 0 ? Math.min(100, (sluttverdi / hovedmal.belop) * 100) : 0;
+                const aarTilMaal = hovedmal.malAar > 0 ? hovedmal.malAar - new Date().getFullYear() : 0;
+                const beregnNoedvendigAvkastning = (FV, PV, PMT, n) => {
+                  if (n <= 0 || FV <= 0 || PV < 0) return null;
+                  if (PV === 0 && PMT === 0) return null;
+                  let low = -0.5, high = 1.5;
+                  for (let iter = 0; iter < 80; iter++) {
+                    const mid = (low + high) / 2;
+                    const fv = mid === 0
+                      ? PV + PMT * n
+                      : PV * Math.pow(1 + mid, n) + PMT * (Math.pow(1 + mid, n) - 1) / mid;
+                    if (fv < FV) low = mid; else high = mid;
+                    if (Math.abs(high - low) < 1e-7) break;
+                  }
+                  return (low + high) / 2 * 100;
+                };
+                const nettoKontantPMT = nettoKontantstrom - (akkumulerRenter ? 0 : aarligRentekostnad);
+                const noedvendigAvk = hovedmal.belop > 0 && aarTilMaal > 0
+                  ? beregnNoedvendigAvkastning(hovedmal.belop, effektivtInvestertBelop, nettoKontantPMT, aarTilMaal)
+                  : null;
+                const avkastningsDiff = noedvendigAvk != null ? noedvendigAvk - vektetAvkastning : null;
+                return (
                   <div className="p-6 space-y-5">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Vis hovedmål i graf</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={visDelmal} onChange={(e) => setVisDelmal(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Bruk delmål</span>
+                        </label>
+                      </div>
+                      {hovedmal.belop > 0 && (naarAarRow
+                        ? <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
+                        : <span className="text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1 rounded-full">Nås ikke innen {horisont} år</span>)}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Hva er målet?</label>
@@ -5609,89 +5714,8 @@ export default function PensumPrognoseModell() {
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })()}
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
-              <StatCard label="Forventet avkastning" value={formatPercent(vektetAvkastning)} subtext="årlig" />
-              <StatCard label="Sluttverdi" value={formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)} subtext={"etter " + horisont + " år"} />
-              <StatCard label="Total avkastning" value={formatCurrency((verdiutvikling[verdiutvikling.length - 1]?.total || 0) - effektivtInvestertBelop - (nettoKontantstrom * horisont))} color={PENSUM_COLORS.green} />
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">{showComparison ? "Utvikling - Sammenligning" : "Utvikling i formuesverdi"}</h3></div>
-              <div className="p-6">
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
-                    <defs>
-                      <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-                        <rect width="8" height="8" fill="#FEE2E2" />
-                        <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
-                      </pattern>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
-                    <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
-                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} domain={[0, (dataMax) => {
-                      const referanseVerdier = [dataMax, hovedmal.visIGraf ? hovedmal.belop : 0, totalLaan, ...(visDelmal ? delmal.map(m => m.belop || 0) : [])];
-                      const maxRef = Math.max(...referanseVerdier);
-                      if (maxRef <= 0) return 100;
-                      const buffer = maxRef * 1.08;
-                      const exp = Math.floor(Math.log10(buffer));
-                      const niceNumbers = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
-                      const mantissa = buffer / Math.pow(10, exp);
-                      const nice = niceNumbers.find(n => n >= mantissa) || 10;
-                      return nice * Math.pow(10, exp);
-                    }]} />
-                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
-                    <Legend iconType="circle" />
-                    {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
-                    {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
-                    {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
-                    {hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
-                    {visDelmal && delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
-                  </ComposedChart>
-                </ResponsiveContainer>
-                {showComparison && (
-                  <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div><p className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</p><p className="text-xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(verdiutvikling[verdiutvikling.length - 1]?.total || 0)}</p></div>
-                      <div><p className="text-sm font-medium" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</p><p className="text-xl font-bold" style={{ color: PENSUM_COLORS.teal }}>{formatCurrency(sammenligningVerdiutvikling[sammenligningVerdiutvikling.length - 1]?.total || 0)}</p></div>
-                    </div>
-                    <p className="text-center text-sm text-gray-500 mt-2">Differanse: <strong className={(sammenligningVerdiutvikling[sammenligningVerdiutvikling.length-1]?.total||0) > (verdiutvikling[verdiutvikling.length-1]?.total||0) ? "text-green-600" : "text-red-600"}>{formatCurrency(Math.abs((sammenligningVerdiutvikling[sammenligningVerdiutvikling.length-1]?.total||0) - (verdiutvikling[verdiutvikling.length-1]?.total||0)))}</strong></p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Detaljert verdiutvikling</h3></div>
-              <div className="p-6 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                      <th className="py-3 px-4 text-left text-white">År</th>
-                      <th className="py-3 px-3 text-right text-white">Innskudd/uttak</th>
-                      {aktiveAktiva.map(a => <th key={a.navn} className="py-3 px-3 text-right text-white">{a.navn}</th>)}
-                      <th className="py-3 px-4 text-right text-white font-bold">Total</th>
-                      {totalLaan > 0 && <th className="py-3 px-3 text-right text-red-200">LTV</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {verdiutvikling.map((row, idx) => (
-                      <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
-                        <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
-                        <td className={"py-3 px-3 text-right " + (row.kontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{idx === 0 ? '—' : formatCurrency(row.kontantstrom)}</td>
-                        {aktiveAktiva.map(a => <td key={a.navn} className="py-3 px-3 text-right text-gray-600">{formatCurrency(row[a.navn] || 0)}</td>)}
-                        <td className="py-3 px-4 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.total)}</td>
-                        {totalLaan > 0 && <td className="py-3 px-3 text-right text-red-600 text-xs">{row.total > 0 ? formatPercent((totalLaan / row.total) * 100) : '—'}</td>}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                );
+              })()}
             </div>
 
 
