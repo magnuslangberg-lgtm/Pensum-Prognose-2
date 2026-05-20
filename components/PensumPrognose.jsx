@@ -17,7 +17,8 @@ export default function PensumPrognoseModell() {
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
-  const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0 });  // Hovedmål
+  const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0, visIGraf: true, malAar: 0 });  // Hovedmål
+  const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [belopInputModus, setBelopInputModus] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
@@ -2793,9 +2794,20 @@ export default function PensumPrognoseModell() {
   const verdiutvikling = useMemo(() => {
     const data = [];
     const startYear = new Date().getFullYear();
+    // Hvis akkumulerRenter: rentekostnaden trekkes IKKE fra kontantstrøm — i stedet vokser lånet hvert år
+    const effektivRentekostnad = akkumulerRenter ? 0 : aarligRentekostnad;
+    // Gjennomsnittlig låne-rente brukes når renter akkumuleres
+    const veietLaaneRente = totalLaan > 0
+      ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) / totalLaan
+      : 0;
+    let aktueltLaan = totalLaan;
     for (let i = 0; i <= horisont; i++) {
       const row = { year: startYear + i, kontantstrom: i === 0 ? 0 : nettoKontantstrom };
-      
+      if (i > 0 && akkumulerRenter) {
+        aktueltLaan = aktueltLaan * (1 + veietLaaneRente);
+      }
+      row.laanBalanse = aktueltLaan;
+
       // Beregn gjeldende allokering med rebalansering(er)
       let gjeldendAllokering = aktiveAktiva.map(a => ({ ...a }));
       if (rebalanseringAktiv && i > 0) {
@@ -2829,24 +2841,24 @@ export default function PensumPrognoseModell() {
               }
             });
             const originalAsset = aktiveAktiva.find(a => a.navn === asset.navn);
-            const kontantTilAsset = (originalAsset.vekt / 100) * (nettoKontantstrom - aarligRentekostnad);
+            const kontantTilAsset = (originalAsset.vekt / 100) * (nettoKontantstrom - effektivRentekostnad);
             const nyVerdi = (prevValue - salgTotal + kjopTotal + kontantTilAsset) * (1 + asset.avkastning / 100);
             row[asset.navn] = Math.max(0, nyVerdi);
           } else {
             const prev = prevRow[asset.navn] || 0;
-            const kontantTilAsset = (asset.vekt / 100) * (nettoKontantstrom - aarligRentekostnad);
+            const kontantTilAsset = (asset.vekt / 100) * (nettoKontantstrom - effektivRentekostnad);
             row[asset.navn] = (prev + kontantTilAsset) * (1 + asset.avkastning / 100);
           }
         }
       });
       row.total = aktiveAktiva.reduce((s, a) => s + (row[a.navn] || 0), 0);
-      row.nettoEtterLaan = row.total - totalLaan;
+      row.nettoEtterLaan = row.total - aktueltLaan;
       row.allokeringSnapshot = gjeldendAllokering.map(a => ({ navn: a.navn, vekt: row.total > 0 ? (row[a.navn] / row.total) * 100 : 0 }));
 
       data.push(row);
     }
     return data;
-  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer, aarligRentekostnad, totalLaan]);
+  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer, aarligRentekostnad, totalLaan, akkumulerRenter, prognoseFinansiering]);
 
   const sammenligningVerdiutvikling = useMemo(() => {
     const data = [];
@@ -5129,6 +5141,7 @@ export default function PensumPrognoseModell() {
                                 { navn: 'Eiendom', avkastning: 8, kategori: 'eiendom' },
                                 { navn: 'Infrastruktur', avkastning: 9, kategori: 'privateMarkets' },
                                 { navn: 'Hedgefond', avkastning: 7, kategori: 'privateMarkets' },
+                                { navn: 'Shipping', avkastning: 11, kategori: 'shipping' },
                               ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
                                 <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
                                   <span>{produkt.navn}</span>
@@ -5386,9 +5399,18 @@ export default function PensumPrognoseModell() {
                     ))}
                   </div>
                   {prognoseFinansiering.length > 0 && (
-                    <p className="text-xs text-gray-500 italic mt-2">
-                      Lånebeløpet legges til investert kapital. Rentekostnaden trekkes fra årlig kontantstrøm i prognoseberegningen. Belåningsgrad: {egenkapitalBelop > 0 ? ((totalLaan / egenkapitalBelop) * 100).toFixed(0) : 0}%.
-                    </p>
+                    <>
+                      <div className="flex items-center gap-3 mt-3 p-3 rounded-lg" style={{ backgroundColor: '#FDF6F2', border: '1px solid #F0DCD0' }}>
+                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                          <input type="checkbox" checked={akkumulerRenter} onChange={(e) => setAkkumulerRenter(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Akkumuler lånerenter (compound)</span>
+                        </label>
+                        <span className="text-xs text-gray-500">{akkumulerRenter ? 'Rentene legges til lånet hvert år — kontantstrøm uberørt' : 'Rentene trekkes fra årlig kontantstrøm'}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): {effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.
+                      </p>
+                    </>
                   )}
                 </div>
               )}
@@ -5463,43 +5485,102 @@ export default function PensumPrognoseModell() {
             </div>
 
             {/* ====== HOVEDMÅL ====== */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                <h3 className="text-lg font-semibold text-white">Hovedmål</h3>
-                {hovedmal.belop > 0 && (() => {
-                  const naarAar = verdiutvikling.find(r => r.total >= hovedmal.belop);
-                  return naarAar
-                    ? <span className="text-sm font-medium text-emerald-300 bg-emerald-900/30 px-3 py-1 rounded-full">Nås i {naarAar.year} ({naarAar.year - new Date().getFullYear()} år)</span>
-                    : <span className="text-sm font-medium text-amber-300 bg-amber-900/30 px-3 py-1 rounded-full">Nås ikke innen {horisont} år</span>;
-                })()}
-              </div>
-              <div className="p-6">
-                <div className="flex items-end gap-6">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Hva er målet?</label>
-                    <input type="text" placeholder="F.eks. Finansiell frihet" value={hovedmal.navn} onChange={e => setHovedmal(prev => ({ ...prev, navn: e.target.value }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm" />
+            {(() => {
+              const naarAarRow = hovedmal.belop > 0 ? verdiutvikling.find(r => r.total >= hovedmal.belop) : null;
+              const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
+              const fremgang = hovedmal.belop > 0 ? Math.min(100, (sluttverdi / hovedmal.belop) * 100) : 0;
+              const aarTilMaal = hovedmal.malAar > 0 ? hovedmal.malAar - new Date().getFullYear() : 0;
+              // Goal-seek: hvilken årlig avkastning trengs for å nå målet innen ønsket år?
+              // FV = PV*(1+r)^n + PMT*((1+r)^n - 1)/r   — løses numerisk
+              const beregnNoedvendigAvkastning = (FV, PV, PMT, n) => {
+                if (n <= 0 || FV <= 0 || PV < 0) return null;
+                if (PV === 0 && PMT === 0) return null;
+                let low = -0.5, high = 1.5;
+                for (let iter = 0; iter < 80; iter++) {
+                  const mid = (low + high) / 2;
+                  const fv = mid === 0
+                    ? PV + PMT * n
+                    : PV * Math.pow(1 + mid, n) + PMT * (Math.pow(1 + mid, n) - 1) / mid;
+                  if (fv < FV) low = mid; else high = mid;
+                  if (Math.abs(high - low) < 1e-7) break;
+                }
+                return (low + high) / 2 * 100;
+              };
+              const nettoKontantPMT = nettoKontantstrom - (akkumulerRenter ? 0 : aarligRentekostnad);
+              const noedvendigAvk = hovedmal.belop > 0 && aarTilMaal > 0
+                ? beregnNoedvendigAvkastning(hovedmal.belop, effektivtInvestertBelop, nettoKontantPMT, aarTilMaal)
+                : null;
+              const avkastningsDiff = noedvendigAvk != null ? noedvendigAvk - vektetAvkastning : null;
+              return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                    <h3 className="text-lg font-semibold text-white">Hovedmål</h3>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
+                        <span className="text-xs text-blue-100">Vis i graf</span>
+                      </label>
+                      {hovedmal.belop > 0 && (naarAarRow
+                        ? <span className="text-sm font-medium text-emerald-300 bg-emerald-900/30 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
+                        : <span className="text-sm font-medium text-amber-300 bg-amber-900/30 px-3 py-1 rounded-full">Nås ikke innen {horisont} år</span>)}
+                    </div>
                   </div>
-                  <div className="w-48">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Målbeløp (kr)</label>
-                    <input type="text" placeholder="100 000 000" value={hovedmal.belop ? formatNumber(hovedmal.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setHovedmal(prev => ({ ...prev, belop: v })); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
-                  </div>
-                  {hovedmal.belop > 0 && (() => {
-                    const naarAar = verdiutvikling.find(r => r.total >= hovedmal.belop);
-                    const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
-                    const fremgang = Math.min(100, (sluttverdi / hovedmal.belop) * 100);
-                    return (
-                      <div className="w-64">
-                        <div className="text-xs text-gray-500 mb-1.5">Fremgang ({horisont} år)</div>
-                        <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${fremgang}%`, backgroundColor: fremgang >= 100 ? '#059669' : PENSUM_COLORS.darkBlue }} />
-                        </div>
-                        <div className="text-xs mt-1 text-gray-500">{formatPercent(fremgang)} — {naarAar ? `nås ${naarAar.year}` : `mangler ${formatCurrency(hovedmal.belop - sluttverdi)}`}</div>
+                  <div className="p-6 space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Hva er målet?</label>
+                        <input type="text" placeholder="F.eks. Finansiell frihet" value={hovedmal.navn} onChange={e => setHovedmal(prev => ({ ...prev, navn: e.target.value }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm" />
                       </div>
-                    );
-                  })()}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Målbeløp (kr)</label>
+                        <input type="text" placeholder="100 000 000" value={hovedmal.belop ? formatNumber(hovedmal.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setHovedmal(prev => ({ ...prev, belop: v })); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Nå målet innen (år)</label>
+                        <input type="number" min={new Date().getFullYear() + 1} placeholder={new Date().getFullYear() + 10} value={hovedmal.malAar || ''} onChange={e => setHovedmal(prev => ({ ...prev, malAar: parseInt(e.target.value) || 0 }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      </div>
+                    </div>
+
+                    {hovedmal.belop > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8' }}>
+                          <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Med dagens portefølje</div>
+                          <div className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>
+                            {naarAarRow ? `Nås i ${naarAarRow.year}` : `Nås ikke innen ${horisont} år`}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">{formatPercent(vektetAvkastning)} avkastning gir {formatCurrency(sluttverdi)} etter {horisont} år</div>
+                        </div>
+                        {aarTilMaal > 0 && noedvendigAvk != null && (
+                          <div className={`rounded-lg p-4 ${avkastningsDiff > 0 ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                            <div className={`text-xs font-medium mb-1 ${avkastningsDiff > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>For å nå målet i {hovedmal.malAar}</div>
+                            <div className={`text-lg font-bold ${avkastningsDiff > 0 ? 'text-amber-900' : 'text-emerald-900'}`}>
+                              {noedvendigAvk > 50 || noedvendigAvk < -20 ? 'Urealistisk' : `${formatPercent(noedvendigAvk)} avkastning`}
+                            </div>
+                            {noedvendigAvk <= 50 && noedvendigAvk >= -20 && (
+                              <div className={`text-xs mt-0.5 ${avkastningsDiff > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                {avkastningsDiff > 0
+                                  ? `Krever ${formatPercent(avkastningsDiff)} høyere enn dagens ${formatPercent(vektetAvkastning)}`
+                                  : `Klarer det allerede — ${formatPercent(Math.abs(avkastningsDiff))} ekstra margin`}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="text-xs font-medium text-gray-500 mb-1">Fremgang ({horisont} år)</div>
+                          <div className="w-full bg-white rounded-full h-3 overflow-hidden mt-2">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${fremgang}%`, backgroundColor: fremgang >= 100 ? '#059669' : PENSUM_COLORS.darkBlue }} />
+                          </div>
+                          <div className="text-xs mt-2 text-gray-500">
+                            {formatPercent(fremgang)} av målet
+                            {!naarAarRow && hovedmal.belop > sluttverdi && ` — mangler ${formatCurrency(hovedmal.belop - sluttverdi)}`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
@@ -5515,13 +5596,23 @@ export default function PensumPrognoseModell() {
                   <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
-                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} />
+                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} domain={[0, (dataMax) => {
+                      const referanseVerdier = [dataMax, hovedmal.visIGraf ? hovedmal.belop : 0, totalLaan, ...delmal.map(m => m.belop || 0)];
+                      const maxRef = Math.max(...referanseVerdier);
+                      if (maxRef <= 0) return 100;
+                      const buffer = maxRef * 1.08;
+                      const exp = Math.floor(Math.log10(buffer));
+                      const niceNumbers = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+                      const mantissa = buffer / Math.pow(10, exp);
+                      const nice = niceNumbers.find(n => n >= mantissa) || 10;
+                      return nice * Math.pow(10, exp);
+                    }]} />
                     <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
                     <Legend iconType="circle" />
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
                     {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeDasharray="3 3" label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'right', fill: '#B91C1C', fontSize: 11 }} />}
-                    {hovedmal.belop > 0 && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
+                    {hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
                     {delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
                   </ComposedChart>
                 </ResponsiveContainer>
