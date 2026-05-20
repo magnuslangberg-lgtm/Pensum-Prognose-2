@@ -3,6 +3,7 @@ import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChar
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
+import FormuesplanleggerTab from './planlegger/FormuesplanleggerTab';
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
@@ -15,6 +16,7 @@ export default function PensumPrognoseModell() {
   const [showComparison, setShowComparison] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
+  const [visGamleIndekser, setVisGamleIndekser] = useState(false);
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false, alternative: false });
@@ -4307,9 +4309,9 @@ export default function PensumPrognoseModell() {
         <div style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
-              {['input', 'losninger', 'allokering', 'scenario', 'belaning', 'rapport'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
+              {['input', 'losninger', 'formuesplanlegger', 'scenario', 'belaning', 'rapport'].map(tab => (
+                <button key={tab} onClick={() => { setActiveTab(tab === 'formuesplanlegger' ? 'formuesplanlegger' : tab); if (tab === 'formuesplanlegger') setVisGamleIndekser(false); }} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + ((activeTab === tab || (tab === 'formuesplanlegger' && activeTab === 'allokering')) ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'formuesplanlegger' ? 'Formuesplanlegger' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -4919,7 +4921,23 @@ export default function PensumPrognoseModell() {
           </div>
         )}
 
-        {activeTab === 'allokering' && (
+        {activeTab === 'formuesplanlegger' && !visGamleIndekser && (
+          <FormuesplanleggerTab
+            visIndekser={visGamleIndekser}
+            onVisIndekser={() => { setVisGamleIndekser(true); }}
+          />
+        )}
+
+        {(activeTab === 'allokering' || (activeTab === 'formuesplanlegger' && visGamleIndekser)) && (
+          <>
+          {activeTab === 'formuesplanlegger' && visGamleIndekser && (
+            <div className="mb-4">
+              <button onClick={() => setVisGamleIndekser(false)} className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900 font-medium">
+                <span>&larr;</span> Tilbake til Formuesplanlegger
+              </button>
+            </div>
+          )}
+
           <div className="space-y-6 no-print">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
@@ -5540,6 +5558,7 @@ export default function PensumPrognoseModell() {
               )}
             </div>
           </div>
+          </>
         )}
 
         {activeTab === 'losninger' && (
