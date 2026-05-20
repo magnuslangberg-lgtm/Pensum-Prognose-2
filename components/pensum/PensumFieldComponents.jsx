@@ -48,10 +48,13 @@ export function CollapsibleSection({ title, isOpen, onToggle, sum, children }) {
   );
 }
 
-export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringAvkastning, avkastningLaast, onRemove }) {
+export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop, updateAllokeringVekt, updateAllokeringBelop, belopRedigerbar, updateAllokeringAvkastning, avkastningLaast, onRemove }) {
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
+  const beregnetBelop = (item.vekt / 100) * effektivtInvestertBelop;
+  const [localBelop, setLocalBelop] = useState(formatNumber(Math.round(beregnetBelop)));
+  useEffect(() => { setLocalBelop(formatNumber(Math.round(beregnetBelop))); }, [beregnetBelop]);
   const itemColor = ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] || '#888';
   const pctFilled = Math.min(100, Math.max(0, dragVekt));
   return (
@@ -101,10 +104,25 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
         </div>
         <button onClick={() => updateAllokeringVekt(index, (item.vekt || 0) + 0.5)} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 hover:bg-white flex-shrink-0 flex items-center justify-center text-sm font-medium transition-colors">+</button>
       </div>
-      {/* Amount */}
-      <div className="text-xs text-gray-500 text-right flex-shrink-0 tabular-nums" style={{ width: '90px' }}>
-        {formatCurrency((item.vekt / 100) * effektivtInvestertBelop)}
-      </div>
+      {/* Amount — editable when belopRedigerbar */}
+      {belopRedigerbar && updateAllokeringBelop ? (
+        <div className="flex items-center bg-white border border-blue-200 rounded-lg overflow-hidden flex-shrink-0 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all" style={{ width: '110px' }}>
+          <input
+            type="text"
+            value={localBelop}
+            onChange={(e) => setLocalBelop(e.target.value)}
+            onFocus={() => setLocalBelop(Math.round(beregnetBelop).toString())}
+            onBlur={() => { const v = parseInt(localBelop.replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
+            className="w-full py-1.5 px-2 text-xs text-right font-medium border-none outline-none bg-transparent tabular-nums"
+            style={{ color: PENSUM_COLORS.darkBlue }}
+          />
+          <span className="text-xs text-gray-400 pr-1.5">kr</span>
+        </div>
+      ) : (
+        <div className="text-xs text-gray-500 text-right flex-shrink-0 tabular-nums" style={{ width: '90px' }}>
+          {formatCurrency(beregnetBelop)}
+        </div>
+      )}
       {/* Expected return */}
       <div className="flex items-center gap-1 flex-shrink-0">
         <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-50 transition-all">

@@ -18,6 +18,7 @@ export default function PensumPrognoseModell() {
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [visGamleIndekser, setVisGamleIndekser] = useState(false);
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
+  const [belopInputModus, setBelopInputModus] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false, alternative: false });
   const [expandedKundeKategorier, setExpandedKundeKategorier] = useState({ likvide: true, illikvide: true, pe: false, eiendom: false });
@@ -5033,6 +5034,10 @@ export default function PensumPrognoseModell() {
                         <button onClick={normaliserAllokeringTil100} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors">
                           Juster til 100%
                         </button>
+                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input type="checkbox" checked={belopInputModus} onChange={(e) => setBelopInputModus(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.lightBlue }} />
+                          <span>Rediger beløp</span>
+                        </label>
                       </div>
                       <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
                         <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
@@ -5045,7 +5050,7 @@ export default function PensumPrognoseModell() {
                         const renderRows = (kategoriFilter, isExpanded) => {
                           if (!isExpanded) return null;
                           return allokering.filter(a => kategoriFilter(a)).map((item) => (
-                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
+                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringBelop={updateAllokeringBelop} belopRedigerbar={belopInputModus} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
                           ));
                         };
                         return (<>
