@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
+import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
@@ -17,6 +17,7 @@ export default function PensumPrognoseModell() {
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
+  const [visDelmal, setVisDelmal] = useState(false);  // Vis delmål-seksjon
   const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0, visIGraf: true, malAar: 0 });  // Hovedmål
   const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
@@ -5513,12 +5514,16 @@ export default function PensumPrognoseModell() {
               const avkastningsDiff = noedvendigAvk != null ? noedvendigAvk - vektetAvkastning : null;
               return (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                    <h3 className="text-lg font-semibold text-white">Hovedmål</h3>
-                    <div className="flex items-center gap-3">
+                  <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                    <h3 className="text-lg font-semibold text-white">Mål & milepæler</h3>
+                    <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
-                        <span className="text-xs text-blue-100">Vis i graf</span>
+                        <span className="text-xs text-blue-100">Vis hovedmål i graf</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={visDelmal} onChange={(e) => setVisDelmal(e.target.checked)} className="w-4 h-4 rounded" />
+                        <span className="text-xs text-blue-100">Bruk delmål</span>
                       </label>
                       {hovedmal.belop > 0 && (naarAarRow
                         ? <span className="text-sm font-medium text-emerald-300 bg-emerald-900/30 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
@@ -5577,6 +5582,32 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     )}
+
+                    {visDelmal && (
+                      <div className="pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700">Delmål & milepæler</h4>
+                            <p className="text-xs text-gray-500">Vises som grønne referanselinjer i grafen.</p>
+                          </div>
+                          <button onClick={() => setDelmal(prev => [...prev, { navn: '', belop: 0 }])} className="text-xs px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">+ Legg til delmål</button>
+                        </div>
+                        {delmal.length === 0 && <p className="text-xs text-gray-400 italic">Ingen delmål lagt til ennå.</p>}
+                        {delmal.map((m, i) => {
+                          const naarAar = verdiutvikling.find(r => r.total >= m.belop);
+                          return (
+                            <div key={i} className="flex items-center gap-3 mb-2">
+                              <input type="text" placeholder="Navn på delmål" value={m.navn} onChange={e => setDelmal(prev => prev.map((d, j) => j === i ? { ...d, navn: e.target.value } : d))} className="border border-gray-200 rounded-lg py-2 px-3 text-sm flex-1" />
+                              <input type="text" placeholder="Beløp" value={m.belop ? formatNumber(m.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setDelmal(prev => prev.map((d, j) => j === i ? { ...d, belop: v } : d)); }} className="border border-gray-200 rounded-lg py-2 px-3 text-sm w-40 text-right" />
+                              <span className="text-sm text-gray-400">kr</span>
+                              {naarAar && <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Nås {naarAar.year}</span>}
+                              {!naarAar && m.belop > 0 && <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">Nås ikke i perioden</span>}
+                              <button onClick={() => setDelmal(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-lg">×</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -5594,10 +5625,16 @@ export default function PensumPrognoseModell() {
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={400}>
                   <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
+                    <defs>
+                      <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                        <rect width="8" height="8" fill="#FEE2E2" />
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
+                      </pattern>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
                     <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} domain={[0, (dataMax) => {
-                      const referanseVerdier = [dataMax, hovedmal.visIGraf ? hovedmal.belop : 0, totalLaan, ...delmal.map(m => m.belop || 0)];
+                      const referanseVerdier = [dataMax, hovedmal.visIGraf ? hovedmal.belop : 0, totalLaan, ...(visDelmal ? delmal.map(m => m.belop || 0) : [])];
                       const maxRef = Math.max(...referanseVerdier);
                       if (maxRef <= 0) return 100;
                       const buffer = maxRef * 1.08;
@@ -5609,11 +5646,12 @@ export default function PensumPrognoseModell() {
                     }]} />
                     <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
                     <Legend iconType="circle" />
+                    {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeDasharray="3 3" label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'right', fill: '#B91C1C', fontSize: 11 }} />}
+                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
                     {hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
-                    {delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
+                    {visDelmal && delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
                   </ComposedChart>
                 </ResponsiveContainer>
                 {showComparison && (
@@ -5656,29 +5694,6 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* ====== DELMÅL & MILEPÆLER ====== */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                <h3 className="text-lg font-semibold text-white">Delmål & milepæler</h3>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-gray-500 mb-4">Sett formål og beløpsmål som vises som referanselinjer i grafen. Se når du forventes å nå hvert mål.</p>
-                {delmal.map((m, i) => {
-                  const naarAar = verdiutvikling.find(r => r.total >= m.belop);
-                  return (
-                    <div key={i} className="flex items-center gap-3 mb-3">
-                      <input type="text" placeholder="Navn på mål" value={m.navn} onChange={e => setDelmal(prev => prev.map((d, j) => j === i ? { ...d, navn: e.target.value } : d))} className="border border-gray-200 rounded-lg py-2 px-3 text-sm flex-1" />
-                      <input type="text" placeholder="Beløp" value={m.belop ? formatNumber(m.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setDelmal(prev => prev.map((d, j) => j === i ? { ...d, belop: v } : d)); }} className="border border-gray-200 rounded-lg py-2 px-3 text-sm w-40 text-right" />
-                      <span className="text-sm text-gray-400">kr</span>
-                      {naarAar && <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Nås {naarAar.year}</span>}
-                      {!naarAar && m.belop > 0 && <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">Nås ikke i perioden</span>}
-                      <button onClick={() => setDelmal(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-lg">×</button>
-                    </div>
-                  );
-                })}
-                <button onClick={() => setDelmal(prev => [...prev, { navn: '', belop: 0 }])} className="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 mt-1">+ Legg til delmål</button>
-              </div>
-            </div>
 
             {/* ====== RENTERS RENTE-EFFEKT ====== */}
             {(() => {
