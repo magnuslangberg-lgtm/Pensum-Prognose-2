@@ -56,6 +56,10 @@ export default function PensumPrognoseModell() {
   const [investertBelop, setInvestertBelop] = useState(null); // null = bruk totalKapital fra kundeinformasjon
   // visAlternativeAllokering: null = auto (basert på om kunden har alt.inv.), true/false = manuelt satt
   const [visAlternativeAllokering, setVisAlternativeAllokering] = useState(null);
+
+  // Lånefinansiering på Prognoser med indekser
+  const [prognoseFinansiering, setPrognoseFinansiering] = useState([]);
+  const [visFinansieringPanel, setVisFinansieringPanel] = useState(false);
   
   const [investeringsFormaal, setInvesteringsFormaal] = useState('Utvikle finansiell formue');
   const [likviditetsbehov, setLikviditetsbehov] = useState('Begrenset');
@@ -2748,7 +2752,10 @@ export default function PensumPrognoseModell() {
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const egenkapitalBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const totalLaan = prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0);
+  const aarligRentekostnad = prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0);
+  const effektivtInvestertBelop = egenkapitalBelop + totalLaan;
 
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
@@ -2810,7 +2817,6 @@ export default function PensumPrognoseModell() {
 
           if (rebalanseringAktiv) {
             const prevValue = prevRow[asset.navn] || 0;
-            // Apply all rebalansering rules
             let salgTotal = 0, kjopTotal = 0;
             rebalanseringer.forEach(reb => {
               const endringProsent = reb.prosentPerAar / 100;
@@ -2822,21 +2828,24 @@ export default function PensumPrognoseModell() {
               }
             });
             const originalAsset = aktiveAktiva.find(a => a.navn === asset.navn);
-            const nyVerdi = (prevValue - salgTotal + kjopTotal + (originalAsset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
+            const kontantTilAsset = (originalAsset.vekt / 100) * (nettoKontantstrom - aarligRentekostnad);
+            const nyVerdi = (prevValue - salgTotal + kjopTotal + kontantTilAsset) * (1 + asset.avkastning / 100);
             row[asset.navn] = Math.max(0, nyVerdi);
           } else {
             const prev = prevRow[asset.navn] || 0;
-            row[asset.navn] = (prev + (asset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
+            const kontantTilAsset = (asset.vekt / 100) * (nettoKontantstrom - aarligRentekostnad);
+            row[asset.navn] = (prev + kontantTilAsset) * (1 + asset.avkastning / 100);
           }
         }
       });
       row.total = aktiveAktiva.reduce((s, a) => s + (row[a.navn] || 0), 0);
+      row.nettoEtterLaan = row.total - totalLaan;
       row.allokeringSnapshot = gjeldendAllokering.map(a => ({ navn: a.navn, vekt: row.total > 0 ? (row[a.navn] / row.total) * 100 : 0 }));
 
       data.push(row);
     }
     return data;
-  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer]);
+  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer, aarligRentekostnad, totalLaan]);
 
   const sammenligningVerdiutvikling = useMemo(() => {
     const data = [];
@@ -2870,13 +2879,14 @@ export default function PensumPrognoseModell() {
       const row = { year: startYear + i };
       // Forventet = samme som verdiutvikling (sum av individuelle aktivaklasser)
       row.forventet = verdiutvikling[i]?.total || effektivtInvestertBelop;
-      // Pessimistisk og optimistisk beregnes med justerte rater
+      row.forventetNetto = (verdiutvikling[i]?.nettoEtterLaan ?? verdiutvikling[i]?.total) || egenkapitalBelop;
       if (i === 0) {
         row.pessimistisk = effektivtInvestertBelop;
         row.optimistisk = effektivtInvestertBelop;
       } else {
-        row.pessimistisk = (data[i-1].pessimistisk + nettoKontantstrom) * (1 + scenarioParams.pessimistisk / 100);
-        row.optimistisk = (data[i-1].optimistisk + nettoKontantstrom) * (1 + scenarioParams.optimistisk / 100);
+        const nettoKS = nettoKontantstrom - aarligRentekostnad;
+        row.pessimistisk = (data[i-1].pessimistisk + nettoKS) * (1 + scenarioParams.pessimistisk / 100);
+        row.optimistisk = (data[i-1].optimistisk + nettoKS) * (1 + scenarioParams.optimistisk / 100);
       }
       // Sammenligning (alternativ profil)
       if (showComparison && sammenligningVerdiutvikling[i]) {
@@ -2885,7 +2895,7 @@ export default function PensumPrognoseModell() {
       data.push(row);
     }
     return data;
-  }, [effektivtInvestertBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling]);
+  }, [effektivtInvestertBelop, egenkapitalBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling, aarligRentekostnad, totalLaan]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
@@ -5259,6 +5269,117 @@ export default function PensumPrognoseModell() {
                   );
                 })()}
               </div>
+            </div>
+
+            {/* Finansiering / Belåning panel */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setVisFinansieringPanel(!visFinansieringPanel)}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-white">Lånefinansiering</h3>
+                  {prognoseFinansiering.length > 0 && (
+                    <span className="text-xs text-blue-200 bg-white/10 px-2 py-0.5 rounded-full">
+                      {formatCurrency(totalLaan)} lån · {formatPercent(egenkapitalBelop > 0 ? (totalLaan / egenkapitalBelop) * 100 : 0)} belåningsgrad
+                    </span>
+                  )}
+                  {prognoseFinansiering.length === 0 && <span className="text-xs text-blue-200">(klikk for å legge til)</span>}
+                </div>
+                <svg className={`w-5 h-5 text-blue-300 transition-transform ${visFinansieringPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+              {visFinansieringPanel && (
+                <div className="p-6 space-y-4">
+                  {prognoseFinansiering.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+                      <div className="bg-blue-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-blue-600 font-medium mb-1">Egenkapital</div>
+                        <div className="text-lg font-bold text-blue-900">{formatCurrency(egenkapitalBelop)}</div>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-amber-600 font-medium mb-1">Total lån</div>
+                        <div className="text-lg font-bold text-amber-900">{formatCurrency(totalLaan)}</div>
+                      </div>
+                      <div className="bg-emerald-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-emerald-600 font-medium mb-1">Investert totalt</div>
+                        <div className="text-lg font-bold text-emerald-900">{formatCurrency(effektivtInvestertBelop)}</div>
+                      </div>
+                      <div className="bg-red-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-red-600 font-medium mb-1">Årlig rentekostnad</div>
+                        <div className="text-lg font-bold text-red-900">{formatCurrency(aarligRentekostnad)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {prognoseFinansiering.map((laan, idx) => (
+                    <div key={laan.id || idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Type</label>
+                        <select
+                          value={laan.type}
+                          onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, type: e.target.value } : l))}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm bg-white"
+                        >
+                          <option value="Banklån">Banklån</option>
+                          <option value="Verdipapirfinansiering">Verdipapirfinansiering</option>
+                          <option value="Andre lån">Andre lån</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Beløp (NOK)</label>
+                        <input
+                          type="text"
+                          value={formatNumber(laan.belop || 0)}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                            setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, belop: v } : l));
+                          }}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Rente (%)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={laan.rente ?? 5}
+                          onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, rente: parseFloat(e.target.value) || 0 } : l))}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig kostnad</label>
+                        <div className="py-2 px-3 text-sm font-semibold text-red-700 bg-red-50 rounded-lg border border-red-200 text-right">
+                          {formatCurrency((Number(laan.belop) || 0) * (Number(laan.rente) || 0) / 100)}
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setPrognoseFinansiering(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-400 hover:text-red-600 p-2 transition-colors"
+                          title="Fjern lån"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {['Banklån', 'Verdipapirfinansiering', 'Andre lån'].map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setPrognoseFinansiering(prev => [...prev, { id: Date.now() + '-' + Math.random().toString(36).slice(2,8), type, belop: 0, rente: type === 'Verdipapirfinansiering' ? 5.5 : type === 'Banklån' ? 4.5 : 6, }])}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border border-dashed transition-colors hover:bg-gray-50"
+                        style={{ borderColor: PENSUM_COLORS.salmon, color: PENSUM_COLORS.salmon }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  {prognoseFinansiering.length > 0 && (
+                    <p className="text-xs text-gray-500 italic mt-2">
+                      Lånebeløpet legges til investert kapital. Rentekostnaden trekkes fra årlig kontantstrøm i prognoseberegningen. Belåningsgrad: {egenkapitalBelop > 0 ? ((totalLaan / egenkapitalBelop) * 100).toFixed(0) : 0}%.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Rebalansering panel */}
