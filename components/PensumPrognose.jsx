@@ -2734,7 +2734,7 @@ export default function PensumPrognoseModell() {
     const data = [];
     kategorierData.forEach(cat => {
       if (cat.vekt > 0) {
-        if (expandedCategories[cat.kategori] && cat.items.length > 1) {
+        if (cat.items.length > 1) {
           cat.items.filter(i => i.vekt > 0).forEach(item => data.push({ name: item.navn, value: item.vekt }));
         } else {
           data.push({ name: cat.navn, value: cat.vekt });
@@ -2742,7 +2742,7 @@ export default function PensumPrognoseModell() {
       }
     });
     return data;
-  }, [kategorierData, expandedCategories]);
+  }, [kategorierData]);
 
   const sammenligningPieData = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0).map(a => ({ name: a.navn, value: a.vekt })), [sammenligningAllokering]);
   const vektetAvkastning = useMemo(() => allokering.reduce((s, a) => s + (a.vekt / 100) * a.avkastning, 0), [allokering]);
@@ -5054,25 +5054,45 @@ export default function PensumPrognoseModell() {
                         {formatPercent(totalVekt)}
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {(() => {
                         const fjernIndeks = (navn) => setAllokering(prev => prev.filter(a => a.navn !== navn));
-                        const renderRows = (kategoriFilter, isExpanded) => {
-                          if (!isExpanded) return null;
-                          return allokering.filter(a => kategoriFilter(a)).map((item) => (
-                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringBelop={updateAllokeringBelop} belopRedigerbar={belopInputModus} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
-                          ));
-                        };
-                        return (<>
-                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
-                          {renderRows(a => a.kategori === 'aksjer', expandedCategories.aksjer)}
-                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
-                          {renderRows(a => a.kategori === 'renter', expandedCategories.renter)}
-                          {effektivVisAlternative && kategorierData.find(c => c.kategori === 'alternative') && (<>
-                            <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'alternative')} isExpanded={expandedCategories.alternative} onToggle={() => toggleCategory('alternative')} />
-                            {renderRows(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom', expandedCategories.alternative)}
-                          </>)}
-                        </>);
+                        const katFarger = { aksjer: { bg: '#EFF6FF', stripe: '#0D2841' }, renter: { bg: '#FFF1F2', stripe: '#C4967E' }, privateMarkets: { bg: '#F0FDFA', stripe: '#2D6A6A' }, eiendom: { bg: '#FEF9C3', stripe: '#A67B3D' } };
+                        const katNavn = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Alternative', eiendom: 'Alternative' };
+                        const grupper = [
+                          { id: 'aksjer', filter: a => a.kategori === 'aksjer' },
+                          { id: 'renter', filter: a => a.kategori === 'renter' },
+                        ];
+                        if (effektivVisAlternative && allokering.some(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom')) {
+                          grupper.push({ id: 'privateMarkets', filter: a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' });
+                        }
+                        return grupper.map(({ id, filter }) => {
+                          const items = allokering.filter(filter);
+                          if (!items.length) return null;
+                          const kat = kategorierData.find(c => c.kategori === (id === 'privateMarkets' ? 'alternative' : id));
+                          const farger = katFarger[id] || { bg: '#F8F9FA', stripe: '#888' };
+                          return (
+                            <div key={id}>
+                              <div className="flex items-center justify-between px-4 py-2 mt-1 rounded-t-lg" style={{ backgroundColor: farger.bg, borderLeft: `4px solid ${farger.stripe}` }}>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: farger.stripe }} />
+                                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: farger.stripe }}>{katNavn[id] || id}</span>
+                                </div>
+                                {kat && (
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="font-semibold tabular-nums" style={{ color: farger.stripe }}>{formatPercent(kat.vekt)}</span>
+                                    <span className="text-gray-400 tabular-nums">{formatCurrency(kat.belop)}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {items.map((item) => (
+                                <div key={item.navn} style={{ backgroundColor: farger.bg, borderLeft: `4px solid ${farger.stripe}`, borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                  <AllokeringRow item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringBelop={updateAllokeringBelop} belopRedigerbar={belopInputModus} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        });
                       })()}
                     </div>
 
