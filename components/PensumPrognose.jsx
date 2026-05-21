@@ -3041,16 +3041,31 @@ export default function PensumPrognoseModell() {
             <div className="rounded-xl border border-gray-100 bg-white p-4">
               <ResponsiveContainer width="100%" height={320}>
                 <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 10, right: 24, left: 0, bottom: 8 }}>
+                  <defs>
+                    <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                      <rect width="8" height="8" fill="#FEE2E2" />
+                      <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
+                    </pattern>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                   <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11, fontWeight: 600 }} />
                   <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={90} />
                   <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
                   <Legend iconType="circle" />
+                  {totalLaan > 0 && !akkumulerRenter && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                   {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                   <Line type="monotone" dataKey="pessimistisk" stroke="#DC2626" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="Pessimistisk" />
                   <Line type="monotone" dataKey="optimistisk" stroke="#059669" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="Optimistisk" />
                   {totalLaan > 0 && !akkumulerRenter && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={1.5} strokeDasharray="3 3" />}
-                  {totalLaan > 0 && akkumulerRenter && <Line type="monotone" dataKey="laanBalanse" stroke="#B91C1C" strokeWidth={2} strokeDasharray="6 3" dot={false} name="Lånebalanse" />}
+                  {totalLaan > 0 && akkumulerRenter && (
+                    <Area type="monotone" dataKey="laanBalanse" fill="url(#laanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
+                      <LabelList dataKey="laanBalanse" content={(props) => {
+                        const { x, y, value, index } = props;
+                        if (index !== kombinertVerdiutvikling.length - 1) return null;
+                        return <text x={x} y={y - 6} fill="#FFFFFF" fontSize={11} fontWeight={700} textAnchor="end" style={{ paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 3.5, strokeLinejoin: 'round' }}>Lån: {formatCurrency(value)}</text>;
+                      }} />
+                    </Area>
+                  )}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -6368,7 +6383,15 @@ export default function PensumPrognoseModell() {
                     {totalLaan > 0 && !akkumulerRenter && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                    {totalLaan > 0 && akkumulerRenter && <Line type="monotone" dataKey="laanBalanse" stroke="#B91C1C" strokeWidth={2.5} strokeDasharray="6 3" dot={false} name="Lånebalanse" />}
+                    {totalLaan > 0 && akkumulerRenter && (
+                      <Area type="monotone" dataKey="laanBalanse" fill="url(#laanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
+                        <LabelList dataKey="laanBalanse" content={(props) => {
+                          const { x, y, value, index } = props;
+                          if (index !== kombinertVerdiutvikling.length - 1) return null;
+                          return <text x={x} y={y - 6} fill="#FFFFFF" fontSize={13} fontWeight={700} textAnchor="end" style={{ paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' }}>Lån: {formatCurrency(value)}</text>;
+                        }} />
+                      </Area>
+                    )}
                     {totalLaan > 0 && !akkumulerRenter && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
