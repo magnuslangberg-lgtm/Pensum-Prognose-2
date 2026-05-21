@@ -2985,37 +2985,39 @@ export default function PensumPrognoseModell() {
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
-      if (!autoRebalanserAllokering) {
-        const updated = [...prev];
-        updated[index] = { ...updated[index], vekt: Math.max(0, Math.min(100, Number(newVekt) || 0)) };
-        return updated;
-      }
-      return fordelRestVektListe(prev, index, newVekt);
+      const clamped = Math.max(0, Math.min(100, Number(newVekt) || 0));
+      const items = !autoRebalanserAllokering
+        ? prev.map((it, i) => i === index ? { ...it, vekt: clamped } : it)
+        : fordelRestVektListe(prev, index, clamped);
+      // Synk lagret belop mot ny vekt så beløpsfeltet er konsistent.
+      return items.map(it => ({
+        ...it,
+        belop: effektivtInvestertBelop > 0 ? Math.round((it.vekt / 100) * effektivtInvestertBelop) : 0,
+      }));
     });
-  }, [autoRebalanserAllokering]);
+  }, [autoRebalanserAllokering, effektivtInvestertBelop]);
 
   const updateAllokeringBelop = useCallback((index, newBelop) => {
-    const cleanBelop = Math.max(0, Number(newBelop) || 0);
-    // Beregn nye beløp på alle rader: endret rad får ny verdi, øvrige beholder
-    // sin nåværende beregnede verdi (vekt × forrige total).
+    const cleanBelop = Math.max(0, Math.round(Number(newBelop) || 0));
     const currentTotal = effektivtInvestertBelop;
+    // Hent gjeldende beløp per rad: typed verdi der den finnes, ellers vekt × forrige total.
     const nyeBelop = allokering.map((it, i) => {
       if (i === index) return cleanBelop;
-      return currentTotal > 0 ? ((it.vekt || 0) / 100) * currentTotal : 0;
+      if (typeof it.belop === 'number') return it.belop;
+      return currentTotal > 0 ? Math.round(((it.vekt || 0) / 100) * currentTotal) : 0;
     });
     const nyTotal = nyeBelop.reduce((s, b) => s + b, 0);
 
     setAllokering(prev => prev.map((it, i) => ({
       ...it,
-      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0
+      belop: nyeBelop[i],
+      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0,
     })));
 
-    // Når brukeren ikke har satt et eksplisitt budsjett, lar vi summen av
-    // innskrevne beløp definere totalen så simulering og resten av appen er konsistent.
-    if (investertBelop === null && nyTotal > 0) {
-      setInvestertBelop(nyTotal);
-    }
-  }, [allokering, effektivtInvestertBelop, investertBelop]);
+    // Hold "Investert beløp" synkronisert med summen så simulering, grafer
+    // og snittavkastning reflekterer faktisk innskrevne beløp.
+    if (nyTotal > 0) setInvestertBelop(nyTotal);
+  }, [allokering, effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
     setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0, manueltJustert: true }; return u; });
@@ -4678,6 +4680,16 @@ export default function PensumPrognoseModell() {
                   <button onClick={() => resetTilAutomatisk()} className="w-full mt-4 py-2.5 px-4 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                     Oppdater allokering basert på risikoprofil
                   </button>
+                  <button
+                    onClick={() => {
+                      setAksjerKunde(0); setAksjefondKunde(0); setRenterKunde(0); setKontanterKunde(0);
+                      setPeFondKunde(0); setUnoterteAksjerKunde(0); setShippingKunde(0);
+                      setEgenEiendomKunde(0); setEiendomSyndikatKunde(0); setEiendomFondKunde(0);
+                    }}
+                    className="w-full mt-2 py-2 px-4 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                  >
+                    Nullstill beløp
+                  </button>
                 </div>
               </div>
               {/* ── Eksisterende portefølje ── */}
@@ -5230,6 +5242,30 @@ export default function PensumPrognoseModell() {
                         });
                       })()}
                     </div>
+
+                    {/* Oppsummering: total %, total kr, vektet snittavkastning */}
+                    {(() => {
+                      const totalBelop = allokering.reduce((s, a) => s + (typeof a.belop === 'number' ? a.belop : (a.vekt / 100) * effektivtInvestertBelop), 0);
+                      const snittAvkastning = totalVekt > 0
+                        ? allokering.reduce((s, a) => s + (a.vekt || 0) * (a.avkastning || 0), 0) / totalVekt
+                        : 0;
+                      return (
+                        <div className="border-t border-gray-200 mt-3 pt-4 grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Total vekting</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: Math.abs(totalVekt - 100) < 0.2 ? PENSUM_COLORS.teal : '#B45309' }}>{formatPercent(totalVekt)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Totalbeløp</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(totalBelop)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Snittavkastning</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.teal }}>{snittAvkastning.toFixed(1)}%</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Legg til indeks */}
                     <div className="border-t border-gray-200 pt-5 mt-2">

@@ -52,7 +52,11 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
-  const beregnetBelop = (item.vekt / 100) * effektivtInvestertBelop;
+  // Bruk lagret beløp hvis brukeren har skrevet inn et eksplisitt tall;
+  // ellers beregn fra vekt × total.
+  const beregnetBelop = typeof item.belop === 'number'
+    ? item.belop
+    : (item.vekt / 100) * effektivtInvestertBelop;
   const [localBelop, setLocalBelop] = useState(formatNumber(Math.round(beregnetBelop)));
   useEffect(() => { setLocalBelop(formatNumber(Math.round(beregnetBelop))); }, [beregnetBelop]);
   const itemColor = ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] || '#888';
