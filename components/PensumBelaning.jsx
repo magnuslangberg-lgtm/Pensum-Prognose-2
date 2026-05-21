@@ -1295,11 +1295,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
           formatProsent={formatProsent}
         />
 
-        <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: `1px solid ${colors.mediumGray}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: colors.textMuted, flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ marginTop: '28px', paddingTop: '16px', borderTop: `1px solid ${colors.mediumGray}`, fontSize: '9px', color: colors.textMuted }}>
           <div>© {new Date().getFullYear()} Pensum Asset Management AS — Belåningsverktøy</div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <span>Kilde: <a href="https://github.com/magnuslangberg-lgtm/Modell-for-Verdipapirbel-ning" target="_blank" rel="noopener noreferrer" style={{ color: colors.primaryLight }}>Modell-for-Verdipapirbelåning</a></span>
-          </div>
         </div>
       </div>
     </div>
