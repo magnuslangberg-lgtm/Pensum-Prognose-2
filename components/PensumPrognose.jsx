@@ -411,15 +411,56 @@ export default function PensumPrognoseModell() {
     return !pdfMalConfig?.filDataUrl;
   }, [pdfMalConfig?.filnavn, pdfMalConfig?.filDataUrl]);
   
-  // Standard avkastningsrater (kan endres av admin)
-  const [avkastningsrater, setAvkastningsrater] = useState({
-    globaleAksjer: 10,
-    norskeAksjer: 11,
-    hoyrente: 7.5,
-    investmentGrade: 5,
-    privateEquity: 15,
-    eiendom: 8
-  });
+  // Standard avkastningsrater — beregnes fra CMA-data (samme metodikk som Porteføljebygger):
+  // hver aktivaklasse mappes til ett eller flere Pensum-produkter, og forventet avkastning
+  // er gjennomsnittet av produktenes forventetAvkastning. Admin kan overstyre per klasse.
+  const CMA_FALLBACK_RATER = { globaleAksjer: 10, norskeAksjer: 11, hoyrente: 7.5, investmentGrade: 5, privateEquity: 15, eiendom: 8 };
+  const CMA_KILDE_PROGNOSE = {
+    globaleAksjer: ['global-core-active', 'global-edge', 'acadian-global-equity', 'capital-group-new-pers', 'dnb-global-enhanced', 'guinness-global-equity-income'],
+    norskeAksjer: ['norge-a'],
+    hoyrente: ['global-hoyrente', 'nordisk-hoyrente'],
+    privateEquity: ['turnstone-pe', 'unoterte-aksjer'],
+    eiendom: ['amaron-re']
+    // investmentGrade beregnes som hoyrente − 2,5 (IG/HY-spread) — ingen IG-produkter i CMA-arket
+  };
+  const cmaAvkastninger = useMemo(() => {
+    const alleProdukt = [
+      ...(pensumProdukter.enkeltfond || []),
+      ...(pensumProdukter.fondsportefoljer || []),
+      ...(pensumProdukter.eksterneFond || []),
+      ...(pensumProdukter.alternative || [])
+    ];
+    const snitt = (ids, fallback) => {
+      const verdier = ids.map(id => alleProdukt.find(p => p.id === id)?.forventetAvkastning).filter(erGyldigTall);
+      if (verdier.length === 0) return fallback;
+      return parseFloat((verdier.reduce((s, v) => s + v, 0) / verdier.length).toFixed(1));
+    };
+    const hoyrente = snitt(CMA_KILDE_PROGNOSE.hoyrente, CMA_FALLBACK_RATER.hoyrente);
+    return {
+      globaleAksjer: snitt(CMA_KILDE_PROGNOSE.globaleAksjer, CMA_FALLBACK_RATER.globaleAksjer),
+      norskeAksjer: snitt(CMA_KILDE_PROGNOSE.norskeAksjer, CMA_FALLBACK_RATER.norskeAksjer),
+      hoyrente,
+      investmentGrade: parseFloat(Math.max(0, hoyrente - 2.5).toFixed(1)),
+      privateEquity: snitt(CMA_KILDE_PROGNOSE.privateEquity, CMA_FALLBACK_RATER.privateEquity),
+      eiendom: snitt(CMA_KILDE_PROGNOSE.eiendom, CMA_FALLBACK_RATER.eiendom)
+    };
+  }, [pensumProdukter]);
+  // Admin-overstyringer per klasse (partielt objekt). Nøkler som ikke er overstyrt
+  // arver fra cmaAvkastninger og endres dermed automatisk når CMA-data endres.
+  const [avkastningsraterOverride, setAvkastningsraterOverride] = useState({});
+  const avkastningsrater = useMemo(() => ({ ...cmaAvkastninger, ...avkastningsraterOverride }), [cmaAvkastninger, avkastningsraterOverride]);
+  const setAvkastningsrater = useCallback((updater) => {
+    setAvkastningsraterOverride((prev) => {
+      const current = { ...cmaAvkastninger, ...prev };
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      // Behold bare nøkler som faktisk avviker fra CMA, slik at CMA-endringer fortsatt forplanter seg
+      const filtrert = {};
+      Object.keys(next).forEach(k => {
+        if (next[k] !== cmaAvkastninger[k]) filtrert[k] = next[k];
+      });
+      return filtrert;
+    });
+  }, [cmaAvkastninger]);
   const [avkastningsraterLaast, setAvkastningsraterLaast] = useState(false);
 
   // Last admin-data fra storage ved oppstart
@@ -456,7 +497,10 @@ export default function PensumPrognoseModell() {
       try {
         const raterValue = await storageGet('pensum_admin_avkastningsrater');
         if (raterValue) {
-          setAvkastningsrater(JSON.parse(raterValue));
+          // Lagrede verdier kan være enten full rate-objekt (gammelt format) eller
+          // partielt override-objekt (nytt format). Begge tolkes som overrides — keys
+          // som matcher CMA filtreres ut neste gang noen redigerer.
+          try { setAvkastningsraterOverride(JSON.parse(raterValue) || {}); } catch {}
         }
 
         const produktValue = await storageGet('pensum_admin_produkter');
@@ -1164,7 +1208,7 @@ export default function PensumPrognoseModell() {
     setEiendomFondKunde(0);
     setInnskudd(0);
     setUttak(0);
-    setAllokering(beregnAllokering(0, 0, 0, 'Moderat'));
+    setAllokering(beregnAllokering(0, 0, 0, 'Moderat', avkastningsrater));
     setInvesteringsFormaal('Utvikle finansiell formue');
     setLikviditetsbehov('Begrenset');
     setVisKundeliste(false);
@@ -2679,7 +2723,7 @@ export default function PensumPrognoseModell() {
 
   const oppdaterSammenligningProfil = useCallback((nyProfil) => {
     setSammenligningProfil(nyProfil);
-    setSammenligningAllokering(beregnAllokering(likvideTotal, peTotal, eiendomTotal, nyProfil));
+    setSammenligningAllokering(beregnAllokering(likvideTotal, peTotal, eiendomTotal, nyProfil, avkastningsrater));
   }, [likvideTotal, peTotal, eiendomTotal]);
 
   const updateSammenligningVekt = useCallback((index, newVekt) => {
@@ -2700,7 +2744,7 @@ export default function PensumPrognoseModell() {
     // Hvis alternative ikke skal vises, bruk 0 for PE og Eiendom
     const brukPE = effektivVisAlternative ? peTotal : 0;
     const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
-    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, profil));
+    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, profil, avkastningsrater));
     // Synkroniser til porteføljebygger
     if (nyProfil && pensumStandardPortefoljer[profil]) {
       setValgtPensumProfil(profil);
@@ -2712,7 +2756,7 @@ export default function PensumPrognoseModell() {
   useEffect(() => {
     const brukPE = effektivVisAlternative ? peTotal : 0;
     const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
-    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, risikoprofil));
+    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, risikoprofil, avkastningsrater));
   }, [effektivVisAlternative]);
 
   const kategorierData = useMemo(() => {
@@ -2940,8 +2984,44 @@ export default function PensumPrognoseModell() {
   }, [effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
-    setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0 }; return u; });
+    setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0, manueltJustert: true }; return u; });
   }, []);
+
+  // Synkroniser avkastning på allokerings-radene når CMA-rater endres (f.eks. admin
+  // oppdaterer et produkt i CMA-arket). Rader med manueltJustert beholder verdien sin.
+  const ALLOKERING_NAVN_TIL_RATER = useMemo(() => ({
+    'Globale Aksjer': 'globaleAksjer', 'Norske Aksjer': 'norskeAksjer',
+    'Høyrente': 'hoyrente', 'Investment Grade': 'investmentGrade',
+    'Private Equity': 'privateEquity', 'Eiendom': 'eiendom'
+  }), []);
+  useEffect(() => {
+    setAllokering(prev => {
+      let endret = false;
+      const neste = prev.map(rad => {
+        if (rad.manueltJustert) return rad;
+        const key = ALLOKERING_NAVN_TIL_RATER[rad.navn];
+        if (!key) return rad;
+        const ny = avkastningsrater[key];
+        if (!erGyldigTall(ny) || ny === rad.avkastning) return rad;
+        endret = true;
+        return { ...rad, avkastning: ny };
+      });
+      return endret ? neste : prev;
+    });
+    setSammenligningAllokering(prev => {
+      let endret = false;
+      const neste = prev.map(rad => {
+        if (rad.manueltJustert) return rad;
+        const key = ALLOKERING_NAVN_TIL_RATER[rad.navn];
+        if (!key) return rad;
+        const ny = avkastningsrater[key];
+        if (!erGyldigTall(ny) || ny === rad.avkastning) return rad;
+        endret = true;
+        return { ...rad, avkastning: ny };
+      });
+      return endret ? neste : prev;
+    });
+  }, [avkastningsrater, ALLOKERING_NAVN_TIL_RATER]);
 
   const normaliserAllokeringTil100 = useCallback(() => {
     setAllokering((prev) => skalerVekterTilHundreListe(prev));
@@ -11862,6 +11942,8 @@ export default function PensumPrognoseModell() {
                   <div className="p-6">
                     <p className="text-sm text-gray-600 mb-4">
                       Disse ratene brukes i "Allokering & Prognose"-fanen for aktivaklassene.
+                      Verdiene er avledet fra CMA-arket (vektet snitt av <code className="text-xs bg-gray-100 px-1 rounded">forventetAvkastning</code> per produkt).
+                      Overstyringer per klasse markeres og kan tilbakestilles. Investment Grade beregnes som Høyrente − 2,5&nbsp;%.
                       {avkastningsraterLaast && <span className="ml-1 text-amber-600 font-medium">Ratene er låst og kan ikke endres av rådgivere.</span>}
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -11872,35 +11954,66 @@ export default function PensumPrognoseModell() {
                         { key: 'investmentGrade', label: 'Investment Grade' },
                         { key: 'privateEquity', label: 'Private Equity' },
                         { key: 'eiendom', label: 'Eiendom' }
-                      ].map(({ key, label }) => (
-                        <div key={key}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              step="0.5"
-                              value={avkastningsrater[key]}
-                              onChange={(e) => setAvkastningsrater(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                              className="w-full border border-gray-200 rounded-lg py-2 px-3 text-right"
-                            />
-                            <span className="text-gray-500">%</span>
+                      ].map(({ key, label }) => {
+                        const erOverstyrt = Object.prototype.hasOwnProperty.call(avkastningsraterOverride, key);
+                        return (
+                          <div key={key}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                              <span>{label}</span>
+                              {erOverstyrt && <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Overstyrt</span>}
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={avkastningsrater[key]}
+                                onChange={(e) => setAvkastningsrater(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                className={"w-full border rounded-lg py-2 px-3 text-right " + (erOverstyrt ? "border-amber-400 bg-amber-50" : "border-gray-200")}
+                              />
+                              <span className="text-gray-500">%</span>
+                            </div>
+                            <div className="text-[11px] text-gray-500 mt-1 flex items-center justify-between gap-2">
+                              <span>CMA: <strong>{formatPercent(cmaAvkastninger[key])}</strong></span>
+                              {erOverstyrt && (
+                                <button
+                                  onClick={() => setAvkastningsraterOverride(prev => { const n = { ...prev }; delete n[key]; return n; })}
+                                  className="text-amber-700 hover:text-amber-900 underline"
+                                >Tilbakestill</button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await storageSet('pensum_admin_avkastningsrater', JSON.stringify(avkastningsrater));
-                          setAdminMelding('Avkastningsrater lagret!');
-                        } catch (err) {
-                          setAdminMelding('Feil ved lagring: ' + err.message);
-                        }
-                      }}
-                      className="mt-4 px-6 py-2 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
-                    >
-                      Lagre avkastningsrater
-                    </button>
+                    <div className="mt-4 flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await storageSet('pensum_admin_avkastningsrater', JSON.stringify(avkastningsraterOverride));
+                            setAdminMelding('Avkastningsrater lagret!');
+                          } catch (err) {
+                            setAdminMelding('Feil ved lagring: ' + err.message);
+                          }
+                        }}
+                        className="px-6 py-2 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
+                      >
+                        Lagre avkastningsrater
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setAvkastningsraterOverride({});
+                          try {
+                            await storageSet('pensum_admin_avkastningsrater', JSON.stringify({}));
+                            setAdminMelding('Alle overstyringer fjernet — bruker CMA-verdier.');
+                          } catch (err) {
+                            setAdminMelding('Feil ved lagring: ' + err.message);
+                          }
+                        }}
+                        className="px-6 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Tilbakestill alle til CMA
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -12236,10 +12349,7 @@ export default function PensumPrognoseModell() {
                       onClick={async () => {
                         if (!confirm('Er du sikker på at du vil tilbakestille alle data til standardverdier?')) return;
                         setPensumProdukter(JSON.parse(JSON.stringify(defaultPensumProdukter)));
-                        setAvkastningsrater({
-                          globaleAksjer: 9, norskeAksjer: 10, hoyrente: 8,
-                          investmentGrade: 5, privateEquity: 15, eiendom: 8
-                        });
+                        setAvkastningsraterOverride({});
                         setAvkastningsraterLaast(false);
                         try {
                           await storageDelete('pensum_admin_produkter');
