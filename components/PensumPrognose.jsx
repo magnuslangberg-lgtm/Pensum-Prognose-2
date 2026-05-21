@@ -4880,11 +4880,11 @@ export default function PensumPrognoseModell() {
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Investor</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <input type="text" defaultValue={kundeNavn} onBlur={(e) => setKundeNavn(e.target.value)} placeholder="Navn på investor" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <input type="text" value={kundeNavn} onChange={(e) => setKundeNavn(e.target.value)} placeholder="Navn på investor" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
                       <span className="text-[10px] text-gray-400 mt-0.5 block">Personnavn eller kontaktperson</span>
                     </div>
                     <div>
-                      <input type="text" defaultValue={kundeSelskap} onBlur={(e) => setKundeSelskap(e.target.value)} placeholder="Selskap / organisasjon (valgfritt)" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                      <input type="text" value={kundeSelskap} onChange={(e) => setKundeSelskap(e.target.value)} placeholder="Selskap / organisasjon (valgfritt)" className="w-full border border-gray-200 rounded-lg py-2.5 px-4 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
                       <span className="text-[10px] text-gray-400 mt-0.5 block">Investeringsselskap, AS, stiftelse e.l.</span>
                     </div>
                   </div>
