@@ -1914,11 +1914,12 @@ export default function PensumPrognoseModell() {
             {/* Kontorer */}
             <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
               <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PENSUM_COLORS.teal }}>Kontaktdetaljer Pensum Asset Management</h3>
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-4 gap-4">
                 {[
                   { by: 'Oslo', adresse: 'Frøyas gate 15', postnr: '0273 Oslo', tlf: '+47 23 89 68 44' },
-                  { by: 'Fredrikstad', adresse: 'Storgaten 3', postnr: '1607 Fredrikstad', tlf: '+47 23 89 68 44' },
                   { by: 'Stavanger', adresse: 'Løkkeveien 107 (Smedvigkvartalet)', postnr: '4007 Stavanger', tlf: '+47 23 89 68 44' },
+                  { by: 'Fredrikstad', adresse: 'Storgaten 3', postnr: '1607 Fredrikstad', tlf: '+47 23 89 68 44' },
+                  { by: 'Trondheim', adresse: 'Brøsetvegen 164', postnr: '7069 Trondheim', tlf: '+47 23 89 68 44' },
                 ].map((kontor, i) => (
                   <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <h4 className="text-white font-bold text-sm mb-1">{kontor.by}</h4>
