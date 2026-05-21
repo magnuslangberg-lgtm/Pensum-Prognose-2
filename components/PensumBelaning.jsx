@@ -29,7 +29,10 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   const [valuta, setValuta] = useState('NOK');
   const [rentepaaslag, setRentepaaslag] = useState(1.0);
   
-  const [reinvesteringAvkastning, setReinvesteringAvkastning] = useState(8);
+  const [reinvesteringAktiva, setReinvesteringAktiva] = useState('aksjer'); // 'aksjer' | 'renter'
+  const [aksjerAvkastning, setAksjerAvkastning] = useState(8);
+  const [renterAvkastning, setRenterAvkastning] = useState(4.5);
+  const reinvesteringAvkastning = reinvesteringAktiva === 'aksjer' ? aksjerAvkastning : renterAvkastning;
   const [tidshorisont, setTidshorisont] = useState(5);
   const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak'
   const [visMaksBelaning, setVisMaksBelaning] = useState(false); // Valgfri tilleggsblokk
@@ -206,7 +209,10 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
   const beregninger = useMemo(() => {
     const { totalVerdi, faktiskLTV, faktiskLanebelop } = portefoljeBeregning;
-    const initieltLan = faktiskLanebelop;
+    // Analysen viser kun NYTT lån oppå eksisterende benyttet låneramme.
+    // Tilgjengelig kapasitet = total ramme − allerede benyttet.
+    const tilgjengeligRamme = Math.max(0, faktiskLanebelop - eksisterendeBenyttet);
+    const initieltLan = tilgjengeligRamme;
     const rentekostnadArlig = initieltLan * (totalRente / 100);
     
     if (faktiskLTV === 0 || initieltLan === 0 || totalVerdi === 0) {
@@ -350,7 +356,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
         effektivLTV: sisteAr.effektivLTV, faktiskLTV, rentekostnadArlig
       };
     }
-  }, [portefoljeBeregning, totalRente, reinvesteringAvkastning, tidshorisont, modus]);
+  }, [portefoljeBeregning, totalRente, reinvesteringAvkastning, tidshorisont, modus, eksisterendeBenyttet]);
 
   const formatNOK = (value) => {
     if (value === undefined || value === null || isNaN(value)) return '0 kr';
@@ -655,20 +661,65 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                 </div>
               )}
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <span className="label-text">Forventet avkastning (p.a.)</span>
-                  <span className="value-text" style={{ color: colors.success }}>{reinvesteringAvkastning}%</span>
-                </label>
-                <input type="range" min="0" max="20" step="0.5" value={reinvesteringAvkastning} onChange={(e) => setReinvesteringAvkastning(Number(e.target.value))} />
-              </div>
-
               <div>
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <span className="label-text">Tidshorisont</span>
                   <span className="value-text">{tidshorisont} år</span>
                 </label>
                 <input type="range" min="1" max="20" value={tidshorisont} onChange={(e) => setTidshorisont(Number(e.target.value))} />
+              </div>
+            </div>
+
+            {/* Reinvesteres i — aktiva-velger og avkastning */}
+            <div className="pensum-card">
+              <h2 className="section-title">{modus === 'kontantuttak' ? 'Pantet investeres i' : 'Reinvesteres i'}</h2>
+              <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '12px', lineHeight: 1.5 }}>
+                Velg hvilken aktiva {modus === 'kontantuttak' ? 'pantet står i' : 'lånet investeres i'}. Forventet avkastning bestemmer simuleringen.
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                {[
+                  { id: 'aksjer', navn: 'Aksjer', farge: colors.primary, ikon: '📊', default: 8 },
+                  { id: 'renter', navn: 'Renter', farge: colors.primaryLight, ikon: '💰', default: 4.5 },
+                ].map(a => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setReinvesteringAktiva(a.id)}
+                    style={{
+                      padding: '10px 8px',
+                      border: `2px solid ${reinvesteringAktiva === a.id ? a.farge : colors.mediumGray}`,
+                      background: reinvesteringAktiva === a.id ? `${a.farge}12` : colors.white,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontSize: '18px', marginBottom: '2px' }}>{a.ikon}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: reinvesteringAktiva === a.id ? a.farge : colors.textDark }}>{a.navn}</div>
+                    <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: '2px' }}>
+                      {reinvesteringAktiva === a.id ? `${reinvesteringAvkastning}% p.a.` : `~${a.default}% p.a.`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                  <span className="label-text">Forventet avkastning</span>
+                  <span className="value-text" style={{ color: colors.success }}>{reinvesteringAvkastning}% p.a.</span>
+                </label>
+                {reinvesteringAktiva === 'aksjer' ? (
+                  <input type="range" min="0" max="20" step="0.5" value={aksjerAvkastning} onChange={(e) => setAksjerAvkastning(Number(e.target.value))} />
+                ) : (
+                  <input type="range" min="0" max="15" step="0.25" value={renterAvkastning} onChange={(e) => setRenterAvkastning(Number(e.target.value))} />
+                )}
+                <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: '4px' }}>
+                  {reinvesteringAktiva === 'aksjer'
+                    ? 'Historisk avkastning på globale aksjer ligger på ~7–9% p.a.'
+                    : 'Renter / høyrentefond gir typisk ~3–6% p.a. avhengig av risiko.'}
+                </div>
               </div>
             </div>
 
@@ -741,8 +792,12 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             {modus === 'reinvestering' && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
                 <h2 className="section-title">📈 Reinvesteringsanalyse</h2>
-                <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px' }}>
-                  Låner {formatProsent(beregninger.faktiskLTV)} av pantet ({formatNOK(beregninger.initieltLan)}) og reinvesterer i samme aktiva. Simulering over {tidshorisont} år.
+                <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px', lineHeight: 1.5 }}>
+                  Tar opp <strong>{formatNOK(beregninger.initieltLan)}</strong> av tilgjengelig låneramme
+                  {eksisterendeBenyttet > 0 && <> (etter {formatNOK(eksisterendeBenyttet)} allerede benyttet)</>} og reinvesterer i <strong>{reinvesteringAktiva === 'aksjer' ? 'aksjer' : 'renter'}</strong> ved {reinvesteringAvkastning}% p.a. Simulering over {tidshorisont} år.
+                  {portefoljeBeregning.maksLanebelop > 0 && eksisterendeBenyttet >= portefoljeBeregning.maksLanebelop && (
+                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>⚠ Hele rammen er allerede benyttet — ingen kapasitet til nytt lån.</div>
+                  )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '14px' }}>
@@ -846,9 +901,12 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             {modus === 'kontantuttak' && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
                 <h2 className="section-title">💵 Kontantuttaksanalyse</h2>
-                <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px' }}>
-                  Tar ut {formatNOK(beregninger.kontantUttak)} kontant (brukes til annet). Pantet på {formatNOK(portefoljeBeregning.totalVerdi)} forblir investert. 
-                  Rentekostnader trekkes fra pantekontoen. Simulering over {tidshorisont} år.
+                <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px', lineHeight: 1.5 }}>
+                  Tar ut <strong>{formatNOK(beregninger.kontantUttak)}</strong> kontant av tilgjengelig låneramme
+                  {eksisterendeBenyttet > 0 && <> (etter {formatNOK(eksisterendeBenyttet)} allerede benyttet)</>}. Pantet på {formatNOK(portefoljeBeregning.totalVerdi)} forblir investert i <strong>{reinvesteringAktiva === 'aksjer' ? 'aksjer' : 'renter'}</strong> ved {reinvesteringAvkastning}% p.a. Rentekostnader trekkes fra pantekontoen. Simulering over {tidshorisont} år.
+                  {portefoljeBeregning.maksLanebelop > 0 && eksisterendeBenyttet >= portefoljeBeregning.maksLanebelop && (
+                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>⚠ Hele rammen er allerede benyttet — ingen kapasitet til kontantuttak.</div>
+                  )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '14px' }}>
