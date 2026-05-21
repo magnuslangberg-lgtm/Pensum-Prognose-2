@@ -31,7 +31,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   
   const [reinvesteringAvkastning, setReinvesteringAvkastning] = useState(8);
   const [tidshorisont, setTidshorisont] = useState(5);
-  const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak', 'maksbelaning'
+  const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak'
+  const [visMaksBelaning, setVisMaksBelaning] = useState(false); // Valgfri tilleggsblokk
   const [visDetaljer, setVisDetaljer] = useState(true);
   
   // Investeringsscenario for kontantuttak
@@ -39,16 +40,9 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   const [investeringstype, setInvesteringstype] = useState('eiendom'); // 'eiendom', 'pe'
   const [investeringAvkastning, setInvesteringAvkastning] = useState(12); // Forventet avkastning på eiendom/PE
 
-  // Eksisterende lån (manuelt lagt til av rådgiver)
-  const [eksisterendeLaan, setEksisterendeLaan] = useState([]);
-  const [visMaksBelaningOversikt, setVisMaksBelaningOversikt] = useState(false);
-
-  const defaultMaksLTVForLaanType = (type) => {
-    if (type === 'Verdipapirfinansiering') return 60;
-    if (type === 'Banklån') return 80;
-    if (type === 'Andre lån') return 50;
-    return 60;
-  };
+  // Eksisterende verdipapirfinansiering (kundens nåværende låneramme + benyttet)
+  const [eksisterendeLaaneramme, setEksisterendeLaaneramme] = useState(0);
+  const [eksisterendeBenyttet, setEksisterendeBenyttet] = useState(0);
 
   // Aktivaklasser med maks LTV
   const getAktivaklasser = (diversifisert) => ({
@@ -485,17 +479,20 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
       </div>
 
       <div>
-        {/* Modus-velger - 3 knapper */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-          <button className={`btn-modus ${modus === 'reinvestering' ? 'active' : 'inactive'}`} onClick={() => setModus('reinvestering')}>
-            📈 Reinvestering
-          </button>
-          <button className={`btn-modus ${modus === 'kontantuttak' ? 'active' : 'inactive'}`} onClick={() => setModus('kontantuttak')}>
-            💵 Kontantuttak
-          </button>
-          <button className={`btn-modus ${modus === 'maksbelaning' ? 'active' : 'inactive'}`} onClick={() => setModus('maksbelaning')}>
-            🚀 Maks belåning
-          </button>
+        {/* Modus-velger */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className={`btn-modus ${modus === 'reinvestering' ? 'active' : 'inactive'}`} onClick={() => setModus('reinvestering')}>
+              📈 Reinvestering
+            </button>
+            <button className={`btn-modus ${modus === 'kontantuttak' ? 'active' : 'inactive'}`} onClick={() => setModus('kontantuttak')}>
+              💵 Kontantuttak
+            </button>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: colors.textDark, padding: '6px 10px', background: visMaksBelaning ? colors.lightGray : 'transparent', borderRadius: '5px', border: `1px solid ${visMaksBelaning ? colors.accent : colors.mediumGray}` }}>
+            <input type="checkbox" checked={visMaksBelaning} onChange={(e) => setVisMaksBelaning(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+            <span style={{ fontWeight: 500 }}>🚀 Vis maks belåning</span>
+          </label>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 400px) 1fr', gap: '20px', alignItems: 'start' }}>
@@ -646,7 +643,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             <div className="pensum-card">
               <h2 className="section-title">Parametere</h2>
               
-              {modus !== 'maksbelaning' && (
+              {true && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                     <span className="label-text">Belåningsgrad (LTV)</span>
@@ -673,6 +670,66 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                 </label>
                 <input type="range" min="1" max="20" value={tidshorisont} onChange={(e) => setTidshorisont(Number(e.target.value))} />
               </div>
+            </div>
+
+            {/* Eksisterende verdipapirfinansiering */}
+            <div className="pensum-card">
+              <h2 className="section-title">Eksisterende låneramme</h2>
+              <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '12px', lineHeight: 1.5 }}>
+                Fyll inn kundens nåværende verdipapirfinansiering for å se hvor mye av rammen som er brukt og hvor mye mer som kan trekkes opp.
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span className="label-text">Total låneramme</span>
+                  <span className="value-text" style={{ color: colors.primary }}>{formatNOK(eksisterendeLaaneramme)}</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100000"
+                  value={eksisterendeLaaneramme || ''}
+                  placeholder="0"
+                  onChange={(e) => setEksisterendeLaaneramme(Math.max(0, parseFloat(e.target.value) || 0))}
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span className="label-text">Benyttet av rammen</span>
+                  <span className="value-text" style={{ color: colors.accent }}>{formatNOK(eksisterendeBenyttet)}</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100000"
+                  value={eksisterendeBenyttet || ''}
+                  placeholder="0"
+                  onChange={(e) => setEksisterendeBenyttet(Math.max(0, parseFloat(e.target.value) || 0))}
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
+                />
+              </div>
+
+              {(() => {
+                const tilgjengelig = Math.max(0, eksisterendeLaaneramme - eksisterendeBenyttet);
+                const utnyttetPct = eksisterendeLaaneramme > 0 ? (eksisterendeBenyttet / eksisterendeLaaneramme) * 100 : 0;
+                const utnyttetFarge = utnyttetPct > 90 ? colors.danger : utnyttetPct > 70 ? colors.accent : colors.success;
+                return (
+                  <div style={{ background: colors.lightGray, borderRadius: '6px', padding: '12px', borderLeft: `4px solid ${utnyttetFarge}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '10px', color: colors.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>Tilgjengelig å låne</span>
+                      <span style={{ fontSize: '10px', color: utnyttetFarge, fontWeight: 600 }}>{eksisterendeLaaneramme > 0 ? formatProsent(utnyttetPct) + ' utnyttet' : '—'}</span>
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: utnyttetFarge }}>{formatNOK(tilgjengelig)}</div>
+                    {eksisterendeLaaneramme > 0 && (
+                      <div style={{ width: '100%', height: '5px', background: colors.mediumGray, borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: Math.min(100, utnyttetPct) + '%', background: utnyttetFarge, transition: 'width 0.2s' }} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1072,7 +1129,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             )}
 
             {/* MAKS BELÅNING MED REINVESTERING */}
-            {modus === 'maksbelaning' && (
+            {visMaksBelaning && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
                 <h2 className="section-title">🚀 Maks belåning med reinvestering</h2>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '10px 14px', background: colors.lightGray, borderRadius: '5px', lineHeight: '1.5' }}>
@@ -1141,196 +1198,6 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                 </div>
               </div>
             )}
-
-            {/* EKSISTERENDE LÅN */}
-            <div className="pensum-card" style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                <h3 className="section-title" style={{ margin: 0 }}>Eksisterende lån</h3>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {['Banklån', 'Verdipapirfinansiering', 'Andre lån'].map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setEksisterendeLaan(prev => [...prev, {
-                        id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
-                        type: t,
-                        pantegrunnlag: 0,
-                        maksLTV: defaultMaksLTVForLaanType(t),
-                        brukt: 0,
-                        rente: t === 'Verdipapirfinansiering' ? 5.5 : t === 'Banklån' ? 4.5 : 6,
-                      }])}
-                      style={{ fontSize: '11px', padding: '5px 10px', border: `1px dashed ${colors.accent}`, color: colors.accent, background: 'transparent', borderRadius: '4px', cursor: 'pointer', fontWeight: 500 }}
-                    >+ {t}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '12px' }}>
-                Registrer lån kunden allerede har. Pantegrunnlag × maks LTV gir låneramme — du fyller selv inn hvor mye som er trukket opp.
-              </div>
-
-              {eksisterendeLaan.length === 0 ? (
-                <div style={{ padding: '14px', background: colors.lightGray, borderRadius: '5px', fontSize: '12px', color: colors.textMuted, textAlign: 'center', fontStyle: 'italic' }}>
-                  Ingen lån registrert. Klikk på en av knappene over for å legge til.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {eksisterendeLaan.map((laan, idx) => {
-                    const maksLTV = Number(laan.maksLTV) || 0;
-                    const pantegrunnlag = Number(laan.pantegrunnlag) || 0;
-                    const brukt = Number(laan.brukt) || 0;
-                    const laaneramme = pantegrunnlag * (maksLTV / 100);
-                    const tilgjengelig = Math.max(0, laaneramme - brukt);
-                    const utnyttetPct = laaneramme > 0 ? (brukt / laaneramme) * 100 : 0;
-                    const utnyttetFarge = utnyttetPct > 90 ? colors.danger : utnyttetPct > 70 ? colors.accent : colors.primaryLight;
-                    return (
-                      <div key={laan.id || idx} style={{ padding: '12px', background: colors.lightGray, borderRadius: '6px', border: `1px solid ${colors.mediumGray}` }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px', alignItems: 'end' }}>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase', fontWeight: 600 }}>Type</label>
-                            <select
-                              value={laan.type}
-                              onChange={(e) => {
-                                const nyType = e.target.value;
-                                setEksisterendeLaan(prev => prev.map((l, i) => i === idx ? { ...l, type: nyType, maksLTV: defaultMaksLTVForLaanType(nyType) } : l));
-                              }}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', background: colors.white }}
-                            >
-                              <option value="Banklån">Banklån</option>
-                              <option value="Verdipapirfinansiering">Verdipapirfinansiering</option>
-                              <option value="Andre lån">Andre lån</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase', fontWeight: 600 }}>Pantegrunnlag</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="100000"
-                              value={laan.pantegrunnlag || ''}
-                              placeholder="0"
-                              onChange={(e) => setEksisterendeLaan(prev => prev.map((l, i) => i === idx ? { ...l, pantegrunnlag: parseFloat(e.target.value) || 0 } : l))}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase', fontWeight: 600 }}>Maks LTV (%)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="1"
-                              value={laan.maksLTV}
-                              onChange={(e) => setEksisterendeLaan(prev => prev.map((l, i) => i === idx ? { ...l, maksLTV: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) } : l))}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase', fontWeight: 600 }}>Brukt</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="100000"
-                              value={laan.brukt || ''}
-                              placeholder="0"
-                              onChange={(e) => setEksisterendeLaan(prev => prev.map((l, i) => i === idx ? { ...l, brukt: parseFloat(e.target.value) || 0 } : l))}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase', fontWeight: 600 }}>Rente (%)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              value={laan.rente}
-                              onChange={(e) => setEksisterendeLaan(prev => prev.map((l, i) => i === idx ? { ...l, rente: parseFloat(e.target.value) || 0 } : l))}
-                              style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
-                            />
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button
-                              type="button"
-                              onClick={() => setEksisterendeLaan(prev => prev.filter((_, i) => i !== idx))}
-                              style={{ padding: '6px 8px', fontSize: '14px', color: colors.danger, background: 'transparent', border: 'none', cursor: 'pointer', lineHeight: 1 }}
-                              title="Fjern lån"
-                            >✕</button>
-                          </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px', marginTop: '10px' }}>
-                          <div style={{ padding: '6px 8px', background: colors.white, borderRadius: '4px', border: `1px solid ${colors.mediumGray}` }}>
-                            <div style={{ fontSize: '9px', color: colors.textMuted, textTransform: 'uppercase' }}>Låneramme</div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: colors.primary }}>{formatNOK(laaneramme)}</div>
-                          </div>
-                          <div style={{ padding: '6px 8px', background: colors.white, borderRadius: '4px', border: `1px solid ${colors.mediumGray}` }}>
-                            <div style={{ fontSize: '9px', color: colors.textMuted, textTransform: 'uppercase' }}>Tilgjengelig</div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: colors.success }}>{formatNOK(tilgjengelig)}</div>
-                          </div>
-                          <div style={{ padding: '6px 8px', background: colors.white, borderRadius: '4px', border: `1px solid ${colors.mediumGray}` }}>
-                            <div style={{ fontSize: '9px', color: colors.textMuted, textTransform: 'uppercase' }}>Utnyttet</div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: utnyttetFarge }}>{laaneramme > 0 ? formatProsent(utnyttetPct) : '—'}</div>
-                          </div>
-                          <div style={{ padding: '6px 8px', background: colors.white, borderRadius: '4px', border: `1px solid ${colors.mediumGray}` }}>
-                            <div style={{ fontSize: '9px', color: colors.textMuted, textTransform: 'uppercase' }}>Årlig rentekostnad</div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: colors.danger }}>{formatNOK(brukt * (Number(laan.rente) || 0) / 100)}</div>
-                          </div>
-                        </div>
-                        {laaneramme > 0 && (
-                          <div style={{ width: '100%', height: '4px', background: colors.mediumGray, borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: Math.min(100, utnyttetPct) + '%', background: utnyttetFarge, transition: 'width 0.2s' }} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {eksisterendeLaan.length > 0 && (
-                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.mediumGray}` }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: colors.textDark, fontWeight: 500 }}>
-                    <input
-                      type="checkbox"
-                      checked={visMaksBelaningOversikt}
-                      onChange={(e) => setVisMaksBelaningOversikt(e.target.checked)}
-                      style={{ width: '14px', height: '14px', cursor: 'pointer' }}
-                    />
-                    Vis maks belåning <span style={{ fontSize: '10px', color: colors.textMuted, fontWeight: 400 }}>— aggregert oppsummering på tvers av alle lån</span>
-                  </label>
-                  {visMaksBelaningOversikt && (() => {
-                    const totRamme = eksisterendeLaan.reduce((s, l) => s + (Number(l.pantegrunnlag) || 0) * (Number(l.maksLTV) || 0) / 100, 0);
-                    const totBrukt = eksisterendeLaan.reduce((s, l) => s + (Number(l.brukt) || 0), 0);
-                    const totTilgjengelig = Math.max(0, totRamme - totBrukt);
-                    const totPant = eksisterendeLaan.reduce((s, l) => s + (Number(l.pantegrunnlag) || 0), 0);
-                    const snittLTV = totPant > 0 ? (totRamme / totPant) * 100 : 0;
-                    const utnyttPct = totRamme > 0 ? (totBrukt / totRamme) * 100 : 0;
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', marginTop: '10px' }}>
-                        <div className="result-box">
-                          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Samlet låneramme</div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: colors.primary }}>{formatNOK(totRamme)}</div>
-                          <div style={{ fontSize: '9px', color: colors.textMuted }}>Pant × maks LTV</div>
-                        </div>
-                        <div className="result-box highlight">
-                          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Brukt totalt</div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: colors.accent }}>{formatNOK(totBrukt)}</div>
-                          <div style={{ fontSize: '9px', color: colors.textMuted }}>{formatProsent(utnyttPct)} utnyttet</div>
-                        </div>
-                        <div className="result-box success">
-                          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Tilgjengelig</div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: colors.success }}>{formatNOK(totTilgjengelig)}</div>
-                          <div style={{ fontSize: '9px', color: colors.textMuted }}>Kan trekkes opp</div>
-                        </div>
-                        <div className="result-box">
-                          <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Snitt maks LTV</div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: colors.primaryLight }}>{formatProsent(snittLTV)}</div>
-                          <div style={{ fontSize: '9px', color: colors.textMuted }}>Vektet på pantegrunnlag</div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
 
             {/* LTV-oversikt */}
             <div className="pensum-card">
