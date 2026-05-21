@@ -5064,6 +5064,26 @@ export default function PensumPrognoseModell() {
                         <button onClick={() => setInvestertBelop(null)} className="text-blue-300 hover:text-white" title="Tilbakestill">↺</button>
                       )}
                     </div>
+                    {/* Horisont */}
+                    <div className="flex items-center gap-2 pr-4 border-r border-blue-400">
+                      <span className="text-sm text-blue-200">Horisont:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={horisont}
+                        onChange={(e) => {
+                          const v = Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1));
+                          setHorisont(v);
+                          setLocalHorisont(v.toString());
+                        }}
+                        className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-16 text-right text-sm"
+                      />
+                      <span className="text-blue-300 text-sm">år</span>
+                      {horisont !== 10 && (
+                        <button onClick={() => { setHorisont(10); setLocalHorisont('10'); }} className="text-blue-300 hover:text-white" title="Tilbakestill til 10 år">↺</button>
+                      )}
+                    </div>
                     {/* Alternative investeringer */}
                     <div className="flex items-center gap-4 pr-4 border-r border-blue-400">
                       <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer">
@@ -5994,8 +6014,12 @@ export default function PensumPrognoseModell() {
                 <div className={"grid gap-4 " + (showPessimistic ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
                   {showPessimistic && (
                     <div className="p-5 bg-red-50 rounded-xl border border-red-200">
-                      <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Pessimistisk</div>
-                      <div className="text-4xl font-bold text-red-700 mb-1">{formatPercent(scenarioParams.pessimistisk)}</div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs font-bold text-red-500 uppercase tracking-wider">Pessimistisk</div>
+                        <div className="text-xs font-semibold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">{formatPercent(scenarioParams.pessimistisk)} p.a.</div>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-red-400 font-semibold">Sluttverdi etter {horisont} år</div>
+                      <div className="text-4xl font-bold text-red-700 mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.pessimistisk || 0)}</div>
                       <input type="range" min="-10" max={vektetAvkastning} step="0.5" value={scenarioParams.pessimistisk}
                         onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
                         className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
@@ -6006,23 +6030,28 @@ export default function PensumPrognoseModell() {
                     </div>
                   )}
                   <div className="p-5 rounded-xl border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
-                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-3">Forventet</div>
-                    <div className="text-4xl font-bold text-white mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
-                    <div className="text-blue-300 text-sm mb-3">etter {horisont} år</div>
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-blue-300 uppercase tracking-wider">Forventet</div>
+                      <div className="text-xs font-semibold text-blue-200 bg-blue-900/60 px-2 py-0.5 rounded-full">{formatPercent(vektetAvkastning)} p.a.</div>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-blue-300 font-semibold">Sluttverdi etter {horisont} år</div>
+                    <div className="text-4xl font-bold text-white mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
                       <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
                     </div>
                   </div>
                   <div className="p-5 bg-green-50 rounded-xl border border-green-200">
-                    <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-3">Optimistisk</div>
-                    <div className="text-4xl font-bold text-green-700 mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
-                    <div className="text-green-500 text-sm mb-3">etter {horisont} år</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-green-500 uppercase tracking-wider">Optimistisk</div>
+                      <div className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-green-500 font-semibold">Sluttverdi etter {horisont} år</div>
+                    <div className="text-4xl font-bold text-green-700 mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
                     <input type="range" min={vektetAvkastning} max="25" step="0.5" value={scenarioParams.optimistisk}
                       onChange={(e) => setScenarioParams(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
-                      className="w-full h-2 rounded-lg cursor-pointer bg-green-200" />
-                    <div className="mt-2 text-center font-bold text-green-600">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
-                    <div className="mt-2 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
+                      className="w-full h-2 rounded-lg cursor-pointer bg-green-200 mt-3" />
+                    <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
                       <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
                     </div>
