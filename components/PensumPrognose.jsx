@@ -2881,17 +2881,6 @@ export default function PensumPrognoseModell() {
     return data;
   }, [sammenligningAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont]);
 
-  const kombinertVerdiutvikling = useMemo(() => {
-    let data = verdiutvikling;
-    if (showComparison) {
-      data = data.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
-    }
-    if (visOptimistisk) {
-      data = data.map((row, idx) => ({ ...row, optimistiskTotal: scenarioData[idx]?.optimistisk || 0 }));
-    }
-    return data;
-  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison, visOptimistisk, scenarioData]);
-
   const scenarioData = useMemo(() => {
     const data = [];
     const startYear = new Date().getFullYear();
@@ -2918,6 +2907,17 @@ export default function PensumPrognoseModell() {
     }
     return data;
   }, [effektivtInvestertBelop, egenkapitalBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling, aarligRentekostnad, totalLaan]);
+
+  const kombinertVerdiutvikling = useMemo(() => {
+    let data = verdiutvikling;
+    if (showComparison) {
+      data = data.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
+    }
+    if (visOptimistisk) {
+      data = data.map((row, idx) => ({ ...row, optimistiskTotal: scenarioData[idx]?.optimistisk || 0 }));
+    }
+    return data;
+  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison, visOptimistisk, scenarioData]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
