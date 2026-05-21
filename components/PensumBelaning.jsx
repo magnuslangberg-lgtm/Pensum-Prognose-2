@@ -31,13 +31,18 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   
   const [reinvesteringAvkastning, setReinvesteringAvkastning] = useState(8);
   const [tidshorisont, setTidshorisont] = useState(5);
-  const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak', 'maksbelaning'
+  const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak'
+  const [visMaksBelaning, setVisMaksBelaning] = useState(false); // Valgfri tilleggsblokk
   const [visDetaljer, setVisDetaljer] = useState(true);
   
   // Investeringsscenario for kontantuttak
   const [visInvesteringsscenario, setVisInvesteringsscenario] = useState(false);
   const [investeringstype, setInvesteringstype] = useState('eiendom'); // 'eiendom', 'pe'
   const [investeringAvkastning, setInvesteringAvkastning] = useState(12); // Forventet avkastning på eiendom/PE
+
+  // Eksisterende verdipapirfinansiering — kundens benyttede beløp av rammen
+  // (Total låneramme beregnes automatisk fra EK × maks LTV)
+  const [eksisterendeBenyttet, setEksisterendeBenyttet] = useState(0);
 
   // Aktivaklasser med maks LTV
   const getAktivaklasser = (diversifisert) => ({
@@ -474,17 +479,20 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
       </div>
 
       <div>
-        {/* Modus-velger - 3 knapper */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-          <button className={`btn-modus ${modus === 'reinvestering' ? 'active' : 'inactive'}`} onClick={() => setModus('reinvestering')}>
-            📈 Reinvestering
-          </button>
-          <button className={`btn-modus ${modus === 'kontantuttak' ? 'active' : 'inactive'}`} onClick={() => setModus('kontantuttak')}>
-            💵 Kontantuttak
-          </button>
-          <button className={`btn-modus ${modus === 'maksbelaning' ? 'active' : 'inactive'}`} onClick={() => setModus('maksbelaning')}>
-            🚀 Maks belåning
-          </button>
+        {/* Modus-velger */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className={`btn-modus ${modus === 'reinvestering' ? 'active' : 'inactive'}`} onClick={() => setModus('reinvestering')}>
+              📈 Reinvestering
+            </button>
+            <button className={`btn-modus ${modus === 'kontantuttak' ? 'active' : 'inactive'}`} onClick={() => setModus('kontantuttak')}>
+              💵 Kontantuttak
+            </button>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: colors.textDark, padding: '6px 10px', background: visMaksBelaning ? colors.lightGray : 'transparent', borderRadius: '5px', border: `1px solid ${visMaksBelaning ? colors.accent : colors.mediumGray}` }}>
+            <input type="checkbox" checked={visMaksBelaning} onChange={(e) => setVisMaksBelaning(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+            <span style={{ fontWeight: 500 }}>🚀 Vis maks belåning</span>
+          </label>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 400px) 1fr', gap: '20px', alignItems: 'start' }}>
@@ -635,7 +643,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             <div className="pensum-card">
               <h2 className="section-title">Parametere</h2>
               
-              {modus !== 'maksbelaning' && (
+              {true && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                     <span className="label-text">Belåningsgrad (LTV)</span>
@@ -662,6 +670,68 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                 </label>
                 <input type="range" min="1" max="20" value={tidshorisont} onChange={(e) => setTidshorisont(Number(e.target.value))} />
               </div>
+            </div>
+
+            {/* Eksisterende verdipapirfinansiering */}
+            <div className="pensum-card">
+              <h2 className="section-title">Eksisterende låneramme</h2>
+              <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '12px', lineHeight: 1.5 }}>
+                Lånerammen beregnes fra egenkapitalen × maks LTV for valgt aktivaklasse. Fyll inn hvor mye kunden allerede har trukket opp for å se tilgjengelig kapasitet.
+              </div>
+
+              <div style={{ marginBottom: '12px', padding: '10px 12px', background: colors.lightGray, borderRadius: '5px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                  <span className="label-text">Total låneramme</span>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: colors.primary }}>{formatNOK(portefoljeBeregning.maksLanebelop)}</span>
+                </div>
+                <div style={{ fontSize: '10px', color: colors.textMuted }}>
+                  {formatNOK(portefoljeBeregning.totalVerdi)} × {formatProsent(portefoljeBeregning.vektetMaksLTV)} maks LTV
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span className="label-text">Benyttet av rammen</span>
+                  <span className="value-text" style={{ color: colors.accent }}>{formatNOK(eksisterendeBenyttet)}</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100000"
+                  value={eksisterendeBenyttet || ''}
+                  placeholder="0"
+                  onChange={(e) => setEksisterendeBenyttet(Math.max(0, parseFloat(e.target.value) || 0))}
+                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
+                />
+              </div>
+
+              {(() => {
+                const ramme = portefoljeBeregning.maksLanebelop;
+                const benyttetCapped = Math.min(eksisterendeBenyttet, ramme);
+                const tilgjengelig = Math.max(0, ramme - eksisterendeBenyttet);
+                const utnyttetPct = ramme > 0 ? (eksisterendeBenyttet / ramme) * 100 : 0;
+                const overTrukket = eksisterendeBenyttet > ramme;
+                const utnyttetFarge = overTrukket ? colors.danger : utnyttetPct > 90 ? colors.danger : utnyttetPct > 70 ? colors.accent : colors.success;
+                return (
+                  <div style={{ background: colors.lightGray, borderRadius: '6px', padding: '12px', borderLeft: `4px solid ${utnyttetFarge}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '10px', color: colors.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>Tilgjengelig å låne</span>
+                      <span style={{ fontSize: '10px', color: utnyttetFarge, fontWeight: 600 }}>{ramme > 0 ? formatProsent(utnyttetPct) + ' utnyttet' : '—'}</span>
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: utnyttetFarge }}>{formatNOK(tilgjengelig)}</div>
+                    {ramme > 0 && (
+                      <div style={{ width: '100%', height: '5px', background: colors.mediumGray, borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: Math.min(100, utnyttetPct) + '%', background: utnyttetFarge, transition: 'width 0.2s' }} />
+                      </div>
+                    )}
+                    {overTrukket && (
+                      <div style={{ marginTop: '6px', fontSize: '10px', color: colors.danger, fontWeight: 600 }}>
+                        ⚠ Benyttet overstiger rammen med {formatNOK(eksisterendeBenyttet - ramme)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1061,7 +1131,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             )}
 
             {/* MAKS BELÅNING MED REINVESTERING */}
-            {modus === 'maksbelaning' && (
+            {visMaksBelaning && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
                 <h2 className="section-title">🚀 Maks belåning med reinvestering</h2>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '10px 14px', background: colors.lightGray, borderRadius: '5px', lineHeight: '1.5' }}>
