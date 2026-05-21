@@ -1347,7 +1347,7 @@ export default function PensumPrognoseModell() {
             <div className="grid grid-cols-4 gap-4">
               {[
                 { tittel: 'Antall ansatte', verdi: '39' },
-                { tittel: 'Forvaltningskapital', verdi: 'NOK 12,3 Mrd' },
+                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd' },
                 { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%' },
                 { tittel: 'Årlig vekst inntekter', verdi: '22,1%' },
               ].map((stat, i) => (
@@ -1763,7 +1763,7 @@ export default function PensumPrognoseModell() {
                     </p>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
-                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 12,3</span> <span className="text-sm text-blue-300">mrd</span></p>
+                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 13,3</span> <span className="text-sm text-blue-300">mrd</span></p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <div>
@@ -3017,7 +3017,7 @@ export default function PensumPrognoseModell() {
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling</h2>
               <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
               <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-                Prognose for porteføljens utvikling over {horisont} år ved valgt risikoprofil. Bånd viser pessimistisk og optimistisk scenario rundt forventet utvikling.
+                Prognose for porteføljens utvikling over {horisont} år ved valgt risikoprofil og forventet vektet avkastning på {vektetAvkastning.toFixed(1)}% p.a.
               </p>
             </div>
             <div className="grid grid-cols-4 gap-3">
@@ -3054,8 +3054,6 @@ export default function PensumPrognoseModell() {
                   <Legend iconType="circle" />
                   {totalLaan > 0 && !akkumulerRenter && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                   {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
-                  <Line type="monotone" dataKey="pessimistisk" stroke="#DC2626" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="Pessimistisk" />
-                  <Line type="monotone" dataKey="optimistisk" stroke="#059669" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="Optimistisk" />
                   {totalLaan > 0 && !akkumulerRenter && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={1.5} strokeDasharray="3 3" />}
                   {totalLaan > 0 && akkumulerRenter && (
                     <Area type="monotone" dataKey="laanBalanse" fill="url(#laanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
