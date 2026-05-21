@@ -40,8 +40,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   const [investeringstype, setInvesteringstype] = useState('eiendom'); // 'eiendom', 'pe'
   const [investeringAvkastning, setInvesteringAvkastning] = useState(12); // Forventet avkastning på eiendom/PE
 
-  // Eksisterende verdipapirfinansiering (kundens nåværende låneramme + benyttet)
-  const [eksisterendeLaaneramme, setEksisterendeLaaneramme] = useState(0);
+  // Eksisterende verdipapirfinansiering — kundens benyttede beløp av rammen
+  // (Total låneramme beregnes automatisk fra EK × maks LTV)
   const [eksisterendeBenyttet, setEksisterendeBenyttet] = useState(0);
 
   // Aktivaklasser med maks LTV
@@ -676,23 +676,17 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             <div className="pensum-card">
               <h2 className="section-title">Eksisterende låneramme</h2>
               <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '12px', lineHeight: 1.5 }}>
-                Fyll inn kundens nåværende verdipapirfinansiering for å se hvor mye av rammen som er brukt og hvor mye mer som kan trekkes opp.
+                Lånerammen beregnes fra egenkapitalen × maks LTV for valgt aktivaklasse. Fyll inn hvor mye kunden allerede har trukket opp for å se tilgjengelig kapasitet.
               </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ marginBottom: '12px', padding: '10px 12px', background: colors.lightGray, borderRadius: '5px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
                   <span className="label-text">Total låneramme</span>
-                  <span className="value-text" style={{ color: colors.primary }}>{formatNOK(eksisterendeLaaneramme)}</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="100000"
-                  value={eksisterendeLaaneramme || ''}
-                  placeholder="0"
-                  onChange={(e) => setEksisterendeLaaneramme(Math.max(0, parseFloat(e.target.value) || 0))}
-                  style={{ width: '100%', padding: '8px 10px', fontSize: '13px', border: `1px solid ${colors.mediumGray}`, borderRadius: '4px', textAlign: 'right' }}
-                />
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: colors.primary }}>{formatNOK(portefoljeBeregning.maksLanebelop)}</span>
+                </div>
+                <div style={{ fontSize: '10px', color: colors.textMuted }}>
+                  {formatNOK(portefoljeBeregning.totalVerdi)} × {formatProsent(portefoljeBeregning.vektetMaksLTV)} maks LTV
+                </div>
               </div>
 
               <div style={{ marginBottom: '14px' }}>
@@ -712,19 +706,27 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
               </div>
 
               {(() => {
-                const tilgjengelig = Math.max(0, eksisterendeLaaneramme - eksisterendeBenyttet);
-                const utnyttetPct = eksisterendeLaaneramme > 0 ? (eksisterendeBenyttet / eksisterendeLaaneramme) * 100 : 0;
-                const utnyttetFarge = utnyttetPct > 90 ? colors.danger : utnyttetPct > 70 ? colors.accent : colors.success;
+                const ramme = portefoljeBeregning.maksLanebelop;
+                const benyttetCapped = Math.min(eksisterendeBenyttet, ramme);
+                const tilgjengelig = Math.max(0, ramme - eksisterendeBenyttet);
+                const utnyttetPct = ramme > 0 ? (eksisterendeBenyttet / ramme) * 100 : 0;
+                const overTrukket = eksisterendeBenyttet > ramme;
+                const utnyttetFarge = overTrukket ? colors.danger : utnyttetPct > 90 ? colors.danger : utnyttetPct > 70 ? colors.accent : colors.success;
                 return (
                   <div style={{ background: colors.lightGray, borderRadius: '6px', padding: '12px', borderLeft: `4px solid ${utnyttetFarge}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                       <span style={{ fontSize: '10px', color: colors.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>Tilgjengelig å låne</span>
-                      <span style={{ fontSize: '10px', color: utnyttetFarge, fontWeight: 600 }}>{eksisterendeLaaneramme > 0 ? formatProsent(utnyttetPct) + ' utnyttet' : '—'}</span>
+                      <span style={{ fontSize: '10px', color: utnyttetFarge, fontWeight: 600 }}>{ramme > 0 ? formatProsent(utnyttetPct) + ' utnyttet' : '—'}</span>
                     </div>
                     <div style={{ fontSize: '20px', fontWeight: 700, color: utnyttetFarge }}>{formatNOK(tilgjengelig)}</div>
-                    {eksisterendeLaaneramme > 0 && (
+                    {ramme > 0 && (
                       <div style={{ width: '100%', height: '5px', background: colors.mediumGray, borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: Math.min(100, utnyttetPct) + '%', background: utnyttetFarge, transition: 'width 0.2s' }} />
+                      </div>
+                    )}
+                    {overTrukket && (
+                      <div style={{ marginTop: '6px', fontSize: '10px', color: colors.danger, fontWeight: 600 }}>
+                        ⚠ Benyttet overstiger rammen med {formatNOK(eksisterendeBenyttet - ramme)}
                       </div>
                     )}
                   </div>
