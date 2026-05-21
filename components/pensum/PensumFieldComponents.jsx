@@ -52,7 +52,11 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
   const [dragVekt, setDragVekt] = useState(item.vekt);
   useEffect(() => { setDragVekt(item.vekt); }, [item.vekt]);
   const commitDragVekt = () => updateAllokeringVekt(index, Number(dragVekt) || 0);
-  const beregnetBelop = (item.vekt / 100) * effektivtInvestertBelop;
+  // Bruk lagret beløp hvis brukeren har skrevet inn et eksplisitt tall;
+  // ellers beregn fra vekt × total.
+  const beregnetBelop = typeof item.belop === 'number'
+    ? item.belop
+    : (item.vekt / 100) * effektivtInvestertBelop;
   const [localBelop, setLocalBelop] = useState(formatNumber(Math.round(beregnetBelop)));
   useEffect(() => { setLocalBelop(formatNumber(Math.round(beregnetBelop))); }, [beregnetBelop]);
   const itemColor = ASSET_COLORS[item.navn] || CATEGORY_COLORS[item.kategori] || '#888';
@@ -109,10 +113,10 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
         <div className="flex items-center bg-white border border-blue-200 rounded-lg overflow-hidden flex-shrink-0 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all" style={{ width: '110px' }}>
           <input
             type="text"
+            inputMode="numeric"
             value={localBelop}
             onChange={(e) => setLocalBelop(e.target.value)}
-            onFocus={() => setLocalBelop(Math.round(beregnetBelop).toString())}
-            onBlur={() => { const v = parseInt(localBelop.replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
+            onBlur={() => { const v = parseInt(String(localBelop).replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
             className="w-full py-1.5 px-2 text-xs text-right font-medium border-none outline-none bg-transparent tabular-nums"
             style={{ color: PENSUM_COLORS.darkBlue }}
           />

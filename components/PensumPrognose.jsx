@@ -66,6 +66,9 @@ export default function PensumPrognoseModell() {
   // Lånefinansiering på Prognoser med indekser
   const [prognoseFinansiering, setPrognoseFinansiering] = useState([]);
   const [laanAktiv, setLaanAktiv] = useState(false);
+  // 'nytt' = lån legges oppå porteføljen (øker eksponering)
+  // 'eksisterende' = lånet finansierer allerede porteføljen (eksponering = portefølje)
+  const [laanModus, setLaanModus] = useState('nytt');
   
   const [investeringsFormaal, setInvesteringsFormaal] = useState('Utvikle finansiell formue');
   const [likviditetsbehov, setLikviditetsbehov] = useState('Begrenset');
@@ -150,6 +153,10 @@ export default function PensumPrognoseModell() {
     { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering' },
     { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix' },
     { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix' },
+    { id: 'formuesplan-verdiutvikling', label: 'Formuesplan — forventet verdiutvikling', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'formuesplan-compounding', label: 'Formuesplan — renters rente-effekt', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'formuesplan-sammensetning', label: 'Formuesplan — sammensetning nå vs. om X år', aktiv: false, posisjon: 'foer-disclaimer' },
+    { id: 'formuesplan-laanefinansiering', label: 'Formuesplan — lånefinansiering & LTV', aktiv: false, posisjon: 'foer-disclaimer' },
     { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
@@ -1106,8 +1113,8 @@ export default function PensumPrognoseModell() {
 
   // Intern lagringsfunksjon (etter autentisering)
   const lagreKundeEtterAuth = useCallback(async () => {
-    if (!kundeNavn) {
-      alert('Vennligst fyll inn kundenavn først');
+    if (!kundeNavn && !kundeSelskap) {
+      alert('Vennligst fyll inn investor- eller selskapsnavn først');
       return;
     }
     
@@ -1147,12 +1154,12 @@ export default function PensumPrognoseModell() {
     } else {
       alert('Automatisk lagring er ikke tilgjengelig. Bruk "Eksporter" for å lagre kunden som fil.');
     }
-  }, [bruker, radgiver, kundeNavn, getKundeData, lagredeKunder]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, getKundeData, lagredeKunder]);
 
   // Lagre kunde (hovedfunksjon)
   const lagreKunde = useCallback(async () => {
-    if (!kundeNavn) {
-      alert('Vennligst fyll inn kundenavn først');
+    if (!kundeNavn && !kundeSelskap) {
+      alert('Vennligst fyll inn investor- eller selskapsnavn først');
       return;
     }
     
@@ -1165,7 +1172,7 @@ export default function PensumPrognoseModell() {
     
     // Bruker er innlogget, lagre direkte
     await lagreKundeEtterAuth();
-  }, [kundeNavn, bruker, lagreKundeEtterAuth]);
+  }, [kundeNavn, kundeSelskap, bruker, lagreKundeEtterAuth]);
 
   // Slett kunde
   const slettKunde = useCallback(async (id) => {
@@ -1340,7 +1347,7 @@ export default function PensumPrognoseModell() {
             <div className="grid grid-cols-4 gap-4">
               {[
                 { tittel: 'Antall ansatte', verdi: '39' },
-                { tittel: 'Forvaltningskapital', verdi: 'NOK 12,3 Mrd' },
+                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd' },
                 { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%' },
                 { tittel: 'Årlig vekst inntekter', verdi: '22,1%' },
               ].map((stat, i) => (
@@ -1756,7 +1763,7 @@ export default function PensumPrognoseModell() {
                     </p>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
-                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 12,3</span> <span className="text-sm text-blue-300">mrd</span></p>
+                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 13,3</span> <span className="text-sm text-blue-300">mrd</span></p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <div>
@@ -1907,11 +1914,12 @@ export default function PensumPrognoseModell() {
             {/* Kontorer */}
             <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
               <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PENSUM_COLORS.teal }}>Kontaktdetaljer Pensum Asset Management</h3>
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-4 gap-4">
                 {[
                   { by: 'Oslo', adresse: 'Frøyas gate 15', postnr: '0273 Oslo', tlf: '+47 23 89 68 44' },
-                  { by: 'Fredrikstad', adresse: 'Storgaten 3', postnr: '1607 Fredrikstad', tlf: '+47 23 89 68 44' },
                   { by: 'Stavanger', adresse: 'Løkkeveien 107 (Smedvigkvartalet)', postnr: '4007 Stavanger', tlf: '+47 23 89 68 44' },
+                  { by: 'Fredrikstad', adresse: 'Storgaten 3', postnr: '1607 Fredrikstad', tlf: '+47 23 89 68 44' },
+                  { by: 'Trondheim', adresse: 'Brøsetvegen 164', postnr: '7069 Trondheim', tlf: '+47 23 89 68 44' },
                 ].map((kontor, i) => (
                   <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <h4 className="text-white font-bold text-sm mb-1">{kontor.by}</h4>
@@ -2802,10 +2810,16 @@ export default function PensumPrognoseModell() {
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const egenkapitalBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const portefoljeBelop = investertBelop !== null ? investertBelop : totalKapital;
   const totalLaan = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0) : 0;
   const aarligRentekostnad = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) : 0;
-  const effektivtInvestertBelop = egenkapitalBelop + totalLaan;
+  // Eksisterende-modus: porteføljen er allerede finansiert med lån, så netto EK = portefølje − lån.
+  // Nytt-modus: brukeren tilfører ny gjeld, så netto EK = porteføljen som er fylt inn.
+  const eksisterendeLaanModus = laanAktiv && laanModus === 'eksisterende';
+  const egenkapitalBelop = eksisterendeLaanModus ? Math.max(0, portefoljeBelop - totalLaan) : portefoljeBelop;
+  // Total eksponering / investert beløp. Når lånet er eksisterende, er eksponeringen lik porteføljen
+  // som allerede er fylt inn; ellers legges nytt lån oppå egenkapitalen.
+  const effektivtInvestertBelop = eksisterendeLaanModus ? portefoljeBelop : egenkapitalBelop + totalLaan;
 
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
@@ -2980,28 +2994,356 @@ export default function PensumPrognoseModell() {
       if (meta && illikvKat.includes(meta.kategori)) illikvidVekt += a.vekt;
     });
     const likvidVekt = row.allokeringSnapshot.reduce((s, a) => s + a.vekt, 0) - illikvidVekt;
-    return { aar: row.year, pie, likvid: likvidVekt, illikvid: illikvidVekt, total: row.total };
+    return { aar: row.year, pie, likvid: likvidVekt, illikvid: illikvidVekt, total: row.total, laanBalanse: row.laanBalanse || 0 };
   }, [verdiutvikling, sluttSammensetningAar, horisont, aktiveAktiva]);
+
+  // ───────────────────────────────────────────────────────────────────
+  // Tilleggs-slides fra Formuesplanleggeren — gjenbrukes som rapportark
+  // ───────────────────────────────────────────────────────────────────
+  const renderFormuesplanleggerSlide = useCallback((modulId) => {
+    const startYear = new Date().getFullYear();
+    const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
+    const sluttRad = verdiutvikling[verdiutvikling.length - 1];
+
+    switch (modulId) {
+      case 'formuesplan-verdiutvikling': {
+        const totalAvkastning = sluttverdi - effektivtInvestertBelop;
+        const cagr = effektivtInvestertBelop > 0 && horisont > 0
+          ? (Math.pow(sluttverdi / effektivtInvestertBelop, 1 / horisont) - 1) * 100
+          : 0;
+        return (
+          <div data-rapport-slide="formuesplan-verdiutvikling" className="space-y-6 page-break-before">
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                Prognose for porteføljens utvikling over {horisont} år ved valgt risikoprofil og forventet vektet avkastning på {vektetAvkastning.toFixed(1)}% p.a.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="rounded-lg p-4 bg-blue-50 border border-blue-100">
+                <div className="text-[10px] uppercase tracking-wide text-blue-700">Investert kapital</div>
+                <div className="text-lg font-bold tabular-nums text-blue-900">{formatCurrency(effektivtInvestertBelop)}</div>
+              </div>
+              <div className="rounded-lg p-4 bg-emerald-50 border border-emerald-100">
+                <div className="text-[10px] uppercase tracking-wide text-emerald-700">Sluttverdi ({startYear + horisont})</div>
+                <div className="text-lg font-bold tabular-nums text-emerald-900">{formatCurrency(sluttverdi)}</div>
+              </div>
+              <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
+                <div className="text-[10px] uppercase tracking-wide text-amber-700">Akkumulert avkastning</div>
+                <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(totalAvkastning)}</div>
+              </div>
+              <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8', border: '1px solid #DCE3EB' }}>
+                <div className="text-[10px] uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>CAGR</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{cagr.toFixed(1)}%</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <ResponsiveContainer width="100%" height={320}>
+                <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 10, right: 24, left: 0, bottom: 8 }}>
+                  <defs>
+                    <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                      <rect width="8" height="8" fill="#FEE2E2" />
+                      <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
+                    </pattern>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                  <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11, fontWeight: 600 }} />
+                  <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={90} />
+                  <Tooltip formatter={(v, n) => [formatCurrency(v), n]} />
+                  <Legend iconType="circle" />
+                  {totalLaan > 0 && !akkumulerRenter && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
+                  {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
+                  {totalLaan > 0 && !akkumulerRenter && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={1.5} strokeDasharray="3 3" />}
+                  {totalLaan > 0 && akkumulerRenter && (
+                    <Area type="monotone" dataKey="laanBalanse" fill="url(#laanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
+                      <LabelList dataKey="laanBalanse" content={(props) => {
+                        const { x, y, value, index } = props;
+                        if (index !== kombinertVerdiutvikling.length - 1) return null;
+                        return <text x={x} y={y - 6} fill="#FFFFFF" fontSize={11} fontWeight={700} textAnchor="end" style={{ paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 3.5, strokeLinejoin: 'round' }}>Lån: {formatCurrency(value)}</text>;
+                      }} />
+                    </Area>
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              Estimater bygger på forventet vektet avkastning ({vektetAvkastning.toFixed(1)}% p.a.) for porteføljens sammensetning. Historisk avkastning er ikke en garanti for fremtidig utvikling.
+            </p>
+          </div>
+        );
+      }
+
+      case 'formuesplan-compounding': {
+        const nettoKontantstromEtterRente = nettoKontantstrom - aarligRentekostnad;
+        // Enkel (lineær) avkastning: hvert år får man avkastning bare på opprinnelig kapital
+        let enkel = effektivtInvestertBelop;
+        for (let y = 1; y <= horisont; y++) {
+          enkel += effektivtInvestertBelop * (vektetAvkastning / 100) + nettoKontantstromEtterRente;
+        }
+        const enkelAvkastning = enkel - effektivtInvestertBelop - nettoKontantstromEtterRente * horisont;
+        const compoundAvkastning = sluttverdi - effektivtInvestertBelop - nettoKontantstromEtterRente * horisont;
+        const compoundBidrag = compoundAvkastning - enkelAvkastning;
+        const ratio = enkelAvkastning > 0 ? (compoundBidrag / enkelAvkastning) * 100 : 0;
+
+        // Bygg comparison-data år-for-år
+        let enkelSerie = effektivtInvestertBelop;
+        const sammenligning = verdiutvikling.map((row, i) => {
+          if (i === 0) return { year: row.year, compound: row.total, enkel: enkelSerie };
+          enkelSerie += effektivtInvestertBelop * (vektetAvkastning / 100) + nettoKontantstromEtterRente;
+          return { year: row.year, compound: row.total, enkel: enkelSerie };
+        });
+
+        return (
+          <div data-rapport-slide="formuesplan-compounding" className="space-y-6 page-break-before">
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Renters rente-effekt</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                Forskjellen mellom å reinvestere avkastningen hvert år (compound) og kun la den opprinnelige kapitalen jobbe (enkel). Compound-effekten blir betydelig over tid.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="rounded-lg p-4 bg-blue-50 border border-blue-100">
+                <div className="text-[10px] uppercase tracking-wide text-blue-700">Investert</div>
+                <div className="text-lg font-bold tabular-nums text-blue-900">{formatCurrency(effektivtInvestertBelop)}</div>
+              </div>
+              <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
+                <div className="text-[10px] uppercase tracking-wide text-amber-700">Enkel avkastning</div>
+                <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(enkelAvkastning)}</div>
+                <div className="text-[10px] text-amber-500 mt-0.5">Uten reinvestering</div>
+              </div>
+              <div className="rounded-lg p-4 bg-emerald-50 border border-emerald-100">
+                <div className="text-[10px] uppercase tracking-wide text-emerald-700">Renters rente (isolert)</div>
+                <div className="text-lg font-bold tabular-nums text-emerald-900">{formatCurrency(compoundBidrag)}</div>
+                <div className="text-[10px] text-emerald-500 mt-0.5">+{ratio.toFixed(0)}% av enkel</div>
+              </div>
+              <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8', border: '1px solid #DCE3EB' }}>
+                <div className="text-[10px] uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>Sluttverdi (compound)</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(sluttverdi)}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={sammenligning} margin={{ top: 10, right: 24, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                  <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11, fontWeight: 600 }} />
+                  <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={90} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Legend iconType="circle" />
+                  <Line type="monotone" dataKey="enkel" stroke={PENSUM_COLORS.salmon} strokeWidth={2} dot={false} name="Enkel avkastning" />
+                  <Line type="monotone" dataKey="compound" stroke={PENSUM_COLORS.teal} strokeWidth={2.5} dot={false} name="Med renters rente" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              Etter {horisont} år gir compound-effekten {formatCurrency(compoundBidrag)} ekstra ({ratio.toFixed(0)}% mer enn enkel avkastning) ved {vektetAvkastning.toFixed(1)}% p.a.
+            </p>
+          </div>
+        );
+      }
+
+      case 'formuesplan-sammensetning': {
+        if (!sluttSammensetning) return null;
+        const naaPie = pieData.filter(d => d.value > 0);
+        const sluttPie = sluttSammensetning.pie.filter(d => d.value > 0);
+        const farge = (n) => ASSET_COLORS[n] || CATEGORY_COLORS[kategorierData.find(c => c.navn === n)?.kategori] || '#888';
+        // Identifiser klasser som har skiftet mest
+        const naaMap = Object.fromEntries(naaPie.map(d => [d.name, d.value]));
+        const skift = sluttPie.map(d => ({ name: d.name, fra: naaMap[d.name] || 0, til: d.value, diff: d.value - (naaMap[d.name] || 0) }))
+          .filter(x => Math.abs(x.diff) > 0.3)
+          .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+          .slice(0, 4);
+
+        return (
+          <div data-rapport-slide="formuesplan-sammensetning" className="space-y-6 page-break-before">
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Sammensetning over tid</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                Hvordan porteføljen vil utvikle seg fra dagens vekting til om {sluttSammensetningAar} år, gitt forventet avkastning per aktivaklasse og eventuelle rebalanseringer.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              {[
+                { tittel: `I dag (${startYear})`, data: naaPie, undertekst: `${formatCurrency(effektivtInvestertBelop)} investert` },
+                { tittel: `Om ${sluttSammensetningAar} år (${sluttSammensetning.aar})`, data: sluttPie, undertekst: `Estimert ${formatCurrency(sluttSammensetning.total)}` },
+              ].map((box, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{box.tittel}</h4>
+                    <span className="text-xs text-gray-500">{box.undertekst}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0">
+                      <ResponsiveContainer width={160} height={160}>
+                        <PieChart>
+                          <Pie data={box.data} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                            {box.data.map((e) => <Cell key={e.name} fill={farge(e.name)} />)}
+                          </Pie>
+                          <Tooltip formatter={(v, n) => [v.toFixed(1) + '%', n]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-1.5 flex-1">
+                      {box.data.map((entry) => (
+                        <div key={entry.name} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: farge(entry.name) }}></div>
+                            <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
+                          </div>
+                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {skift.length > 0 && (
+              <div className="rounded-xl border border-gray-100 bg-white p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Største endringer i sammensetning</h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {skift.map((s) => (
+                    <div key={s.name} className="rounded-lg p-3 bg-gray-50 border border-gray-100">
+                      <div className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{s.name}</div>
+                      <div className="text-xs text-gray-500 tabular-nums">{s.fra.toFixed(1)}% → {s.til.toFixed(1)}%</div>
+                      <div className={"text-sm font-bold tabular-nums " + (s.diff > 0 ? 'text-emerald-600' : 'text-red-600')}>{s.diff > 0 ? '+' : ''}{s.diff.toFixed(1)} pp</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'formuesplan-laanefinansiering': {
+        if (!laanAktiv || totalLaan <= 0) return null;
+        const sluttLaan = sluttRad?.laanBalanse || totalLaan;
+        const startLtv = effektivtInvestertBelop > 0 ? (totalLaan / effektivtInvestertBelop) * 100 : 0;
+        const sluttLtv = sluttverdi > 0 ? (sluttLaan / sluttverdi) * 100 : 0;
+        const totalRentekostnad = akkumulerRenter
+          ? sluttLaan - totalLaan
+          : aarligRentekostnad * horisont;
+        const renteAvAvkastning = (sluttverdi - effektivtInvestertBelop) > 0
+          ? (totalRentekostnad / (sluttverdi - effektivtInvestertBelop)) * 100
+          : 0;
+        const nettoEK = sluttverdi - sluttLaan;
+        const laanSerie = verdiutvikling.map(r => ({
+          year: r.year,
+          laan: r.laanBalanse || totalLaan,
+          ltv: r.total > 0 ? ((r.laanBalanse || totalLaan) / r.total) * 100 : 0,
+          nettoEK: Math.max(0, r.total - (r.laanBalanse || totalLaan)),
+        }));
+
+        return (
+          <div data-rapport-slide="formuesplan-laanefinansiering" className="space-y-6 page-break-before">
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Lånefinansiering &amp; LTV</h2>
+              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                Effekt av lånefinansiering: hvordan lån, LTV og rentebelastning utvikler seg gjennom prognoseperioden. {akkumulerRenter ? 'Renter akkumuleres på lånet (compound).' : 'Rentene trekkes løpende fra kontantstrømmen.'}
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
+                <div className="text-[10px] uppercase tracking-wide text-amber-700">Start-lån</div>
+                <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(totalLaan)}</div>
+                <div className="text-[10px] text-amber-500 mt-0.5">LTV {startLtv.toFixed(1)}%</div>
+              </div>
+              <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
+                <div className="text-[10px] uppercase tracking-wide text-amber-700">Lån ved slutt</div>
+                <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(sluttLaan)}</div>
+                <div className="text-[10px] text-amber-500 mt-0.5">LTV {sluttLtv.toFixed(1)}%</div>
+              </div>
+              <div className="rounded-lg p-4 bg-blue-50 border border-blue-100">
+                <div className="text-[10px] uppercase tracking-wide text-blue-700">Netto EK ved slutt</div>
+                <div className="text-lg font-bold tabular-nums text-blue-900">{formatCurrency(nettoEK)}</div>
+                <div className="text-[10px] text-blue-500 mt-0.5">Total − lån</div>
+              </div>
+              <div className="rounded-lg p-4 bg-red-50 border border-red-100">
+                <div className="text-[10px] uppercase tracking-wide text-red-700">Total rentekostnad</div>
+                <div className="text-lg font-bold tabular-nums text-red-900">{formatCurrency(totalRentekostnad)}</div>
+                <div className="text-[10px] text-red-500 mt-0.5">{renteAvAvkastning.toFixed(0)}% av brutto avkastning</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border border-gray-100 bg-white p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Lån vs. netto egenkapital</h4>
+                <ResponsiveContainer width="100%" height={240}>
+                  <ComposedChart data={laanSerie} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                    <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} />
+                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={80} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Legend iconType="circle" />
+                    <Area type="monotone" dataKey="nettoEK" fill={PENSUM_COLORS.teal} fillOpacity={0.2} stroke={PENSUM_COLORS.teal} strokeWidth={2} name="Netto EK" />
+                    <Line type="monotone" dataKey="laan" stroke="#B91C1C" strokeWidth={2.5} dot={false} name="Lånebalanse" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-white p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>LTV-utvikling</h4>
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={laanSerie} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
+                    <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} />
+                    <YAxis tickFormatter={(v) => v.toFixed(0) + '%'} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={50} domain={[0, 'auto']} />
+                    <Tooltip formatter={(v) => v.toFixed(1) + '%'} />
+                    <Line type="monotone" dataKey="ltv" stroke={PENSUM_COLORS.salmon} strokeWidth={2.5} dot={false} name="LTV" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              Belåning forsterker både gevinst og tap. Vurder porteføljens svingninger mot din evne til å bære rentekostnader gjennom hele perioden.
+            </p>
+          </div>
+        );
+      }
+
+      default:
+        return null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verdiutvikling, kombinertVerdiutvikling, effektivtInvestertBelop, vektetAvkastning, horisont, totalLaan, aarligRentekostnad, akkumulerRenter, laanAktiv, aktiveAktiva, nettoKontantstrom, pieData, sluttSammensetning, sluttSammensetningAar, kategorierData]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
-      if (!autoRebalanserAllokering) {
-        const updated = [...prev];
-        updated[index] = { ...updated[index], vekt: Math.max(0, Math.min(100, Number(newVekt) || 0)) };
-        return updated;
-      }
-      return fordelRestVektListe(prev, index, newVekt);
+      const clamped = Math.max(0, Math.min(100, Number(newVekt) || 0));
+      const items = !autoRebalanserAllokering
+        ? prev.map((it, i) => i === index ? { ...it, vekt: clamped } : it)
+        : fordelRestVektListe(prev, index, clamped);
+      // Synk lagret belop mot ny vekt så beløpsfeltet er konsistent.
+      return items.map(it => ({
+        ...it,
+        belop: effektivtInvestertBelop > 0 ? Math.round((it.vekt / 100) * effektivtInvestertBelop) : 0,
+      }));
     });
-  }, [autoRebalanserAllokering]);
+  }, [autoRebalanserAllokering, effektivtInvestertBelop]);
 
   const updateAllokeringBelop = useCallback((index, newBelop) => {
-    setAllokering(prev => {
-      const updated = [...prev];
-      const newVekt = effektivtInvestertBelop > 0 ? (newBelop / effektivtInvestertBelop) * 100 : 0;
-      updated[index] = { ...updated[index], vekt: parseFloat(newVekt.toFixed(1)) };
-      return updated;
+    const cleanBelop = Math.max(0, Math.round(Number(newBelop) || 0));
+    const currentTotal = effektivtInvestertBelop;
+    // Hent gjeldende beløp per rad: typed verdi der den finnes, ellers vekt × forrige total.
+    const nyeBelop = allokering.map((it, i) => {
+      if (i === index) return cleanBelop;
+      if (typeof it.belop === 'number') return it.belop;
+      return currentTotal > 0 ? Math.round(((it.vekt || 0) / 100) * currentTotal) : 0;
     });
-  }, [effektivtInvestertBelop]);
+    const nyTotal = nyeBelop.reduce((s, b) => s + b, 0);
+
+    setAllokering(prev => prev.map((it, i) => ({
+      ...it,
+      belop: nyeBelop[i],
+      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0,
+    })));
+
+    // Hold "Investert beløp" synkronisert med summen så simulering, grafer
+    // og snittavkastning reflekterer faktisk innskrevne beløp.
+    if (nyTotal > 0) setInvestertBelop(nyTotal);
+  }, [allokering, effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
     setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0, manueltJustert: true }; return u; });
@@ -4664,6 +5006,16 @@ export default function PensumPrognoseModell() {
                   <button onClick={() => resetTilAutomatisk()} className="w-full mt-4 py-2.5 px-4 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                     Oppdater allokering basert på risikoprofil
                   </button>
+                  <button
+                    onClick={() => {
+                      setAksjerKunde(0); setAksjefondKunde(0); setRenterKunde(0); setKontanterKunde(0);
+                      setPeFondKunde(0); setUnoterteAksjerKunde(0); setShippingKunde(0);
+                      setEgenEiendomKunde(0); setEiendomSyndikatKunde(0); setEiendomFondKunde(0);
+                    }}
+                    className="w-full mt-2 py-2 px-4 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                  >
+                    Nullstill beløp
+                  </button>
                 </div>
               </div>
               {/* ── Eksisterende portefølje ── */}
@@ -5163,9 +5515,16 @@ export default function PensumPrognoseModell() {
                           <span>Rediger beløp</span>
                         </label>
                       </div>
-                      <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
-                        <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
-                        {formatPercent(totalVekt)}
+                      <div className="flex items-center gap-2">
+                        {belopInputModus && effektivtInvestertBelop > 0 && (
+                          <div className="px-3 py-1.5 rounded-full text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200 tabular-nums" title="Total av innskrevne beløp">
+                            {formatCurrency(effektivtInvestertBelop)}
+                          </div>
+                        )}
+                        <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
+                          <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
+                          {formatPercent(totalVekt)}
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -5210,6 +5569,30 @@ export default function PensumPrognoseModell() {
                       })()}
                     </div>
 
+                    {/* Oppsummering: total %, total kr, vektet snittavkastning */}
+                    {(() => {
+                      const totalBelop = allokering.reduce((s, a) => s + (typeof a.belop === 'number' ? a.belop : (a.vekt / 100) * effektivtInvestertBelop), 0);
+                      const snittAvkastning = totalVekt > 0
+                        ? allokering.reduce((s, a) => s + (a.vekt || 0) * (a.avkastning || 0), 0) / totalVekt
+                        : 0;
+                      return (
+                        <div className="border-t border-gray-200 mt-3 pt-4 grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Total vekting</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: Math.abs(totalVekt - 100) < 0.2 ? PENSUM_COLORS.teal : '#B45309' }}>{formatPercent(totalVekt)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Totalbeløp</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(totalBelop)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Snittavkastning</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.teal }}>{snittAvkastning.toFixed(1)}%</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Legg til indeks */}
                     <div className="border-t border-gray-200 pt-5 mt-2">
                       <h5 className="text-xs font-semibold tracking-wide uppercase mb-3" style={{ color: PENSUM_COLORS.teal }}>Legg til indeks</h5>
@@ -5239,6 +5622,7 @@ export default function PensumPrognoseModell() {
                               { navn: 'Investment Grade', avkastning: 5, kategori: 'renter' },
                               { navn: 'Høyrente', avkastning: 7.5, kategori: 'renter' },
                               { navn: 'Statsobligasjoner', avkastning: 3.5, kategori: 'renter' },
+                              { navn: 'Obligasjoner', avkastning: 4, kategori: 'renter' },
                             ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
                               <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
                                 <span>{produkt.navn}</span>
@@ -5276,7 +5660,14 @@ export default function PensumPrognoseModell() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-5">
                   {/* Porteføljesammensetning - donut chart with side legend */}
                   <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                    <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</h4>
+                      {totalLaan > 0 && effektivtInvestertBelop > 0 && (
+                        <div className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
+                          LTV {formatPercent((totalLaan / effektivtInvestertBelop) * 100)} · Lån {formatCurrency(totalLaan)}
+                        </div>
+                      )}
+                    </div>
                     {showComparison ? (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -5408,12 +5799,36 @@ export default function PensumPrognoseModell() {
                 {visSluttSammensetning && sluttSammensetning && (
                   <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden p-5">
                     <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-5 space-y-5">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>
                           Sammensetning ved år {sluttSammensetning.aar}
                         </h4>
                         <span className="text-xs text-gray-500">etter {sluttSammensetningAar} år · {formatCurrency(sluttSammensetning.total)}</span>
                       </div>
+                      {totalLaan > 0 && (() => {
+                        const radLaan = sluttSammensetning.laanBalanse || totalLaan;
+                        const ltv = sluttSammensetning.total > 0 ? (radLaan / sluttSammensetning.total) * 100 : 0;
+                        const startLtv = effektivtInvestertBelop > 0 ? (totalLaan / effektivtInvestertBelop) * 100 : 0;
+                        const ltvDiff = ltv - startLtv;
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="rounded-lg px-2 py-1.5" style={{ backgroundColor: '#FEF2F2' }}>
+                              <div className="text-[10px] uppercase tracking-wide" style={{ color: '#B91C1C' }}>Lånebalanse</div>
+                              <div className="text-xs font-bold tabular-nums" style={{ color: '#7F1D1D' }}>{formatCurrency(radLaan)}</div>
+                            </div>
+                            <div className="rounded-lg px-2 py-1.5 bg-blue-50">
+                              <div className="text-[10px] uppercase tracking-wide text-blue-700">Netto EK</div>
+                              <div className="text-xs font-bold tabular-nums text-blue-900">{formatCurrency(Math.max(0, sluttSammensetning.total - radLaan))}</div>
+                            </div>
+                            <div className="rounded-lg px-2 py-1.5" style={{ backgroundColor: '#FDF6F2' }}>
+                              <div className="text-[10px] uppercase tracking-wide" style={{ color: PENSUM_COLORS.salmon }}>LTV</div>
+                              <div className="text-xs font-bold tabular-nums" style={{ color: '#8B6650' }}>
+                                {formatPercent(ltv)} {Math.abs(ltvDiff) > 0.5 && <span className={ltvDiff < 0 ? 'text-emerald-600' : 'text-red-600'}>({ltvDiff > 0 ? '+' : ''}{ltvDiff.toFixed(1)} pp)</span>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       <div>
                         <div className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</div>
                         <div className="flex items-center gap-6">
@@ -5591,24 +6006,52 @@ export default function PensumPrognoseModell() {
                   </div>
                   {laanAktiv && (
                     <div className="mt-4 space-y-4">
+                      {/* Modus-velger: nytt lån vs. eksisterende lån */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {[
+                          { id: 'nytt', tittel: 'Nytt lån oppå porteføljen', beskrivelse: 'Lånet tilføres som ny gjeld og øker total eksponering.' },
+                          { id: 'eksisterende', tittel: 'Eksisterende lån finansierer porteføljen', beskrivelse: 'Porteføljen inneholder allerede lånebeløpet — netto EK = portefølje − lån.' },
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setLaanModus(m.id)}
+                            className={"text-left rounded-lg px-3 py-2 border transition-colors " + (laanModus === m.id ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300")}
+                          >
+                            <div className="text-sm font-semibold" style={{ color: laanModus === m.id ? PENSUM_COLORS.darkBlue : '#374151' }}>{m.tittel}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{m.beskrivelse}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Advarsel hvis eksisterende lån > portefølje */}
+                      {eksisterendeLaanModus && totalLaan > portefoljeBelop && portefoljeBelop > 0 && (
+                        <div className="rounded-lg px-3 py-2 bg-red-50 border border-red-200 text-xs text-red-700">
+                          Lånet ({formatCurrency(totalLaan)}) er større enn porteføljen ({formatCurrency(portefoljeBelop)}). Netto egenkapital blir negativ — sjekk om porteføljeverdien er korrekt.
+                        </div>
+                      )}
+
                       {prognoseFinansiering.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div className="bg-blue-50 rounded-lg px-4 py-3">
-                            <div className="text-xs text-blue-600 font-medium mb-1">Egenkapital</div>
+                            <div className="text-xs text-blue-600 font-medium mb-1">{eksisterendeLaanModus ? 'Netto egenkapital' : 'Egenkapital'}</div>
                             <div className="text-lg font-bold text-blue-900">{formatCurrency(egenkapitalBelop)}</div>
+                            {eksisterendeLaanModus && (
+                              <div className="text-xs text-gray-400 mt-0.5">Portefølje − lån</div>
+                            )}
                           </div>
                           <div className="bg-amber-50 rounded-lg px-4 py-3">
                             <div className="text-xs text-amber-600 font-medium mb-1">Total lån</div>
                             <div className="text-lg font-bold text-amber-900">{formatCurrency(totalLaan)}</div>
                           </div>
                           <div className="bg-emerald-50 rounded-lg px-4 py-3">
-                            <div className="text-xs text-emerald-600 font-medium mb-1">Investert totalt</div>
+                            <div className="text-xs text-emerald-600 font-medium mb-1">{eksisterendeLaanModus ? 'Portefølje (eksponering)' : 'Investert totalt'}</div>
                             <div className="text-lg font-bold text-emerald-900">{formatCurrency(effektivtInvestertBelop)}</div>
                           </div>
                           <div className="rounded-lg px-4 py-3" style={{ backgroundColor: '#FDF6F2' }}>
                             <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.salmon }}>LTV (belåningsgrad)</div>
-                            <div className="text-lg font-bold" style={{ color: '#8B6650' }}>{egenkapitalBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">Lån / total eksponering</div>
+                            <div className="text-lg font-bold" style={{ color: '#8B6650' }}>{effektivtInvestertBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">Lån / {eksisterendeLaanModus ? 'portefølje' : 'total eksponering'}</div>
                           </div>
                           <div className="bg-red-50 rounded-lg px-4 py-3">
                             <div className="text-xs text-red-600 font-medium mb-1">Årlig rentekostnad</div>
@@ -5692,7 +6135,9 @@ export default function PensumPrognoseModell() {
                             <span className="text-xs text-gray-500">{akkumulerRenter ? 'Rentene legges til lånet hvert år — kontantstrøm uberørt' : 'Rentene trekkes fra årlig kontantstrøm'}</span>
                           </div>
                           <p className="text-xs text-gray-500 italic mt-2">
-                            Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): {effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.
+                            {eksisterendeLaanModus
+                              ? `Lånet er allerede en del av porteføljen — netto egenkapital er ${formatCurrency(egenkapitalBelop)}. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av porteføljen.`
+                              : `Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.`}
                           </p>
                         </>
                       )}
@@ -5896,12 +6341,56 @@ export default function PensumPrognoseModell() {
                       const nice = niceNumbers.find(n => n >= mantissa) || 10;
                       return nice * Math.pow(10, exp);
                     }]} />
-                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
+                    <Tooltip content={({ active, payload, label }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const assetEntries = payload.filter(p => aktiveAktiva.some(a => a.navn === p.dataKey));
+                      const sum = assetEntries.reduce((s, p) => s + (Number(p.value) || 0), 0);
+                      const laanRow = payload.find(p => p.dataKey === 'laanBalanse');
+                      const altRow = payload.find(p => p.dataKey === 'total_alt');
+                      return (
+                        <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', fontSize: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                          <div style={{ fontWeight: 700, marginBottom: 6, color: PENSUM_COLORS.darkBlue }}>{label}</div>
+                          {assetEntries.map(p => {
+                            const pct = sum > 0 ? (p.value / sum * 100) : 0;
+                            return (
+                              <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: p.color }}>
+                                <span>{p.dataKey}</span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.value)} <span style={{ color: '#94A3B8' }}>({pct.toFixed(1)}%)</span></span>
+                              </div>
+                            );
+                          })}
+                          {sum > 0 && (
+                            <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 6, paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                              <span>Total</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(sum)}</span>
+                            </div>
+                          )}
+                          {altRow && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, color: altRow.color }}>
+                              <span>Total ({sammenligningProfil})</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(altRow.value)}</span>
+                            </div>
+                          )}
+                          {laanRow && Number(laanRow.value) > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, color: '#B91C1C' }}>
+                              <span>Lån</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(laanRow.value)} <span style={{ color: '#94A3B8' }}>(LTV {sum > 0 ? ((laanRow.value / sum) * 100).toFixed(1) : 0}%)</span></span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }} />
                     <Legend iconType="circle" />
-                    {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
+                    {totalLaan > 0 && !akkumulerRenter && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
+                    {totalLaan > 0 && akkumulerRenter && (
+                      <Area type="monotone" dataKey="laanBalanse" fill="url(#laanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
+                        <LabelList dataKey="laanBalanse" content={(props) => {
+                          const { x, y, value, index } = props;
+                          if (index !== kombinertVerdiutvikling.length - 1) return null;
+                          return <text x={x} y={y - 6} fill="#FFFFFF" fontSize={13} fontWeight={700} textAnchor="end" style={{ paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' }}>Lån: {formatCurrency(value)}</text>;
+                        }} />
+                      </Area>
+                    )}
+                    {totalLaan > 0 && !akkumulerRenter && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
                       const naarRow = verdiutvikling.find(r => r.total >= hovedmal.belop);
@@ -5937,15 +6426,33 @@ export default function PensumPrognoseModell() {
                     </tr>
                   </thead>
                   <tbody>
-                    {verdiutvikling.map((row, idx) => (
-                      <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
-                        <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
-                        <td className={"py-3 px-3 text-right " + (row.kontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{idx === 0 ? '—' : formatCurrency(row.kontantstrom)}</td>
-                        {aktiveAktiva.map(a => <td key={a.navn} className="py-3 px-3 text-right text-gray-600">{formatCurrency(row[a.navn] || 0)}</td>)}
-                        <td className="py-3 px-4 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.total)}</td>
-                        {totalLaan > 0 && <td className="py-3 px-3 text-right text-red-600 text-xs">{row.total > 0 ? formatPercent((totalLaan / row.total) * 100) : '—'}</td>}
-                      </tr>
-                    ))}
+                    {verdiutvikling.map((row, idx) => {
+                      const radTotal = row.total || 0;
+                      const radLaan = row.laanBalanse || totalLaan;
+                      return (
+                        <tr key={row.year} className={"border-b border-gray-100 " + (idx % 2 === 0 ? "bg-gray-50" : "bg-white")}>
+                          <td className="py-3 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{row.year}</td>
+                          <td className={"py-3 px-3 text-right " + (row.kontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{idx === 0 ? '—' : formatCurrency(row.kontantstrom)}</td>
+                          {aktiveAktiva.map(a => {
+                            const v = row[a.navn] || 0;
+                            const pct = radTotal > 0 ? (v / radTotal) * 100 : 0;
+                            return (
+                              <td key={a.navn} className="py-3 px-3 text-right text-gray-600 tabular-nums">
+                                <div>{formatCurrency(v)}</div>
+                                <div className="text-[10px] text-gray-400">{pct.toFixed(1)}%</div>
+                              </td>
+                            );
+                          })}
+                          <td className="py-3 px-4 text-right font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(radTotal)}</td>
+                          {totalLaan > 0 && (
+                            <td className="py-3 px-3 text-right text-red-600 text-xs tabular-nums">
+                              <div>{radTotal > 0 ? formatPercent((radLaan / radTotal) * 100) : '—'}</div>
+                              {akkumulerRenter && <div className="text-[10px] text-gray-400">{formatCurrency(radLaan)}</div>}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -11480,6 +11987,9 @@ export default function PensumPrognoseModell() {
                   const meta = produktRapportMeta?.[p.id] || {};
                   const pColor = produktFarger[pIdx % produktFarger.length];
                   const isFixedIncome = meta.category === 'fixed-income' || meta.category === 'fixed-income-specialist';
+                  // Direktefond eier enkeltselskaper/-utstedere; fond-i-fond eier andre fond.
+                  const isDirekte = ['equity-nordic', 'equity-sector', 'equity-thematic', 'private-equity', 'fixed-income-specialist'].includes(meta.category);
+                  const underliggendeTittel = isDirekte ? 'Underliggende selskaper' : 'Underliggende fond';
                   return (
                     <div key={p.id} data-rapport-slide={`faktaark-${p.id}`} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                       {/* Product header bar */}
@@ -11552,7 +12062,7 @@ export default function PensumPrognoseModell() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Underliggende fond / Kreditteksponering */}
                             {[
-                              { key: 'underliggende', title: 'Kreditteksponering', color: PENSUM_COLORS.salmon },
+                              { key: 'underliggende', title: underliggendeTittel, color: PENSUM_COLORS.salmon },
                               { key: 'stil', title: 'Nøkkelkarakteristika', color: PENSUM_COLORS.gold },
                               { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
                               { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
@@ -11589,7 +12099,7 @@ export default function PensumPrognoseModell() {
                             {[
                               { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
                               { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
-                              { key: 'underliggende', title: 'Underliggende fond', color: PENSUM_COLORS.salmon },
+                              { key: 'underliggende', title: underliggendeTittel, color: PENSUM_COLORS.salmon },
                               { key: 'stil', title: 'Stil', color: PENSUM_COLORS.gold },
                             ].map(block => {
                               const rows = (eks[block.key] || []).slice(0, 8);
@@ -11655,6 +12165,9 @@ export default function PensumPrognoseModell() {
                 {renderTilleggsmodulerVedPosisjon('etter-faktaark')}
 
                 {renderTilleggsmodulerVedPosisjon('foer-disclaimer')}
+                {tilleggsmoduler.filter(m => m.aktiv && m.posisjon === 'foer-disclaimer' && m.id.startsWith('formuesplan-')).map(m => (
+                  <React.Fragment key={m.id}>{renderFormuesplanleggerSlide(m.id)}</React.Fragment>
+                ))}
 
                 {/* === HONORARSTRUKTUR === */}
                 {isStandardModulAktiv('honorarstruktur') && renderTilleggsmodulInnhold('honorarstruktur')}
