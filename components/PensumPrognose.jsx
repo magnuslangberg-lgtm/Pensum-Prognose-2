@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
+import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ReferenceDot, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
 import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
+// FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
@@ -15,7 +16,15 @@ export default function PensumPrognoseModell() {
   const [showComparison, setShowComparison] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
+  const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
+  const [visDelmal, setVisDelmal] = useState(false);  // Vis delmål-seksjon
+  const [malAktiv, setMalAktiv] = useState(false);  // Hele mål-seksjonen aktiv (valgfri som lån/rebalansering)
+  const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0, visIGraf: true, malAar: 0 });  // Hovedmål
+  const [visSluttSammensetning, setVisSluttSammensetning] = useState(false);
+  const [sluttSammensetningAar, setSluttSammensetningAar] = useState(10);
+  const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
+  const [belopInputModus, setBelopInputModus] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({ aksjer: false, renter: false, alternative: false });
   const [expandedKundeKategorier, setExpandedKundeKategorier] = useState({ likvide: true, illikvide: true, pe: false, eiendom: false });
@@ -53,6 +62,10 @@ export default function PensumPrognoseModell() {
   const [investertBelop, setInvestertBelop] = useState(null); // null = bruk totalKapital fra kundeinformasjon
   // visAlternativeAllokering: null = auto (basert på om kunden har alt.inv.), true/false = manuelt satt
   const [visAlternativeAllokering, setVisAlternativeAllokering] = useState(null);
+
+  // Lånefinansiering på Prognoser med indekser
+  const [prognoseFinansiering, setPrognoseFinansiering] = useState([]);
+  const [visFinansieringPanel, setVisFinansieringPanel] = useState(false);
   
   const [investeringsFormaal, setInvesteringsFormaal] = useState('Utvikle finansiell formue');
   const [likviditetsbehov, setLikviditetsbehov] = useState('Begrenset');
@@ -399,15 +412,56 @@ export default function PensumPrognoseModell() {
     return !pdfMalConfig?.filDataUrl;
   }, [pdfMalConfig?.filnavn, pdfMalConfig?.filDataUrl]);
   
-  // Standard avkastningsrater (kan endres av admin)
-  const [avkastningsrater, setAvkastningsrater] = useState({
-    globaleAksjer: 10,
-    norskeAksjer: 11,
-    hoyrente: 7.5,
-    investmentGrade: 5,
-    privateEquity: 15,
-    eiendom: 8
-  });
+  // Standard avkastningsrater — beregnes fra CMA-data (samme metodikk som Porteføljebygger):
+  // hver aktivaklasse mappes til ett eller flere Pensum-produkter, og forventet avkastning
+  // er gjennomsnittet av produktenes forventetAvkastning. Admin kan overstyre per klasse.
+  const CMA_FALLBACK_RATER = { globaleAksjer: 10, norskeAksjer: 11, hoyrente: 7.5, investmentGrade: 5, privateEquity: 15, eiendom: 8 };
+  const CMA_KILDE_PROGNOSE = {
+    globaleAksjer: ['global-core-active', 'global-edge', 'acadian-global-equity', 'capital-group-new-pers', 'dnb-global-enhanced', 'guinness-global-equity-income'],
+    norskeAksjer: ['norge-a'],
+    hoyrente: ['global-hoyrente', 'nordisk-hoyrente'],
+    privateEquity: ['turnstone-pe', 'unoterte-aksjer'],
+    eiendom: ['amaron-re']
+    // investmentGrade beregnes som hoyrente − 2,5 (IG/HY-spread) — ingen IG-produkter i CMA-arket
+  };
+  const cmaAvkastninger = useMemo(() => {
+    const alleProdukt = [
+      ...(pensumProdukter.enkeltfond || []),
+      ...(pensumProdukter.fondsportefoljer || []),
+      ...(pensumProdukter.eksterneFond || []),
+      ...(pensumProdukter.alternative || [])
+    ];
+    const snitt = (ids, fallback) => {
+      const verdier = ids.map(id => alleProdukt.find(p => p.id === id)?.forventetAvkastning).filter(erGyldigTall);
+      if (verdier.length === 0) return fallback;
+      return parseFloat((verdier.reduce((s, v) => s + v, 0) / verdier.length).toFixed(1));
+    };
+    const hoyrente = snitt(CMA_KILDE_PROGNOSE.hoyrente, CMA_FALLBACK_RATER.hoyrente);
+    return {
+      globaleAksjer: snitt(CMA_KILDE_PROGNOSE.globaleAksjer, CMA_FALLBACK_RATER.globaleAksjer),
+      norskeAksjer: snitt(CMA_KILDE_PROGNOSE.norskeAksjer, CMA_FALLBACK_RATER.norskeAksjer),
+      hoyrente,
+      investmentGrade: parseFloat(Math.max(0, hoyrente - 2.5).toFixed(1)),
+      privateEquity: snitt(CMA_KILDE_PROGNOSE.privateEquity, CMA_FALLBACK_RATER.privateEquity),
+      eiendom: snitt(CMA_KILDE_PROGNOSE.eiendom, CMA_FALLBACK_RATER.eiendom)
+    };
+  }, [pensumProdukter]);
+  // Admin-overstyringer per klasse (partielt objekt). Nøkler som ikke er overstyrt
+  // arver fra cmaAvkastninger og endres dermed automatisk når CMA-data endres.
+  const [avkastningsraterOverride, setAvkastningsraterOverride] = useState({});
+  const avkastningsrater = useMemo(() => ({ ...cmaAvkastninger, ...avkastningsraterOverride }), [cmaAvkastninger, avkastningsraterOverride]);
+  const setAvkastningsrater = useCallback((updater) => {
+    setAvkastningsraterOverride((prev) => {
+      const current = { ...cmaAvkastninger, ...prev };
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      // Behold bare nøkler som faktisk avviker fra CMA, slik at CMA-endringer fortsatt forplanter seg
+      const filtrert = {};
+      Object.keys(next).forEach(k => {
+        if (next[k] !== cmaAvkastninger[k]) filtrert[k] = next[k];
+      });
+      return filtrert;
+    });
+  }, [cmaAvkastninger]);
   const [avkastningsraterLaast, setAvkastningsraterLaast] = useState(false);
 
   // Last admin-data fra storage ved oppstart
@@ -444,7 +498,10 @@ export default function PensumPrognoseModell() {
       try {
         const raterValue = await storageGet('pensum_admin_avkastningsrater');
         if (raterValue) {
-          setAvkastningsrater(JSON.parse(raterValue));
+          // Lagrede verdier kan være enten full rate-objekt (gammelt format) eller
+          // partielt override-objekt (nytt format). Begge tolkes som overrides — keys
+          // som matcher CMA filtreres ut neste gang noen redigerer.
+          try { setAvkastningsraterOverride(JSON.parse(raterValue) || {}); } catch {}
         }
 
         const produktValue = await storageGet('pensum_admin_produkter');
@@ -1152,7 +1209,7 @@ export default function PensumPrognoseModell() {
     setEiendomFondKunde(0);
     setInnskudd(0);
     setUttak(0);
-    setAllokering(beregnAllokering(0, 0, 0, 'Moderat'));
+    setAllokering(beregnAllokering(0, 0, 0, 'Moderat', avkastningsrater));
     setInvesteringsFormaal('Utvikle finansiell formue');
     setLikviditetsbehov('Begrenset');
     setVisKundeliste(false);
@@ -2667,7 +2724,7 @@ export default function PensumPrognoseModell() {
 
   const oppdaterSammenligningProfil = useCallback((nyProfil) => {
     setSammenligningProfil(nyProfil);
-    setSammenligningAllokering(beregnAllokering(likvideTotal, peTotal, eiendomTotal, nyProfil));
+    setSammenligningAllokering(beregnAllokering(likvideTotal, peTotal, eiendomTotal, nyProfil, avkastningsrater));
   }, [likvideTotal, peTotal, eiendomTotal]);
 
   const updateSammenligningVekt = useCallback((index, newVekt) => {
@@ -2688,7 +2745,7 @@ export default function PensumPrognoseModell() {
     // Hvis alternative ikke skal vises, bruk 0 for PE og Eiendom
     const brukPE = effektivVisAlternative ? peTotal : 0;
     const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
-    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, profil));
+    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, profil, avkastningsrater));
     // Synkroniser til porteføljebygger
     if (nyProfil && pensumStandardPortefoljer[profil]) {
       setValgtPensumProfil(profil);
@@ -2700,7 +2757,7 @@ export default function PensumPrognoseModell() {
   useEffect(() => {
     const brukPE = effektivVisAlternative ? peTotal : 0;
     const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
-    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, risikoprofil));
+    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, risikoprofil, avkastningsrater));
   }, [effektivVisAlternative]);
 
   const kategorierData = useMemo(() => {
@@ -2725,9 +2782,9 @@ export default function PensumPrognoseModell() {
 
   const pieData = useMemo(() => {
     const data = [];
-    kategorierData.forEach(cat => {
+    kategorierData.filter(cat => cat.kategori !== 'alternative').forEach(cat => {
       if (cat.vekt > 0) {
-        if (expandedCategories[cat.kategori] && cat.items.length > 1) {
+        if (cat.items.length > 1) {
           cat.items.filter(i => i.vekt > 0).forEach(item => data.push({ name: item.navn, value: item.vekt }));
         } else {
           data.push({ name: cat.navn, value: cat.vekt });
@@ -2735,7 +2792,7 @@ export default function PensumPrognoseModell() {
       }
     });
     return data;
-  }, [kategorierData, expandedCategories]);
+  }, [kategorierData]);
 
   const sammenligningPieData = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0).map(a => ({ name: a.navn, value: a.vekt })), [sammenligningAllokering]);
   const vektetAvkastning = useMemo(() => allokering.reduce((s, a) => s + (a.vekt / 100) * a.avkastning, 0), [allokering]);
@@ -2745,7 +2802,10 @@ export default function PensumPrognoseModell() {
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const effektivtInvestertBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const egenkapitalBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const totalLaan = prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0);
+  const aarligRentekostnad = prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0);
+  const effektivtInvestertBelop = egenkapitalBelop + totalLaan;
 
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
@@ -2782,9 +2842,20 @@ export default function PensumPrognoseModell() {
   const verdiutvikling = useMemo(() => {
     const data = [];
     const startYear = new Date().getFullYear();
+    // Hvis akkumulerRenter: rentekostnaden trekkes IKKE fra kontantstrøm — i stedet vokser lånet hvert år
+    const effektivRentekostnad = akkumulerRenter ? 0 : aarligRentekostnad;
+    // Gjennomsnittlig låne-rente brukes når renter akkumuleres
+    const veietLaaneRente = totalLaan > 0
+      ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) / totalLaan
+      : 0;
+    let aktueltLaan = totalLaan;
     for (let i = 0; i <= horisont; i++) {
       const row = { year: startYear + i, kontantstrom: i === 0 ? 0 : nettoKontantstrom };
-      
+      if (i > 0 && akkumulerRenter) {
+        aktueltLaan = aktueltLaan * (1 + veietLaaneRente);
+      }
+      row.laanBalanse = aktueltLaan;
+
       // Beregn gjeldende allokering med rebalansering(er)
       let gjeldendAllokering = aktiveAktiva.map(a => ({ ...a }));
       if (rebalanseringAktiv && i > 0) {
@@ -2807,7 +2878,6 @@ export default function PensumPrognoseModell() {
 
           if (rebalanseringAktiv) {
             const prevValue = prevRow[asset.navn] || 0;
-            // Apply all rebalansering rules
             let salgTotal = 0, kjopTotal = 0;
             rebalanseringer.forEach(reb => {
               const endringProsent = reb.prosentPerAar / 100;
@@ -2819,21 +2889,24 @@ export default function PensumPrognoseModell() {
               }
             });
             const originalAsset = aktiveAktiva.find(a => a.navn === asset.navn);
-            const nyVerdi = (prevValue - salgTotal + kjopTotal + (originalAsset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
+            const kontantTilAsset = (originalAsset.vekt / 100) * (nettoKontantstrom - effektivRentekostnad);
+            const nyVerdi = (prevValue - salgTotal + kjopTotal + kontantTilAsset) * (1 + asset.avkastning / 100);
             row[asset.navn] = Math.max(0, nyVerdi);
           } else {
             const prev = prevRow[asset.navn] || 0;
-            row[asset.navn] = (prev + (asset.vekt / 100) * nettoKontantstrom) * (1 + asset.avkastning / 100);
+            const kontantTilAsset = (asset.vekt / 100) * (nettoKontantstrom - effektivRentekostnad);
+            row[asset.navn] = (prev + kontantTilAsset) * (1 + asset.avkastning / 100);
           }
         }
       });
       row.total = aktiveAktiva.reduce((s, a) => s + (row[a.navn] || 0), 0);
+      row.nettoEtterLaan = row.total - aktueltLaan;
       row.allokeringSnapshot = gjeldendAllokering.map(a => ({ navn: a.navn, vekt: row.total > 0 ? (row[a.navn] / row.total) * 100 : 0 }));
 
       data.push(row);
     }
     return data;
-  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer]);
+  }, [aktiveAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont, rebalanseringAktiv, rebalanseringer, aarligRentekostnad, totalLaan, akkumulerRenter, prognoseFinansiering]);
 
   const sammenligningVerdiutvikling = useMemo(() => {
     const data = [];
@@ -2853,11 +2926,6 @@ export default function PensumPrognoseModell() {
     return data;
   }, [sammenligningAktiva, effektivtInvestertBelop, nettoKontantstrom, horisont]);
 
-  const kombinertVerdiutvikling = useMemo(() => {
-    if (!showComparison) return verdiutvikling;
-    return verdiutvikling.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
-  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison]);
-
   const scenarioData = useMemo(() => {
     const data = [];
     const startYear = new Date().getFullYear();
@@ -2867,13 +2935,14 @@ export default function PensumPrognoseModell() {
       const row = { year: startYear + i };
       // Forventet = samme som verdiutvikling (sum av individuelle aktivaklasser)
       row.forventet = verdiutvikling[i]?.total || effektivtInvestertBelop;
-      // Pessimistisk og optimistisk beregnes med justerte rater
+      row.forventetNetto = (verdiutvikling[i]?.nettoEtterLaan ?? verdiutvikling[i]?.total) || egenkapitalBelop;
       if (i === 0) {
         row.pessimistisk = effektivtInvestertBelop;
         row.optimistisk = effektivtInvestertBelop;
       } else {
-        row.pessimistisk = (data[i-1].pessimistisk + nettoKontantstrom) * (1 + scenarioParams.pessimistisk / 100);
-        row.optimistisk = (data[i-1].optimistisk + nettoKontantstrom) * (1 + scenarioParams.optimistisk / 100);
+        const nettoKS = nettoKontantstrom - aarligRentekostnad;
+        row.pessimistisk = (data[i-1].pessimistisk + nettoKS) * (1 + scenarioParams.pessimistisk / 100);
+        row.optimistisk = (data[i-1].optimistisk + nettoKS) * (1 + scenarioParams.optimistisk / 100);
       }
       // Sammenligning (alternativ profil)
       if (showComparison && sammenligningVerdiutvikling[i]) {
@@ -2882,7 +2951,35 @@ export default function PensumPrognoseModell() {
       data.push(row);
     }
     return data;
-  }, [effektivtInvestertBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling]);
+  }, [effektivtInvestertBelop, egenkapitalBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling, aarligRentekostnad, totalLaan]);
+
+  const kombinertVerdiutvikling = useMemo(() => {
+    if (!showComparison) return verdiutvikling;
+    return verdiutvikling.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
+  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison]);
+
+  // Klamp slutt-år til [1, horisont] når horisont endres
+  useEffect(() => {
+    setSluttSammensetningAar(prev => Math.max(1, Math.min(horisont, prev)));
+  }, [horisont]);
+
+  // Sammensetning ved valgt slutt-år (etter avkastning + rebalansering + lån-effekt)
+  const sluttSammensetning = useMemo(() => {
+    const aar = Math.max(1, Math.min(horisont, sluttSammensetningAar));
+    const row = verdiutvikling[aar];
+    if (!row || !Array.isArray(row.allokeringSnapshot)) return null;
+    const pie = row.allokeringSnapshot
+      .filter(a => a.vekt > 0.05)
+      .map(a => ({ name: a.navn, value: a.vekt }));
+    const illikvKat = ['privateMarkets', 'eiendom'];
+    let illikvidVekt = 0;
+    row.allokeringSnapshot.forEach(a => {
+      const meta = aktiveAktiva.find(b => b.navn === a.navn);
+      if (meta && illikvKat.includes(meta.kategori)) illikvidVekt += a.vekt;
+    });
+    const likvidVekt = row.allokeringSnapshot.reduce((s, a) => s + a.vekt, 0) - illikvidVekt;
+    return { aar: row.year, pie, likvid: likvidVekt, illikvid: illikvidVekt, total: row.total };
+  }, [verdiutvikling, sluttSammensetningAar, horisont, aktiveAktiva]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
@@ -2905,8 +3002,44 @@ export default function PensumPrognoseModell() {
   }, [effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
-    setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0 }; return u; });
+    setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0, manueltJustert: true }; return u; });
   }, []);
+
+  // Synkroniser avkastning på allokerings-radene når CMA-rater endres (f.eks. admin
+  // oppdaterer et produkt i CMA-arket). Rader med manueltJustert beholder verdien sin.
+  const ALLOKERING_NAVN_TIL_RATER = useMemo(() => ({
+    'Globale Aksjer': 'globaleAksjer', 'Norske Aksjer': 'norskeAksjer',
+    'Høyrente': 'hoyrente', 'Investment Grade': 'investmentGrade',
+    'Private Equity': 'privateEquity', 'Eiendom': 'eiendom'
+  }), []);
+  useEffect(() => {
+    setAllokering(prev => {
+      let endret = false;
+      const neste = prev.map(rad => {
+        if (rad.manueltJustert) return rad;
+        const key = ALLOKERING_NAVN_TIL_RATER[rad.navn];
+        if (!key) return rad;
+        const ny = avkastningsrater[key];
+        if (!erGyldigTall(ny) || ny === rad.avkastning) return rad;
+        endret = true;
+        return { ...rad, avkastning: ny };
+      });
+      return endret ? neste : prev;
+    });
+    setSammenligningAllokering(prev => {
+      let endret = false;
+      const neste = prev.map(rad => {
+        if (rad.manueltJustert) return rad;
+        const key = ALLOKERING_NAVN_TIL_RATER[rad.navn];
+        if (!key) return rad;
+        const ny = avkastningsrater[key];
+        if (!erGyldigTall(ny) || ny === rad.avkastning) return rad;
+        endret = true;
+        return { ...rad, avkastning: ny };
+      });
+      return endret ? neste : prev;
+    });
+  }, [avkastningsrater, ALLOKERING_NAVN_TIL_RATER]);
 
   const normaliserAllokeringTil100 = useCallback(() => {
     setAllokering((prev) => skalerVekterTilHundreListe(prev));
@@ -4307,9 +4440,9 @@ export default function PensumPrognoseModell() {
         <div style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
-              {['input', 'losninger', 'allokering', 'scenario', 'belaning', 'rapport'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (activeTab === tab ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'allokering' ? 'Prognoser med indekser' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
+              {['input', 'losninger', 'formuesplanlegger', 'scenario', 'belaning', 'rapport'].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + ((activeTab === tab || (tab === 'formuesplanlegger' && activeTab === 'allokering')) ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
+                  {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'formuesplanlegger' ? 'Formuesplanlegger' : tab === 'scenario' ? 'Fondssammenligning' : tab === 'belaning' ? 'Belåning' : 'Investeringsforslag'}
                 </button>
               ))}
               {/* Admin-fane - vises alltid men krever passord */}
@@ -4531,20 +4664,6 @@ export default function PensumPrognoseModell() {
                   </button>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">Årlig kontantstrøm</h3></div>
-                <div className="p-6">
-                  <CurrencyInput label="Årlig innskudd" value={innskudd} onChange={setInnskudd} />
-                  <CurrencyInput label="Årlige uttak" value={uttak} onChange={setUttak} />
-                  <div className="border-t border-gray-100 pt-4 mt-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Netto kontantstrøm</span>
-                      <span className={"text-xl font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* ── Eksisterende portefølje ── */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
                 <button
@@ -4919,7 +5038,9 @@ export default function PensumPrognoseModell() {
           </div>
         )}
 
-        {activeTab === 'allokering' && (
+        {(activeTab === 'allokering' || activeTab === 'formuesplanlegger') && (
+          <>
+
           <div className="space-y-6 no-print">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
@@ -4941,6 +5062,26 @@ export default function PensumPrognoseModell() {
                       <span className="text-blue-300 text-sm">kr</span>
                       {investertBelop !== null && (
                         <button onClick={() => setInvestertBelop(null)} className="text-blue-300 hover:text-white" title="Tilbakestill">↺</button>
+                      )}
+                    </div>
+                    {/* Horisont */}
+                    <div className="flex items-center gap-2 pr-4 border-r border-blue-400">
+                      <span className="text-sm text-blue-200">Horisont:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={horisont}
+                        onChange={(e) => {
+                          const v = Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1));
+                          setHorisont(v);
+                          setLocalHorisont(v.toString());
+                        }}
+                        className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-16 text-right text-sm"
+                      />
+                      <span className="text-blue-300 text-sm">år</span>
+                      {horisont !== 10 && (
+                        <button onClick={() => { setHorisont(10); setLocalHorisont('10'); }} className="text-blue-300 hover:text-white" title="Tilbakestill til 10 år">↺</button>
                       )}
                     </div>
                     {/* Alternative investeringer */}
@@ -5015,31 +5156,55 @@ export default function PensumPrognoseModell() {
                         <button onClick={normaliserAllokeringTil100} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors">
                           Juster til 100%
                         </button>
+                        <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input type="checkbox" checked={belopInputModus} onChange={(e) => setBelopInputModus(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.lightBlue }} />
+                          <span>Rediger beløp</span>
+                        </label>
                       </div>
                       <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
                         <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
                         {formatPercent(totalVekt)}
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {(() => {
                         const fjernIndeks = (navn) => setAllokering(prev => prev.filter(a => a.navn !== navn));
-                        const renderRows = (kategoriFilter, isExpanded) => {
-                          if (!isExpanded) return null;
-                          return allokering.filter(a => kategoriFilter(a)).map((item) => (
-                            <AllokeringRow key={item.navn} item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
-                          ));
-                        };
-                        return (<>
-                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'aksjer')} isExpanded={expandedCategories.aksjer} onToggle={() => toggleCategory('aksjer')} />
-                          {renderRows(a => a.kategori === 'aksjer', expandedCategories.aksjer)}
-                          <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'renter')} isExpanded={expandedCategories.renter} onToggle={() => toggleCategory('renter')} />
-                          {renderRows(a => a.kategori === 'renter', expandedCategories.renter)}
-                          {effektivVisAlternative && kategorierData.find(c => c.kategori === 'alternative') && (<>
-                            <KategoriHeaderRow kategori={kategorierData.find(c => c.kategori === 'alternative')} isExpanded={expandedCategories.alternative} onToggle={() => toggleCategory('alternative')} />
-                            {renderRows(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom', expandedCategories.alternative)}
-                          </>)}
-                        </>);
+                        const katFarger = { aksjer: { bg: '#EFF6FF', stripe: '#0D2841' }, renter: { bg: '#FFF1F2', stripe: '#C4967E' }, privateMarkets: { bg: '#F0FDFA', stripe: '#2D6A6A' }, eiendom: { bg: '#FEF9C3', stripe: '#A67B3D' } };
+                        const katNavn = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Alternative', eiendom: 'Alternative' };
+                        const grupper = [
+                          { id: 'aksjer', filter: a => a.kategori === 'aksjer' },
+                          { id: 'renter', filter: a => a.kategori === 'renter' },
+                        ];
+                        if (effektivVisAlternative && allokering.some(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom')) {
+                          grupper.push({ id: 'privateMarkets', filter: a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' });
+                        }
+                        return grupper.map(({ id, filter }) => {
+                          const items = allokering.filter(filter);
+                          if (!items.length) return null;
+                          const kat = kategorierData.find(c => c.kategori === (id === 'privateMarkets' ? 'alternative' : id));
+                          const farger = katFarger[id] || { bg: '#F8F9FA', stripe: '#888' };
+                          return (
+                            <div key={id}>
+                              <div className="flex items-center justify-between px-4 py-2 mt-1 rounded-t-lg" style={{ backgroundColor: farger.bg, borderLeft: `4px solid ${farger.stripe}` }}>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: farger.stripe }} />
+                                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: farger.stripe }}>{katNavn[id] || id}</span>
+                                </div>
+                                {kat && (
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="font-semibold tabular-nums" style={{ color: farger.stripe }}>{formatPercent(kat.vekt)}</span>
+                                    <span className="text-gray-400 tabular-nums">{formatCurrency(kat.belop)}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {items.map((item) => (
+                                <div key={item.navn} style={{ backgroundColor: farger.bg, borderLeft: `4px solid ${farger.stripe}`, borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                  <AllokeringRow item={item} index={allokering.findIndex(a => a.navn === item.navn)} isSubItem={true} effektivtInvestertBelop={effektivtInvestertBelop} updateAllokeringVekt={updateAllokeringVekt} updateAllokeringBelop={updateAllokeringBelop} belopRedigerbar={belopInputModus} updateAllokeringAvkastning={updateAllokeringAvkastning} avkastningLaast={avkastningsraterLaast} onRemove={() => fjernIndeks(item.navn)} />
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        });
                       })()}
                     </div>
 
@@ -5089,6 +5254,7 @@ export default function PensumPrognoseModell() {
                                 { navn: 'Eiendom', avkastning: 8, kategori: 'eiendom' },
                                 { navn: 'Infrastruktur', avkastning: 9, kategori: 'privateMarkets' },
                                 { navn: 'Hedgefond', avkastning: 7, kategori: 'privateMarkets' },
+                                { navn: 'Shipping', avkastning: 11, kategori: 'shipping' },
                               ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
                                 <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
                                   <span>{produkt.navn}</span>
@@ -5235,27 +5401,243 @@ export default function PensumPrognoseModell() {
                     </div>
                   );
                 })()}
+
+                {/* Sammensetning ved valgt slutt-år — inkl. rebalanseringer */}
+                {visSluttSammensetning && sluttSammensetning && (
+                  <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden p-5">
+                    <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-5 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>
+                          Sammensetning ved år {sluttSammensetning.aar}
+                        </h4>
+                        <span className="text-xs text-gray-500">etter {sluttSammensetningAar} år · {formatCurrency(sluttSammensetning.total)}</span>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</div>
+                        <div className="flex items-center gap-6">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={180} height={180}>
+                              <PieChart>
+                                <Pie data={sluttSammensetning.pie} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                  {sluttSammensetning.pie.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} />)}
+                                </Pie>
+                                <Tooltip formatter={(v, n) => [v.toFixed(1) + '%', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2 flex-1">
+                            {sluttSammensetning.pie.map((entry) => (
+                              <div key={entry.name} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[entry.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === entry.name)?.kategori] || '#888' }}></div>
+                                  <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
+                                </div>
+                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t border-emerald-100">
+                        <div className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</div>
+                        <div className="flex items-center gap-6">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={140} height={140}>
+                              <PieChart>
+                                <Pie
+                                  data={[{ name: 'Likvid', value: sluttSammensetning.likvid }, { name: 'Illikvid', value: sluttSammensetning.illikvid }].filter(d => d.value > 0)}
+                                  cx="50%" cy="50%" innerRadius={36} outerRadius={60} dataKey="value" paddingAngle={2} cornerRadius={4}
+                                >
+                                  <Cell fill={PENSUM_COLORS.darkBlue} />
+                                  {sluttSammensetning.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
+                                </Pie>
+                                <Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div><span className="text-gray-700">Likvid</span></div>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.likvid.toFixed(0)}%</span>
+                            </div>
+                            {sluttSammensetning.illikvid > 0 && (
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div><span className="text-gray-700">Illikvid</span></div>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.illikvid.toFixed(0)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Rebalansering panel */}
+            {/* Finansiering / Belåning panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setRebalanseringAktiv(!rebalanseringAktiv)}>
+              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setVisFinansieringPanel(!visFinansieringPanel)}>
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-white">Årlig rebalansering</h3>
-                  {!rebalanseringAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
+                  <h3 className="text-lg font-semibold text-white">Lånefinansiering</h3>
+                  {prognoseFinansiering.length > 0 && (
+                    <span className="text-xs text-blue-200 bg-white/10 px-2 py-0.5 rounded-full">
+                      {formatCurrency(totalLaan)} lån · {formatPercent(egenkapitalBelop > 0 ? (totalLaan / egenkapitalBelop) * 100 : 0)} belåningsgrad
+                    </span>
+                  )}
+                  {prognoseFinansiering.length === 0 && <span className="text-xs text-blue-200">(klikk for å legge til)</span>}
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-white">{rebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
-                  <div className="relative">
-                    <input type="checkbox" checked={rebalanseringAktiv} onChange={(e) => setRebalanseringAktiv(e.target.checked)} className="sr-only" />
-                    <div className={"w-11 h-6 rounded-full transition-colors " + (rebalanseringAktiv ? "bg-green-500" : "bg-gray-400")}></div>
-                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (rebalanseringAktiv ? "translate-x-5" : "")}></div>
+                <svg className={`w-5 h-5 text-blue-300 transition-transform ${visFinansieringPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+              {visFinansieringPanel && (
+                <div className="p-6 space-y-4">
+                  {prognoseFinansiering.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-2">
+                      <div className="bg-blue-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-blue-600 font-medium mb-1">Egenkapital</div>
+                        <div className="text-lg font-bold text-blue-900">{formatCurrency(egenkapitalBelop)}</div>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-amber-600 font-medium mb-1">Total lån</div>
+                        <div className="text-lg font-bold text-amber-900">{formatCurrency(totalLaan)}</div>
+                      </div>
+                      <div className="bg-emerald-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-emerald-600 font-medium mb-1">Investert totalt</div>
+                        <div className="text-lg font-bold text-emerald-900">{formatCurrency(effektivtInvestertBelop)}</div>
+                      </div>
+                      <div className="rounded-lg px-4 py-3" style={{ backgroundColor: '#FDF6F2' }}>
+                        <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.salmon }}>LTV (belåningsgrad)</div>
+                        <div className="text-lg font-bold" style={{ color: '#8B6650' }}>{egenkapitalBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">Lån / total eksponering</div>
+                      </div>
+                      <div className="bg-red-50 rounded-lg px-4 py-3">
+                        <div className="text-xs text-red-600 font-medium mb-1">Årlig rentekostnad</div>
+                        <div className="text-lg font-bold text-red-900">{formatCurrency(aarligRentekostnad)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {prognoseFinansiering.map((laan, idx) => (
+                    <div key={laan.id || idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Type</label>
+                        <select
+                          value={laan.type}
+                          onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, type: e.target.value } : l))}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm bg-white"
+                        >
+                          <option value="Banklån">Banklån</option>
+                          <option value="Verdipapirfinansiering">Verdipapirfinansiering</option>
+                          <option value="Andre lån">Andre lån</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Beløp (NOK)</label>
+                        <input
+                          type="text"
+                          value={formatNumber(laan.belop || 0)}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                            setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, belop: v } : l));
+                          }}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Rente (%)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={laan.rente ?? 5}
+                          onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, rente: parseFloat(e.target.value) || 0 } : l))}
+                          className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig kostnad</label>
+                        <div className="py-2 px-3 text-sm font-semibold text-red-700 bg-red-50 rounded-lg border border-red-200 text-right">
+                          {formatCurrency((Number(laan.belop) || 0) * (Number(laan.rente) || 0) / 100)}
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setPrognoseFinansiering(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-400 hover:text-red-600 p-2 transition-colors"
+                          title="Fjern lån"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {['Banklån', 'Verdipapirfinansiering', 'Andre lån'].map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setPrognoseFinansiering(prev => [...prev, { id: Date.now() + '-' + Math.random().toString(36).slice(2,8), type, belop: 0, rente: type === 'Verdipapirfinansiering' ? 5.5 : type === 'Banklån' ? 4.5 : 6, }])}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border border-dashed transition-colors hover:bg-gray-50"
+                        style={{ borderColor: PENSUM_COLORS.salmon, color: PENSUM_COLORS.salmon }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        {type}
+                      </button>
+                    ))}
                   </div>
-                </label>
+                  {prognoseFinansiering.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-3 mt-3 p-3 rounded-lg" style={{ backgroundColor: '#FDF6F2', border: '1px solid #F0DCD0' }}>
+                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                          <input type="checkbox" checked={akkumulerRenter} onChange={(e) => setAkkumulerRenter(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Akkumuler lånerenter (compound)</span>
+                        </label>
+                        <span className="text-xs text-gray-500">{akkumulerRenter ? 'Rentene legges til lånet hvert år — kontantstrøm uberørt' : 'Rentene trekkes fra årlig kontantstrøm'}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): {effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Kontantstrøm + Rebalansering panel */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">Årlig kontantstrøm og rebalansering</h3>
+              </div>
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig innskudd (kr)</label>
+                    <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlige uttak (kr)</label>
+                    <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                  </div>
+                  <div className="rounded-lg p-3" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
+                    <div className="text-xs font-medium text-gray-500 mb-0.5">Netto kontantstrøm</div>
+                    <div className={"text-xl font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4 flex items-center justify-between cursor-pointer" onClick={() => setRebalanseringAktiv(!rebalanseringAktiv)}>
+                  <div className="flex items-center gap-3">
+                    <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig rebalansering</h4>
+                    {!rebalanseringAktiv && <span className="text-xs text-gray-400">(klikk for å aktivere)</span>}
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs text-gray-500">{rebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                    <div className="relative">
+                      <input type="checkbox" checked={rebalanseringAktiv} onChange={(e) => setRebalanseringAktiv(e.target.checked)} className="sr-only" />
+                      <div className={"w-11 h-6 rounded-full transition-colors " + (rebalanseringAktiv ? "bg-green-500" : "bg-gray-300")}></div>
+                      <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (rebalanseringAktiv ? "translate-x-5" : "")}></div>
+                    </div>
+                  </label>
+                </div>
               </div>
               {rebalanseringAktiv && (
-                <div className="p-6 space-y-4">
+                <div className="px-6 pb-6 space-y-4">
                   {rebalanseringer.map((reb, rebIdx) => (
                     <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                       <div>
@@ -5314,18 +5696,45 @@ export default function PensumPrognoseModell() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}><h3 className="text-lg font-semibold text-white">{showComparison ? "Utvikling - Sammenligning" : "Utvikling i formuesverdi"}</h3></div>
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                <h3 className="text-lg font-semibold text-white">{showComparison ? "Prognose - Sammenligning" : "Prognose på utvikling i formuesverdi"}</h3>
+              </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
+                  <ComposedChart data={kombinertVerdiutvikling} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barCategoryGap={showComparison ? "20%" : "40%"}>
+                    <defs>
+                      <pattern id="laanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                        <rect width="8" height="8" fill="#FEE2E2" />
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
+                      </pattern>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 12, fontWeight: 600 }} />
-                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} />
+                    <YAxis tickFormatter={(v) => 'kr ' + formatNumber(v)} axisLine={{ stroke: PENSUM_COLORS.darkBlue, strokeWidth: 2 }} tickLine={false} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 11 }} width={100} domain={[0, (dataMax) => {
+                      const referanseVerdier = [dataMax, (malAktiv && hovedmal.visIGraf) ? hovedmal.belop : 0, totalLaan, ...(malAktiv && visDelmal ? delmal.map(m => m.belop || 0) : [])];
+                      const maxRef = Math.max(...referanseVerdier);
+                      if (maxRef <= 0) return 100;
+                      const buffer = maxRef * 1.08;
+                      const exp = Math.floor(Math.log10(buffer));
+                      const niceNumbers = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+                      const mantissa = buffer / Math.pow(10, exp);
+                      const nice = niceNumbers.find(n => n >= mantissa) || 10;
+                      return nice * Math.pow(10, exp);
+                    }]} />
                     <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
                     <Legend iconType="circle" />
+                    {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                  </BarChart>
+                    {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
+                    {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
+                    {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
+                      const naarRow = verdiutvikling.find(r => r.total >= hovedmal.belop);
+                      if (!naarRow) return null;
+                      return <ReferenceDot x={naarRow.year} y={hovedmal.belop} r={9} fill="#059669" stroke="#FFFFFF" strokeWidth={2} ifOverflow="extendDomain" label={{ value: '✓', position: 'center', fill: '#FFFFFF', fontSize: 11, fontWeight: 700 }} />;
+                    })()}
+                    {malAktiv && visDelmal && delmal.filter(m => m.belop > 0).map((m, i) => <ReferenceLine key={i} y={m.belop} stroke="#059669" strokeDasharray="4 4" label={{ value: m.navn || `Delmål ${i+1}`, position: 'right', fill: '#059669', fontSize: 11 }} />)}
+                  </ComposedChart>
                 </ResponsiveContainer>
                 {showComparison && (
                   <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
@@ -5349,6 +5758,7 @@ export default function PensumPrognoseModell() {
                       <th className="py-3 px-3 text-right text-white">Innskudd/uttak</th>
                       {aktiveAktiva.map(a => <th key={a.navn} className="py-3 px-3 text-right text-white">{a.navn}</th>)}
                       <th className="py-3 px-4 text-right text-white font-bold">Total</th>
+                      {totalLaan > 0 && <th className="py-3 px-3 text-right text-red-200">LTV</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -5358,12 +5768,238 @@ export default function PensumPrognoseModell() {
                         <td className={"py-3 px-3 text-right " + (row.kontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{idx === 0 ? '—' : formatCurrency(row.kontantstrom)}</td>
                         {aktiveAktiva.map(a => <td key={a.navn} className="py-3 px-3 text-right text-gray-600">{formatCurrency(row[a.navn] || 0)}</td>)}
                         <td className="py-3 px-4 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(row.total)}</td>
+                        {totalLaan > 0 && <td className="py-3 px-3 text-right text-red-600 text-xs">{row.total > 0 ? formatPercent((totalLaan / row.total) * 100) : '—'}</td>}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* ====== FINANSIELT MÅL OG BELØP (valgfri som lån/rebalansering) ====== */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setMalAktiv(!malAktiv)}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-white">Finansielt mål og beløp</h3>
+                  {!malAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-sm text-white">{malAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                  <div className="relative">
+                    <input type="checkbox" checked={malAktiv} onChange={(e) => setMalAktiv(e.target.checked)} className="sr-only" />
+                    <div className={"w-11 h-6 rounded-full transition-colors " + (malAktiv ? "bg-green-500" : "bg-gray-400")}></div>
+                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (malAktiv ? "translate-x-5" : "")}></div>
+                  </div>
+                </label>
+              </div>
+              {malAktiv && (() => {
+                const naarAarRow = hovedmal.belop > 0 ? verdiutvikling.find(r => r.total >= hovedmal.belop) : null;
+                const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
+                const fremgang = hovedmal.belop > 0 ? Math.min(100, (sluttverdi / hovedmal.belop) * 100) : 0;
+                const aarTilMaal = hovedmal.malAar > 0 ? hovedmal.malAar - new Date().getFullYear() : 0;
+                const beregnNoedvendigAvkastning = (FV, PV, PMT, n) => {
+                  if (n <= 0 || FV <= 0 || PV < 0) return null;
+                  if (PV === 0 && PMT === 0) return null;
+                  let low = -0.5, high = 1.5;
+                  for (let iter = 0; iter < 80; iter++) {
+                    const mid = (low + high) / 2;
+                    const fv = mid === 0
+                      ? PV + PMT * n
+                      : PV * Math.pow(1 + mid, n) + PMT * (Math.pow(1 + mid, n) - 1) / mid;
+                    if (fv < FV) low = mid; else high = mid;
+                    if (Math.abs(high - low) < 1e-7) break;
+                  }
+                  return (low + high) / 2 * 100;
+                };
+                const nettoKontantPMT = nettoKontantstrom - (akkumulerRenter ? 0 : aarligRentekostnad);
+                const noedvendigAvk = hovedmal.belop > 0 && aarTilMaal > 0
+                  ? beregnNoedvendigAvkastning(hovedmal.belop, effektivtInvestertBelop, nettoKontantPMT, aarTilMaal)
+                  : null;
+                const avkastningsDiff = noedvendigAvk != null ? noedvendigAvk - vektetAvkastning : null;
+                return (
+                  <div className="p-6 space-y-5">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Vis hovedmål i graf</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={visDelmal} onChange={(e) => setVisDelmal(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Bruk delmål</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={visSluttSammensetning} onChange={(e) => setVisSluttSammensetning(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Vis sammensetning ved slutt av horisonten</span>
+                        </label>
+                        {visSluttSammensetning && (
+                          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+                            <span className="text-xs text-gray-600">År</span>
+                            <input
+                              type="range"
+                              min={1}
+                              max={horisont}
+                              step={1}
+                              value={sluttSammensetningAar}
+                              onChange={(e) => setSluttSammensetningAar(parseInt(e.target.value) || 1)}
+                              className="w-32 accent-blue-700"
+                            />
+                            <span className="text-xs font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>
+                              {sluttSammensetningAar} år ({new Date().getFullYear() + sluttSammensetningAar})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {hovedmal.belop > 0 && (naarAarRow
+                        ? <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
+                        : <span className="text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1 rounded-full">Nås ikke innen {horisont} år</span>)}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Hva er målet?</label>
+                        <input type="text" placeholder="F.eks. Finansiell frihet" value={hovedmal.navn} onChange={e => setHovedmal(prev => ({ ...prev, navn: e.target.value }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Målbeløp (kr)</label>
+                        <input type="text" placeholder="100 000 000" value={hovedmal.belop ? formatNumber(hovedmal.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setHovedmal(prev => ({ ...prev, belop: v })); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Nå målet innen (år)</label>
+                        <input type="number" min={new Date().getFullYear() + 1} placeholder={new Date().getFullYear() + 10} value={hovedmal.malAar || ''} onChange={e => setHovedmal(prev => ({ ...prev, malAar: parseInt(e.target.value) || 0 }))} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      </div>
+                    </div>
+
+                    {hovedmal.belop > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8' }}>
+                          <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Med dagens portefølje</div>
+                          <div className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>
+                            {naarAarRow ? `Nås i ${naarAarRow.year}` : `Nås ikke innen ${horisont} år`}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">{formatPercent(vektetAvkastning)} avkastning gir {formatCurrency(sluttverdi)} etter {horisont} år</div>
+                        </div>
+                        {aarTilMaal > 0 && noedvendigAvk != null && (
+                          <div className={`rounded-lg p-4 ${avkastningsDiff > 0 ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                            <div className={`text-xs font-medium mb-1 ${avkastningsDiff > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>For å nå målet i {hovedmal.malAar}</div>
+                            <div className={`text-lg font-bold ${avkastningsDiff > 0 ? 'text-amber-900' : 'text-emerald-900'}`}>
+                              {noedvendigAvk > 50 || noedvendigAvk < -20 ? 'Urealistisk' : `${formatPercent(noedvendigAvk)} avkastning`}
+                            </div>
+                            {noedvendigAvk <= 50 && noedvendigAvk >= -20 && (
+                              <div className={`text-xs mt-0.5 ${avkastningsDiff > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                {avkastningsDiff > 0
+                                  ? `Krever ${formatPercent(avkastningsDiff)} høyere enn dagens ${formatPercent(vektetAvkastning)}`
+                                  : `Klarer det allerede — ${formatPercent(Math.abs(avkastningsDiff))} ekstra margin`}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="text-xs font-medium text-gray-500 mb-1">Fremgang ({horisont} år)</div>
+                          <div className="w-full bg-white rounded-full h-3 overflow-hidden mt-2">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${fremgang}%`, backgroundColor: fremgang >= 100 ? '#059669' : PENSUM_COLORS.darkBlue }} />
+                          </div>
+                          <div className="text-xs mt-2 text-gray-500">
+                            {formatPercent(fremgang)} av målet
+                            {!naarAarRow && hovedmal.belop > sluttverdi && ` — mangler ${formatCurrency(hovedmal.belop - sluttverdi)}`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {visDelmal && (
+                      <div className="pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700">Delmål & milepæler</h4>
+                            <p className="text-xs text-gray-500">Vises som grønne referanselinjer i grafen.</p>
+                          </div>
+                          <button onClick={() => setDelmal(prev => [...prev, { navn: '', belop: 0 }])} className="text-xs px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">+ Legg til delmål</button>
+                        </div>
+                        {delmal.length === 0 && <p className="text-xs text-gray-400 italic">Ingen delmål lagt til ennå.</p>}
+                        {delmal.map((m, i) => {
+                          const naarAar = verdiutvikling.find(r => r.total >= m.belop);
+                          return (
+                            <div key={i} className="flex items-center gap-3 mb-2">
+                              <input type="text" placeholder="Navn på delmål" value={m.navn} onChange={e => setDelmal(prev => prev.map((d, j) => j === i ? { ...d, navn: e.target.value } : d))} className="border border-gray-200 rounded-lg py-2 px-3 text-sm flex-1" />
+                              <input type="text" placeholder="Beløp" value={m.belop ? formatNumber(m.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setDelmal(prev => prev.map((d, j) => j === i ? { ...d, belop: v } : d)); }} className="border border-gray-200 rounded-lg py-2 px-3 text-sm w-40 text-right" />
+                              <span className="text-sm text-gray-400">kr</span>
+                              {naarAar && <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Nås {naarAar.year}</span>}
+                              {!naarAar && m.belop > 0 && <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">Nås ikke i perioden</span>}
+                              <button onClick={() => setDelmal(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-lg">×</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+
+            {/* ====== RENTERS RENTE-EFFEKT ====== */}
+            {(() => {
+              const sluttverdi = verdiutvikling[verdiutvikling.length - 1]?.total || 0;
+              const totalInnskutt = effektivtInvestertBelop + (nettoKontantstrom > 0 ? nettoKontantstrom * horisont : 0);
+              const totalRentekostnad = aarligRentekostnad * horisont;
+              const nettoKontantstromEtterRente = nettoKontantstrom - aarligRentekostnad;
+              // Enkel avkastning = kapital × avkastning × antall år (uten compounding)
+              const enkelAvkastning = effektivtInvestertBelop * (vektetAvkastning / 100) * horisont + nettoKontantstromEtterRente * (vektetAvkastning / 100) * ((horisont - 1) / 2) * horisont / horisont;
+              // Compound: total avkastning = sluttverdi - investert - netto kontantstrøm over perioden
+              const totalAvkastning = sluttverdi - effektivtInvestertBelop - (nettoKontantstromEtterRente * horisont);
+              // Enkel lineær avkastning (uten rentes rente): hvert år får man avkastning bare på opprinnelig kapital
+              const enkelLineaer = (() => {
+                let enkel = effektivtInvestertBelop;
+                for (let y = 1; y <= horisont; y++) {
+                  enkel += effektivtInvestertBelop * (vektetAvkastning / 100) + nettoKontantstromEtterRente;
+                }
+                return enkel;
+              })();
+              const rentersRenteIsolert = sluttverdi - enkelLineaer;
+              const rentersRentePct = effektivtInvestertBelop > 0 ? (rentersRenteIsolert / effektivtInvestertBelop * 100) : 0;
+              return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+                    <h3 className="text-lg font-semibold text-white">Renters rente-effekt</h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <div className="text-xs text-blue-600 font-medium mb-1">Investert kapital</div>
+                        <div className="text-lg font-bold text-blue-900">{formatCurrency(effektivtInvestertBelop)}</div>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-4">
+                        <div className="text-xs text-amber-600 font-medium mb-1">Enkel avkastning</div>
+                        <div className="text-lg font-bold text-amber-900">{formatCurrency(enkelLineaer - effektivtInvestertBelop - nettoKontantstromEtterRente * horisont)}</div>
+                        <div className="text-xs text-amber-500 mt-0.5">Uten renters rente</div>
+                      </div>
+                      <div className="bg-emerald-50 rounded-lg p-4">
+                        <div className="text-xs text-emerald-600 font-medium mb-1">Renters rente (isolert)</div>
+                        <div className="text-lg font-bold text-emerald-900">{formatCurrency(rentersRenteIsolert)}</div>
+                        <div className="text-xs text-emerald-500 mt-0.5">Compound-effekten alene</div>
+                      </div>
+                      <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8' }}>
+                        <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sluttverdi</div>
+                        <div className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(sluttverdi)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">Etter {horisont} år</div>
+                      </div>
+                      {totalLaan > 0 && (
+                        <div className="bg-red-50 rounded-lg p-4">
+                          <div className="text-xs text-red-600 font-medium mb-1">Lånekostnad totalt</div>
+                          <div className="text-lg font-bold text-red-900">{formatCurrency(totalRentekostnad)}</div>
+                          <div className="text-xs text-red-500 mt-0.5">LTV: {formatPercent(effektivtInvestertBelop > 0 ? (totalLaan / effektivtInvestertBelop) * 100 : 0)}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-500">
+                      Med {formatPercent(vektetAvkastning)} årlig avkastning og renters rente gir <strong className="text-gray-700">{formatCurrency(effektivtInvestertBelop)}</strong> investert en sluttverdi på <strong style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(sluttverdi)}</strong>.
+                      {' '}Av totalavkastningen på <strong className="text-gray-700">{formatCurrency(totalAvkastning)}</strong> er <strong className="text-emerald-700">{formatCurrency(rentersRenteIsolert)}</strong> ren compound-effekt — avkastning på tidligere års avkastning.
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ====== SCENARIO-PARAMETERE ====== */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -5378,8 +6014,12 @@ export default function PensumPrognoseModell() {
                 <div className={"grid gap-4 " + (showPessimistic ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2")}>
                   {showPessimistic && (
                     <div className="p-5 bg-red-50 rounded-xl border border-red-200">
-                      <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Pessimistisk</div>
-                      <div className="text-4xl font-bold text-red-700 mb-1">{formatPercent(scenarioParams.pessimistisk)}</div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs font-bold text-red-500 uppercase tracking-wider">Pessimistisk</div>
+                        <div className="text-xs font-semibold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">{formatPercent(scenarioParams.pessimistisk)} p.a.</div>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-red-400 font-semibold">Sluttverdi etter {horisont} år</div>
+                      <div className="text-4xl font-bold text-red-700 mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.pessimistisk || 0)}</div>
                       <input type="range" min="-10" max={vektetAvkastning} step="0.5" value={scenarioParams.pessimistisk}
                         onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
                         className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
@@ -5390,23 +6030,28 @@ export default function PensumPrognoseModell() {
                     </div>
                   )}
                   <div className="p-5 rounded-xl border-2" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
-                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-3">Forventet</div>
-                    <div className="text-4xl font-bold text-white mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
-                    <div className="text-blue-300 text-sm mb-3">etter {horisont} år</div>
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-blue-300 uppercase tracking-wider">Forventet</div>
+                      <div className="text-xs font-semibold text-blue-200 bg-blue-900/60 px-2 py-0.5 rounded-full">{formatPercent(vektetAvkastning)} p.a.</div>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-blue-300 font-semibold">Sluttverdi etter {horisont} år</div>
+                    <div className="text-4xl font-bold text-white mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
                       <div><div className="text-xs text-blue-400">Gevinst</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
                     </div>
                   </div>
                   <div className="p-5 bg-green-50 rounded-xl border border-green-200">
-                    <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-3">Optimistisk</div>
-                    <div className="text-4xl font-bold text-green-700 mb-1">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
-                    <div className="text-green-500 text-sm mb-3">etter {horisont} år</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-green-500 uppercase tracking-wider">Optimistisk</div>
+                      <div className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-green-500 font-semibold">Sluttverdi etter {horisont} år</div>
+                    <div className="text-4xl font-bold text-green-700 mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.optimistisk || 0)}</div>
                     <input type="range" min={vektetAvkastning} max="25" step="0.5" value={scenarioParams.optimistisk}
                       onChange={(e) => setScenarioParams(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
-                      className="w-full h-2 rounded-lg cursor-pointer bg-green-200" />
-                    <div className="mt-2 text-center font-bold text-green-600">{formatPercent(scenarioParams.optimistisk)} p.a.</div>
-                    <div className="mt-2 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
+                      className="w-full h-2 rounded-lg cursor-pointer bg-green-200 mt-3" />
+                    <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
                       <div><div className="text-xs text-green-400">Gevinst</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - effektivtInvestertBelop)}</div></div>
                       <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
                     </div>
@@ -5540,6 +6185,7 @@ export default function PensumPrognoseModell() {
               )}
             </div>
           </div>
+          </>
         )}
 
         {activeTab === 'losninger' && (
@@ -11428,6 +12074,8 @@ export default function PensumPrognoseModell() {
                   <div className="p-6">
                     <p className="text-sm text-gray-600 mb-4">
                       Disse ratene brukes i "Allokering & Prognose"-fanen for aktivaklassene.
+                      Verdiene er avledet fra CMA-arket (vektet snitt av <code className="text-xs bg-gray-100 px-1 rounded">forventetAvkastning</code> per produkt).
+                      Overstyringer per klasse markeres og kan tilbakestilles. Investment Grade beregnes som Høyrente − 2,5&nbsp;%.
                       {avkastningsraterLaast && <span className="ml-1 text-amber-600 font-medium">Ratene er låst og kan ikke endres av rådgivere.</span>}
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -11438,35 +12086,66 @@ export default function PensumPrognoseModell() {
                         { key: 'investmentGrade', label: 'Investment Grade' },
                         { key: 'privateEquity', label: 'Private Equity' },
                         { key: 'eiendom', label: 'Eiendom' }
-                      ].map(({ key, label }) => (
-                        <div key={key}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              step="0.5"
-                              value={avkastningsrater[key]}
-                              onChange={(e) => setAvkastningsrater(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                              className="w-full border border-gray-200 rounded-lg py-2 px-3 text-right"
-                            />
-                            <span className="text-gray-500">%</span>
+                      ].map(({ key, label }) => {
+                        const erOverstyrt = Object.prototype.hasOwnProperty.call(avkastningsraterOverride, key);
+                        return (
+                          <div key={key}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                              <span>{label}</span>
+                              {erOverstyrt && <span className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Overstyrt</span>}
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={avkastningsrater[key]}
+                                onChange={(e) => setAvkastningsrater(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                className={"w-full border rounded-lg py-2 px-3 text-right " + (erOverstyrt ? "border-amber-400 bg-amber-50" : "border-gray-200")}
+                              />
+                              <span className="text-gray-500">%</span>
+                            </div>
+                            <div className="text-[11px] text-gray-500 mt-1 flex items-center justify-between gap-2">
+                              <span>CMA: <strong>{formatPercent(cmaAvkastninger[key])}</strong></span>
+                              {erOverstyrt && (
+                                <button
+                                  onClick={() => setAvkastningsraterOverride(prev => { const n = { ...prev }; delete n[key]; return n; })}
+                                  className="text-amber-700 hover:text-amber-900 underline"
+                                >Tilbakestill</button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await storageSet('pensum_admin_avkastningsrater', JSON.stringify(avkastningsrater));
-                          setAdminMelding('Avkastningsrater lagret!');
-                        } catch (err) {
-                          setAdminMelding('Feil ved lagring: ' + err.message);
-                        }
-                      }}
-                      className="mt-4 px-6 py-2 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
-                    >
-                      Lagre avkastningsrater
-                    </button>
+                    <div className="mt-4 flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await storageSet('pensum_admin_avkastningsrater', JSON.stringify(avkastningsraterOverride));
+                            setAdminMelding('Avkastningsrater lagret!');
+                          } catch (err) {
+                            setAdminMelding('Feil ved lagring: ' + err.message);
+                          }
+                        }}
+                        className="px-6 py-2 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
+                      >
+                        Lagre avkastningsrater
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setAvkastningsraterOverride({});
+                          try {
+                            await storageSet('pensum_admin_avkastningsrater', JSON.stringify({}));
+                            setAdminMelding('Alle overstyringer fjernet — bruker CMA-verdier.');
+                          } catch (err) {
+                            setAdminMelding('Feil ved lagring: ' + err.message);
+                          }
+                        }}
+                        className="px-6 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Tilbakestill alle til CMA
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -11802,10 +12481,7 @@ export default function PensumPrognoseModell() {
                       onClick={async () => {
                         if (!confirm('Er du sikker på at du vil tilbakestille alle data til standardverdier?')) return;
                         setPensumProdukter(JSON.parse(JSON.stringify(defaultPensumProdukter)));
-                        setAvkastningsrater({
-                          globaleAksjer: 9, norskeAksjer: 10, hoyrente: 8,
-                          investmentGrade: 5, privateEquity: 15, eiendom: 8
-                        });
+                        setAvkastningsraterOverride({});
                         setAvkastningsraterLaast(false);
                         try {
                           await storageDelete('pensum_admin_produkter');
