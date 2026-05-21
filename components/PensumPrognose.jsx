@@ -14,13 +14,14 @@ export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
   const [showPessimistic, setShowPessimistic] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
-  const [visOptimistisk, setVisOptimistisk] = useState(false);
   const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
   const [visDelmal, setVisDelmal] = useState(false);  // Vis delmål-seksjon
   const [malAktiv, setMalAktiv] = useState(false);  // Hele mål-seksjonen aktiv (valgfri som lån/rebalansering)
   const [hovedmal, setHovedmal] = useState({ navn: '', belop: 0, visIGraf: true, malAar: 0 });  // Hovedmål
+  const [visSluttSammensetning, setVisSluttSammensetning] = useState(false);
+  const [sluttSammensetningAar, setSluttSammensetningAar] = useState(10);
   const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [belopInputModus, setBelopInputModus] = useState(false);
@@ -2953,15 +2954,32 @@ export default function PensumPrognoseModell() {
   }, [effektivtInvestertBelop, egenkapitalBelop, nettoKontantstrom, verdiutvikling, scenarioParams, horisont, showComparison, sammenligningVerdiutvikling, aarligRentekostnad, totalLaan]);
 
   const kombinertVerdiutvikling = useMemo(() => {
-    let data = verdiutvikling;
-    if (showComparison) {
-      data = data.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
-    }
-    if (visOptimistisk) {
-      data = data.map((row, idx) => ({ ...row, optimistiskTotal: scenarioData[idx]?.optimistisk || 0 }));
-    }
-    return data;
-  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison, visOptimistisk, scenarioData]);
+    if (!showComparison) return verdiutvikling;
+    return verdiutvikling.map((row, idx) => ({ ...row, total_alt: sammenligningVerdiutvikling[idx]?.total || 0 }));
+  }, [verdiutvikling, sammenligningVerdiutvikling, showComparison]);
+
+  // Klamp slutt-år til [1, horisont] når horisont endres
+  useEffect(() => {
+    setSluttSammensetningAar(prev => Math.max(1, Math.min(horisont, prev)));
+  }, [horisont]);
+
+  // Sammensetning ved valgt slutt-år (etter avkastning + rebalansering + lån-effekt)
+  const sluttSammensetning = useMemo(() => {
+    const aar = Math.max(1, Math.min(horisont, sluttSammensetningAar));
+    const row = verdiutvikling[aar];
+    if (!row || !Array.isArray(row.allokeringSnapshot)) return null;
+    const pie = row.allokeringSnapshot
+      .filter(a => a.vekt > 0.05)
+      .map(a => ({ name: a.navn, value: a.vekt }));
+    const illikvKat = ['privateMarkets', 'eiendom'];
+    let illikvidVekt = 0;
+    row.allokeringSnapshot.forEach(a => {
+      const meta = aktiveAktiva.find(b => b.navn === a.navn);
+      if (meta && illikvKat.includes(meta.kategori)) illikvidVekt += a.vekt;
+    });
+    const likvidVekt = row.allokeringSnapshot.reduce((s, a) => s + a.vekt, 0) - illikvidVekt;
+    return { aar: row.year, pie, likvid: likvidVekt, illikvid: illikvidVekt, total: row.total };
+  }, [verdiutvikling, sluttSammensetningAar, horisont, aktiveAktiva]);
 
   const updateAllokeringVekt = useCallback((index, newVekt) => {
     setAllokering(prev => {
@@ -5363,6 +5381,77 @@ export default function PensumPrognoseModell() {
                     </div>
                   );
                 })()}
+
+                {/* Sammensetning ved valgt slutt-år — inkl. rebalanseringer */}
+                {visSluttSammensetning && sluttSammensetning && (
+                  <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden p-5">
+                    <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-5 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>
+                          Sammensetning ved år {sluttSammensetning.aar}
+                        </h4>
+                        <span className="text-xs text-gray-500">etter {sluttSammensetningAar} år · {formatCurrency(sluttSammensetning.total)}</span>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Porteføljesammensetning</div>
+                        <div className="flex items-center gap-6">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={180} height={180}>
+                              <PieChart>
+                                <Pie data={sluttSammensetning.pie} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                                  {sluttSammensetning.pie.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} />)}
+                                </Pie>
+                                <Tooltip formatter={(v, n) => [v.toFixed(1) + '%', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2 flex-1">
+                            {sluttSammensetning.pie.map((entry) => (
+                              <div key={entry.name} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[entry.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === entry.name)?.kategori] || '#888' }}></div>
+                                  <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
+                                </div>
+                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t border-emerald-100">
+                        <div className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</div>
+                        <div className="flex items-center gap-6">
+                          <div className="shrink-0">
+                            <ResponsiveContainer width={140} height={140}>
+                              <PieChart>
+                                <Pie
+                                  data={[{ name: 'Likvid', value: sluttSammensetning.likvid }, { name: 'Illikvid', value: sluttSammensetning.illikvid }].filter(d => d.value > 0)}
+                                  cx="50%" cy="50%" innerRadius={36} outerRadius={60} dataKey="value" paddingAngle={2} cornerRadius={4}
+                                >
+                                  <Cell fill={PENSUM_COLORS.darkBlue} />
+                                  {sluttSammensetning.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
+                                </Pie>
+                                <Tooltip formatter={(v) => v.toFixed(0) + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div><span className="text-gray-700">Likvid</span></div>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.likvid.toFixed(0)}%</span>
+                            </div>
+                            {sluttSammensetning.illikvid > 0 && (
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div><span className="text-gray-700">Illikvid</span></div>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.illikvid.toFixed(0)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -5587,14 +5676,8 @@ export default function PensumPrognoseModell() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+              <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                 <h3 className="text-lg font-semibold text-white">{showComparison ? "Prognose - Sammenligning" : "Prognose på utvikling i formuesverdi"}</h3>
-                <button
-                  onClick={() => setVisOptimistisk(v => !v)}
-                  className={"text-xs px-3 py-1.5 rounded-lg font-medium transition-colors " + (visOptimistisk ? "bg-emerald-500 text-white" : "bg-white/15 text-blue-100 hover:bg-white/25")}
-                >
-                  {visOptimistisk ? `Optimistisk (${formatPercent(scenarioParams.optimistisk)})` : 'Vis optimistisk scenario'}
-                </button>
               </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={400}>
@@ -5618,12 +5701,11 @@ export default function PensumPrognoseModell() {
                       const nice = niceNumbers.find(n => n >= mantissa) || 10;
                       return nice * Math.pow(10, exp);
                     }]} />
-                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n === 'optimistiskTotal' ? `Optimistisk (${formatPercent(scenarioParams.optimistisk)})` : n]} />
+                    <Tooltip formatter={(v, n) => [formatCurrency(v), n === 'total_alt' ? 'Total (' + sammenligningProfil + ')' : n]} />
                     <Legend iconType="circle" />
                     {totalLaan > 0 && <ReferenceArea y1={0} y2={totalLaan} fill="url(#laanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {aktiveAktiva.map((a) => <Bar key={a.navn} dataKey={a.navn} stackId="a" fill={ASSET_COLORS[a.navn] || CATEGORY_COLORS[a.kategori]} />)}
                     {showComparison && <Bar dataKey="total_alt" stackId="b" fill={PENSUM_COLORS.teal} name={"Total (" + sammenligningProfil + ")"} opacity={0.7} />}
-                    {visOptimistisk && <Line type="monotone" dataKey="optimistiskTotal" name={`Optimistisk (${formatPercent(scenarioParams.optimistisk)})`} stroke="#059669" strokeWidth={2} strokeDasharray="6 3" dot={false} />}
                     {totalLaan > 0 && <ReferenceLine y={totalLaan} stroke="#B91C1C" strokeWidth={2} label={{ value: `Lån: ${formatCurrency(totalLaan)}`, position: 'insideBottomRight', fill: '#FFFFFF', fontSize: 13, fontWeight: 700, offset: 8, style: { paintOrder: 'stroke', stroke: '#B91C1C', strokeWidth: 4, strokeLinejoin: 'round' } }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && <ReferenceLine y={hovedmal.belop} stroke="#012441" strokeWidth={2} strokeDasharray="8 4" label={{ value: `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}`, position: 'insideTopRight', fill: '#012441', fontSize: 12, fontWeight: 600 }} />}
                     {malAktiv && hovedmal.belop > 0 && hovedmal.visIGraf && (() => {
@@ -5717,7 +5799,7 @@ export default function PensumPrognoseModell() {
                 return (
                   <div className="p-6 space-y-5">
                     <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-wrap">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={hovedmal.visIGraf} onChange={(e) => setHovedmal(prev => ({ ...prev, visIGraf: e.target.checked }))} className="w-4 h-4 rounded" />
                           <span className="text-xs text-gray-600">Vis hovedmål i graf</span>
@@ -5726,6 +5808,27 @@ export default function PensumPrognoseModell() {
                           <input type="checkbox" checked={visDelmal} onChange={(e) => setVisDelmal(e.target.checked)} className="w-4 h-4 rounded" />
                           <span className="text-xs text-gray-600">Bruk delmål</span>
                         </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={visSluttSammensetning} onChange={(e) => setVisSluttSammensetning(e.target.checked)} className="w-4 h-4 rounded" />
+                          <span className="text-xs text-gray-600">Vis sammensetning ved slutt av horisonten</span>
+                        </label>
+                        {visSluttSammensetning && (
+                          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+                            <span className="text-xs text-gray-600">År</span>
+                            <input
+                              type="range"
+                              min={1}
+                              max={horisont}
+                              step={1}
+                              value={sluttSammensetningAar}
+                              onChange={(e) => setSluttSammensetningAar(parseInt(e.target.value) || 1)}
+                              className="w-32 accent-blue-700"
+                            />
+                            <span className="text-xs font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>
+                              {sluttSammensetningAar} år ({new Date().getFullYear() + sluttSammensetningAar})
+                            </span>
+                          </div>
+                        )}
                       </div>
                       {hovedmal.belop > 0 && (naarAarRow
                         ? <span className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Nås i {naarAarRow.year} ({naarAarRow.year - new Date().getFullYear()} år)</span>
