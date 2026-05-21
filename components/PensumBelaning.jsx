@@ -497,7 +497,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: colors.textDark, padding: '6px 10px', background: visMaksBelaning ? colors.lightGray : 'transparent', borderRadius: '5px', border: `1px solid ${visMaksBelaning ? colors.accent : colors.mediumGray}` }}>
             <input type="checkbox" checked={visMaksBelaning} onChange={(e) => setVisMaksBelaning(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
-            <span style={{ fontWeight: 500 }}>🚀 Vis maks belåning</span>
+            <span style={{ fontWeight: 500 }}>🚀 Vis maks belåningstabell</span>
           </label>
         </div>
 
