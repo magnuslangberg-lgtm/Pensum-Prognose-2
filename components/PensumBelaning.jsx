@@ -711,9 +711,9 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                   <span className="value-text" style={{ color: colors.success }}>{reinvesteringAvkastning}% p.a.</span>
                 </label>
                 {reinvesteringAktiva === 'aksjer' ? (
-                  <input type="range" min="0" max="20" step="0.5" value={aksjerAvkastning} onChange={(e) => setAksjerAvkastning(Number(e.target.value))} />
+                  <input type="range" min="0" max="9" step="0.25" value={aksjerAvkastning} onChange={(e) => setAksjerAvkastning(Number(e.target.value))} />
                 ) : (
-                  <input type="range" min="0" max="15" step="0.25" value={renterAvkastning} onChange={(e) => setRenterAvkastning(Number(e.target.value))} />
+                  <input type="range" min="0" max="7" step="0.25" value={renterAvkastning} onChange={(e) => setRenterAvkastning(Number(e.target.value))} />
                 )}
                 <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: '4px' }}>
                   {reinvesteringAktiva === 'aksjer'
