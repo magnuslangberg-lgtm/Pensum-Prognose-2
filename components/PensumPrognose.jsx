@@ -66,6 +66,9 @@ export default function PensumPrognoseModell() {
   // Lånefinansiering på Prognoser med indekser
   const [prognoseFinansiering, setPrognoseFinansiering] = useState([]);
   const [laanAktiv, setLaanAktiv] = useState(false);
+  // 'nytt' = lån legges oppå porteføljen (øker eksponering)
+  // 'eksisterende' = lånet finansierer allerede porteføljen (eksponering = portefølje)
+  const [laanModus, setLaanModus] = useState('nytt');
   
   const [investeringsFormaal, setInvesteringsFormaal] = useState('Utvikle finansiell formue');
   const [likviditetsbehov, setLikviditetsbehov] = useState('Begrenset');
@@ -2802,10 +2805,16 @@ export default function PensumPrognoseModell() {
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const egenkapitalBelop = investertBelop !== null ? investertBelop : totalKapital;
+  const portefoljeBelop = investertBelop !== null ? investertBelop : totalKapital;
   const totalLaan = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0) : 0;
   const aarligRentekostnad = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) : 0;
-  const effektivtInvestertBelop = egenkapitalBelop + totalLaan;
+  // Eksisterende-modus: porteføljen er allerede finansiert med lån, så netto EK = portefølje − lån.
+  // Nytt-modus: brukeren tilfører ny gjeld, så netto EK = porteføljen som er fylt inn.
+  const eksisterendeLaanModus = laanAktiv && laanModus === 'eksisterende';
+  const egenkapitalBelop = eksisterendeLaanModus ? Math.max(0, portefoljeBelop - totalLaan) : portefoljeBelop;
+  // Total eksponering / investert beløp. Når lånet er eksisterende, er eksponeringen lik porteføljen
+  // som allerede er fylt inn; ellers legges nytt lån oppå egenkapitalen.
+  const effektivtInvestertBelop = eksisterendeLaanModus ? portefoljeBelop : egenkapitalBelop + totalLaan;
 
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
@@ -5649,24 +5658,52 @@ export default function PensumPrognoseModell() {
                   </div>
                   {laanAktiv && (
                     <div className="mt-4 space-y-4">
+                      {/* Modus-velger: nytt lån vs. eksisterende lån */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {[
+                          { id: 'nytt', tittel: 'Nytt lån oppå porteføljen', beskrivelse: 'Lånet tilføres som ny gjeld og øker total eksponering.' },
+                          { id: 'eksisterende', tittel: 'Eksisterende lån finansierer porteføljen', beskrivelse: 'Porteføljen inneholder allerede lånebeløpet — netto EK = portefølje − lån.' },
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setLaanModus(m.id)}
+                            className={"text-left rounded-lg px-3 py-2 border transition-colors " + (laanModus === m.id ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300")}
+                          >
+                            <div className="text-sm font-semibold" style={{ color: laanModus === m.id ? PENSUM_COLORS.darkBlue : '#374151' }}>{m.tittel}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{m.beskrivelse}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Advarsel hvis eksisterende lån > portefølje */}
+                      {eksisterendeLaanModus && totalLaan > portefoljeBelop && portefoljeBelop > 0 && (
+                        <div className="rounded-lg px-3 py-2 bg-red-50 border border-red-200 text-xs text-red-700">
+                          Lånet ({formatCurrency(totalLaan)}) er større enn porteføljen ({formatCurrency(portefoljeBelop)}). Netto egenkapital blir negativ — sjekk om porteføljeverdien er korrekt.
+                        </div>
+                      )}
+
                       {prognoseFinansiering.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div className="bg-blue-50 rounded-lg px-4 py-3">
-                            <div className="text-xs text-blue-600 font-medium mb-1">Egenkapital</div>
+                            <div className="text-xs text-blue-600 font-medium mb-1">{eksisterendeLaanModus ? 'Netto egenkapital' : 'Egenkapital'}</div>
                             <div className="text-lg font-bold text-blue-900">{formatCurrency(egenkapitalBelop)}</div>
+                            {eksisterendeLaanModus && (
+                              <div className="text-xs text-gray-400 mt-0.5">Portefølje − lån</div>
+                            )}
                           </div>
                           <div className="bg-amber-50 rounded-lg px-4 py-3">
                             <div className="text-xs text-amber-600 font-medium mb-1">Total lån</div>
                             <div className="text-lg font-bold text-amber-900">{formatCurrency(totalLaan)}</div>
                           </div>
                           <div className="bg-emerald-50 rounded-lg px-4 py-3">
-                            <div className="text-xs text-emerald-600 font-medium mb-1">Investert totalt</div>
+                            <div className="text-xs text-emerald-600 font-medium mb-1">{eksisterendeLaanModus ? 'Portefølje (eksponering)' : 'Investert totalt'}</div>
                             <div className="text-lg font-bold text-emerald-900">{formatCurrency(effektivtInvestertBelop)}</div>
                           </div>
                           <div className="rounded-lg px-4 py-3" style={{ backgroundColor: '#FDF6F2' }}>
                             <div className="text-xs font-medium mb-1" style={{ color: PENSUM_COLORS.salmon }}>LTV (belåningsgrad)</div>
-                            <div className="text-lg font-bold" style={{ color: '#8B6650' }}>{egenkapitalBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">Lån / total eksponering</div>
+                            <div className="text-lg font-bold" style={{ color: '#8B6650' }}>{effektivtInvestertBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">Lån / {eksisterendeLaanModus ? 'portefølje' : 'total eksponering'}</div>
                           </div>
                           <div className="bg-red-50 rounded-lg px-4 py-3">
                             <div className="text-xs text-red-600 font-medium mb-1">Årlig rentekostnad</div>
@@ -5750,7 +5787,9 @@ export default function PensumPrognoseModell() {
                             <span className="text-xs text-gray-500">{akkumulerRenter ? 'Rentene legges til lånet hvert år — kontantstrøm uberørt' : 'Rentene trekkes fra årlig kontantstrøm'}</span>
                           </div>
                           <p className="text-xs text-gray-500 italic mt-2">
-                            Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): {effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.
+                            {eksisterendeLaanModus
+                              ? `Lånet er allerede en del av porteføljen — netto egenkapital er ${formatCurrency(egenkapitalBelop)}. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av porteføljen.`
+                              : `Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.`}
                           </p>
                         </>
                       )}
