@@ -2771,7 +2771,7 @@ export default function PensumPrognoseModell() {
       return { kategori: cat, navn: names[cat], vekt: totalVekt, avkastning: vektetAvk, items, belop: (totalVekt / 100) * effektivBelop };
     }).filter(c => c.items.length > 0);
     // Add combined "Alternative" category for display
-    const altItems = allokering.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom');
+    const altItems = allokering.filter(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' || a.kategori === 'shipping');
     if (altItems.length > 0) {
       const altVekt = altItems.reduce((s, a) => s + a.vekt, 0);
       const altAvk = altVekt > 0 ? altItems.reduce((s, a) => s + a.vekt * a.avkastning, 0) / altVekt : 0;
@@ -2809,7 +2809,7 @@ export default function PensumPrognoseModell() {
 
   // Likvid vs Illikvid beregning (PE og Eiendom er illikvide)
   const likviditetData = useMemo(() => {
-    const illikvideKategorier = ['privateMarkets', 'eiendom'];
+    const illikvideKategorier = ['privateMarkets', 'eiendom', 'shipping'];
     const illikvidVekt = allokering.filter(a => illikvideKategorier.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
     const likvidVekt = totalVekt - illikvidVekt;
     return [
@@ -2818,17 +2818,19 @@ export default function PensumPrognoseModell() {
     ];
   }, [allokering, totalVekt, effektivtInvestertBelop]);
 
-  // Aktiva-fordeling (aksjer, renter, PE, eiendom)
+  // Aktiva-fordeling (aksjer, renter, PE, eiendom, shipping)
   const renterAksjerData = useMemo(() => {
     const aksjerVekt = allokering.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0);
     const renterVekt = allokering.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0);
     const peVekt = allokering.filter(a => a.kategori === 'privateMarkets').reduce((s, a) => s + a.vekt, 0);
     const eiendomVekt = allokering.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0);
+    const shippingVekt = allokering.filter(a => a.kategori === 'shipping').reduce((s, a) => s + a.vekt, 0);
     return [
       { name: 'Aksjer', value: aksjerVekt, color: PENSUM_COLORS.darkBlue },
       { name: 'Renter', value: renterVekt, color: PENSUM_COLORS.salmon },
       { name: 'Private Equity', value: peVekt, color: PENSUM_COLORS.teal },
-      { name: 'Eiendom', value: eiendomVekt, color: PENSUM_COLORS.gold }
+      { name: 'Eiendom', value: eiendomVekt, color: PENSUM_COLORS.gold },
+      { name: 'Shipping', value: shippingVekt, color: CATEGORY_COLORS.shipping }
     ].filter(d => d.value > 0);
   }, [allokering]);
 
@@ -2971,7 +2973,7 @@ export default function PensumPrognoseModell() {
     const pie = row.allokeringSnapshot
       .filter(a => a.vekt > 0.05)
       .map(a => ({ name: a.navn, value: a.vekt }));
-    const illikvKat = ['privateMarkets', 'eiendom'];
+    const illikvKat = ['privateMarkets', 'eiendom', 'shipping'];
     let illikvidVekt = 0;
     row.allokeringSnapshot.forEach(a => {
       const meta = aktiveAktiva.find(b => b.navn === a.navn);
@@ -5169,14 +5171,14 @@ export default function PensumPrognoseModell() {
                     <div className="space-y-1">
                       {(() => {
                         const fjernIndeks = (navn) => setAllokering(prev => prev.filter(a => a.navn !== navn));
-                        const katFarger = { aksjer: { bg: '#EFF6FF', stripe: '#0D2841' }, renter: { bg: '#FFF1F2', stripe: '#C4967E' }, privateMarkets: { bg: '#F0FDFA', stripe: '#2D6A6A' }, eiendom: { bg: '#FEF9C3', stripe: '#A67B3D' } };
-                        const katNavn = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Alternative', eiendom: 'Alternative' };
+                        const katFarger = { aksjer: { bg: '#EFF6FF', stripe: '#0D2841' }, renter: { bg: '#FFF1F2', stripe: '#C4967E' }, privateMarkets: { bg: '#F0FDFA', stripe: '#2D6A6A' }, eiendom: { bg: '#FEF9C3', stripe: '#A67B3D' }, shipping: { bg: '#F0FDFA', stripe: '#1E5F74' } };
+                        const katNavn = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Alternative', eiendom: 'Alternative', shipping: 'Alternative' };
                         const grupper = [
                           { id: 'aksjer', filter: a => a.kategori === 'aksjer' },
                           { id: 'renter', filter: a => a.kategori === 'renter' },
                         ];
-                        if (effektivVisAlternative && allokering.some(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom')) {
-                          grupper.push({ id: 'privateMarkets', filter: a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' });
+                        if (effektivVisAlternative && allokering.some(a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' || a.kategori === 'shipping')) {
+                          grupper.push({ id: 'privateMarkets', filter: a => a.kategori === 'privateMarkets' || a.kategori === 'eiendom' || a.kategori === 'shipping' });
                         }
                         return grupper.map(({ id, filter }) => {
                           const items = allokering.filter(filter);
@@ -5332,7 +5334,7 @@ export default function PensumPrognoseModell() {
 
                 {/* Likviditet — donut on right side */}
                 {(() => {
-                  const illikvKat = ['privateMarkets', 'eiendom'];
+                  const illikvKat = ['privateMarkets', 'eiendom', 'shipping'];
                   const currIllikvid = allokering.filter(a => illikvKat.includes(a.kategori)).reduce((s, a) => s + a.vekt, 0);
                   const currLikvid = totalVekt - currIllikvid;
                   const currLikvidData = [{ name: 'Likvid', value: currLikvid }, { name: 'Illikvid', value: currIllikvid }].filter(d => d.value > 0);
