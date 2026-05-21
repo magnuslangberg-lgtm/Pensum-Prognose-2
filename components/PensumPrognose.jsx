@@ -11480,6 +11480,9 @@ export default function PensumPrognoseModell() {
                   const meta = produktRapportMeta?.[p.id] || {};
                   const pColor = produktFarger[pIdx % produktFarger.length];
                   const isFixedIncome = meta.category === 'fixed-income' || meta.category === 'fixed-income-specialist';
+                  // Direktefond eier enkeltselskaper/-utstedere; fond-i-fond eier andre fond.
+                  const isDirekte = ['equity-nordic', 'equity-sector', 'equity-thematic', 'private-equity', 'fixed-income-specialist'].includes(meta.category);
+                  const underliggendeTittel = isDirekte ? 'Underliggende selskaper' : 'Underliggende fond';
                   return (
                     <div key={p.id} data-rapport-slide={`faktaark-${p.id}`} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                       {/* Product header bar */}
@@ -11552,7 +11555,7 @@ export default function PensumPrognoseModell() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Underliggende fond / Kreditteksponering */}
                             {[
-                              { key: 'underliggende', title: 'Kreditteksponering', color: PENSUM_COLORS.salmon },
+                              { key: 'underliggende', title: underliggendeTittel, color: PENSUM_COLORS.salmon },
                               { key: 'stil', title: 'Nøkkelkarakteristika', color: PENSUM_COLORS.gold },
                               { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
                               { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
@@ -11589,7 +11592,7 @@ export default function PensumPrognoseModell() {
                             {[
                               { key: 'regioner', title: 'Regioner', color: PENSUM_COLORS.teal },
                               { key: 'sektorer', title: 'Sektorer', color: PENSUM_COLORS.lightBlue },
-                              { key: 'underliggende', title: 'Underliggende fond', color: PENSUM_COLORS.salmon },
+                              { key: 'underliggende', title: underliggendeTittel, color: PENSUM_COLORS.salmon },
                               { key: 'stil', title: 'Stil', color: PENSUM_COLORS.gold },
                             ].map(block => {
                               const rows = (eks[block.key] || []).slice(0, 8);
