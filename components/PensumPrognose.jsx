@@ -23,6 +23,7 @@ export default function PensumPrognoseModell() {
   const [visSluttSammensetning, setVisSluttSammensetning] = useState(false);
   const [sluttSammensetningAar, setSluttSammensetningAar] = useState(10);
   const [akkumulerRenter, setAkkumulerRenter] = useState(false);  // Lånerenter akkumuleres i stedet for å trekkes fra kontantstrøm
+  const [visMaksBelaning, setVisMaksBelaning] = useState(false);  // Vis aggregert maks belåningskapasitet
   const [autoRebalanserAllokering, setAutoRebalanserAllokering] = useState(false);
   const [belopInputModus, setBelopInputModus] = useState(false);
   const [autoRebalanserPensum, setAutoRebalanserPensum] = useState(false);
@@ -2803,6 +2804,25 @@ export default function PensumPrognoseModell() {
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
   const egenkapitalBelop = investertBelop !== null ? investertBelop : totalKapital;
+  // Standard maks LTV per lånetype (kan overstyres per lån)
+  const defaultMaksLTVForType = (type) => {
+    if (type === 'Verdipapirfinansiering') return 60;
+    if (type === 'Banklån') return 80;
+    if (type === 'Andre lån') return 50;
+    return 60;
+  };
+  // Beregn låneramme og tilgjengelig kapasitet per lån
+  const laanMedKapasitet = useMemo(() => prognoseFinansiering.map(l => {
+    const maksLTV = erGyldigTall(l.maksLTV) ? Number(l.maksLTV) : defaultMaksLTVForType(l.type);
+    const pantegrunnlag = Number(l.pantegrunnlag) || 0;
+    const brukt = Number(l.belop) || 0;
+    const laaneramme = pantegrunnlag * (maksLTV / 100);
+    const tilgjengelig = Math.max(0, laaneramme - brukt);
+    return { ...l, maksLTV, pantegrunnlag, brukt, laaneramme, tilgjengelig };
+  }), [prognoseFinansiering]);
+  const samletLaaneramme = laanMedKapasitet.reduce((s, l) => s + l.laaneramme, 0);
+  const samletTilgjengelig = laanMedKapasitet.reduce((s, l) => s + l.tilgjengelig, 0);
+  const samletBrukt = laanMedKapasitet.reduce((s, l) => s + l.brukt, 0);
   const totalLaan = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0) : 0;
   const aarligRentekostnad = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) : 0;
   const effektivtInvestertBelop = egenkapitalBelop + totalLaan;
@@ -5616,64 +5636,120 @@ export default function PensumPrognoseModell() {
                           </div>
                         </div>
                       )}
-                      {prognoseFinansiering.map((laan, idx) => (
-                        <div key={laan.id || idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Type</label>
-                            <select
-                              value={laan.type}
-                              onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, type: e.target.value } : l))}
-                              className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm bg-white"
-                            >
-                              <option value="Banklån">Banklån</option>
-                              <option value="Verdipapirfinansiering">Verdipapirfinansiering</option>
-                              <option value="Andre lån">Andre lån</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Beløp (NOK)</label>
-                            <input
-                              type="text"
-                              value={formatNumber(laan.belop || 0)}
-                              onChange={(e) => {
-                                const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
-                                setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, belop: v } : l));
-                              }}
-                              className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Rente (%)</label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={laan.rente ?? 5}
-                              onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, rente: parseFloat(e.target.value) || 0 } : l))}
-                              className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig kostnad</label>
-                            <div className="py-2 px-3 text-sm font-semibold text-red-700 bg-red-50 rounded-lg border border-red-200 text-right">
-                              {formatCurrency((Number(laan.belop) || 0) * (Number(laan.rente) || 0) / 100)}
+                      {laanMedKapasitet.map((laan, idx) => {
+                        const utnyttetPct = laan.laaneramme > 0 ? (laan.brukt / laan.laaneramme) * 100 : 0;
+                        return (
+                          <div key={laan.id || idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Type</label>
+                                <select
+                                  value={laan.type}
+                                  onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, type: e.target.value, maksLTV: l.maksLTV ?? defaultMaksLTVForType(e.target.value) } : l))}
+                                  className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm bg-white"
+                                >
+                                  <option value="Banklån">Banklån</option>
+                                  <option value="Verdipapirfinansiering">Verdipapirfinansiering</option>
+                                  <option value="Andre lån">Andre lån</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Pantegrunnlag (NOK)</label>
+                                <input
+                                  type="text"
+                                  value={laan.pantegrunnlag ? formatNumber(laan.pantegrunnlag) : ''}
+                                  placeholder="0"
+                                  onChange={(e) => {
+                                    const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                                    setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, pantegrunnlag: v } : l));
+                                  }}
+                                  className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Maks LTV (%)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={laan.maksLTV}
+                                  onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, maksLTV: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) } : l))}
+                                  className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Brukt (NOK)</label>
+                                <input
+                                  type="text"
+                                  value={formatNumber(laan.belop || 0)}
+                                  onChange={(e) => {
+                                    const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                                    setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, belop: v } : l));
+                                  }}
+                                  className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Rente (%)</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={laan.rente ?? 5}
+                                  onChange={(e) => setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, rente: parseFloat(e.target.value) || 0 } : l))}
+                                  className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
+                                />
+                              </div>
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => setPrognoseFinansiering(prev => prev.filter((_, i) => i !== idx))}
+                                  className="text-red-400 hover:text-red-600 p-2 transition-colors"
+                                  title="Fjern lån"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                              </div>
                             </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              <div className="bg-white rounded-lg p-2 border border-gray-100">
+                                <div className="text-gray-500">Låneramme</div>
+                                <div className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(laan.laaneramme)}</div>
+                              </div>
+                              <div className="bg-white rounded-lg p-2 border border-gray-100">
+                                <div className="text-gray-500">Tilgjengelig</div>
+                                <div className="font-semibold tabular-nums text-emerald-700">{formatCurrency(laan.tilgjengelig)}</div>
+                              </div>
+                              <div className="bg-white rounded-lg p-2 border border-gray-100">
+                                <div className="text-gray-500">Utnyttet</div>
+                                <div className="font-semibold tabular-nums" style={{ color: utnyttetPct > 90 ? '#B91C1C' : utnyttetPct > 70 ? '#A67B3D' : PENSUM_COLORS.darkBlue }}>
+                                  {laan.laaneramme > 0 ? formatPercent(utnyttetPct) : '—'}
+                                </div>
+                              </div>
+                              <div className="bg-white rounded-lg p-2 border border-gray-100">
+                                <div className="text-gray-500">Årlig rentekostnad</div>
+                                <div className="font-semibold tabular-nums text-red-700">{formatCurrency(laan.brukt * (Number(laan.rente) || 0) / 100)}</div>
+                              </div>
+                            </div>
+                            {laan.laaneramme > 0 && (
+                              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div className="h-full transition-all" style={{ width: Math.min(100, utnyttetPct) + '%', backgroundColor: utnyttetPct > 90 ? '#B91C1C' : utnyttetPct > 70 ? '#A67B3D' : PENSUM_COLORS.salmon }} />
+                              </div>
+                            )}
                           </div>
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => setPrognoseFinansiering(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-red-400 hover:text-red-600 p-2 transition-colors"
-                              title="Fjern lån"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       <div className="flex flex-wrap gap-2 pt-2">
                         {['Banklån', 'Verdipapirfinansiering', 'Andre lån'].map(type => (
                           <button
                             key={type}
-                            onClick={() => setPrognoseFinansiering(prev => [...prev, { id: Date.now() + '-' + Math.random().toString(36).slice(2,8), type, belop: 0, rente: type === 'Verdipapirfinansiering' ? 5.5 : type === 'Banklån' ? 4.5 : 6, }])}
+                            onClick={() => setPrognoseFinansiering(prev => [...prev, {
+                              id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+                              type,
+                              pantegrunnlag: 0,
+                              maksLTV: defaultMaksLTVForType(type),
+                              belop: 0,
+                              rente: type === 'Verdipapirfinansiering' ? 5.5 : type === 'Banklån' ? 4.5 : 6,
+                            }])}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border border-dashed transition-colors hover:bg-gray-50"
                             style={{ borderColor: PENSUM_COLORS.salmon, color: PENSUM_COLORS.salmon }}
                           >
@@ -5682,6 +5758,46 @@ export default function PensumPrognoseModell() {
                           </button>
                         ))}
                       </div>
+                      {prognoseFinansiering.length > 0 && (
+                        <div className="border-t border-gray-100 pt-3">
+                          <label className="flex items-center gap-2 cursor-pointer mb-3">
+                            <input type="checkbox" checked={visMaksBelaning} onChange={(e) => setVisMaksBelaning(e.target.checked)} className="w-4 h-4 rounded" />
+                            <span className="text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Vis maks belåning</span>
+                            <span className="text-xs text-gray-400">— aggregert oppsummering på tvers av alle lån</span>
+                          </label>
+                          {visMaksBelaning && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="rounded-lg p-3" style={{ backgroundColor: '#F0F4F8' }}>
+                                <div className="text-xs font-medium mb-0.5" style={{ color: PENSUM_COLORS.darkBlue }}>Samlet låneramme</div>
+                                <div className="text-base font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(samletLaaneramme)}</div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">Pantegrunnlag × maks LTV</div>
+                              </div>
+                              <div className="bg-amber-50 rounded-lg p-3">
+                                <div className="text-xs font-medium mb-0.5 text-amber-700">Brukt totalt</div>
+                                <div className="text-base font-bold text-amber-900 tabular-nums">{formatCurrency(samletBrukt)}</div>
+                                <div className="text-[10px] text-amber-600 mt-0.5">
+                                  {samletLaaneramme > 0 ? formatPercent((samletBrukt / samletLaaneramme) * 100) + ' utnyttet' : '—'}
+                                </div>
+                              </div>
+                              <div className="bg-emerald-50 rounded-lg p-3">
+                                <div className="text-xs font-medium mb-0.5 text-emerald-700">Tilgjengelig</div>
+                                <div className="text-base font-bold text-emerald-900 tabular-nums">{formatCurrency(samletTilgjengelig)}</div>
+                                <div className="text-[10px] text-emerald-600 mt-0.5">Kan trekkes opp ytterligere</div>
+                              </div>
+                              <div className="rounded-lg p-3" style={{ backgroundColor: '#FDF6F2', border: '1px solid #F0DCD0' }}>
+                                <div className="text-xs font-medium mb-0.5" style={{ color: PENSUM_COLORS.salmon }}>Snitt maks LTV</div>
+                                <div className="text-base font-bold tabular-nums" style={{ color: '#8B6650' }}>
+                                  {(() => {
+                                    const totPant = laanMedKapasitet.reduce((s, l) => s + l.pantegrunnlag, 0);
+                                    return totPant > 0 ? formatPercent((samletLaaneramme / totPant) * 100) : '—';
+                                  })()}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">Vektet på pantegrunnlag</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {prognoseFinansiering.length > 0 && (
                         <>
                           <div className="flex items-center gap-3 mt-3 p-3 rounded-lg" style={{ backgroundColor: '#FDF6F2', border: '1px solid #F0DCD0' }}>
