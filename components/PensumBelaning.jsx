@@ -30,8 +30,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
   const [rentepaaslag, setRentepaaslag] = useState(1.0);
   
   const [reinvesteringAktiva, setReinvesteringAktiva] = useState('aksjer'); // 'aksjer' | 'renter'
-  const [aksjerAvkastning, setAksjerAvkastning] = useState(8);
-  const [renterAvkastning, setRenterAvkastning] = useState(4.5);
+  const [aksjerAvkastning, setAksjerAvkastning] = useState(9);
+  const [renterAvkastning, setRenterAvkastning] = useState(7);
   const reinvesteringAvkastning = reinvesteringAktiva === 'aksjer' ? aksjerAvkastning : renterAvkastning;
   const [tidshorisont, setTidshorisont] = useState(5);
   const [modus, setModus] = useState('reinvestering'); // 'reinvestering', 'kontantuttak'
@@ -679,8 +679,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
                 {[
-                  { id: 'aksjer', navn: 'Aksjer', farge: colors.primary, ikon: '📊', default: 8 },
-                  { id: 'renter', navn: 'Renter', farge: colors.primaryLight, ikon: '💰', default: 4.5 },
+                  { id: 'aksjer', navn: 'Aksjer', farge: colors.primary, ikon: '📊', default: 9 },
+                  { id: 'renter', navn: 'Renter', farge: colors.primaryLight, ikon: '💰', default: 7 },
                 ].map(a => (
                   <button
                     key={a.id}
@@ -711,9 +711,9 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                   <span className="value-text" style={{ color: colors.success }}>{reinvesteringAvkastning}% p.a.</span>
                 </label>
                 {reinvesteringAktiva === 'aksjer' ? (
-                  <input type="range" min="0" max="9" step="0.25" value={aksjerAvkastning} onChange={(e) => setAksjerAvkastning(Number(e.target.value))} />
+                  <input type="range" min="0" max="20" step="0.25" value={aksjerAvkastning} onChange={(e) => setAksjerAvkastning(Number(e.target.value))} />
                 ) : (
-                  <input type="range" min="0" max="7" step="0.25" value={renterAvkastning} onChange={(e) => setRenterAvkastning(Number(e.target.value))} />
+                  <input type="range" min="0" max="15" step="0.25" value={renterAvkastning} onChange={(e) => setRenterAvkastning(Number(e.target.value))} />
                 )}
                 <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: '4px' }}>
                   {reinvesteringAktiva === 'aksjer'
