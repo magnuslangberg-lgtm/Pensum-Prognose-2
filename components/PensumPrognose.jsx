@@ -2761,11 +2761,22 @@ export default function PensumPrognoseModell() {
     }
   }, [likvideTotal, peTotal, eiendomTotal, risikoprofil, effektivVisAlternative, pensumStandardPortefoljer]);
 
-  // Oppdater allokering automatisk når checkbox for alternative endres
+  // Når brukeren toggler "Alternative investeringer" vil vi bevare eventuelle
+  // beløp/vekt som er fylt inn på aksjer- og renter-radene. Vi modifiserer derfor
+  // bare alternativ-delen av allokeringen istedenfor å regenerere alt.
   useEffect(() => {
-    const brukPE = effektivVisAlternative ? peTotal : 0;
-    const brukEiendom = effektivVisAlternative ? eiendomTotal : 0;
-    setAllokering(beregnAllokering(likvideTotal, brukPE, brukEiendom, risikoprofil, avkastningsrater));
+    const altKats = ['privateMarkets', 'eiendom', 'shipping'];
+    if (effektivVisAlternative) {
+      setAllokering(prev => {
+        if (prev.some(a => altKats.includes(a.kategori))) return prev;
+        const standard = beregnAllokering(likvideTotal, peTotal, eiendomTotal, risikoprofil, avkastningsrater);
+        const alternativeRader = standard.filter(a => altKats.includes(a.kategori));
+        return [...prev, ...alternativeRader];
+      });
+    } else {
+      setAllokering(prev => prev.filter(a => !altKats.includes(a.kategori)));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effektivVisAlternative]);
 
   const kategorierData = useMemo(() => {
