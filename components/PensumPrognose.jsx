@@ -60,6 +60,9 @@ export default function PensumPrognoseModell() {
   
   // Allokering & Prognose - investert beløp og alternative investeringer
   const [investertBelop, setInvestertBelop] = useState(null); // null = bruk totalKapital fra kundeinformasjon
+  // Egen budsjett-state for Formuesplanleggeren — slik at endringer her
+  // ikke påvirker Porteføljebygging eller Investeringsforslag (egne prosesser).
+  const [formuesPlanleggerBelop, setFormuesPlanleggerBelop] = useState(null);
   // visAlternativeAllokering: null = auto (basert på om kunden har alt.inv.), true/false = manuelt satt
   const [visAlternativeAllokering, setVisAlternativeAllokering] = useState(null);
 
@@ -2780,7 +2783,7 @@ export default function PensumPrognoseModell() {
   }, [effektivVisAlternative]);
 
   const kategorierData = useMemo(() => {
-    const effektivBelop = investertBelop !== null ? investertBelop : totalKapital;
+    const effektivBelop = formuesPlanleggerBelop !== null ? formuesPlanleggerBelop : (investertBelop !== null ? investertBelop : totalKapital);
     const cats = ['aksjer', 'renter', 'privateMarkets', 'eiendom'];
     const names = { aksjer: 'Aksjer', renter: 'Renter', privateMarkets: 'Private Equity', eiendom: 'Eiendom' };
     const result = cats.map(cat => {
@@ -2797,7 +2800,7 @@ export default function PensumPrognoseModell() {
       result.push({ kategori: 'alternative', navn: 'Alternative investeringer', vekt: altVekt, avkastning: altAvk, items: altItems, belop: (altVekt / 100) * effektivBelop });
     }
     return result;
-  }, [allokering, totalKapital, investertBelop]);
+  }, [allokering, totalKapital, investertBelop, formuesPlanleggerBelop]);
 
   const pieData = useMemo(() => {
     const data = [];
@@ -2821,7 +2824,9 @@ export default function PensumPrognoseModell() {
   const sammenligningAktiva = useMemo(() => sammenligningAllokering.filter(a => a.vekt > 0), [sammenligningAllokering]);
 
   // Effektivt investert beløp (bruker manuelt beløp hvis satt, ellers totalKapital)
-  const portefoljeBelop = investertBelop !== null ? investertBelop : totalKapital;
+  // Effektivt investert beløp (Formuesplanlegger): prioriter eget budsjett her,
+  // ellers fall tilbake til delt investertBelop, og til slutt totalKapital.
+  const portefoljeBelop = formuesPlanleggerBelop !== null ? formuesPlanleggerBelop : (investertBelop !== null ? investertBelop : totalKapital);
   const totalLaan = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0), 0) : 0;
   const aarligRentekostnad = laanAktiv ? prognoseFinansiering.reduce((s, l) => s + (Number(l.belop) || 0) * (Number(l.rente) || 0) / 100, 0) : 0;
   // Eksisterende-modus: porteføljen er allerede finansiert med lån, så netto EK = portefølje − lån.
@@ -3351,9 +3356,11 @@ export default function PensumPrognoseModell() {
       vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0,
     })));
 
-    // Hold "Investert beløp" synkronisert med summen så simulering, grafer
-    // og snittavkastning reflekterer faktisk innskrevne beløp.
-    if (nyTotal > 0) setInvestertBelop(nyTotal);
+    // Hold Formuesplanleggerens eget budsjett synkronisert med summen så
+    // simulering, grafer og snittavkastning reflekterer faktisk innskrevne
+    // beløp. Endrer IKKE investertBelop, slik at Porteføljebygging og
+    // Investeringsforslag beholder sitt eget beløp.
+    if (nyTotal > 0) setFormuesPlanleggerBelop(nyTotal);
   }, [allokering, effektivtInvestertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
@@ -5417,16 +5424,16 @@ export default function PensumPrognoseModell() {
                       <span className="text-sm text-blue-200">Beløp:</span>
                       <input
                         type="text"
-                        value={investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital)}
+                        value={formuesPlanleggerBelop !== null ? formatNumber(formuesPlanleggerBelop) : (investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital))}
                         onChange={(e) => {
                           const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
-                          setInvestertBelop(value);
+                          setFormuesPlanleggerBelop(value);
                         }}
                         className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-28 text-right text-sm"
                       />
                       <span className="text-blue-300 text-sm">kr</span>
-                      {investertBelop !== null && (
-                        <button onClick={() => setInvestertBelop(null)} className="text-blue-300 hover:text-white" title="Tilbakestill">↺</button>
+                      {formuesPlanleggerBelop !== null && (
+                        <button onClick={() => setFormuesPlanleggerBelop(null)} className="text-blue-300 hover:text-white" title="Tilbakestill til kundeinformasjon-beløp">↺</button>
                       )}
                     </div>
                     {/* Horisont */}
@@ -5470,7 +5477,7 @@ export default function PensumPrognoseModell() {
                       <button onClick={() => setShowComparison(!showComparison)} className={"px-3 py-1.5 rounded text-xs font-medium transition-colors " + (showComparison ? "bg-purple-400 text-white" : "bg-blue-800 text-white hover:bg-blue-700")}>
                         {showComparison ? 'Skjul sammenligning' : 'Sammenlign'}
                       </button>
-                      <button onClick={() => { setVisAlternativeAllokering(null); resetTilAutomatisk(); setInvestertBelop(null); }} className="px-3 py-1.5 rounded text-xs font-medium bg-blue-800 text-white hover:bg-blue-700 transition-colors">Tilbakestill alt</button>
+                      <button onClick={() => { setVisAlternativeAllokering(null); resetTilAutomatisk(); setFormuesPlanleggerBelop(null); }} className="px-3 py-1.5 rounded text-xs font-medium bg-blue-800 text-white hover:bg-blue-700 transition-colors">Tilbakestill alt</button>
                     </div>
                   </div>
                 </div>
