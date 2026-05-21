@@ -1106,8 +1106,8 @@ export default function PensumPrognoseModell() {
 
   // Intern lagringsfunksjon (etter autentisering)
   const lagreKundeEtterAuth = useCallback(async () => {
-    if (!kundeNavn) {
-      alert('Vennligst fyll inn kundenavn først');
+    if (!kundeNavn && !kundeSelskap) {
+      alert('Vennligst fyll inn investor- eller selskapsnavn først');
       return;
     }
     
@@ -1147,12 +1147,12 @@ export default function PensumPrognoseModell() {
     } else {
       alert('Automatisk lagring er ikke tilgjengelig. Bruk "Eksporter" for å lagre kunden som fil.');
     }
-  }, [bruker, radgiver, kundeNavn, getKundeData, lagredeKunder]);
+  }, [bruker, radgiver, kundeNavn, kundeSelskap, getKundeData, lagredeKunder]);
 
   // Lagre kunde (hovedfunksjon)
   const lagreKunde = useCallback(async () => {
-    if (!kundeNavn) {
-      alert('Vennligst fyll inn kundenavn først');
+    if (!kundeNavn && !kundeSelskap) {
+      alert('Vennligst fyll inn investor- eller selskapsnavn først');
       return;
     }
     
@@ -1165,7 +1165,7 @@ export default function PensumPrognoseModell() {
     
     // Bruker er innlogget, lagre direkte
     await lagreKundeEtterAuth();
-  }, [kundeNavn, bruker, lagreKundeEtterAuth]);
+  }, [kundeNavn, kundeSelskap, bruker, lagreKundeEtterAuth]);
 
   // Slett kunde
   const slettKunde = useCallback(async (id) => {
@@ -2995,13 +2995,27 @@ export default function PensumPrognoseModell() {
   }, [autoRebalanserAllokering]);
 
   const updateAllokeringBelop = useCallback((index, newBelop) => {
-    setAllokering(prev => {
-      const updated = [...prev];
-      const newVekt = effektivtInvestertBelop > 0 ? (newBelop / effektivtInvestertBelop) * 100 : 0;
-      updated[index] = { ...updated[index], vekt: parseFloat(newVekt.toFixed(1)) };
-      return updated;
+    const cleanBelop = Math.max(0, Number(newBelop) || 0);
+    // Beregn nye beløp på alle rader: endret rad får ny verdi, øvrige beholder
+    // sin nåværende beregnede verdi (vekt × forrige total).
+    const currentTotal = effektivtInvestertBelop;
+    const nyeBelop = allokering.map((it, i) => {
+      if (i === index) return cleanBelop;
+      return currentTotal > 0 ? ((it.vekt || 0) / 100) * currentTotal : 0;
     });
-  }, [effektivtInvestertBelop]);
+    const nyTotal = nyeBelop.reduce((s, b) => s + b, 0);
+
+    setAllokering(prev => prev.map((it, i) => ({
+      ...it,
+      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0
+    })));
+
+    // Når brukeren ikke har satt et eksplisitt budsjett, lar vi summen av
+    // innskrevne beløp definere totalen så simulering og resten av appen er konsistent.
+    if (investertBelop === null && nyTotal > 0) {
+      setInvestertBelop(nyTotal);
+    }
+  }, [allokering, effektivtInvestertBelop, investertBelop]);
 
   const updateAllokeringAvkastning = useCallback((index, avk) => {
     setAllokering(prev => { const u = [...prev]; u[index] = { ...u[index], avkastning: parseFloat(avk) || 0, manueltJustert: true }; return u; });
@@ -5163,9 +5177,16 @@ export default function PensumPrognoseModell() {
                           <span>Rediger beløp</span>
                         </label>
                       </div>
-                      <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
-                        <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
-                        {formatPercent(totalVekt)}
+                      <div className="flex items-center gap-2">
+                        {belopInputModus && effektivtInvestertBelop > 0 && (
+                          <div className="px-3 py-1.5 rounded-full text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200 tabular-nums" title="Total av innskrevne beløp">
+                            {formatCurrency(effektivtInvestertBelop)}
+                          </div>
+                        )}
+                        <div className={"flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-50 text-green-700 border border-green-200" : totalVekt > 100 ? "bg-red-50 text-red-600 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200")}>
+                          <div className={"w-2 h-2 rounded-full " + (Math.abs(totalVekt - 100) < 0.2 ? "bg-green-500" : totalVekt > 100 ? "bg-red-500" : "bg-amber-500")}></div>
+                          {formatPercent(totalVekt)}
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -5239,6 +5260,7 @@ export default function PensumPrognoseModell() {
                               { navn: 'Investment Grade', avkastning: 5, kategori: 'renter' },
                               { navn: 'Høyrente', avkastning: 7.5, kategori: 'renter' },
                               { navn: 'Statsobligasjoner', avkastning: 3.5, kategori: 'renter' },
+                              { navn: 'Obligasjoner', avkastning: 4, kategori: 'renter' },
                             ].filter(p => !allokering.find(a => a.navn === p.navn)).map(produkt => (
                               <button key={produkt.navn} onClick={() => setAllokering(prev => [...prev, { ...produkt, vekt: 0 }])} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
                                 <span>{produkt.navn}</span>

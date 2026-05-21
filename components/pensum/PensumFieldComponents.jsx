@@ -109,10 +109,10 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
         <div className="flex items-center bg-white border border-blue-200 rounded-lg overflow-hidden flex-shrink-0 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all" style={{ width: '110px' }}>
           <input
             type="text"
+            inputMode="numeric"
             value={localBelop}
             onChange={(e) => setLocalBelop(e.target.value)}
-            onFocus={() => setLocalBelop(Math.round(beregnetBelop).toString())}
-            onBlur={() => { const v = parseInt(localBelop.replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
+            onBlur={() => { const v = parseInt(String(localBelop).replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
             className="w-full py-1.5 px-2 text-xs text-right font-medium border-none outline-none bg-transparent tabular-nums"
             style={{ color: PENSUM_COLORS.darkBlue }}
           />
