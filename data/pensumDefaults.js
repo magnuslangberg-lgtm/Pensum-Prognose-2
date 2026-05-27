@@ -31,7 +31,7 @@ export const defaultPensumProdukter = {
   };
 
 // Definerte porteføljer fra "Skisse ulike eksempelporteføljer.xlsx"
-// 4 portefølje-typer × 3 allokerings-varianter (Kjerne, Kjerne+, Kjerne++)
+// 4 portefølje-typer × 3 allokerings-varianter (Kjerne, Blandet, Spisset)
 export const defaultPensumStandardLosninger = {
   '100% Aksjer': {
     beskrivelse: 'Ren aksjeportefølje med fokus på vekst og langsiktig avkastning',
@@ -41,7 +41,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-edge', vekt: 40, kategori: 'fondsportefoljer' },
         { id: 'norge-a', vekt: 20, kategori: 'enkeltfond' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'global-core-active', vekt: 30, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 30, kategori: 'fondsportefoljer' },
         { id: 'kairos-a', vekt: 10, kategori: 'enkeltfond' },
@@ -49,7 +49,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'energy-a', vekt: 5, kategori: 'enkeltfond' },
         { id: 'banking-d', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'global-core-active', vekt: 20, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 20, kategori: 'fondsportefoljer' },
         { id: 'kairos-a', vekt: 20, kategori: 'enkeltfond' },
@@ -69,7 +69,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-hoyrente', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'norge-a', vekt: 15, kategori: 'enkeltfond' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'basis', vekt: 30, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
@@ -81,7 +81,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'nordisk-hoyrente', vekt: 5, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 5, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'basis', vekt: 20, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
@@ -104,7 +104,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
         { id: 'norge-a', vekt: 15, kategori: 'enkeltfond' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'global-core-active', vekt: 17.5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 17.5, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
@@ -114,7 +114,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'banking-d', vekt: 10, kategori: 'enkeltfond' },
         { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'global-core-active', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 10, kategori: 'fondsportefoljer' },
@@ -137,7 +137,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-hoyrente', vekt: 35, kategori: 'fondsportefoljer' },
         { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'basis', vekt: 20, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
@@ -148,7 +148,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 5, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'basis', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
@@ -172,7 +172,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' },
         { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'global-core-active', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
@@ -182,7 +182,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 25, kategori: 'fondsportefoljer' },
@@ -205,7 +205,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'global-hoyrente', vekt: 50, kategori: 'fondsportefoljer' },
         { id: 'norge-a', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'basis', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 7.5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 7.5, kategori: 'fondsportefoljer' },
@@ -215,7 +215,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'nordisk-hoyrente', vekt: 15, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'basis', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
@@ -239,7 +239,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'norge-a', vekt: 5, kategori: 'enkeltfond' },
         { id: 'nordisk-hoyrente', vekt: 10, kategori: 'fondsportefoljer' }
       ],
-      'Allokering 2 (Kjerne +)': [
+      'Allokering 2 (Blandet)': [
         { id: 'global-core-active', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 10, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 40, kategori: 'fondsportefoljer' },
@@ -249,7 +249,7 @@ export const defaultPensumStandardLosninger = {
         { id: 'nordisk-hoyrente', vekt: 20, kategori: 'fondsportefoljer' },
         { id: 'financial-d', vekt: 10, kategori: 'enkeltfond' }
       ],
-      'Allokering 3 (Kjerne ++)': [
+      'Allokering 3 (Spisset)': [
         { id: 'global-core-active', vekt: 5, kategori: 'fondsportefoljer' },
         { id: 'global-edge', vekt: 5, kategori: 'fondsportefoljer' },
         { id: 'global-hoyrente', vekt: 30, kategori: 'fondsportefoljer' },
