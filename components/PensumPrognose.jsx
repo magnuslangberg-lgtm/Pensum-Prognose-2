@@ -1370,38 +1370,43 @@ export default function PensumPrognoseModell() {
     switch (modulId) {
       case 'om-oss':
         return (
-          <div data-rapport-slide="om-oss" className="space-y-6 page-break-before">
+          <div data-rapport-slide="om-oss" className="space-y-7 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
               Pensum har røtter tilbake til 2002 og har i dag fire ulike virksomhetsområder, hvor kjernen ligger innen forvaltningstjenester.
             </p>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking» markedet.', farge: PENSUM_COLORS.darkBlue },
-                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Forvaltning av aktivt forvaltede mandater, AIFer, UCITS fond, fondsporteføljer og eiendom.', farge: PENSUM_COLORS.darkBlue },
-                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: PENSUM_COLORS.lightBlue },
-                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder samt eksterne kunder.', farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking»-markedet.', farge: PENSUM_COLORS.darkBlue, ikon: 'M3 21h18M5 21V7l8-4v18M19 21V11l-6-3' },
+                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Aktivt forvaltede mandater, AIF-er, UCITS-fond, fondsporteføljer og eiendom.', farge: PENSUM_COLORS.teal, ikon: 'M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z' },
+                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: PENSUM_COLORS.lightBlue, ikon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder og eksterne kunder.', farge: PENSUM_COLORS.salmon, ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
               ].map((boks, i) => (
-                <div key={i} className="rounded-lg p-4 text-white text-sm" style={{ backgroundColor: boks.farge }}>
-                  <h4 className="font-bold text-xs uppercase tracking-wider mb-2">{boks.tittel}</h4>
-                  <p className="text-xs leading-relaxed opacity-90">{boks.tekst}</p>
+                <div key={i} className="rounded-xl border border-gray-100 bg-white overflow-hidden shadow-sm flex flex-col">
+                  <div className="h-1" style={{ backgroundColor: boks.farge }}></div>
+                  <div className="p-4 flex flex-col gap-2.5 flex-1">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: boks.farge + '18' }}>
+                      <svg className="w-5 h-5" style={{ color: boks.farge }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={boks.ikon} /></svg>
+                    </div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>{boks.tittel}</h4>
+                    <p className="text-xs leading-relaxed text-gray-500">{boks.tekst}</p>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="h-0.5 w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { tittel: 'Antall ansatte', verdi: '39' },
-                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd' },
-                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%' },
-                { tittel: 'Årlig vekst inntekter', verdi: '22,1%' },
+                { tittel: 'Antall ansatte', verdi: '39', farge: PENSUM_COLORS.darkBlue },
+                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd', farge: PENSUM_COLORS.teal },
+                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%', farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Årlig vekst inntekter', verdi: '22,1%', farge: PENSUM_COLORS.salmon },
               ].map((stat, i) => (
-                <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: '#9CA3AF', color: 'white' }}>
-                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-2">{stat.tittel}</h4>
-                  <p className="text-2xl font-bold">{stat.verdi}</p>
+                <div key={i} className="rounded-xl p-5 text-center border border-gray-100 bg-gradient-to-br from-slate-50 to-white">
+                  <p className="text-3xl font-bold tabular-nums" style={{ color: stat.farge }}>{stat.verdi}</p>
+                  <h4 className="font-semibold text-[10px] uppercase tracking-wider text-gray-400 mt-1.5">{stat.tittel}</h4>
                 </div>
               ))}
             </div>
@@ -1410,48 +1415,40 @@ export default function PensumPrognoseModell() {
 
       case 'kommunikasjon':
         return (
-          <div data-rapport-slide="kommunikasjon" className="space-y-5 page-break-before">
+          <div data-rapport-slide="kommunikasjon" className="space-y-6 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kommunikasjon & løpende oppdateringer</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
               Pensum tilbyr løpende kommunikasjon og oppdateringer til sine kunder gjennom flere kanaler.
             </p>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { tittel: 'Ukentlig Investeringskommentar', beskrivelse: 'Markedsoppdatering og investeringskommentarer sendt ut ukentlig til alle kunder.' },
-                { tittel: 'Månedsrapport', beskrivelse: 'Detaljert månedlig rapport med porteføljeutvikling, markedsanalyse og utsikter.' },
-                { tittel: 'Pensum Konferanse', beskrivelse: 'Årlig konferanse med foredragsholdere og nettverksmuligheter for Pensums kunder.' },
+                { tittel: 'Ukentlig investeringskommentar', beskrivelse: 'Markedsoppdatering og investeringskommentarer sendt ut ukentlig til alle kunder.', farge: PENSUM_COLORS.darkBlue, ikon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+                { tittel: 'Månedsrapport', beskrivelse: 'Detaljert månedlig rapport med porteføljeutvikling, markedsanalyse og utsikter.', farge: PENSUM_COLORS.teal, ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                { tittel: 'Pensum-konferansen', beskrivelse: 'Årlig konferanse med foredragsholdere og nettverksmuligheter for Pensums kunder.', farge: PENSUM_COLORS.salmon, ikon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
               ].map((kanal, i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-4">
-                  <div className="h-24 rounded-md mb-3 flex items-center justify-center" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : i === 1 ? PENSUM_COLORS.lightBlue : '#E5E7EB' }}>
-                    <svg className="w-8 h-8 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {i === 0 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />}
-                      {i === 1 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
-                      {i === 2 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />}
-                    </svg>
+                <div key={i} className="border border-gray-100 rounded-xl p-5 bg-white shadow-sm flex flex-col gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: kanal.farge + '18' }}>
+                    <svg className="w-6 h-6" style={{ color: kanal.farge }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={kanal.ikon} /></svg>
                   </div>
-                  <h4 className="font-semibold text-sm mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
-                  <p className="text-xs text-gray-500">{kanal.beskrivelse}</p>
+                  <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-xs text-gray-500 leading-relaxed">{kanal.beskrivelse}</p>
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-3">
               {[
-                { tittel: 'Pensumpodden', beskrivelse: 'Podcast med markedskommentarer og intervjuer med investeringseksperter.' },
-                { tittel: 'Mediedekning', beskrivelse: 'Pensum er jevnlig omtalt i ledende finansmedier som DN, E24 og Finansavisen.' },
-                { tittel: 'Økonomi-nyhetene', beskrivelse: 'Pensums eksperter bidrar regelmessig med kommentarer i TV og nettmedier.' },
-                { tittel: 'Pensum TV', beskrivelse: 'Egenprodusert videoinnhold med markedsanalyser og investeringstemaer.' },
+                { tittel: 'Pensumpodden', beskrivelse: 'Podcast med markedskommentarer og ekspertintervjuer.', ikon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0-4a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z' },
+                { tittel: 'Mediedekning', beskrivelse: 'Omtalt i DN, E24 og Finansavisen.', ikon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m0 0h2a2 2 0 012 2v9a2 2 0 01-2 2h-1m-1-13v13' },
+                { tittel: 'Økonomi-nyhetene', beskrivelse: 'Eksperter bidrar i TV og nettmedier.', ikon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
+                { tittel: 'Pensum TV', beskrivelse: 'Egenproduserte markedsanalyser.', ikon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
               ].map((kanal, i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-3">
-                  <div className="h-16 rounded-md mb-2 flex items-center justify-center" style={{ backgroundColor: '#F3F4F6' }}>
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h4 className="font-semibold text-xs mb-0.5" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
-                  <p className="text-[10px] text-gray-500">{kanal.beskrivelse}</p>
+                <div key={i} className="border border-gray-100 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-white flex flex-col gap-2">
+                  <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={kanal.ikon} /></svg>
+                  <h4 className="font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-[10px] text-gray-500 leading-relaxed">{kanal.beskrivelse}</p>
                 </div>
               ))}
             </div>
@@ -1460,53 +1457,51 @@ export default function PensumPrognoseModell() {
 
       case 'rapportering':
         return (
-          <div data-rapport-slide="rapportering" className="space-y-5 page-break-before">
+          <div data-rapport-slide="rapportering" className="space-y-6 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportering</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>BankID innlogging på egen rapporteringsside med daglig utvikling av portefølje. Tilgang til alle kundeforhold på samme område dersom flere kundeforhold.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Rapporterer både på portefølje i Pensum samt «eksterne» porteføljer. Gir en helhetlig oversikt.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Skatterapporering</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Sluttsedler og oversikt over alle hendelser i porteføljen.</span>
-                  </li>
-                </ul>
+              <div className="space-y-3">
+                {[
+                  { tittel: 'BankID-innlogging', tekst: 'Egen rapporteringsside med daglig porteføljeutvikling. Tilgang til alle kundeforhold på ett sted.', ikon: 'M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4' },
+                  { tittel: 'Helhetlig oversikt', tekst: 'Rapporterer både på portefølje i Pensum og «eksterne» porteføljer — alt samlet.', ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { tittel: 'Skatterapportering', tekst: 'Ferdig tilrettelagt skatterapport for hele porteføljen.', ikon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { tittel: 'Sluttsedler & hendelser', tekst: 'Full oversikt over alle transaksjoner og hendelser i porteføljen.', ikon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+                ].map((p, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue + '14' }}>
+                      <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={p.ikon} /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p.tittel}</h4>
+                      <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{p.tekst}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Markedsverdi</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Daglig oppdatert</p>
-                  </div>
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Avkastning i kr</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
-                  </div>
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Avkastning %</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
-                  </div>
+                  {[
+                    { label: 'Markedsverdi', verdi: 'Daglig', farge: PENSUM_COLORS.darkBlue },
+                    { label: 'Avkastning i kr', verdi: 'Løpende', farge: PENSUM_COLORS.teal },
+                    { label: 'Avkastning %', verdi: 'Løpende', farge: PENSUM_COLORS.teal },
+                  ].map((k, i) => (
+                    <div key={i} className="rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-br from-slate-50 to-white">
+                      <p className="text-sm font-bold" style={{ color: k.farge }}>{k.verdi}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{k.label}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <h4 className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rapporteringsfunksjoner</h4>
-                  <div className="space-y-2">
-                    {['Nettoavkastning', 'Transaksjoner', 'Allokering', 'Skatterapport', 'Sluttsedler'].map((funksjon, i) => (
+                <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Rapporteringsfunksjoner</h4>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {['Nettoavkastning', 'Transaksjoner', 'Allokering', 'Skatterapport', 'Sluttsedler', 'Eksterne porteføljer'].map((funksjon, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <svg className="w-4 h-4 flex-shrink-0" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal + '1F' }}>
+                          <svg className="w-3 h-3" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </span>
                         <span className="text-xs text-gray-600">{funksjon}</span>
                       </div>
                     ))}
@@ -1520,9 +1515,15 @@ export default function PensumPrognoseModell() {
       case 'honorarstruktur':
         return (
           <div data-rapport-slide="honorarstruktur" className="space-y-5 page-break-before">
-            <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
-            <div className="rounded-lg p-4 text-sm text-gray-700 leading-relaxed" style={{ backgroundColor: '#F0F4F8' }}>
-              Pensum ønsker å opptre som en transparent partner ovenfor sine kunder, også hva gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter og eventuelle returprovisjoner som vi mottar har uavkortet tilbake til våre kunder.
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
+            </div>
+            <div className="flex items-start gap-3 rounded-xl p-4 border" style={{ backgroundColor: PENSUM_COLORS.teal + '0D', borderColor: PENSUM_COLORS.teal + '33' }}>
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: PENSUM_COLORS.teal }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Pensum ønsker å opptre som en transparent partner overfor sine kunder, også når det gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter, og eventuelle returprovisjoner vi mottar går uavkortet tilbake til våre kunder.
+              </p>
             </div>
             <div className="space-y-2">
               <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Komponenter i vår honorarmodell:</h3>
@@ -1609,7 +1610,7 @@ export default function PensumPrognoseModell() {
           <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -1686,7 +1687,7 @@ export default function PensumPrognoseModell() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
               </div>
               <p className="text-[10px] text-gray-400 mt-1 max-w-[260px] text-right">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
             </div>
