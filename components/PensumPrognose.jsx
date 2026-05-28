@@ -96,6 +96,8 @@ export default function PensumPrognoseModell() {
   // Fondssammenligning
   const [eksterneFond, setEksterneFond] = useState(null);
   const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
+  // Søk i "Legg til produkt → Eksterne fond" på Porteføljebygger-fanen
+  const [eksterneFondSok, setEksterneFondSok] = useState('');
   const [fondSokDebounced, setFondSokDebounced] = useState('');
   const [fondSokResultater, setFondSokResultater] = useState([]);
   const fondSokTimerRef = useRef(null);
@@ -621,11 +623,37 @@ export default function PensumPrognoseModell() {
     setPensumAllokering(prev => {
       const idx = prev.findIndex((p) => p.id === id);
       if (idx < 0) return prev;
+      const basis = investertBelop !== null ? investertBelop : totalKapital;
+      const oppdater = (liste) => liste.map(p => ({
+        ...p,
+        belop: basis > 0 ? Math.round((p.vekt / 100) * basis) : (p.belop || 0),
+      }));
       if (!autoRebalanserPensum) {
-        return prev.map(p => p.id === id ? { ...p, vekt: Math.max(0, Math.min(100, nyVekt)) } : p);
+        return oppdater(prev.map(p => p.id === id ? { ...p, vekt: Math.max(0, Math.min(100, nyVekt)) } : p));
       }
-      return fordelRestVektListe(prev, idx, nyVekt);
+      return oppdater(fordelRestVektListe(prev, idx, nyVekt));
     });
+  };
+
+  // Kronebeløp-modus i Porteføljebyggeren: skriv inn kr per produkt og få
+  // vektprosent beregnet automatisk (nyttig når man replikerer en eksisterende
+  // portefølje fra FA der man kjenner beløpene, ikke prosentene).
+  const [pensumBelopModus, setPensumBelopModus] = useState(false);
+  const oppdaterPensumBelop = (id, nyBelop) => {
+    const cleanBelop = Math.max(0, Math.round(Number(nyBelop) || 0));
+    const basis = investertBelop !== null ? investertBelop : totalKapital;
+    const nyeBelop = pensumAllokering.map(p => {
+      if (p.id === id) return cleanBelop;
+      if (typeof p.belop === 'number') return p.belop;
+      return basis > 0 ? Math.round((p.vekt / 100) * basis) : 0;
+    });
+    const nyTotal = nyeBelop.reduce((s, b) => s + b, 0);
+    setPensumAllokering(prev => prev.map((p, i) => ({
+      ...p,
+      belop: nyeBelop[i],
+      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0,
+    })));
+    if (nyTotal > 0) setInvestertBelop(nyTotal);
   };
 
   const [pensumDragVekter, setPensumDragVekter] = useState({});
@@ -4784,7 +4812,7 @@ export default function PensumPrognoseModell() {
             <div className="flex items-center gap-2">
               <button onClick={() => setVisKundeliste(!visKundeliste)} className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border " + (visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                Mine kunder {lagredeKunder.length > 0 && <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">{lagredeKunder.length}</span>}
+                Mine kunder
               </button>
               <button onClick={() => { setPdfProduktValg([]); setPdfModal(true); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: '#D4886B' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -6826,6 +6854,10 @@ export default function PensumPrognoseModell() {
                         <button onClick={normaliserPensumTil100} className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50">
                           Juster til 100%
                         </button>
+                        <label className={"text-xs px-2 py-1 rounded-full border flex items-center gap-1.5 cursor-pointer " + (pensumBelopModus ? "border-blue-400 bg-blue-50 text-blue-800" : "border-blue-200 text-blue-700")}>
+                          <input type="checkbox" checked={pensumBelopModus} onChange={(e) => setPensumBelopModus(e.target.checked)} className="w-3.5 h-3.5" />
+                          Rediger beløp
+                        </label>
                         {pensumLikviditet.illikvid > 0 && (
                           <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
                             {pensumLikviditet.illikvid}% illikvid
@@ -6907,30 +6939,54 @@ export default function PensumPrognoseModell() {
                               <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : 'Fondsportefølje'}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={pensumDragVekter[produkt.id] ?? produkt.vekt}
-                                onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
-                                onMouseUp={() => commitPensumDrag(produkt.id)}
-                                onTouchEnd={() => commitPensumDrag(produkt.id)}
-                                className="w-36 accent-blue-700"
-                              />
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={pensumDragVekter[produkt.id] ?? produkt.vekt}
-                                onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
-                                onBlur={() => commitPensumDrag(produkt.id)}
-                                className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right"
-                              />
-                              <span className="text-sm text-gray-500">%</span>
-                              <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">+</button>
+                              {pensumBelopModus ? (() => {
+                                const basis = investertBelop !== null ? investertBelop : totalKapital;
+                                const radBelop = typeof produkt.belop === 'number' ? produkt.belop : Math.round(((produkt.vekt || 0) / 100) * basis);
+                                return (
+                                  <>
+                                    <div className="flex items-center bg-white border border-blue-200 rounded overflow-hidden focus-within:border-blue-400" style={{ width: '130px' }}>
+                                      <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        key={radBelop}
+                                        defaultValue={formatNumber(radBelop)}
+                                        onBlur={(e) => oppdaterPensumBelop(produkt.id, parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                                        className="w-full py-1 px-2 text-sm text-right outline-none tabular-nums"
+                                      />
+                                      <span className="text-xs text-gray-400 pr-1.5">kr</span>
+                                    </div>
+                                    <span className="text-xs text-gray-400 tabular-nums w-12 text-right">{(produkt.vekt || 0).toFixed(1)}%</span>
+                                  </>
+                                );
+                              })() : (
+                                <>
+                                  <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value={pensumDragVekter[produkt.id] ?? produkt.vekt}
+                                    onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
+                                    onMouseUp={() => commitPensumDrag(produkt.id)}
+                                    onTouchEnd={() => commitPensumDrag(produkt.id)}
+                                    className="w-36 accent-blue-700"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value={pensumDragVekter[produkt.id] ?? produkt.vekt}
+                                    onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
+                                    onBlur={() => commitPensumDrag(produkt.id)}
+                                    className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right"
+                                  />
+                                  <span className="text-sm text-gray-500">%</span>
+                                  <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">+</button>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
@@ -6945,9 +7001,9 @@ export default function PensumPrognoseModell() {
                           <p className="text-xs font-semibold text-gray-500 mb-2">ENKELTFOND</p>
                           <div className="space-y-1">
                             {pensumProdukter.enkeltfond.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'enkeltfond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'enkeltfond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-start justify-between gap-2">
                                 <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
                             ))}
                           </div>
@@ -6956,33 +7012,59 @@ export default function PensumPrognoseModell() {
                           <p className="text-xs font-semibold text-gray-500 mb-2">FONDSPORTEFØLJER</p>
                           <div className="space-y-1">
                             {pensumProdukter.fondsportefoljer.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'fondsportefoljer')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'fondsportefoljer')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-start justify-between gap-2">
                                 <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
                             ))}
                           </div>
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
-                          <div className="space-y-1">
-                            {(pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'eksterneFond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-teal-200 flex items-center justify-between">
-                                <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                              </button>
-                            ))}
-                          </div>
-                          <p className="text-xs text-teal-700 mt-2 italic">Fond fra fondsfokuslisten</p>
+                          {(() => {
+                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id));
+                            const sok = eksterneFondSok.trim().toLowerCase();
+                            const filtrerte = sok ? tilgjengelige.filter(p => p.navn.toLowerCase().includes(sok)) : tilgjengelige;
+                            return (
+                              <>
+                                <div className="relative mb-2">
+                                  <svg className="w-3.5 h-3.5 text-teal-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                  <input
+                                    type="text"
+                                    value={eksterneFondSok}
+                                    onChange={(e) => setEksterneFondSok(e.target.value)}
+                                    placeholder="Søk i fondsfokuslisten…"
+                                    className="w-full border border-teal-200 rounded py-1.5 pl-8 pr-7 text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-300"
+                                  />
+                                  {eksterneFondSok && (
+                                    <button onClick={() => setEksterneFondSok('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="Tøm søk">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="space-y-1 max-h-72 overflow-y-auto pr-0.5">
+                                  {filtrerte.length === 0 ? (
+                                    <p className="text-xs text-gray-400 italic px-1 py-2">{sok ? 'Ingen treff' : 'Alle fond er lagt til'}</p>
+                                  ) : filtrerte.map(produkt => (
+                                    <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'eksterneFond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-teal-200 flex items-start justify-between gap-2">
+                                      <span>{produkt.navn}</span>
+                                      <svg className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-teal-700 mt-2 italic">{sok ? `${filtrerte.length} av ${tilgjengelige.length} fond` : 'Fond fra fondsfokuslisten'}</p>
+                              </>
+                            );
+                          })()}
                         </div>
                         {visAlternative && (
                           <div>
                             <p className="text-xs font-semibold text-amber-600 mb-2">ALTERNATIVE INVESTERINGER</p>
                             <div className="space-y-1">
                               {pensumProdukter.alternative.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                                <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'alternative')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
+                                <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'alternative')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-start justify-between gap-2">
                                   <span>{produkt.navn}</span>
-                                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                  <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                                 </button>
                               ))}
                             </div>
