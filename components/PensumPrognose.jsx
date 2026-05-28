@@ -7668,67 +7668,123 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Årlig rebalansering for Pensum-portefølje */}
+            {/* Forutsetninger og mål — samlet panel rett under prognosegrafen.
+                 Inneholder kontantstrøm + Pensum-rebalansering (som faktisk styrer
+                 grafen over), samt snarvei til lån/mål i Formuesplanleggeren. */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between cursor-pointer" style={{ backgroundColor: PENSUM_COLORS.darkBlue }} onClick={() => setPensumRebalanseringAktiv(!pensumRebalanseringAktiv)}>
+              <button
+                type="button"
+                onClick={() => setVisForutsetninger(v => !v)}
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:opacity-95 transition-opacity"
+                style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
+              >
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-white">Årlig rebalansering</h3>
-                  {!pensumRebalanseringAktiv && <span className="text-xs text-blue-200">(klikk for å aktivere)</span>}
+                  <h3 className="text-lg font-semibold text-white">Forutsetninger og mål</h3>
+                  <span className="text-xs text-blue-200">
+                    {[((innskudd || 0) !== 0 || (uttak || 0) !== 0) && 'Kontantstrøm', pensumRebalanseringAktiv && 'Rebalansering'].filter(Boolean).join(' · ') || 'Klikk for å konfigurere'}
+                  </span>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-sm text-white">{pensumRebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
-                  <div className="relative">
-                    <input type="checkbox" checked={pensumRebalanseringAktiv} onChange={(e) => setPensumRebalanseringAktiv(e.target.checked)} className="sr-only" />
-                    <div className={"w-11 h-6 rounded-full transition-colors " + (pensumRebalanseringAktiv ? "bg-green-500" : "bg-gray-400")}></div>
-                    <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (pensumRebalanseringAktiv ? "translate-x-5" : "")}></div>
-                  </div>
-                </label>
-              </div>
-              {pensumRebalanseringAktiv && (
-                <div className="p-6 space-y-4">
-                  {pensumRebalanseringer.length === 0 && (
-                    <p className="text-sm text-gray-500 italic">Ingen rebalanseringsregler — legg til en regel for å flytte vekt mellom Pensum-produkter hvert år.</p>
-                  )}
-                  {pensumRebalanseringer.map((reb, rebIdx) => {
-                    const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
-                    return (
-                      <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                        <div>
-                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Selg fra</label>}
-                          <select value={reb.fraId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, fraId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
-                            {valgteProd.map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Kjøp til</label>}
-                          <select value={reb.tilId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, tilId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
-                            {valgteProd.filter(a => a.id !== reb.fraId).map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Andel per år</label>}
-                          <div className="relative">
-                            <input type="number" min="1" max="100" value={reb.prosentPerAar} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, prosentPerAar: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-8 text-sm" />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
-                          <p>{reb.prosentPerAar}% av {pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?'} → {pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setPensumRebalanseringer(prev => prev.filter((_, i) => i !== rebIdx))} className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded border border-red-200 hover:bg-red-50">Fjern</button>
-                        </div>
+                <svg className={`w-5 h-5 text-white transition-transform ${visForutsetninger ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {visForutsetninger && (
+                <div className="p-6 space-y-5">
+                  {/* Årlig kontantstrøm */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig kontantstrøm</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig innskudd (kr)</label>
+                        <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                       </div>
-                    );
-                  })}
-                  {pensumAllokering.filter(a => a.vekt > 0).length >= 2 && (
-                    <button onClick={() => {
-                      const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
-                      setPensumRebalanseringer(prev => [...prev, { fraId: valgteProd[0].id, tilId: valgteProd[1].id, prosentPerAar: 5 }]);
-                    }} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
-                      + Legg til regel
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlige uttak (kr)</label>
+                        <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      </div>
+                      <div className="rounded-lg p-3" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Netto kontantstrøm</div>
+                        <div className={"text-xl font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Årlig rebalansering (Pensum-portefølje) */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <div className="flex items-center justify-between cursor-pointer" onClick={() => setPensumRebalanseringAktiv(!pensumRebalanseringAktiv)}>
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig rebalansering</h4>
+                        {!pensumRebalanseringAktiv && <span className="text-xs text-gray-400">(klikk for å aktivere)</span>}
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-xs text-gray-500">{pensumRebalanseringAktiv ? 'Aktiv' : 'Inaktiv'}</span>
+                        <div className="relative">
+                          <input type="checkbox" checked={pensumRebalanseringAktiv} onChange={(e) => setPensumRebalanseringAktiv(e.target.checked)} className="sr-only" />
+                          <div className={"w-11 h-6 rounded-full transition-colors " + (pensumRebalanseringAktiv ? "bg-green-500" : "bg-gray-300")}></div>
+                          <div className={"absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform " + (pensumRebalanseringAktiv ? "translate-x-5" : "")}></div>
+                        </div>
+                      </label>
+                    </div>
+                    {pensumRebalanseringAktiv && (
+                      <div className="mt-4 space-y-4">
+                        {pensumRebalanseringer.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Ingen rebalanseringsregler — legg til en regel for å flytte vekt mellom Pensum-produkter hvert år.</p>
+                        )}
+                        {pensumRebalanseringer.map((reb, rebIdx) => {
+                          const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
+                          return (
+                            <div key={rebIdx} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                              <div>
+                                {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Selg fra</label>}
+                                <select value={reb.fraId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, fraId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                                  {valgteProd.map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Kjøp til</label>}
+                                <select value={reb.tilId} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, tilId: e.target.value } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm">
+                                  {valgteProd.filter(a => a.id !== reb.fraId).map(a => <option key={a.id} value={a.id}>{a.navn}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                {rebIdx === 0 && <label className="block text-xs font-medium mb-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>Andel per år</label>}
+                                <div className="relative">
+                                  <input type="number" min="1" max="100" value={reb.prosentPerAar} onChange={(e) => setPensumRebalanseringer(prev => prev.map((r, i) => i === rebIdx ? { ...r, prosentPerAar: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) } : r))} className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-8 text-sm" />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
+                                <p>{reb.prosentPerAar}% av {pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?'} → {pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?'}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setPensumRebalanseringer(prev => prev.filter((_, i) => i !== rebIdx))} className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded border border-red-200 hover:bg-red-50">Fjern</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {pensumAllokering.filter(a => a.vekt > 0).length >= 2 && (
+                          <button onClick={() => {
+                            const valgteProd = pensumAllokering.filter(a => a.vekt > 0);
+                            setPensumRebalanseringer(prev => [...prev, { fraId: valgteProd[0].id, tilId: valgteProd[1].id, prosentPerAar: 5 }]);
+                          }} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+                            + Legg til regel
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Lån & finansielt mål — konfigureres i Formuesplanleggeren */}
+                  <div className="border-t border-gray-100 pt-4 flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-xs text-gray-500 max-w-md">Lånefinansiering og finansielt mål inngår i en utvidet prognose. Disse konfigureres i Formuesplanleggeren.</p>
+                    <button
+                      onClick={() => setActiveTab('formuesplanlegger')}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      Åpne Formuesplanleggeren
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
@@ -9036,152 +9092,6 @@ export default function PensumPrognoseModell() {
                   </div>
                 );
               })()}
-            </div>
-
-            {/* ── Kompakt "Forutsetninger og mål"-panel — gir rask oversikt og tilgang
-                 til finkonfigurasjon i Formuesplanleggeren. Alle sub-toggles deler
-                 state med Formuesplanleggeren, så valg her vises også der. ── */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setVisForutsetninger(v => !v)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:opacity-95 transition-opacity"
-                style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
-              >
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-white">Forutsetninger og mål</h3>
-                  <span className="text-xs text-blue-200">
-                    {[rebalanseringAktiv && 'Rebalansering', laanAktiv && 'Lånefinansiering', malAktiv && 'Mål'].filter(Boolean).join(' · ') || 'Klikk for å konfigurere'}
-                  </span>
-                </div>
-                <svg className={`w-5 h-5 text-white transition-transform ${visForutsetninger ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {visForutsetninger && (
-                <div className="p-5 space-y-3">
-                  {[
-                    {
-                      id: 'kontantstrom',
-                      tittel: 'Årlig kontantstrøm',
-                      aktiv: (innskudd || 0) !== 0 || (uttak || 0) !== 0,
-                      summary: () => `Innskudd ${formatCurrency(innskudd || 0)} · Uttak ${formatCurrency(uttak || 0)} · Netto ${formatCurrency(nettoKontantstrom)}`,
-                      render: () => (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Årlig innskudd (kr)</label>
-                            <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right" />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Årlige uttak (kr)</label>
-                            <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right" />
-                          </div>
-                          <div className="rounded-lg p-2.5" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
-                            <div className="text-[10px] text-gray-500">Netto kontantstrøm</div>
-                            <div className={"text-base font-bold " + (nettoKontantstrom >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(nettoKontantstrom)}</div>
-                          </div>
-                        </div>
-                      ),
-                      toggle: null,
-                    },
-                    {
-                      id: 'rebalansering',
-                      tittel: 'Årlig rebalansering',
-                      aktiv: rebalanseringAktiv,
-                      summary: () => rebalanseringer.length > 0 ? `${rebalanseringer.length} regel${rebalanseringer.length > 1 ? 'er' : ''} · ${rebalanseringer[0].prosentPerAar}%/år ${rebalanseringer[0].fraAktiva} → ${rebalanseringer[0].tilAktiva}` : 'Ingen regler definert',
-                      render: () => (
-                        <div className="text-xs text-gray-600">
-                          {rebalanseringer.length === 0 ? (
-                            <p className="italic text-gray-400">Ingen rebalanseringsregler er lagt til. Bytt til Formuesplanleggeren for å konfigurere.</p>
-                          ) : (
-                            <ul className="space-y-1">
-                              {rebalanseringer.map((reb, i) => (
-                                <li key={i}>· {reb.prosentPerAar}% av <strong>{reb.fraAktiva}</strong> → <strong>{reb.tilAktiva}</strong> per år</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      ),
-                      toggle: () => setRebalanseringAktiv(v => !v),
-                    },
-                    {
-                      id: 'laan',
-                      tittel: 'Lånefinansiering',
-                      aktiv: laanAktiv,
-                      summary: () => prognoseFinansiering.length > 0 ? `${formatCurrency(totalLaan)} lån · LTV ${formatPercent(effektivtInvestertBelop > 0 ? (totalLaan / effektivtInvestertBelop) * 100 : 0)}` : 'Ingen lån registrert',
-                      render: () => (
-                        <div className="text-xs text-gray-600">
-                          {prognoseFinansiering.length === 0 ? (
-                            <p className="italic text-gray-400">Ingen lån registrert. Bytt til Formuesplanleggeren for å legge til lån, sette rentesats og velge modus.</p>
-                          ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              <div className="rounded-md px-2 py-1.5 bg-amber-50 border border-amber-100"><div className="text-[10px] text-amber-700">Total lån</div><div className="text-sm font-semibold text-amber-900 tabular-nums">{formatCurrency(totalLaan)}</div></div>
-                              <div className="rounded-md px-2 py-1.5 bg-blue-50 border border-blue-100"><div className="text-[10px] text-blue-700">{eksisterendeLaanModus ? 'Netto EK' : 'Egenkapital'}</div><div className="text-sm font-semibold text-blue-900 tabular-nums">{formatCurrency(egenkapitalBelop)}</div></div>
-                              <div className="rounded-md px-2 py-1.5" style={{ backgroundColor: '#FDF6F2', borderWidth: 1, borderColor: '#F0DCD0' }}><div className="text-[10px]" style={{ color: PENSUM_COLORS.salmon }}>LTV</div><div className="text-sm font-semibold tabular-nums" style={{ color: '#8B6650' }}>{effektivtInvestertBelop > 0 ? formatPercent((totalLaan / effektivtInvestertBelop) * 100) : '0 %'}</div></div>
-                              <div className="rounded-md px-2 py-1.5 bg-red-50 border border-red-100"><div className="text-[10px] text-red-700">Årlig rente</div><div className="text-sm font-semibold text-red-900 tabular-nums">{formatCurrency(aarligRentekostnad)}</div></div>
-                            </div>
-                          )}
-                        </div>
-                      ),
-                      toggle: () => setLaanAktiv(v => !v),
-                    },
-                    {
-                      id: 'mal',
-                      tittel: 'Finansielt mål og beløp',
-                      aktiv: malAktiv,
-                      summary: () => hovedmal.belop > 0 ? `${hovedmal.navn || 'Hovedmål'}: ${formatCurrency(hovedmal.belop)}${hovedmal.malAar ? ' innen ' + hovedmal.malAar : ''}` : 'Ingen mål definert',
-                      render: () => (
-                        <div className="text-xs text-gray-600">
-                          {hovedmal.belop > 0 ? (
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <div><span className="text-gray-400">Mål:</span> <strong>{hovedmal.navn || 'Hovedmål'}</strong></div>
-                              <div><span className="text-gray-400">Beløp:</span> <strong className="tabular-nums">{formatCurrency(hovedmal.belop)}</strong></div>
-                              {hovedmal.malAar > 0 && <div><span className="text-gray-400">Innen:</span> <strong>{hovedmal.malAar}</strong></div>}
-                              {visDelmal && delmal.length > 0 && <div><span className="text-gray-400">Delmål:</span> <strong>{delmal.length}</strong></div>}
-                            </div>
-                          ) : (
-                            <p className="italic text-gray-400">Ingen mål er satt. Bytt til Formuesplanleggeren for å definere hovedmål, delmål og målår.</p>
-                          )}
-                        </div>
-                      ),
-                      toggle: () => setMalAktiv(v => !v),
-                    },
-                  ].map((seksjon) => (
-                    <div key={seksjon.id} className="border border-gray-100 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/60">
-                        <div className="flex items-center gap-3">
-                          <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{seksjon.tittel}</h4>
-                          <span className="text-xs text-gray-500">{seksjon.summary()}</span>
-                        </div>
-                        {seksjon.toggle && (
-                          <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] text-gray-500">{seksjon.aktiv ? 'Aktiv' : 'Inaktiv'}</span>
-                            <div className="relative">
-                              <input type="checkbox" checked={seksjon.aktiv} onChange={() => seksjon.toggle()} className="sr-only" />
-                              <div className={"w-9 h-5 rounded-full transition-colors " + (seksjon.aktiv ? "bg-green-500" : "bg-gray-300")}></div>
-                              <div className={"absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform " + (seksjon.aktiv ? "translate-x-4" : "")}></div>
-                            </div>
-                          </label>
-                        )}
-                      </div>
-                      {seksjon.aktiv && (
-                        <div className="p-4 border-t border-gray-100 bg-white">
-                          {seksjon.render()}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => setActiveTab('formuesplanlegger')}
-                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors inline-flex items-center gap-1.5"
-                    >
-                      Detaljkonfigurasjon i Formuesplanleggeren
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
           </div>
