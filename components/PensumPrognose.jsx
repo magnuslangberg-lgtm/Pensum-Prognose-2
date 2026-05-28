@@ -167,6 +167,8 @@ export default function PensumPrognoseModell() {
     { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix' },
   ]);
   const [visModulPanel, setVisModulPanel] = useState(false);
+  // Hvilken tilleggsmodul som forhåndsvises i konfigurasjonspanelet (id eller null)
+  const [forhandsvisModul, setForhandsvisModul] = useState(null);
 
   // Helper to check if a standard rapport module is active
   const isStandardModulAktiv = useCallback((id) => {
@@ -12546,12 +12548,41 @@ export default function PensumPrognoseModell() {
                               {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
                             </p>
                           </div>
+                          <button
+                            onClick={() => setForhandsvisModul(prev => prev === modul.id ? null : modul.id)}
+                            className={"flex-shrink-0 text-xs px-2.5 py-1 rounded-lg border inline-flex items-center gap-1.5 transition-colors " + (forhandsvisModul === modul.id ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300")}
+                            title="Forhåndsvis hvordan sliden ser ut"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            {forhandsvisModul === modul.id ? 'Skjul' : 'Forhåndsvis'}
+                          </button>
                           {modul.aktiv && (
                             <div className="flex-shrink-0">
                               <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                             </div>
                           )}
                         </div>
+                        {forhandsvisModul === modul.id && (() => {
+                          const innhold = modul.id.startsWith('formuesplan-')
+                            ? renderFormuesplanleggerSlide(modul.id)
+                            : renderTilleggsmodulInnhold(modul.id);
+                          return (
+                            <div className="mt-3 ml-20 mr-2">
+                              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={{ height: '300px' }}>
+                                {innhold ? (
+                                  <div style={{ transform: 'scale(0.46)', transformOrigin: 'top left', width: '217%', padding: '20px 24px', pointerEvents: 'none' }}>
+                                    {innhold}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center h-full text-xs text-gray-400 italic px-4 text-center">
+                                    Forhåndsvisning genereres når sliden inkluderes — innholdet avhenger av valgt portefølje og kundedata.
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-gray-400 mt-1 italic">Forenklet forhåndsvisning — endelig layout tilpasses ved generering av forslaget.</p>
+                            </div>
+                          );
+                        })()}
                         {modul.aktiv && (
                           <div className="mt-2 ml-20">
                             <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
