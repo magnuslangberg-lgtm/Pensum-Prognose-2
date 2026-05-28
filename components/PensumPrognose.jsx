@@ -143,29 +143,42 @@ export default function PensumPrognoseModell() {
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
     { id: 'eksponering', label: 'Aggregert eksponering', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
-    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', standard: true, aktiv: false },
     { id: 'neste-steg', label: 'Neste steg', standard: true, aktiv: true },
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
   const [tilleggsmoduler, setTilleggsmoduler] = useState([
-    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'appendix' },
-    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix' },
-    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix' },
-    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix' },
-    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix' },
-    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
-    { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot' },
-    { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
-    { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering' },
-    { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix' },
-    { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix' },
-    { id: 'formuesplan-verdiutvikling', label: 'Formuesplan — forventet verdiutvikling', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-compounding', label: 'Formuesplan — renters rente-effekt', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-sammensetning', label: 'Formuesplan — sammensetning nå vs. om X år', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-laanefinansiering', label: 'Formuesplan — lånefinansiering & LTV', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix' },
+    // Formuesplanlegging
+    { id: 'formuesplan-verdiutvikling', label: 'Formuesplan — forventet verdiutvikling', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-compounding', label: 'Formuesplan — renters rente-effekt', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-sammensetning', label: 'Formuesplan — sammensetning nå vs. om X år', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-laanefinansiering', label: 'Formuesplan — lånefinansiering & LTV', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    // Analyse & scenarioer
+    { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot', gruppe: 'analyse' },
+    { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot', gruppe: 'analyse' },
+    { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering', gruppe: 'analyse' },
+    { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix', gruppe: 'analyse' },
+    { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix', gruppe: 'analyse' },
+    // Marked & kontekst
+    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover', gruppe: 'marked' },
+    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix', gruppe: 'marked' },
+    // Om Pensum & vilkår
+    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'ompensum' },
+    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    // Annet
+    { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix', gruppe: 'annet' },
   ]);
+  // Tematiske grupper for tilleggsmoduler i Tilpass innhold-panelet
+  const TILLEGGSMODUL_GRUPPER = [
+    { id: 'formuesplan', label: 'Formuesplanlegging', farge: PENSUM_COLORS.teal },
+    { id: 'analyse', label: 'Analyse & scenarioer', farge: PENSUM_COLORS.lightBlue },
+    { id: 'marked', label: 'Marked & kontekst', farge: PENSUM_COLORS.gold },
+    { id: 'ompensum', label: 'Om Pensum & vilkår', farge: PENSUM_COLORS.salmon },
+    { id: 'annet', label: 'Annet', farge: '#94A3B8' },
+  ];
   const [visModulPanel, setVisModulPanel] = useState(false);
   // Hvilken tilleggsmodul som forhåndsvises i konfigurasjonspanelet (id eller null)
   const [forhandsvisModul, setForhandsvisModul] = useState(null);
@@ -12423,9 +12436,6 @@ export default function PensumPrognoseModell() {
                   <React.Fragment key={m.id}>{renderFormuesplanleggerSlide(m.id)}</React.Fragment>
                 ))}
 
-                {/* === HONORARSTRUKTUR === */}
-                {isStandardModulAktiv('honorarstruktur') && renderTilleggsmodulInnhold('honorarstruktur')}
-
                 {/* === NESTE STEG === */}
                 {isStandardModulAktiv('neste-steg') && renderTilleggsmodulInnhold('neste-steg')}
 
@@ -12490,123 +12500,143 @@ export default function PensumPrognoseModell() {
                     <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>Tilleggsmoduler</p>
                     <p className="text-xs text-gray-400 mt-0.5">Valgfrie sider som kan legges til i forslaget.</p>
                   </div>
-                  <div className="divide-y divide-gray-100">
-                    {tilleggsmoduler.map((modul, idx) => (
-                      <div key={modul.id} className={"px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
-                        <div className="flex items-center gap-3">
-                          {/* Rekkefølge-knapper */}
-                          <div className="flex flex-col gap-0.5 flex-shrink-0">
-                            <button
-                              disabled={idx === 0}
-                              onClick={() => {
-                                setTilleggsmoduler(prev => {
-                                  const ny = [...prev];
-                                  [ny[idx - 1], ny[idx]] = [ny[idx], ny[idx - 1]];
-                                  return ny;
-                                });
-                              }}
-                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
-                              title="Flytt opp"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
-                            </button>
-                            <span className="text-[9px] text-gray-400 text-center font-mono leading-none">{idx + 1}</span>
-                            <button
-                              disabled={idx === tilleggsmoduler.length - 1}
-                              onClick={() => {
-                                setTilleggsmoduler(prev => {
-                                  const ny = [...prev];
-                                  [ny[idx], ny[idx + 1]] = [ny[idx + 1], ny[idx]];
-                                  return ny;
-                                });
-                              }}
-                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === tilleggsmoduler.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
-                              title="Flytt ned"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                            </button>
+                  <div>
+                    {TILLEGGSMODUL_GRUPPER.map(gruppe => {
+                      const gruppeModuler = tilleggsmoduler.filter(m => (m.gruppe || 'annet') === gruppe.id);
+                      if (gruppeModuler.length === 0) return null;
+                      const antallAktive = gruppeModuler.filter(m => m.aktiv).length;
+                      return (
+                        <div key={gruppe.id} className="border-b border-gray-100 last:border-b-0">
+                          {/* Gruppe-header */}
+                          <div className="px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#FCFDFE' }}>
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: gruppe.farge }}></span>
+                            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{gruppe.label}</span>
+                            <span className="text-[10px] text-gray-400">{gruppeModuler.length} {gruppeModuler.length === 1 ? 'side' : 'sider'}</span>
+                            {antallAktive > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>{antallAktive} valgt</span>}
                           </div>
-                          {/* Av/på toggle */}
-                          <button
-                            onClick={() => {
-                              setTilleggsmoduler(prev => prev.map(m =>
-                                m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
-                              ));
-                            }}
-                            className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
-                            style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
-                            <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
-                              {modul.aktiv && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
-                            </p>
+                          <div className="divide-y divide-gray-50">
+                            {gruppeModuler.map((modul, gruppeIdx) => {
+                              const erForste = gruppeIdx === 0;
+                              const erSiste = gruppeIdx === gruppeModuler.length - 1;
+                              const flytt = (retning) => setTilleggsmoduler(prev => {
+                                const idx = prev.findIndex(m => m.id === modul.id);
+                                let target = -1;
+                                for (let i = idx + retning; i >= 0 && i < prev.length; i += retning) {
+                                  if ((prev[i].gruppe || 'annet') === (modul.gruppe || 'annet')) { target = i; break; }
+                                }
+                                if (target < 0) return prev;
+                                const ny = [...prev];
+                                [ny[idx], ny[target]] = [ny[target], ny[idx]];
+                                return ny;
+                              });
+                              return (
+                                <div key={modul.id} className={"px-5 py-3.5 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
+                                  <div className="flex items-center gap-3">
+                                    {/* Rekkefølge-knapper (innen gruppen) */}
+                                    <div className="flex flex-col gap-0.5 flex-shrink-0">
+                                      <button
+                                        disabled={erForste}
+                                        onClick={() => flytt(-1)}
+                                        className={"w-6 h-5 rounded flex items-center justify-center transition-colors " + (erForste ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                                        title="Flytt opp"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                                      </button>
+                                      <button
+                                        disabled={erSiste}
+                                        onClick={() => flytt(1)}
+                                        className={"w-6 h-5 rounded flex items-center justify-center transition-colors " + (erSiste ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                                        title="Flytt ned"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                      </button>
+                                    </div>
+                                    {/* Av/på toggle */}
+                                    <button
+                                      onClick={() => {
+                                        setTilleggsmoduler(prev => prev.map(m =>
+                                          m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
+                                        ));
+                                      }}
+                                      className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
+                                      style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
+                                      <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
+                                        {modul.aktiv && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => setForhandsvisModul(prev => prev === modul.id ? null : modul.id)}
+                                      className={"flex-shrink-0 text-xs px-2.5 py-1 rounded-lg border inline-flex items-center gap-1.5 transition-colors " + (forhandsvisModul === modul.id ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300")}
+                                      title="Forhåndsvis hvordan sliden ser ut"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                      {forhandsvisModul === modul.id ? 'Skjul' : 'Forhåndsvis'}
+                                    </button>
+                                    {modul.aktiv && (
+                                      <div className="flex-shrink-0">
+                                        <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {forhandsvisModul === modul.id && (() => {
+                                    const innhold = modul.id.startsWith('formuesplan-')
+                                      ? renderFormuesplanleggerSlide(modul.id)
+                                      : renderTilleggsmodulInnhold(modul.id);
+                                    return (
+                                      <div className="mt-3 ml-20 mr-2">
+                                        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={{ height: '300px' }}>
+                                          {innhold ? (
+                                            <div style={{ transform: 'scale(0.46)', transformOrigin: 'top left', width: '217%', padding: '20px 24px', pointerEvents: 'none' }}>
+                                              {innhold}
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center h-full text-xs text-gray-400 italic px-4 text-center">
+                                              Forhåndsvisning genereres når sliden inkluderes — innholdet avhenger av valgt portefølje og kundedata.
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-1 italic">Forenklet forhåndsvisning — endelig layout tilpasses ved generering av forslaget.</p>
+                                      </div>
+                                    );
+                                  })()}
+                                  {modul.aktiv && (
+                                    <div className="mt-2 ml-20">
+                                      <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
+                                      <select
+                                        value={modul.posisjon || 'foer-disclaimer'}
+                                        onChange={(e) => {
+                                          setTilleggsmoduler(prev => prev.map(m =>
+                                            m.id === modul.id ? { ...m, posisjon: e.target.value } : m
+                                          ));
+                                        }}
+                                        className="ml-2 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                                        style={{ color: PENSUM_COLORS.darkBlue }}
+                                      >
+                                        {TILLEGGSMODUL_POSISJONER.map(pos => (
+                                          <option key={pos.value} value={pos.value}>{pos.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          <button
-                            onClick={() => setForhandsvisModul(prev => prev === modul.id ? null : modul.id)}
-                            className={"flex-shrink-0 text-xs px-2.5 py-1 rounded-lg border inline-flex items-center gap-1.5 transition-colors " + (forhandsvisModul === modul.id ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300")}
-                            title="Forhåndsvis hvordan sliden ser ut"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            {forhandsvisModul === modul.id ? 'Skjul' : 'Forhåndsvis'}
-                          </button>
-                          {modul.aktiv && (
-                            <div className="flex-shrink-0">
-                              <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                            </div>
-                          )}
                         </div>
-                        {forhandsvisModul === modul.id && (() => {
-                          const innhold = modul.id.startsWith('formuesplan-')
-                            ? renderFormuesplanleggerSlide(modul.id)
-                            : renderTilleggsmodulInnhold(modul.id);
-                          return (
-                            <div className="mt-3 ml-20 mr-2">
-                              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={{ height: '300px' }}>
-                                {innhold ? (
-                                  <div style={{ transform: 'scale(0.46)', transformOrigin: 'top left', width: '217%', padding: '20px 24px', pointerEvents: 'none' }}>
-                                    {innhold}
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-center h-full text-xs text-gray-400 italic px-4 text-center">
-                                    Forhåndsvisning genereres når sliden inkluderes — innholdet avhenger av valgt portefølje og kundedata.
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-[10px] text-gray-400 mt-1 italic">Forenklet forhåndsvisning — endelig layout tilpasses ved generering av forslaget.</p>
-                            </div>
-                          );
-                        })()}
-                        {modul.aktiv && (
-                          <div className="mt-2 ml-20">
-                            <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
-                            <select
-                              value={modul.posisjon || 'foer-disclaimer'}
-                              onChange={(e) => {
-                                setTilleggsmoduler(prev => prev.map(m =>
-                                  m.id === modul.id ? { ...m, posisjon: e.target.value } : m
-                                ));
-                              }}
-                              className="ml-2 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
-                              style={{ color: PENSUM_COLORS.darkBlue }}
-                            >
-                              {TILLEGGSMODUL_POSISJONER.map(pos => (
-                                <option key={pos.value} value={pos.value}>{pos.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="px-5 py-3 border-t border-gray-100 text-[10px] text-gray-400" style={{ backgroundColor: '#FAFBFC' }}>
-                    Bruk pilene til venstre for å endre rekkefølgen på modulene. Moduler med samme plassering vises i den rekkefølgen de står i listen.
+                    Sidene er gruppert etter tema. Bruk pilene for å endre rekkefølgen innenfor hver gruppe — moduler med samme plassering vises i denne rekkefølgen i forslaget.
                   </div>
 
                   {/* Standardsider */}
