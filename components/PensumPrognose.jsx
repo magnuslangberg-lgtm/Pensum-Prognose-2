@@ -96,6 +96,8 @@ export default function PensumPrognoseModell() {
   // Fondssammenligning
   const [eksterneFond, setEksterneFond] = useState(null);
   const [eksterneFondLoading, setEksterneFondLoading] = useState(false);
+  // Søk i "Legg til produkt → Eksterne fond" på Porteføljebygger-fanen
+  const [eksterneFondSok, setEksterneFondSok] = useState('');
   const [fondSokDebounced, setFondSokDebounced] = useState('');
   const [fondSokResultater, setFondSokResultater] = useState([]);
   const fondSokTimerRef = useRef(null);
@@ -141,30 +143,45 @@ export default function PensumPrognoseModell() {
     { id: 'snapshot-drawdown', label: 'Snapshot — Nedsiderisiko', standard: true, aktiv: true },
     { id: 'eksponering', label: 'Aggregert eksponering', standard: true, aktiv: true },
     { id: 'faktaark', label: 'Faktaark per produkt', standard: true, aktiv: true },
-    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', standard: true, aktiv: false },
     { id: 'neste-steg', label: 'Neste steg', standard: true, aktiv: true },
     { id: 'disclaimer', label: 'Viktig informasjon', standard: true, aktiv: true },
   ]);
   const [tilleggsmoduler, setTilleggsmoduler] = useState([
-    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'appendix' },
-    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix' },
-    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix' },
-    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix' },
-    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix' },
-    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover' },
-    { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot' },
-    { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot' },
-    { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering' },
-    { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix' },
-    { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix' },
-    { id: 'formuesplan-verdiutvikling', label: 'Formuesplan — forventet verdiutvikling', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-compounding', label: 'Formuesplan — renters rente-effekt', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-sammensetning', label: 'Formuesplan — sammensetning nå vs. om X år', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'formuesplan-laanefinansiering', label: 'Formuesplan — lånefinansiering & LTV', aktiv: false, posisjon: 'foer-disclaimer' },
-    { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix' },
+    // Formuesplanlegging
+    { id: 'formuesplan-verdiutvikling', label: 'Formuesplan — forventet verdiutvikling', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-compounding', label: 'Formuesplan — renters rente-effekt', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-sammensetning', label: 'Formuesplan — sammensetning nå vs. om X år', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'formuesplan-laanefinansiering', label: 'Formuesplan — lånefinansiering & LTV', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    { id: 'verdiutvikling', label: 'Forventet verdiutvikling per produkt', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'formuesplan' },
+    // Analyse & scenarioer
+    { id: 'snapshot-1y', label: 'Snapshot — 1 år', aktiv: false, posisjon: 'etter-snapshot', gruppe: 'analyse' },
+    { id: 'snapshot-3y', label: 'Snapshot — 3 år', aktiv: false, posisjon: 'etter-snapshot', gruppe: 'analyse' },
+    { id: 'eksisterende-sammenligning', label: 'Sammenligning med eksisterende portefølje', aktiv: false, posisjon: 'etter-allokering', gruppe: 'analyse' },
+    { id: 'totalallokering', label: 'Totalallokering — før og etter', aktiv: false, posisjon: 'appendix', gruppe: 'analyse' },
+    { id: 'prognose-sammenligning', label: 'Prognoseoversikt — verdiutvikling', aktiv: false, posisjon: 'appendix', gruppe: 'analyse' },
+    // Marked & kontekst
+    { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover', gruppe: 'marked' },
+    { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix', gruppe: 'marked' },
+    // Om Pensum & vilkår
+    { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    { id: 'honorarstruktur', label: 'Hvordan tar vi oss betalt?', aktiv: false, posisjon: 'foer-disclaimer', gruppe: 'ompensum' },
+    { id: 'beskatning', label: 'Beskatning av aksjer og fond', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
+    // Annet
+    { id: 'appendix-side', label: 'Appendix (skilleark)', aktiv: false, posisjon: 'appendix', gruppe: 'annet' },
   ]);
+  // Tematiske grupper for tilleggsmoduler i Tilpass innhold-panelet
+  const TILLEGGSMODUL_GRUPPER = [
+    { id: 'formuesplan', label: 'Formuesplanlegging', farge: PENSUM_COLORS.teal },
+    { id: 'analyse', label: 'Analyse & scenarioer', farge: PENSUM_COLORS.lightBlue },
+    { id: 'marked', label: 'Marked & kontekst', farge: PENSUM_COLORS.gold },
+    { id: 'ompensum', label: 'Om Pensum & vilkår', farge: PENSUM_COLORS.salmon },
+    { id: 'annet', label: 'Annet', farge: '#94A3B8' },
+  ];
   const [visModulPanel, setVisModulPanel] = useState(false);
+  // Hvilken tilleggsmodul som forhåndsvises i konfigurasjonspanelet (id eller null)
+  const [forhandsvisModul, setForhandsvisModul] = useState(null);
 
   // Helper to check if a standard rapport module is active
   const isStandardModulAktiv = useCallback((id) => {
@@ -621,11 +638,37 @@ export default function PensumPrognoseModell() {
     setPensumAllokering(prev => {
       const idx = prev.findIndex((p) => p.id === id);
       if (idx < 0) return prev;
+      const basis = investertBelop !== null ? investertBelop : totalKapital;
+      const oppdater = (liste) => liste.map(p => ({
+        ...p,
+        belop: basis > 0 ? Math.round((p.vekt / 100) * basis) : (p.belop || 0),
+      }));
       if (!autoRebalanserPensum) {
-        return prev.map(p => p.id === id ? { ...p, vekt: Math.max(0, Math.min(100, nyVekt)) } : p);
+        return oppdater(prev.map(p => p.id === id ? { ...p, vekt: Math.max(0, Math.min(100, nyVekt)) } : p));
       }
-      return fordelRestVektListe(prev, idx, nyVekt);
+      return oppdater(fordelRestVektListe(prev, idx, nyVekt));
     });
+  };
+
+  // Kronebeløp-modus i Porteføljebyggeren: skriv inn kr per produkt og få
+  // vektprosent beregnet automatisk (nyttig når man replikerer en eksisterende
+  // portefølje fra FA der man kjenner beløpene, ikke prosentene).
+  const [pensumBelopModus, setPensumBelopModus] = useState(false);
+  const oppdaterPensumBelop = (id, nyBelop) => {
+    const cleanBelop = Math.max(0, Math.round(Number(nyBelop) || 0));
+    const basis = investertBelop !== null ? investertBelop : totalKapital;
+    const nyeBelop = pensumAllokering.map(p => {
+      if (p.id === id) return cleanBelop;
+      if (typeof p.belop === 'number') return p.belop;
+      return basis > 0 ? Math.round((p.vekt / 100) * basis) : 0;
+    });
+    const nyTotal = nyeBelop.reduce((s, b) => s + b, 0);
+    setPensumAllokering(prev => prev.map((p, i) => ({
+      ...p,
+      belop: nyeBelop[i],
+      vekt: nyTotal > 0 ? parseFloat(((nyeBelop[i] / nyTotal) * 100).toFixed(2)) : 0,
+    })));
+    if (nyTotal > 0) setInvestertBelop(nyTotal);
   };
 
   const [pensumDragVekter, setPensumDragVekter] = useState({});
@@ -1327,38 +1370,43 @@ export default function PensumPrognoseModell() {
     switch (modulId) {
       case 'om-oss':
         return (
-          <div data-rapport-slide="om-oss" className="space-y-6 page-break-before">
+          <div data-rapport-slide="om-oss" className="space-y-7 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
               Pensum har røtter tilbake til 2002 og har i dag fire ulike virksomhetsområder, hvor kjernen ligger innen forvaltningstjenester.
             </p>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking» markedet.', farge: PENSUM_COLORS.darkBlue },
-                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Forvaltning av aktivt forvaltede mandater, AIFer, UCITS fond, fondsporteføljer og eiendom.', farge: PENSUM_COLORS.darkBlue },
-                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: PENSUM_COLORS.lightBlue },
-                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder samt eksterne kunder.', farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking»-markedet.', farge: PENSUM_COLORS.darkBlue, ikon: 'M3 21h18M5 21V7l8-4v18M19 21V11l-6-3' },
+                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Aktivt forvaltede mandater, AIF-er, UCITS-fond, fondsporteføljer og eiendom.', farge: PENSUM_COLORS.teal, ikon: 'M9 19V6l12-3v13M9 19c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2zm12-3c0 1.1-1.34 2-3 2s-3-.9-3-2 1.34-2 3-2 3 .9 3 2z' },
+                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: PENSUM_COLORS.lightBlue, ikon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder og eksterne kunder.', farge: PENSUM_COLORS.salmon, ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
               ].map((boks, i) => (
-                <div key={i} className="rounded-lg p-4 text-white text-sm" style={{ backgroundColor: boks.farge }}>
-                  <h4 className="font-bold text-xs uppercase tracking-wider mb-2">{boks.tittel}</h4>
-                  <p className="text-xs leading-relaxed opacity-90">{boks.tekst}</p>
+                <div key={i} className="rounded-xl border border-gray-100 bg-white overflow-hidden shadow-sm flex flex-col">
+                  <div className="h-1" style={{ backgroundColor: boks.farge }}></div>
+                  <div className="p-4 flex flex-col gap-2.5 flex-1">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: boks.farge + '18' }}>
+                      <svg className="w-5 h-5" style={{ color: boks.farge }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={boks.ikon} /></svg>
+                    </div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>{boks.tittel}</h4>
+                    <p className="text-xs leading-relaxed text-gray-500">{boks.tekst}</p>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="h-0.5 w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { tittel: 'Antall ansatte', verdi: '39' },
-                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd' },
-                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%' },
-                { tittel: 'Årlig vekst inntekter', verdi: '22,1%' },
+                { tittel: 'Antall ansatte', verdi: '39', farge: PENSUM_COLORS.darkBlue },
+                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd', farge: PENSUM_COLORS.teal },
+                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%', farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Årlig vekst inntekter', verdi: '22,1%', farge: PENSUM_COLORS.salmon },
               ].map((stat, i) => (
-                <div key={i} className="rounded-lg p-4 text-center" style={{ backgroundColor: '#9CA3AF', color: 'white' }}>
-                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-2">{stat.tittel}</h4>
-                  <p className="text-2xl font-bold">{stat.verdi}</p>
+                <div key={i} className="rounded-xl p-5 text-center border border-gray-100 bg-gradient-to-br from-slate-50 to-white">
+                  <p className="text-3xl font-bold tabular-nums" style={{ color: stat.farge }}>{stat.verdi}</p>
+                  <h4 className="font-semibold text-[10px] uppercase tracking-wider text-gray-400 mt-1.5">{stat.tittel}</h4>
                 </div>
               ))}
             </div>
@@ -1367,48 +1415,40 @@ export default function PensumPrognoseModell() {
 
       case 'kommunikasjon':
         return (
-          <div data-rapport-slide="kommunikasjon" className="space-y-5 page-break-before">
+          <div data-rapport-slide="kommunikasjon" className="space-y-6 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Kommunikasjon & løpende oppdateringer</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
               Pensum tilbyr løpende kommunikasjon og oppdateringer til sine kunder gjennom flere kanaler.
             </p>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { tittel: 'Ukentlig Investeringskommentar', beskrivelse: 'Markedsoppdatering og investeringskommentarer sendt ut ukentlig til alle kunder.' },
-                { tittel: 'Månedsrapport', beskrivelse: 'Detaljert månedlig rapport med porteføljeutvikling, markedsanalyse og utsikter.' },
-                { tittel: 'Pensum Konferanse', beskrivelse: 'Årlig konferanse med foredragsholdere og nettverksmuligheter for Pensums kunder.' },
+                { tittel: 'Ukentlig investeringskommentar', beskrivelse: 'Markedsoppdatering og investeringskommentarer sendt ut ukentlig til alle kunder.', farge: PENSUM_COLORS.darkBlue, ikon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+                { tittel: 'Månedsrapport', beskrivelse: 'Detaljert månedlig rapport med porteføljeutvikling, markedsanalyse og utsikter.', farge: PENSUM_COLORS.teal, ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                { tittel: 'Pensum-konferansen', beskrivelse: 'Årlig konferanse med foredragsholdere og nettverksmuligheter for Pensums kunder.', farge: PENSUM_COLORS.salmon, ikon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
               ].map((kanal, i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-4">
-                  <div className="h-24 rounded-md mb-3 flex items-center justify-center" style={{ backgroundColor: i === 0 ? PENSUM_COLORS.darkBlue : i === 1 ? PENSUM_COLORS.lightBlue : '#E5E7EB' }}>
-                    <svg className="w-8 h-8 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {i === 0 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />}
-                      {i === 1 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
-                      {i === 2 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />}
-                    </svg>
+                <div key={i} className="border border-gray-100 rounded-xl p-5 bg-white shadow-sm flex flex-col gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: kanal.farge + '18' }}>
+                    <svg className="w-6 h-6" style={{ color: kanal.farge }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={kanal.ikon} /></svg>
                   </div>
-                  <h4 className="font-semibold text-sm mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
-                  <p className="text-xs text-gray-500">{kanal.beskrivelse}</p>
+                  <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-xs text-gray-500 leading-relaxed">{kanal.beskrivelse}</p>
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-3">
               {[
-                { tittel: 'Pensumpodden', beskrivelse: 'Podcast med markedskommentarer og intervjuer med investeringseksperter.' },
-                { tittel: 'Mediedekning', beskrivelse: 'Pensum er jevnlig omtalt i ledende finansmedier som DN, E24 og Finansavisen.' },
-                { tittel: 'Økonomi-nyhetene', beskrivelse: 'Pensums eksperter bidrar regelmessig med kommentarer i TV og nettmedier.' },
-                { tittel: 'Pensum TV', beskrivelse: 'Egenprodusert videoinnhold med markedsanalyser og investeringstemaer.' },
+                { tittel: 'Pensumpodden', beskrivelse: 'Podcast med markedskommentarer og ekspertintervjuer.', ikon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0-4a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z' },
+                { tittel: 'Mediedekning', beskrivelse: 'Omtalt i DN, E24 og Finansavisen.', ikon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m0 0h2a2 2 0 012 2v9a2 2 0 01-2 2h-1m-1-13v13' },
+                { tittel: 'Økonomi-nyhetene', beskrivelse: 'Eksperter bidrar i TV og nettmedier.', ikon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
+                { tittel: 'Pensum TV', beskrivelse: 'Egenproduserte markedsanalyser.', ikon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
               ].map((kanal, i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-3">
-                  <div className="h-16 rounded-md mb-2 flex items-center justify-center" style={{ backgroundColor: '#F3F4F6' }}>
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h4 className="font-semibold text-xs mb-0.5" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
-                  <p className="text-[10px] text-gray-500">{kanal.beskrivelse}</p>
+                <div key={i} className="border border-gray-100 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-white flex flex-col gap-2">
+                  <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={kanal.ikon} /></svg>
+                  <h4 className="font-semibold text-xs" style={{ color: PENSUM_COLORS.darkBlue }}>{kanal.tittel}</h4>
+                  <p className="text-[10px] text-gray-500 leading-relaxed">{kanal.beskrivelse}</p>
                 </div>
               ))}
             </div>
@@ -1417,53 +1457,51 @@ export default function PensumPrognoseModell() {
 
       case 'rapportering':
         return (
-          <div data-rapport-slide="rapportering" className="space-y-5 page-break-before">
+          <div data-rapport-slide="rapportering" className="space-y-6 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Rapportering</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <ul className="space-y-3 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>BankID innlogging på egen rapporteringsside med daglig utvikling av portefølje. Tilgang til alle kundeforhold på samme område dersom flere kundeforhold.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Rapporterer både på portefølje i Pensum samt «eksterne» porteføljer. Gir en helhetlig oversikt.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Skatterapporering</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></span>
-                    <span>Sluttsedler og oversikt over alle hendelser i porteføljen.</span>
-                  </li>
-                </ul>
+              <div className="space-y-3">
+                {[
+                  { tittel: 'BankID-innlogging', tekst: 'Egen rapporteringsside med daglig porteføljeutvikling. Tilgang til alle kundeforhold på ett sted.', ikon: 'M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4' },
+                  { tittel: 'Helhetlig oversikt', tekst: 'Rapporterer både på portefølje i Pensum og «eksterne» porteføljer — alt samlet.', ikon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { tittel: 'Skatterapportering', tekst: 'Ferdig tilrettelagt skatterapport for hele porteføljen.', ikon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { tittel: 'Sluttsedler & hendelser', tekst: 'Full oversikt over alle transaksjoner og hendelser i porteføljen.', ikon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+                ].map((p, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.darkBlue + '14' }}>
+                      <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.darkBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={p.ikon} /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p.tittel}</h4>
+                      <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{p.tekst}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Markedsverdi</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Daglig oppdatert</p>
-                  </div>
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Avkastning i kr</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
-                  </div>
-                  <div className="rounded-lg p-3 text-center border border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Avkastning %</p>
-                    <p className="text-sm font-bold" style={{ color: PENSUM_COLORS.teal }}>Løpende</p>
-                  </div>
+                  {[
+                    { label: 'Markedsverdi', verdi: 'Daglig', farge: PENSUM_COLORS.darkBlue },
+                    { label: 'Avkastning i kr', verdi: 'Løpende', farge: PENSUM_COLORS.teal },
+                    { label: 'Avkastning %', verdi: 'Løpende', farge: PENSUM_COLORS.teal },
+                  ].map((k, i) => (
+                    <div key={i} className="rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-br from-slate-50 to-white">
+                      <p className="text-sm font-bold" style={{ color: k.farge }}>{k.verdi}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{k.label}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <h4 className="text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Rapporteringsfunksjoner</h4>
-                  <div className="space-y-2">
-                    {['Nettoavkastning', 'Transaksjoner', 'Allokering', 'Skatterapport', 'Sluttsedler'].map((funksjon, i) => (
+                <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Rapporteringsfunksjoner</h4>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {['Nettoavkastning', 'Transaksjoner', 'Allokering', 'Skatterapport', 'Sluttsedler', 'Eksterne porteføljer'].map((funksjon, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <svg className="w-4 h-4 flex-shrink-0" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PENSUM_COLORS.teal + '1F' }}>
+                          <svg className="w-3 h-3" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        </span>
                         <span className="text-xs text-gray-600">{funksjon}</span>
                       </div>
                     ))}
@@ -1477,9 +1515,15 @@ export default function PensumPrognoseModell() {
       case 'honorarstruktur':
         return (
           <div data-rapport-slide="honorarstruktur" className="space-y-5 page-break-before">
-            <h2 className="text-xl font-bold mb-6 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
-            <div className="rounded-lg p-4 text-sm text-gray-700 leading-relaxed" style={{ backgroundColor: '#F0F4F8' }}>
-              Pensum ønsker å opptre som en transparent partner ovenfor sine kunder, også hva gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter og eventuelle returprovisjoner som vi mottar har uavkortet tilbake til våre kunder.
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Hvordan tar vi oss betalt?</h2>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
+            </div>
+            <div className="flex items-start gap-3 rounded-xl p-4 border" style={{ backgroundColor: PENSUM_COLORS.teal + '0D', borderColor: PENSUM_COLORS.teal + '33' }}>
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: PENSUM_COLORS.teal }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Pensum ønsker å opptre som en transparent partner overfor sine kunder, også når det gjelder honorarstruktur. Vi mottar ingen betalinger fra tredjeparter, og eventuelle returprovisjoner vi mottar går uavkortet tilbake til våre kunder.
+              </p>
             </div>
             <div className="space-y-2">
               <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Komponenter i vår honorarmodell:</h3>
@@ -1566,7 +1610,7 @@ export default function PensumPrognoseModell() {
           <div data-rapport-slide="beskatning" className="space-y-4 page-break-before">
             <div>
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Beskatning av aksjer og fond i 2026</h2>
-              <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+              <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -1643,7 +1687,7 @@ export default function PensumPrognoseModell() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Aksjemarkedet – Historisk utvikling</h2>
-                <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                <div className="h-1 mt-2 w-16 rounded-full" style={{ background: `linear-gradient(90deg, ${PENSUM_COLORS.darkBlue}, ${PENSUM_COLORS.teal})` }}></div>
               </div>
               <p className="text-[10px] text-gray-400 mt-1 max-w-[260px] text-right">Denne fremstillingen er generell og uavhengig av den illustrerte porteføljesammensetningen</p>
             </div>
@@ -1724,6 +1768,10 @@ export default function PensumPrognoseModell() {
         const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
         const _sluttverdi = Math.round(_effektivtBelop * Math.pow(1 + _baseAvk / 100, horisont));
         const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
+        const _erRenAksje = _renteAndel < 1;
+        const _strukturTekst = _erRenAksje
+          ? 'Porteføljen er en ren aksjeportefølje bygget rundt en bred kjerne som er sentral kilde til langsiktig avkastning, supplert med utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.'
+          : 'Porteføljen er bygget rundt tre roller — en bred kjerne som er sentral kilde til langsiktig avkastning, en rentedel som kan bidra til å dempe svingninger (men også kan falle i verdi), og utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.';
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
             <div className="flex gap-8" style={{ minHeight: '480px' }}>
@@ -1732,10 +1780,10 @@ export default function PensumPrognoseModell() {
                 <div className="space-y-6">
                   <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Takk for en god samtale. Basert på opplysningene du har gitt om mål, risikotoleranse, finansiell situasjon og investeringshorisont, har vi utarbeidet et porteføljeforslag som etter Pensums vurdering kan være egnet, forutsatt full egnethetsvurdering.
+                    Basert på opplysningene du har gitt om mål, risikotoleranse, finansiell situasjon og investeringshorisont, har vi utarbeidet et porteføljeforslag som etter Pensums vurdering kan være egnet, forutsatt full egnethetsvurdering.
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Porteføljen er bygget rundt tre roller — en bred kjerne som er sentral kilde til langsiktig avkastning, en rentedel som kan bidra til å dempe svingninger (men også kan falle i verdi), og utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.
+                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. {_strukturTekst}
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
                     På de neste sidene gjennomgår vi porteføljekonstruksjonen, historisk utvikling, risikofaktorer og de enkelte produktene. Forventet avkastning, scenarioer og historikk er ingen garanti for fremtidig avkastning — kunden kan tape deler av investert kapital. Eventuell investering forutsetter gjennomført egnethetsvurdering, mottatt KID/prospekt og kostnadsoppstilling.
@@ -4780,7 +4828,7 @@ export default function PensumPrognoseModell() {
             <div className="flex items-center gap-2">
               <button onClick={() => setVisKundeliste(!visKundeliste)} className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border " + (visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                Mine kunder {lagredeKunder.length > 0 && <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">{lagredeKunder.length}</span>}
+                Mine kunder
               </button>
               <button onClick={() => { setPdfProduktValg([]); setPdfModal(true); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: '#D4886B' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -4849,7 +4897,8 @@ export default function PensumPrognoseModell() {
                   {lagredeKunder.map(kunde => (
                     <div key={kunde.id} className={"flex items-center justify-between p-4 rounded-lg border cursor-pointer hover:bg-gray-50 " + (aktivKundeId === kunde.id ? "border-blue-500 bg-blue-50" : "border-gray-200")} onClick={() => lastKundeData(kunde)}>
                       <div>
-                        <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn}</div>
+                        <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn || kunde.kundeSelskap || 'Uten navn'}</div>
+                        {kunde.kundeNavn && kunde.kundeSelskap && <div className="text-xs text-gray-500">{kunde.kundeSelskap}</div>}
                         <div className="text-xs text-gray-500">
                           {formatCurrency((kunde.aksjerKunde || 0) + (kunde.aksjefondKunde || 0) + (kunde.renterKunde || 0) + (kunde.kontanterKunde || 0) + (kunde.peFondKunde || 0) + (kunde.unoterteAksjerKunde || 0) + (kunde.shippingKunde || 0) + (kunde.egenEiendomKunde || 0) + (kunde.eiendomSyndikatKunde || 0) + (kunde.eiendomFondKunde || 0))} • {kunde.risikoprofil}
                         </div>
@@ -6822,6 +6871,10 @@ export default function PensumPrognoseModell() {
                         <button onClick={normaliserPensumTil100} className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-700 hover:bg-blue-50">
                           Juster til 100%
                         </button>
+                        <label className={"text-xs px-2 py-1 rounded-full border flex items-center gap-1.5 cursor-pointer " + (pensumBelopModus ? "border-blue-400 bg-blue-50 text-blue-800" : "border-blue-200 text-blue-700")}>
+                          <input type="checkbox" checked={pensumBelopModus} onChange={(e) => setPensumBelopModus(e.target.checked)} className="w-3.5 h-3.5" />
+                          Rediger beløp
+                        </label>
                         {pensumLikviditet.illikvid > 0 && (
                           <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
                             {pensumLikviditet.illikvid}% illikvid
@@ -6903,30 +6956,54 @@ export default function PensumPrognoseModell() {
                               <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : 'Fondsportefølje'}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={pensumDragVekter[produkt.id] ?? produkt.vekt}
-                                onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
-                                onMouseUp={() => commitPensumDrag(produkt.id)}
-                                onTouchEnd={() => commitPensumDrag(produkt.id)}
-                                className="w-36 accent-blue-700"
-                              />
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={pensumDragVekter[produkt.id] ?? produkt.vekt}
-                                onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
-                                onBlur={() => commitPensumDrag(produkt.id)}
-                                className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right"
-                              />
-                              <span className="text-sm text-gray-500">%</span>
-                              <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">+</button>
+                              {pensumBelopModus ? (() => {
+                                const basis = investertBelop !== null ? investertBelop : totalKapital;
+                                const radBelop = typeof produkt.belop === 'number' ? produkt.belop : Math.round(((produkt.vekt || 0) / 100) * basis);
+                                return (
+                                  <>
+                                    <div className="flex items-center bg-white border border-blue-200 rounded overflow-hidden focus-within:border-blue-400" style={{ width: '130px' }}>
+                                      <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        key={radBelop}
+                                        defaultValue={formatNumber(radBelop)}
+                                        onBlur={(e) => oppdaterPensumBelop(produkt.id, parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                                        className="w-full py-1 px-2 text-sm text-right outline-none tabular-nums"
+                                      />
+                                      <span className="text-xs text-gray-400 pr-1.5">kr</span>
+                                    </div>
+                                    <span className="text-xs text-gray-400 tabular-nums w-12 text-right">{(produkt.vekt || 0).toFixed(1)}%</span>
+                                  </>
+                                );
+                              })() : (
+                                <>
+                                  <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) - 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">−</button>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value={pensumDragVekter[produkt.id] ?? produkt.vekt}
+                                    onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
+                                    onMouseUp={() => commitPensumDrag(produkt.id)}
+                                    onTouchEnd={() => commitPensumDrag(produkt.id)}
+                                    className="w-36 accent-blue-700"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value={pensumDragVekter[produkt.id] ?? produkt.vekt}
+                                    onChange={(e) => startPensumDrag(produkt.id, parseFloat(e.target.value) || 0)}
+                                    onBlur={() => commitPensumDrag(produkt.id)}
+                                    className="w-20 border border-gray-200 rounded py-1 px-2 text-sm text-right"
+                                  />
+                                  <span className="text-sm text-gray-500">%</span>
+                                  <button onClick={() => oppdaterPensumVekt(produkt.id, (produkt.vekt || 0) + 0.5)} className="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">+</button>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
@@ -6941,9 +7018,9 @@ export default function PensumPrognoseModell() {
                           <p className="text-xs font-semibold text-gray-500 mb-2">ENKELTFOND</p>
                           <div className="space-y-1">
                             {pensumProdukter.enkeltfond.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'enkeltfond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'enkeltfond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-start justify-between gap-2">
                                 <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
                             ))}
                           </div>
@@ -6952,33 +7029,59 @@ export default function PensumPrognoseModell() {
                           <p className="text-xs font-semibold text-gray-500 mb-2">FONDSPORTEFØLJER</p>
                           <div className="space-y-1">
                             {pensumProdukter.fondsportefoljer.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'fondsportefoljer')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-center justify-between">
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'fondsportefoljer')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-blue-50 border border-gray-200 flex items-start justify-between gap-2">
                                 <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
                             ))}
                           </div>
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
-                          <div className="space-y-1">
-                            {(pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'eksterneFond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-teal-200 flex items-center justify-between">
-                                <span>{produkt.navn}</span>
-                                <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                              </button>
-                            ))}
-                          </div>
-                          <p className="text-xs text-teal-700 mt-2 italic">Fond fra fondsfokuslisten</p>
+                          {(() => {
+                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id));
+                            const sok = eksterneFondSok.trim().toLowerCase();
+                            const filtrerte = sok ? tilgjengelige.filter(p => p.navn.toLowerCase().includes(sok)) : tilgjengelige;
+                            return (
+                              <>
+                                <div className="relative mb-2">
+                                  <svg className="w-3.5 h-3.5 text-teal-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                  <input
+                                    type="text"
+                                    value={eksterneFondSok}
+                                    onChange={(e) => setEksterneFondSok(e.target.value)}
+                                    placeholder="Søk i fondsfokuslisten…"
+                                    className="w-full border border-teal-200 rounded py-1.5 pl-8 pr-7 text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-300"
+                                  />
+                                  {eksterneFondSok && (
+                                    <button onClick={() => setEksterneFondSok('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="Tøm søk">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="space-y-1 max-h-72 overflow-y-auto pr-0.5">
+                                  {filtrerte.length === 0 ? (
+                                    <p className="text-xs text-gray-400 italic px-1 py-2">{sok ? 'Ingen treff' : 'Alle fond er lagt til'}</p>
+                                  ) : filtrerte.map(produkt => (
+                                    <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'eksterneFond')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-teal-200 flex items-start justify-between gap-2">
+                                      <span>{produkt.navn}</span>
+                                      <svg className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-teal-700 mt-2 italic">{sok ? `${filtrerte.length} av ${tilgjengelige.length} fond` : 'Fond fra fondsfokuslisten'}</p>
+                              </>
+                            );
+                          })()}
                         </div>
                         {visAlternative && (
                           <div>
                             <p className="text-xs font-semibold text-amber-600 mb-2">ALTERNATIVE INVESTERINGER</p>
                             <div className="space-y-1">
                               {pensumProdukter.alternative.filter(p => !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                                <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'alternative')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-center justify-between">
+                                <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'alternative')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-amber-50 border border-amber-200 flex items-start justify-between gap-2">
                                   <span>{produkt.navn}</span>
-                                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                  <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                                 </button>
                               ))}
                             </div>
@@ -12335,9 +12438,6 @@ export default function PensumPrognoseModell() {
                   <React.Fragment key={m.id}>{renderFormuesplanleggerSlide(m.id)}</React.Fragment>
                 ))}
 
-                {/* === HONORARSTRUKTUR === */}
-                {isStandardModulAktiv('honorarstruktur') && renderTilleggsmodulInnhold('honorarstruktur')}
-
                 {/* === NESTE STEG === */}
                 {isStandardModulAktiv('neste-steg') && renderTilleggsmodulInnhold('neste-steg')}
 
@@ -12402,94 +12502,143 @@ export default function PensumPrognoseModell() {
                     <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>Tilleggsmoduler</p>
                     <p className="text-xs text-gray-400 mt-0.5">Valgfrie sider som kan legges til i forslaget.</p>
                   </div>
-                  <div className="divide-y divide-gray-100">
-                    {tilleggsmoduler.map((modul, idx) => (
-                      <div key={modul.id} className={"px-5 py-4 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
-                        <div className="flex items-center gap-3">
-                          {/* Rekkefølge-knapper */}
-                          <div className="flex flex-col gap-0.5 flex-shrink-0">
-                            <button
-                              disabled={idx === 0}
-                              onClick={() => {
-                                setTilleggsmoduler(prev => {
-                                  const ny = [...prev];
-                                  [ny[idx - 1], ny[idx]] = [ny[idx], ny[idx - 1]];
-                                  return ny;
-                                });
-                              }}
-                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
-                              title="Flytt opp"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
-                            </button>
-                            <span className="text-[9px] text-gray-400 text-center font-mono leading-none">{idx + 1}</span>
-                            <button
-                              disabled={idx === tilleggsmoduler.length - 1}
-                              onClick={() => {
-                                setTilleggsmoduler(prev => {
-                                  const ny = [...prev];
-                                  [ny[idx], ny[idx + 1]] = [ny[idx + 1], ny[idx]];
-                                  return ny;
-                                });
-                              }}
-                              className={"w-6 h-6 rounded flex items-center justify-center transition-colors " + (idx === tilleggsmoduler.length - 1 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
-                              title="Flytt ned"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                            </button>
+                  <div>
+                    {TILLEGGSMODUL_GRUPPER.map(gruppe => {
+                      const gruppeModuler = tilleggsmoduler.filter(m => (m.gruppe || 'annet') === gruppe.id);
+                      if (gruppeModuler.length === 0) return null;
+                      const antallAktive = gruppeModuler.filter(m => m.aktiv).length;
+                      return (
+                        <div key={gruppe.id} className="border-b border-gray-100 last:border-b-0">
+                          {/* Gruppe-header */}
+                          <div className="px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: '#FCFDFE' }}>
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: gruppe.farge }}></span>
+                            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>{gruppe.label}</span>
+                            <span className="text-[10px] text-gray-400">{gruppeModuler.length} {gruppeModuler.length === 1 ? 'side' : 'sider'}</span>
+                            {antallAktive > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>{antallAktive} valgt</span>}
                           </div>
-                          {/* Av/på toggle */}
-                          <button
-                            onClick={() => {
-                              setTilleggsmoduler(prev => prev.map(m =>
-                                m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
-                              ));
-                            }}
-                            className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
-                            style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
-                            <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
-                              {modul.aktiv && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
-                            </p>
+                          <div className="divide-y divide-gray-50">
+                            {gruppeModuler.map((modul, gruppeIdx) => {
+                              const erForste = gruppeIdx === 0;
+                              const erSiste = gruppeIdx === gruppeModuler.length - 1;
+                              const flytt = (retning) => setTilleggsmoduler(prev => {
+                                const idx = prev.findIndex(m => m.id === modul.id);
+                                let target = -1;
+                                for (let i = idx + retning; i >= 0 && i < prev.length; i += retning) {
+                                  if ((prev[i].gruppe || 'annet') === (modul.gruppe || 'annet')) { target = i; break; }
+                                }
+                                if (target < 0) return prev;
+                                const ny = [...prev];
+                                [ny[idx], ny[target]] = [ny[target], ny[idx]];
+                                return ny;
+                              });
+                              return (
+                                <div key={modul.id} className={"px-5 py-3.5 transition-colors " + (modul.aktiv ? 'bg-blue-50/40' : 'hover:bg-gray-50')}>
+                                  <div className="flex items-center gap-3">
+                                    {/* Rekkefølge-knapper (innen gruppen) */}
+                                    <div className="flex flex-col gap-0.5 flex-shrink-0">
+                                      <button
+                                        disabled={erForste}
+                                        onClick={() => flytt(-1)}
+                                        className={"w-6 h-5 rounded flex items-center justify-center transition-colors " + (erForste ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                                        title="Flytt opp"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                                      </button>
+                                      <button
+                                        disabled={erSiste}
+                                        onClick={() => flytt(1)}
+                                        className={"w-6 h-5 rounded flex items-center justify-center transition-colors " + (erSiste ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600')}
+                                        title="Flytt ned"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                                      </button>
+                                    </div>
+                                    {/* Av/på toggle */}
+                                    <button
+                                      onClick={() => {
+                                        setTilleggsmoduler(prev => prev.map(m =>
+                                          m.id === modul.id ? { ...m, aktiv: !m.aktiv } : m
+                                        ));
+                                      }}
+                                      className={"w-10 h-6 rounded-full transition-colors relative flex-shrink-0 " + (modul.aktiv ? '' : 'bg-gray-200')}
+                                      style={modul.aktiv ? { backgroundColor: PENSUM_COLORS.teal } : {}}>
+                                      <span className={"absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform " + (modul.aktiv ? 'translate-x-4' : 'translate-x-0.5')}></span>
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>{modul.label}</span>
+                                        {modul.aktiv && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#E0F2F1', color: PENSUM_COLORS.teal }}>Inkludert</span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        {TILLEGGSMODUL_BESKRIVELSER[modul.id] || ''}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => setForhandsvisModul(prev => prev === modul.id ? null : modul.id)}
+                                      className={"flex-shrink-0 text-xs px-2.5 py-1 rounded-lg border inline-flex items-center gap-1.5 transition-colors " + (forhandsvisModul === modul.id ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300")}
+                                      title="Forhåndsvis hvordan sliden ser ut"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                      {forhandsvisModul === modul.id ? 'Skjul' : 'Forhåndsvis'}
+                                    </button>
+                                    {modul.aktiv && (
+                                      <div className="flex-shrink-0">
+                                        <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {forhandsvisModul === modul.id && (() => {
+                                    const innhold = modul.id.startsWith('formuesplan-')
+                                      ? renderFormuesplanleggerSlide(modul.id)
+                                      : renderTilleggsmodulInnhold(modul.id);
+                                    return (
+                                      <div className="mt-3 ml-20 mr-2">
+                                        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={{ height: '300px' }}>
+                                          {innhold ? (
+                                            <div style={{ transform: 'scale(0.46)', transformOrigin: 'top left', width: '217%', padding: '20px 24px', pointerEvents: 'none' }}>
+                                              {innhold}
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center h-full text-xs text-gray-400 italic px-4 text-center">
+                                              Forhåndsvisning genereres når sliden inkluderes — innholdet avhenger av valgt portefølje og kundedata.
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-1 italic">Forenklet forhåndsvisning — endelig layout tilpasses ved generering av forslaget.</p>
+                                      </div>
+                                    );
+                                  })()}
+                                  {modul.aktiv && (
+                                    <div className="mt-2 ml-20">
+                                      <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
+                                      <select
+                                        value={modul.posisjon || 'foer-disclaimer'}
+                                        onChange={(e) => {
+                                          setTilleggsmoduler(prev => prev.map(m =>
+                                            m.id === modul.id ? { ...m, posisjon: e.target.value } : m
+                                          ));
+                                        }}
+                                        className="ml-2 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                                        style={{ color: PENSUM_COLORS.darkBlue }}
+                                      >
+                                        {TILLEGGSMODUL_POSISJONER.map(pos => (
+                                          <option key={pos.value} value={pos.value}>{pos.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          {modul.aktiv && (
-                            <div className="flex-shrink-0">
-                              <svg className="w-5 h-5" style={{ color: PENSUM_COLORS.teal }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                            </div>
-                          )}
                         </div>
-                        {modul.aktiv && (
-                          <div className="mt-2 ml-20">
-                            <label className="text-[10px] text-gray-500 font-medium">Plassering i forslaget:</label>
-                            <select
-                              value={modul.posisjon || 'foer-disclaimer'}
-                              onChange={(e) => {
-                                setTilleggsmoduler(prev => prev.map(m =>
-                                  m.id === modul.id ? { ...m, posisjon: e.target.value } : m
-                                ));
-                              }}
-                              className="ml-2 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
-                              style={{ color: PENSUM_COLORS.darkBlue }}
-                            >
-                              {TILLEGGSMODUL_POSISJONER.map(pos => (
-                                <option key={pos.value} value={pos.value}>{pos.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="px-5 py-3 border-t border-gray-100 text-[10px] text-gray-400" style={{ backgroundColor: '#FAFBFC' }}>
-                    Bruk pilene til venstre for å endre rekkefølgen på modulene. Moduler med samme plassering vises i den rekkefølgen de står i listen.
+                    Sidene er gruppert etter tema. Bruk pilene for å endre rekkefølgen innenfor hver gruppe — moduler med samme plassering vises i denne rekkefølgen i forslaget.
                   </div>
 
                   {/* Standardsider */}
