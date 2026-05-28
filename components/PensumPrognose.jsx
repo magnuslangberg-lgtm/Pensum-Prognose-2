@@ -1724,6 +1724,10 @@ export default function PensumPrognoseModell() {
         const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
         const _sluttverdi = Math.round(_effektivtBelop * Math.pow(1 + _baseAvk / 100, horisont));
         const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
+        const _erRenAksje = _renteAndel < 1;
+        const _strukturTekst = _erRenAksje
+          ? 'Porteføljen er en ren aksjeportefølje bygget rundt en bred kjerne som er sentral kilde til langsiktig avkastning, supplert med utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.'
+          : 'Porteføljen er bygget rundt tre roller — en bred kjerne som er sentral kilde til langsiktig avkastning, en rentedel som kan bidra til å dempe svingninger (men også kan falle i verdi), og utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.';
         return (
           <div data-rapport-slide="folgebrev" className="page-break-before" style={{ minHeight: '500px' }}>
             <div className="flex gap-8" style={{ minHeight: '480px' }}>
@@ -1732,10 +1736,10 @@ export default function PensumPrognoseModell() {
                 <div className="space-y-6">
                   <h2 className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue, fontFamily: 'Georgia, serif' }}>Kjære {kundeNavn || kundeSelskap || 'Investor'},</h2>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Takk for en god samtale. Basert på opplysningene du har gitt om mål, risikotoleranse, finansiell situasjon og investeringshorisont, har vi utarbeidet et porteføljeforslag som etter Pensums vurdering kan være egnet, forutsatt full egnethetsvurdering.
+                    Basert på opplysningene du har gitt om mål, risikotoleranse, finansiell situasjon og investeringshorisont, har vi utarbeidet et porteføljeforslag som etter Pensums vurdering kan være egnet, forutsatt full egnethetsvurdering.
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
-                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. Porteføljen er bygget rundt tre roller — en bred kjerne som er sentral kilde til langsiktig avkastning, en rentedel som kan bidra til å dempe svingninger (men også kan falle i verdi), og utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.
+                    Forslaget tar utgangspunkt i {formatCurrency(_effektivtBelop).replace('kr', '').trim()} kroner, en {(valgtPensumProfil || 'moderat').toLowerCase()} risikoprofil og en horisont på {horisont} år. {_strukturTekst}
                   </p>
                   <p className="text-base text-gray-700 leading-relaxed">
                     På de neste sidene gjennomgår vi porteføljekonstruksjonen, historisk utvikling, risikofaktorer og de enkelte produktene. Forventet avkastning, scenarioer og historikk er ingen garanti for fremtidig avkastning — kunden kan tape deler av investert kapital. Eventuell investering forutsetter gjennomført egnethetsvurdering, mottatt KID/prospekt og kostnadsoppstilling.
