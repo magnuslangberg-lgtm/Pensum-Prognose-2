@@ -4663,7 +4663,9 @@ export default function PensumPrognoseModell() {
 
       const addImageSlide = (imgData, imgAspectRaw, opts = {}) => {
         const imgAspect = imgAspectRaw;
-        const availH = SLIDE_H - FOOTER_H - 0.1; // max usable height above footer
+        // Reserver topp-plass for Pensum-logoen så slide-innholdet aldri overlapper logoen.
+        const TOP_RESERVED = 1.0;
+        const availH = SLIDE_H - TOP_RESERVED - FOOTER_H - 0.1;
         const availW = CONTENT_W;
         const slideAspect = availW / availH;
         let imgW, imgH;
@@ -4675,10 +4677,9 @@ export default function PensumPrognoseModell() {
           imgW = availH * imgAspect;
         }
         const imgX = (SLIDE_W - imgW) / 2;
-        // Center vertically in available space (above footer) or top-align
         const imgY = opts.centerV
-          ? Math.max(0.15, (availH - imgH) / 2)
-          : 0.2;
+          ? Math.max(TOP_RESERVED, TOP_RESERVED + (availH - imgH) / 2)
+          : TOP_RESERVED;
         const slide = pptx.addSlide();
         slide.background = { color: 'FFFFFF' };
         slide.addImage({ data: imgData, x: imgX, y: imgY, w: imgW, h: imgH });
@@ -12182,26 +12183,26 @@ export default function PensumPrognoseModell() {
                           <div data-chart-type="drawdown" className="rounded-xl overflow-hidden" style={{ border: '1px solid #FEE2E2', background: 'linear-gradient(to bottom, #FFF5F5, #FFFFFF)' }}>
                             <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #FEE2E2' }}>
                               <div>
-                                <h4 className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Sentrale risikofaktorer og mulige tap</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">Historisk drawdown vist nedenfor er ingen garanti for fremtidig tap. Faktisk tap kan bli vesentlig høyere.</p>
+                                <h4 className="font-semibold text-base" style={{ color: PENSUM_COLORS.darkBlue }}>Sentrale risikofaktorer og mulige tap</h4>
+                                <p className="text-sm text-gray-500 mt-0.5">Historisk drawdown vist nedenfor er ingen garanti for fremtidig tap. Faktisk tap kan bli vesentlig høyere.</p>
                               </div>
                               <div className="flex items-center gap-3">
-                                <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                                <span className="text-sm text-red-600 font-medium bg-red-50 px-2.5 py-1 rounded">
                                   Historisk maks: {portMaxDDR.toFixed(1)}%
                                 </span>
                                 {Object.entries(indeksMaxDDR).map(([navn, dd]) => (
-                                  <span key={navn} className="text-xs text-gray-500">{navn}: {dd.toFixed(1)}%</span>
+                                  <span key={navn} className="text-sm text-gray-500">{navn}: {dd.toFixed(1)}%</span>
                                 ))}
                               </div>
                             </div>
                             {/* Risiko-boks med eksplisitte risikofaktorer */}
                             <div className="px-5 pt-5 pb-2">
                               <div className="rounded-lg border-l-4 border border-red-300 bg-red-50 p-4">
-                                <p className="text-xs font-bold uppercase tracking-wide text-red-700 mb-2">Mulighet for tap — viktige risikofaktorer</p>
-                                <p className="text-xs text-gray-700 leading-relaxed mb-2">
+                                <p className="text-sm font-bold uppercase tracking-wide text-red-700 mb-2">Mulighet for tap — viktige risikofaktorer</p>
+                                <p className="text-sm text-gray-700 leading-relaxed mb-3">
                                   Porteføljen kan svinge betydelig, og kunden må kunne tåle perioder med vesentlige fall. <strong>Historiske fall begrenser ikke fremtidig tap</strong>. Ved markedsstress kan både aksjefond og rentefond falle samtidig. Kunden kan tape deler av investert kapital.
                                 </p>
-                                <ul className="text-[11px] text-gray-700 leading-relaxed pl-4 list-disc space-y-0.5">
+                                <ul className="text-sm text-gray-700 leading-relaxed pl-5 list-disc space-y-1">
                                   <li><strong>Aksjemarkedsrisiko:</strong> Verdiene følger globale aksjemarkeder og kan falle raskt</li>
                                   <li><strong>Kreditt- og spreadrisiko:</strong> Høyrente/IG-fond kan falle ved mislighold og spread-utvidelse</li>
                                   <li><strong>Valutarisiko:</strong> Mange fond har eksponering mot fremmed valuta</li>
