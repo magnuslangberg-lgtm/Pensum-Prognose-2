@@ -928,8 +928,29 @@ export default function PensumPrognoseModell() {
     scenarioParams,
     investeringsFormaal,
     likviditetsbehov,
+    // Porteføljebygger (Pensum-portefølje) — egne tilpasninger må lagres
+    pensumAllokering,
+    valgtPensumProfil,
+    valgtStandardLosning,
+    valgtAllokering,
+    pensumRebalanseringAktiv,
+    pensumRebalanseringer,
+    // Budsjett-overstyringer
+    investertBelop,
+    formuesPlanleggerBelop,
+    // Forutsetninger og mål — Porteføljebygger (uavhengig)
+    pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter,
+    pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal,
+    pbVisSluttSammensetning, pbSluttSammensetningAar,
+    // Forutsetninger og mål — Formuesplanlegger
+    laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter,
+    malAktiv, hovedmal, visDelmal, delmal,
+    visSluttSammensetning, sluttSammensetningAar,
+    rebalanseringAktiv, rebalanseringer,
+    // Schema-versjon for fremtidige migreringer
+    schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -939,11 +960,23 @@ export default function PensumPrognoseModell() {
     setDato(data.dato || new Date().toISOString().split('T')[0]);
     const profil = data.risikoprofil || 'Moderat';
     setRisikoprofil(profil);
-    // Synkroniser til porteføljebygger ved innlasting av kunde
-    setValgtPensumProfil(profil);
-    if (pensumStandardPortefoljer[profil]) {
-      setPensumAllokering(pensumStandardPortefoljer[profil]);
+
+    // Pensum-portefølje: bruk lagret hvis tilgjengelig, ellers fall tilbake til
+    // standardprofil basert på risikoprofil (bakoverkompatibilitet med eldre kunder).
+    if (Array.isArray(data.pensumAllokering) && data.pensumAllokering.length > 0) {
+      setPensumAllokering(data.pensumAllokering);
+      setValgtPensumProfil(data.valgtPensumProfil || profil);
+    } else {
+      setValgtPensumProfil(profil);
+      if (pensumStandardPortefoljer[profil]) {
+        setPensumAllokering(pensumStandardPortefoljer[profil]);
+      }
     }
+    if (data.valgtStandardLosning !== undefined) setValgtStandardLosning(data.valgtStandardLosning);
+    if (data.valgtAllokering) setValgtAllokering(data.valgtAllokering);
+    if (typeof data.pensumRebalanseringAktiv === 'boolean') setPensumRebalanseringAktiv(data.pensumRebalanseringAktiv);
+    if (Array.isArray(data.pensumRebalanseringer)) setPensumRebalanseringer(data.pensumRebalanseringer);
+
     setHorisont(data.horisont || 10);
     setLocalHorisont((data.horisont || 10).toString());
     setAksjerKunde(data.aksjerKunde || 0);
@@ -962,6 +995,37 @@ export default function PensumPrognoseModell() {
     if (data.scenarioParams) setScenarioParams(data.scenarioParams);
     if (data.investeringsFormaal) setInvesteringsFormaal(data.investeringsFormaal);
     if (data.likviditetsbehov) setLikviditetsbehov(data.likviditetsbehov);
+
+    // Budsjett-overstyringer (null = bruk totalKapital)
+    setInvestertBelop(data.investertBelop !== undefined ? data.investertBelop : null);
+    setFormuesPlanleggerBelop(data.formuesPlanleggerBelop !== undefined ? data.formuesPlanleggerBelop : null);
+
+    // Forutsetninger og mål — Porteføljebygger
+    if (typeof data.pbLaanAktiv === 'boolean') setPbLaanAktiv(data.pbLaanAktiv);
+    if (Array.isArray(data.pbPrognoseFinansiering)) setPbPrognoseFinansiering(data.pbPrognoseFinansiering);
+    if (data.pbLaanModus) setPbLaanModus(data.pbLaanModus);
+    if (typeof data.pbAkkumulerRenter === 'boolean') setPbAkkumulerRenter(data.pbAkkumulerRenter);
+    if (typeof data.pbMalAktiv === 'boolean') setPbMalAktiv(data.pbMalAktiv);
+    if (data.pbHovedmal) setPbHovedmal(data.pbHovedmal);
+    if (typeof data.pbVisDelmal === 'boolean') setPbVisDelmal(data.pbVisDelmal);
+    if (Array.isArray(data.pbDelmal)) setPbDelmal(data.pbDelmal);
+    if (typeof data.pbVisSluttSammensetning === 'boolean') setPbVisSluttSammensetning(data.pbVisSluttSammensetning);
+    if (typeof data.pbSluttSammensetningAar === 'number') setPbSluttSammensetningAar(data.pbSluttSammensetningAar);
+
+    // Forutsetninger og mål — Formuesplanlegger
+    if (typeof data.laanAktiv === 'boolean') setLaanAktiv(data.laanAktiv);
+    if (Array.isArray(data.prognoseFinansiering)) setPrognoseFinansiering(data.prognoseFinansiering);
+    if (data.laanModus) setLaanModus(data.laanModus);
+    if (typeof data.akkumulerRenter === 'boolean') setAkkumulerRenter(data.akkumulerRenter);
+    if (typeof data.malAktiv === 'boolean') setMalAktiv(data.malAktiv);
+    if (data.hovedmal) setHovedmal(data.hovedmal);
+    if (typeof data.visDelmal === 'boolean') setVisDelmal(data.visDelmal);
+    if (Array.isArray(data.delmal)) setDelmal(data.delmal);
+    if (typeof data.visSluttSammensetning === 'boolean') setVisSluttSammensetning(data.visSluttSammensetning);
+    if (typeof data.sluttSammensetningAar === 'number') setSluttSammensetningAar(data.sluttSammensetningAar);
+    if (typeof data.rebalanseringAktiv === 'boolean') setRebalanseringAktiv(data.rebalanseringAktiv);
+    if (Array.isArray(data.rebalanseringer)) setRebalanseringer(data.rebalanseringer);
+
     setVisKundeliste(false);
     setActiveTab('input');
   }, [pensumStandardPortefoljer]);
