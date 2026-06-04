@@ -3415,6 +3415,27 @@ export default function PensumPrognoseModell() {
   // Lånefinansiering- og finansielt mål-seksjonene, gjenbrukt i både
   // Formuesplanleggeren og Porteføljebyggerens "Forutsetninger og mål"-paneler.
   // cfg gir uavhengig state/setters + utledede verdier per panel.
+  // Disclaimer under historikk-tabeller og i snapshot-sider — viser hvilke
+  // posisjoner som har proxiet/estimert historikk før oppstart, fra
+  // Morningstar Direct-presentasjonen.
+  const renderHistorikkDisclaimer = () => (
+    <div className="rounded-lg p-4 border border-gray-200 bg-gray-50/60 text-xs leading-relaxed space-y-2">
+      <p className="font-semibold text-sm" style={{ color: PENSUM_COLORS.darkBlue }}>Viktig informasjon om avkastningsestimatet</p>
+      <p className="text-gray-600">De ulike posisjonene har oppstart på ulike tidspunkt, og avkastningen før oppstart er estimert som følger:</p>
+      <ul className="space-y-1 text-gray-600 ml-3">
+        <li>· <strong>Pensum Basis</strong> — estimert med Pensum Global Dynamisk, forvaltet av samme forvalter (oppstart sept. 2023).</li>
+        <li>· <strong>Pensum Global Core Active</strong> &amp; <strong>Pensum Global Edge</strong> — historikk er estimert med underliggende fonds utvikling før oppstart 01.01.2026. Grafen viser utviklingen man hadde hatt om man eide de samme fondene med samme vekting tilbake i tid.</li>
+        <li>· <strong>Pensum Norge</strong> — estimert med 2/3 Pensum Norske Aksjer Utbytte og 1/3 Pensum Norske Aksjer Vekst (oppstart nov. 2023).</li>
+        <li>· <strong>Pensum Global Energy</strong> — estimert med et lignende diskresjonært mandat, Pensum Energi, forvaltet av samme forvalter (oppstart des. 2022).</li>
+        <li>· <strong>Pensum Nordic Banking Sector</strong> — estimert med et lignende diskresjonært mandat, Pensum Sparebank +, forvaltet av samme forvalter (oppstart 29. januar 2025).</li>
+        <li>· <strong>Pensum Nordisk Høyrente</strong> — estimert med underliggende fonds utvikling før oppstart i feb. 2024.</li>
+        <li>· <strong>Pensum Financial Opportunity</strong> — estimert med indeksen Bloomberg Global High Yield, valutasikret til NOK (oppstart april 2025).</li>
+        <li>· <strong>Pensum Kairos</strong> — estimert med fondets indeks, MSCI ACWI NR, før oppstart av fondet 15. april 2026.</li>
+      </ul>
+      <p className="text-gray-500 italic">Avkastningstall for diskresjonært forvaltede porteføljer er netto et kostnadsestimat på 1,2 %; avkastningstall for fond er netto kostnader. Historisk avkastning er ingen garanti for fremtidig avkastning.</p>
+    </div>
+  );
+
   const renderLaanOgMaal = (cfg) => {
     const {
       laanAktiv, setLaanAktiv, prognoseFinansiering, setPrognoseFinansiering,
@@ -8560,6 +8581,7 @@ export default function PensumPrognoseModell() {
                   <p><sup className="text-amber-600 font-bold">*</sup> Kort historikk: avkastningstall er estimerte eller mangler for hele perioden.</p>
                   <p><strong>Forventet avkastning</strong> er basert på CMA-metodikk (Capital Market Assumptions) — institusjonell konsensus fra <a href="https://www.blackrock.com/us/financial-professionals/insights/capital-market-assumptions" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">BlackRock</a>, <a href="https://corporate.vanguard.com/content/corporatesite/us/en/corp/vemo/vemo-return-forecasts.html" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">Vanguard</a> og <a href="https://am.jpmorgan.com/content/dam/jpm-am-aem/americas/us/en/institutional/insights/portfolio-insights/ltcma-full-report.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline hover:text-blue-900">J.P. Morgan Asset Management</a>, supplert med en eksplisitt nordisk/norsk overlay. Se metodikkdokumentasjon for full beskrivelse.</p>
                 </div>
+                <div className="mt-4">{renderHistorikkDisclaimer()}</div>
               </div>
             </div>
 
@@ -11199,6 +11221,7 @@ export default function PensumPrognoseModell() {
                       <div className="px-4 py-3 bg-amber-50 border-t border-amber-100 text-xs text-amber-700">
                         Sharpe beregnet med risikofri rente 3%. Volatilitet = annualisert standardavvik (månedlig). Maks DD = størst kursfall fra topp til bunn. Siden oppstart = annualisert avkastning fra desember 2019.
                       </div>
+                      <div className="p-4 border-t border-gray-100">{renderHistorikkDisclaimer()}</div>
                     </div>
 
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -12064,6 +12087,10 @@ export default function PensumPrognoseModell() {
                             </div>
                           );
                         })}
+
+                        {(isStandardModulAktiv('snapshot-1y') || isStandardModulAktiv('snapshot-3y') || isStandardModulAktiv('snapshot-5y')) && (
+                          <div>{renderHistorikkDisclaimer()}</div>
+                        )}
 
                         {/* Drawdown chart */}
                         {isStandardModulAktiv('snapshot-drawdown') && ddChartDataR.length >= 5 && (
