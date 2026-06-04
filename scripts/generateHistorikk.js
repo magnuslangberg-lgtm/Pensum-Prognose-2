@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_PATH = path.join(__dirname, '..', 'uploads', 'Datafeed til rådgiververktøy-mai1.xlsx');
+const XLSX_PATH = path.join(__dirname, '..', 'uploads', '-31-mai- Datafeed til rådgiververktøy -NY-.xlsx');
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'pensumDatafeedHistorikk.js');
 
 // Excel serial number -> YYYY-MM-DD
@@ -107,8 +107,8 @@ for (const [k, v] of Object.entries(indeksHistorikk)) {
 }
 
 // --- Generate output ---
-const output = `// Generert fra uploads/Datafeed til rådgiververktøy-mai1.xlsx - DAGLIGE datapunkter
-export const DATAFEED_KILDE = "uploads/Datafeed til rådgiververktøy-mai1.xlsx";
+const output = `// Generert fra uploads/-31-mai- Datafeed til rådgiververktøy -NY-.xlsx - DAGLIGE datapunkter per 31.05.2026
+export const DATAFEED_KILDE = "Datafeed til rådgiververktøy per 31.05.2026";
 
 export const DATAFEED_PRODUKT_HISTORIKK = ${JSON.stringify(produktHistorikk, null, 2)};
 
