@@ -16,7 +16,15 @@ export function CurrencyInput({ label, value, onChange, indent }) {
     <div className={indent ? 'mb-3 ml-6' : 'mb-3'}>
       <label className="block text-sm font-medium mb-1.5" style={{ color: indent ? PENSUM_COLORS.darkGray : PENSUM_COLORS.darkBlue }}>{label}</label>
       <div className="relative">
-        <input type="text" value={local} onChange={(e) => setLocal(e.target.value)} onBlur={() => { const v = parseInt(local.replace(/[^0-9]/g, ''), 10) || 0; onChange(v); setLocal(formatNumber(v)); }} onFocus={() => setLocal(value.toString())} className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-10 text-sm" />
+        <input
+          type="text"
+          inputMode="numeric"
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          onBlur={() => { const v = parseInt(local.replace(/[^0-9]/g, ''), 10) || 0; onChange(v); setLocal(formatNumber(v)); }}
+          onFocus={(e) => e.target.select()}
+          className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-10 text-sm"
+        />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">kr</span>
       </div>
     </div>

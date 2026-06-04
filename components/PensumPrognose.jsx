@@ -2427,17 +2427,22 @@ export default function PensumPrognoseModell() {
               </div>
             </div>
 
-            {/* Row 3: Eksponering — 4 columns */}
-            {(pensumRegioner.length > 0 || naaRegioner.length > 0 || pensumSektorer.length > 0 || naaSektorer.length > 0) && (
+            {/* Row 3: Eksponering — filtrér bort tomme kolonner så layouten ikke får hull
+                 når kunden ikke har registrert nåværende portefølje. */}
+            {(pensumRegioner.length > 0 || naaRegioner.length > 0 || pensumSektorer.length > 0 || naaSektorer.length > 0) && (() => {
+              const blocks = [
+                { title: 'Nåv. — Regioner', data: naaRegioner, color: '#94A3B8' },
+                { title: 'Pensum — Regioner', data: pensumRegioner, color: PENSUM_COLORS.teal },
+                { title: 'Nåv. — Sektorer', data: naaSektorer, color: '#94A3B8' },
+                { title: 'Pensum — Sektorer', data: pensumSektorer, color: PENSUM_COLORS.salmon },
+              ].filter(b => b.data.length > 0);
+              if (blocks.length === 0) return null;
+              const colClass = blocks.length === 1 ? 'grid-cols-1' : blocks.length === 2 ? 'grid-cols-2' : blocks.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
+              return (
               <div className="mb-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Eksponering — sammenligning</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    { title: 'Nåv. — Regioner', data: naaRegioner, color: '#94A3B8' },
-                    { title: 'Pensum — Regioner', data: pensumRegioner, color: PENSUM_COLORS.teal },
-                    { title: 'Nåv. — Sektorer', data: naaSektorer, color: '#94A3B8' },
-                    { title: 'Pensum — Sektorer', data: pensumSektorer, color: PENSUM_COLORS.salmon },
-                  ].map(block => (
+                <div className={"grid gap-3 " + colClass}>
+                  {blocks.map(block => (
                     <div key={block.title}>
                       <p className="text-[9px] font-semibold text-gray-500 mb-1">{block.title}</p>
                       {block.data.length > 0 ? (
@@ -2457,7 +2462,8 @@ export default function PensumPrognoseModell() {
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Row 4: Fondstabell — kompakt */}
             {(eksFond.length > 0 || eksterneFondRapport.length > 0) && (
@@ -5289,9 +5295,9 @@ export default function PensumPrognoseModell() {
               </button>
             )}
             <div className="flex items-center gap-2">
-              <button onClick={() => setVisKundeliste(!visKundeliste)} className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border " + (visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                Mine kunder
+              <button onClick={() => setVisKundeliste(!visKundeliste)} className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border max-w-xs " + (visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <span className="truncate">{(kundeNavn || kundeSelskap) ? (kundeNavn || kundeSelskap) : 'Mine kunder'}</span>
               </button>
               <button onClick={() => { setPdfProduktValg([]); setPdfModal(true); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: '#D4886B' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -6844,22 +6850,34 @@ export default function PensumPrognoseModell() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Skattepliktig formue</label>
-                      <input type="number" value={skattepliktigFormue} onChange={(e) => setSkattepliktigFormue(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumber(skattepliktigFormue)}
+                        onChange={(e) => setSkattepliktigFormue(parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-right focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Årlig forbruk (uttak)</label>
-                      <input type="number" value={aarligForbruk} onChange={(e) => setAarligForbruk(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatNumber(aarligForbruk)}
+                        onChange={(e) => setAarligForbruk(parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-right focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Inflasjon (%)</label>
-                      <input type="number" step="0.1" value={inflasjon} onChange={(e) => setInflasjon(Number(e.target.value) || 0)}
+                      <input type="number" step="0.1" value={inflasjon} onChange={(e) => setInflasjon(Number(e.target.value) || 0)} onFocus={(e) => e.target.select()}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Bankrente (%)</label>
-                      <input type="number" step="0.1" value={renteAvkastning} onChange={(e) => setRenteAvkastning(Number(e.target.value) || 0)}
+                      <input type="number" step="0.1" value={renteAvkastning} onChange={(e) => setRenteAvkastning(Number(e.target.value) || 0)} onFocus={(e) => e.target.select()}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-200 focus:border-amber-300" />
                     </div>
                   </div>
@@ -7683,18 +7701,18 @@ export default function PensumPrognoseModell() {
                                 <p className="text-sm text-slate-600 mt-1">{aktivtEksponeringsProdukt.rapport?.slideSubtitle || aktivtEksponeringsProdukt.navn}</p>
                                 <p className="text-sm text-slate-600 mt-3 max-w-3xl">{aktivtEksponeringsProdukt.rapport?.pitch || aktivtEksponeringsProdukt.rapport?.caseText || 'Ingen produktpitch registrert.'}</p>
                               </div>
-                              <div className="xl:col-span-5 grid grid-cols-2 xl:grid-cols-3 gap-3 shrink-0">
-                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
+                              <div className="xl:col-span-5 grid grid-cols-3 gap-3 shrink-0">
+                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Porteføljevekt</p>
-                                  <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(aktivtEksponeringsProdukt.vekt)}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{formatPercent(aktivtEksponeringsProdukt.vekt)}</p>
                                 </div>
-                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right">
+                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. avkastning</p>
-                                  <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.green }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${aktivtEksponeringsProdukt.rapport.expectedReturn}%` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${aktivtEksponeringsProdukt.rapport.expectedReturn}%` : '—'}</p>
                                 </div>
-                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-right col-span-2 xl:col-span-1">
+                                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. yield</p>
-                                  <p className="text-xl font-semibold" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${aktivtEksponeringsProdukt.rapport.expectedYield}%` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${aktivtEksponeringsProdukt.rapport.expectedYield}%` : '—'}</p>
                                 </div>
                               </div>
                             </div>
@@ -8021,7 +8039,8 @@ export default function PensumPrognoseModell() {
             {(() => {
               const PORT_COMP_INDEKS_CONFIG = {
                 'MSCI World': { farge: PENSUM_COLORS.lightBlue, feedKey: 'msci-world' },
-                'Oslo Børs': { farge: PENSUM_COLORS.navy, feedKey: 'oslo-bors' },
+                // Oslo Børs får distinkt orange farge så den ikke smelter sammen med Pensum-forslaget (navy)
+                'Oslo Børs': { farge: '#D97706', feedKey: 'oslo-bors' },
                 'MSCI ACWI': { farge: PENSUM_COLORS.salmon, feedKey: 'msci-acwi' },
                 'S&P 500': { farge: PENSUM_COLORS.teal, feedKey: 'sp500' },
                 'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
@@ -8246,7 +8265,7 @@ export default function PensumPrognoseModell() {
                           <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                             tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                             interval={Math.max(1, Math.floor(compData.length / 12))} />
-                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
+                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                           <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                             labelFormatter={(d) => formatHistorikkEtikett(d)}
                             formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
@@ -9117,7 +9136,7 @@ export default function PensumPrognoseModell() {
                                 <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                   tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const allKeys2 = ['portefolje', ...Object.keys(SNAPSHOT_INDEKSER)]; const vals = chartData.flatMap(d => allKeys2.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys2 = ['portefolje', ...Object.keys(SNAPSHOT_INDEKSER)]; const vals = chartData.flatMap(d => allKeys2.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
@@ -9334,7 +9353,9 @@ export default function PensumPrognoseModell() {
             'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
             'MSCI EM': { farge: PENSUM_COLORS.purple, feedKey: 'msci-em' },
             'TOPIX': { farge: PENSUM_COLORS.midBlue, feedKey: 'topix' },
-            'Oslo Børs': { farge: PENSUM_COLORS.navy, feedKey: 'oslo-bors' },
+            // Oslo Børs får distinkt orange/brun farge så den ikke smelter sammen
+            // med Pensum-forslaget (navy) i kalenderår- og benchmark-grafene.
+            'Oslo Børs': { farge: '#D97706', feedKey: 'oslo-bors' },
             'Norske Statsobl.': { farge: PENSUM_COLORS.gray, feedKey: 'norske-statsobl' },
           };
 
@@ -10652,7 +10673,7 @@ export default function PensumPrognoseModell() {
                         <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                           tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                           interval={Math.max(1, Math.floor(sammenligningsData.length / 12))} />
-                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                         <Tooltip content={({ active, payload, label }) => {
                           if (!active || !payload?.length) return null;
                           const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
@@ -11218,7 +11239,7 @@ export default function PensumPrognoseModell() {
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
                                 tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
                                 interval={20} />
-                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} />
+                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 labelFormatter={(d) => formatHistorikkEtikett(d)}
                                 formatter={(v, name) => [v.toFixed(1).replace('.', ',') + '%', produktNavn2[name] || name]} />
@@ -12116,7 +12137,7 @@ export default function PensumPrognoseModell() {
                                     <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                       tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                       interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step - step, Math.ceil(dataMax / step) * step + step]; }} ticks={(() => { const allKeys = ['portefolje', ...Object.keys(RAP_INDEKSER)]; const vals = chartData.flatMap(d => allKeys.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step - step; const hi = Math.ceil(max / step) * step + step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys = ['portefolje', ...Object.keys(RAP_INDEKSER)]; const vals = chartData.flatMap(d => allKeys.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                       labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                       formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1) + '%', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
