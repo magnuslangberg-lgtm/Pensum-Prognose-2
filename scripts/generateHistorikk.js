@@ -4,7 +4,10 @@ const path = require('path');
 
 // --- Config ---
 const XLSX_FILENAME = 'Datafeed til rådgiververktøy - juli26.xlsx';
-const XLSX_PATH = path.join(__dirname, '..', 'uploads', XLSX_FILENAME);
+const requestedFile = process.argv[2] || XLSX_FILENAME;
+const XLSX_PATH = path.isAbsolute(requestedFile)
+  ? requestedFile
+  : path.join(__dirname, '..', 'uploads', requestedFile);
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'pensumDatafeedHistorikk.js');
 
 // Excel serial number -> YYYY-MM-DD
@@ -60,6 +63,7 @@ function parseSheet(rows, mapping) {
       if (dateSerial == null || dateSerial === '' || value == null || value === '') continue;
       const dato = serialToDate(dateSerial);
       if (!dato) continue;
+      if (typeof value !== 'number' || !Number.isFinite(value)) continue;
       data.push({ dato, verdi: Math.round(value * 100) / 100 });
     }
     const entry = {};
@@ -74,12 +78,33 @@ function parseSheet(rows, mapping) {
   return result;
 }
 
+function requireSheet(wb, sheetName) {
+  const sheet = wb.Sheets[sheetName];
+  if (!sheet) throw new Error(`Mangler obligatorisk ark: "${sheetName}"`);
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+}
+
+function validateSeries(seriesMap, reportDate, label) {
+  for (const [key, entry] of Object.entries(seriesMap)) {
+    if (!entry.data.length) throw new Error(`${label} "${key}" har ingen datapunkter`);
+    for (let i = 1; i < entry.data.length; i++) {
+      if (entry.data[i].dato <= entry.data[i - 1].dato) {
+        throw new Error(`${label} "${key}" har duplikat eller usortert dato: ${entry.data[i].dato}`);
+      }
+    }
+    const lastDate = entry.data.at(-1).dato;
+    if (lastDate !== reportDate) {
+      throw new Error(`${label} "${key}" slutter ${lastDate}, forventet ${reportDate}`);
+    }
+  }
+}
+
 // --- Main ---
 console.log('Reading:', XLSX_PATH);
 const wb = XLSX.readFile(XLSX_PATH);
 
-const indekserRows = XLSX.utils.sheet_to_json(wb.Sheets['indekser'], { header: 1, defval: null });
-const produktRows = XLSX.utils.sheet_to_json(wb.Sheets['Pensumløsninger'], { header: 1, defval: null });
+const indekserRows = requireSheet(wb, 'indekser');
+const produktRows = requireSheet(wb, 'Pensumløsninger');
 const eksternRows = wb.Sheets['Fondsfokuslisten'] ? XLSX.utils.sheet_to_json(wb.Sheets['Fondsfokuslisten'], { header: 1, defval: null }) : [];
 
 const reportDate = serialToDate(indekserRows?.[1]?.[1]);
@@ -103,6 +128,9 @@ const eksternHistorikk = eksternRows.length > 0 ? parseSheet(eksternRows, EKSTER
 const produktHistorikk = { ...produktHistorikkBase, ...eksternHistorikk };
 const indeksHistorikk = parseSheet(indekserRows, INDEKS_MAP);
 
+validateSeries(produktHistorikk, reportDate, 'Produkt');
+validateSeries(indeksHistorikk, reportDate, 'Indeks');
+
 // Report
 for (const [k, v] of Object.entries(produktHistorikk)) {
   console.log(`  Produkt "${k}": ${v.data.length} datapunkter, start: ${v.startDato}`);
@@ -112,7 +140,8 @@ for (const [k, v] of Object.entries(indeksHistorikk)) {
 }
 
 // --- Generate output ---
-const output = `// Generert fra uploads/${XLSX_FILENAME} - DAGLIGE datapunkter per ${reportDateDisplay}
+const sourceFilename = path.basename(XLSX_PATH);
+const output = `// Generert fra uploads/${sourceFilename} - DAGLIGE datapunkter per ${reportDateDisplay}
 export const DATAFEED_KILDE = "Datafeed til rådgiververktøy per ${reportDateDisplay}";
 
 export const DATAFEED_PRODUKT_HISTORIKK = ${JSON.stringify(produktHistorikk, null, 2)};
