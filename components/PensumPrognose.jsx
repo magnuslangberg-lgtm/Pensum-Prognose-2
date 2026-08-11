@@ -531,8 +531,10 @@ export default function PensumPrognoseModell() {
   }, [produktHistorikk]);
 
   const hentAarsverdiForProdukt = useCallback((produkt, felt, aar) => {
+    const fraHistorikk = beregnAarsavkastningFraHistorikk(produkt?.id, aar);
+    if (aar === RAPPORT_DATO_OBJEKT.getFullYear() && erGyldigTall(fraHistorikk)) return fraHistorikk;
     if (erGyldigTall(produkt?.[felt])) return produkt[felt];
-    return beregnAarsavkastningFraHistorikk(produkt?.id, aar);
+    return fraHistorikk;
   }, [beregnAarsavkastningFraHistorikk]);
 
   useEffect(() => {
@@ -795,7 +797,14 @@ export default function PensumPrognoseModell() {
         const produkt = alleProdukt.find((p) => p.id === allok.id);
         if (!produkt || allok.vekt <= 0) return;
 
-        let avkastning = erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null;
+        // Inneværende YTD skal alltid komme fra den ferske datafeeden. De statiske
+        // produktfeltene er kun fallback for eldre år eller manglende historikk.
+        let avkastning = aarMapping[aarFelt] === RAPPORT_DATO_OBJEKT.getFullYear()
+          ? beregnFraHistorikk(produkt.id, aarMapping[aarFelt])
+          : null;
+        if (!erGyldigTall(avkastning)) {
+          avkastning = erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null;
+        }
         if (!erGyldigTall(avkastning)) {
           avkastning = beregnFraHistorikk(produkt.id, aarMapping[aarFelt]);
         }
@@ -4193,7 +4202,7 @@ export default function PensumPrognoseModell() {
 
         // Historical return bars (mini SVG)
         const yearReturns = [
-          { label: '2026 YTD', val: produkt?.aar2026 },
+          { label: '2026 YTD', val: hentAarsverdiForProdukt(produkt, 'aar2026', 2026) },
           { label: '2025', val: produkt?.aar2025 },
           { label: '2024', val: produkt?.aar2024 },
           { label: '2023', val: produkt?.aar2023 },
@@ -4286,7 +4295,7 @@ export default function PensumPrognoseModell() {
         .map((p) => ({
           id: p.id,
           navn: p.navn,
-          aar2026: p.aar2026,
+          aar2026: hentAarsverdiForProdukt(p, 'aar2026', 2026),
           aar2025: p.aar2025,
           aar2024: p.aar2024,
           aar2023: p.aar2023,
