@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_PATH = path.join(__dirname, '..', 'uploads', '-juni- Datafeed til rådgiververktøy -NY-.xlsx');
+const XLSX_FILENAME = 'Datafeed til rådgiververktøy - juli26.xlsx';
+const XLSX_PATH = path.join(__dirname, '..', 'uploads', XLSX_FILENAME);
 const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'pensumDatafeedHistorikk.js');
 
 // Excel serial number -> YYYY-MM-DD
@@ -81,6 +82,10 @@ const indekserRows = XLSX.utils.sheet_to_json(wb.Sheets['indekser'], { header: 1
 const produktRows = XLSX.utils.sheet_to_json(wb.Sheets['Pensumløsninger'], { header: 1, defval: null });
 const eksternRows = wb.Sheets['Fondsfokuslisten'] ? XLSX.utils.sheet_to_json(wb.Sheets['Fondsfokuslisten'], { header: 1, defval: null }) : [];
 
+const reportDate = serialToDate(indekserRows?.[1]?.[1]);
+if (!reportDate) throw new Error('Fant ikke gyldig rapportdato i arket "indekser"');
+const reportDateDisplay = reportDate.split('-').reverse().join('.');
+
 console.log('indekser rows:', indekserRows.length);
 console.log('Pensumløsninger rows:', produktRows.length);
 console.log('Fondsfokuslisten rows:', eksternRows.length);
@@ -107,8 +112,8 @@ for (const [k, v] of Object.entries(indeksHistorikk)) {
 }
 
 // --- Generate output ---
-const output = `// Generert fra uploads/-juni- Datafeed til rådgiververktøy -NY-.xlsx - DAGLIGE datapunkter per 31.05.2026 (med proxied Kairos-historikk)
-export const DATAFEED_KILDE = "Datafeed til rådgiververktøy per 31.05.2026";
+const output = `// Generert fra uploads/${XLSX_FILENAME} - DAGLIGE datapunkter per ${reportDateDisplay}
+export const DATAFEED_KILDE = "Datafeed til rådgiververktøy per ${reportDateDisplay}";
 
 export const DATAFEED_PRODUKT_HISTORIKK = ${JSON.stringify(produktHistorikk, null, 2)};
 
