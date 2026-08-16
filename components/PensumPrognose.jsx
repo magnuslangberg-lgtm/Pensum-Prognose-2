@@ -2968,8 +2968,14 @@ export default function PensumPrognoseModell() {
       vekt: item.vekt,
       avkastning: item.avkastning,
     })),
-    pensumPortfolio: pensumAllokering.map((item) => ({ navn: item.navn, vekt: item.vekt })),
-  }), [activeTab, kundeNavn, kundeSelskap, radgiver, risikoprofil, horisont, dato, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, allokering, pensumAllokering]);
+    pensumPortfolio: pensumAllokering.map((item) => ({ id: item.id, navn: item.navn, vekt: item.vekt })),
+    pensumProducts: [
+      ...(pensumProdukter.enkeltfond || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'enkeltfond' })),
+      ...(pensumProdukter.fondsportefoljer || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'fondsportefoljer' })),
+      ...(pensumProdukter.eksterneFond || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'eksterneFond' })),
+      ...(pensumProdukter.alternative || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'alternative' })),
+    ],
+  }), [activeTab, kundeNavn, kundeSelskap, radgiver, risikoprofil, horisont, dato, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, allokering, pensumAllokering, pensumProdukter]);
 
   const utforLunaHandlinger = useCallback(async (actions) => {
     if (!Array.isArray(actions) || actions.length === 0) return;
@@ -2996,6 +3002,7 @@ export default function PensumPrognoseModell() {
     let nesteFane = null;
     let aapneForslag = false;
     let lagre = false;
+    let pensumPortefoljeForslag = null;
 
     actions.forEach((action) => {
       const payload = action?.payload || {};
@@ -3031,6 +3038,13 @@ export default function PensumPrognoseModell() {
       }
 
       if (action?.type === 'recalculate_allocation') beregnPaaNytt = true;
+      if (action?.type === 'set_pensum_portfolio' && profiler.includes(payload.profile) && Array.isArray(payload.weights)) {
+        pensumPortefoljeForslag = payload;
+        nesteProfil = payload.profile;
+        setRisikoprofil(nesteProfil);
+        beregnPaaNytt = true;
+        nesteFane = 'losninger';
+      }
       if (action?.type === 'navigate' && faner.includes(payload.tab)) nesteFane = payload.tab;
       if (action?.type === 'open_investment_proposal') aapneForslag = true;
       if (action?.type === 'save_customer') lagre = true;
@@ -3059,6 +3073,59 @@ export default function PensumPrognoseModell() {
       }
     }
 
+    if (pensumPortefoljeForslag) {
+      const produktMap = new Map([
+        ...(pensumProdukter.enkeltfond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'enkeltfond' }]),
+        ...(pensumProdukter.fondsportefoljer || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'fondsportefoljer' }]),
+        ...(pensumProdukter.eksterneFond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'eksterneFond' }]),
+        ...(pensumProdukter.alternative || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'alternative' }]),
+      ]);
+      const standard = (pensumStandardPortefoljer[pensumPortefoljeForslag.profile] || []).map((item) => ({ ...item }));
+      const standardMap = new Map(standard.map((item) => [item.id, item]));
+      const laaste = new Map();
+
+      pensumPortefoljeForslag.weights.forEach((item) => {
+        if (!item || !produktMap.has(item.productId) || typeof item.weight !== 'number') return;
+        const produkt = produktMap.get(item.productId);
+        const standardVekt = Number(standardMap.get(item.productId)?.vekt) || 0;
+        const oppgittVekt = Math.max(0, Math.min(100, Number(item.weight)));
+        const vekt = item.constraint === 'minimum' ? Math.max(standardVekt, oppgittVekt) : oppgittVekt;
+        laaste.set(item.productId, {
+          id: item.productId,
+          navn: produkt.navn,
+          kategori: produkt.kategori,
+          vekt,
+        });
+      });
+
+      if (laaste.size === 0) throw new Error('Luna foreslo ingen gyldige Pensum-produkter.');
+      const laastTotal = Array.from(laaste.values()).reduce((sum, item) => sum + item.vekt, 0);
+      if (laastTotal > 100.001) throw new Error('De ønskede produktvektene overstiger 100%.');
+
+      const ulaste = standard.filter((item) => !laaste.has(item.id));
+      const ulasteStandardTotal = ulaste.reduce((sum, item) => sum + (Number(item.vekt) || 0), 0);
+      const rest = Math.max(0, 100 - laastTotal);
+      const nyPortefolje = [
+        ...ulaste.map((item) => ({
+          ...item,
+          vekt: ulasteStandardTotal > 0 ? (Number(item.vekt) || 0) * rest / ulasteStandardTotal : 0,
+        })),
+        ...Array.from(laaste.values()),
+      ].filter((item) => item.vekt > 0.0001);
+
+      if (rest > 0 && ulasteStandardTotal <= 0) throw new Error('Porteføljen kan ikke balanseres til 100%.');
+      nyPortefolje.forEach((item) => { item.vekt = parseFloat(item.vekt.toFixed(2)); });
+      const avrundetTotal = nyPortefolje.reduce((sum, item) => sum + item.vekt, 0);
+      const justeringsrad = nyPortefolje.find((item) => !laaste.has(item.id)) || nyPortefolje[0];
+      if (justeringsrad && Math.abs(100 - avrundetTotal) >= 0.001) {
+        justeringsrad.vekt = parseFloat((justeringsrad.vekt + (100 - avrundetTotal)).toFixed(2));
+      }
+
+      setValgtPensumProfil(pensumPortefoljeForslag.profile);
+      setValgtStandardLosning(null);
+      setPensumAllokering(nyPortefolje);
+    }
+
     if (nesteFane) setActiveTab(nesteFane);
     if (aapneForslag) {
       setPdfProduktValg([]);
@@ -3067,7 +3134,7 @@ export default function PensumPrognoseModell() {
     // Lagring kjøres alene, slik at vi aldri lagrer en eldre React-state rett
     // etter en serie med nye feltendringer.
     if (lagre && actions.length === 1) await lagreKunde();
-  }, [risikoprofil, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, visAlternativeAllokering, avkastningsrater, pensumStandardPortefoljer, lagreKunde]);
+  }, [risikoprofil, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, visAlternativeAllokering, avkastningsrater, pensumStandardPortefoljer, pensumProdukter, lagreKunde]);
 
   // Når brukeren toggler "Alternative investeringer" vil vi bevare eventuelle
   // beløp/vekt som er fylt inn på aksjer- og renter-radene. Vi modifiserer derfor

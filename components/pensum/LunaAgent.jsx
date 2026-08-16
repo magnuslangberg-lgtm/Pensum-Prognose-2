@@ -32,6 +32,16 @@ const FIELD_LABELS = {
   eiendomFondKunde: 'Eiendomsfond',
 };
 
+const PRODUCT_LABELS = {
+  'norge-a': 'Pensum Norge A',
+  'energy-a': 'Pensum Global Energy A',
+  'global-core-active': 'Pensum Global Core Active',
+  'global-edge': 'Pensum Global Edge',
+  'global-hoyrente': 'Pensum Global Høyrente',
+  'nordisk-hoyrente': 'Pensum Nordisk Høyrente',
+  basis: 'Pensum Basis',
+};
+
 const formatValue = (key, value) => {
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nei';
   if (typeof value === 'number') {
@@ -47,6 +57,14 @@ const describeAction = (action) => {
     return Object.entries(payload).map(([key, value]) => `${FIELD_LABELS[key] || key}: ${formatValue(key, value)}`);
   }
   if (action.type === 'recalculate_allocation') return ['Oppdater allokeringen fra risikoprofil og kapital'];
+  if (action.type === 'set_pensum_portfolio') {
+    const lines = [`Bygg ${payload.profile || 'valgt'} Pensum-portefølje`];
+    (Array.isArray(payload.weights) ? payload.weights : []).forEach((item) => {
+      const prefix = item.constraint === 'minimum' ? 'Minst' : 'Nøyaktig';
+      lines.push(`${prefix} ${item.weight}% i ${PRODUCT_LABELS[item.productId] || item.productId}`);
+    });
+    return lines;
+  }
   if (action.type === 'reset_capital_fields') return ['Nullstill alle kapitalbeløp'];
   if (action.type === 'navigate') return [`Gå til ${TAB_LABELS[payload.tab] || payload.tab}`];
   if (action.type === 'open_investment_proposal') return ['Åpne investeringsforslaget'];
@@ -223,7 +241,7 @@ export default function LunaAgent({ authenticated, context, onApplyActions, onRe
 
             {messages.length === 1 && authenticated && (
               <div className="flex flex-wrap gap-2">
-                {['Hva bør jeg gjøre her?', 'Sett moderat profil og 10 års horisont', 'Gå til porteføljebygging'].map((suggestion) => (
+                {['Hva bør jeg gjøre her?', 'Lag en dynamisk portefølje med minst 20% Norge og 10% energi', 'Gå til porteføljebygging'].map((suggestion) => (
                   <button key={suggestion} onClick={() => sendMessage(suggestion)} className="text-[11px] px-3 py-2 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50">
                     {suggestion}
                   </button>
