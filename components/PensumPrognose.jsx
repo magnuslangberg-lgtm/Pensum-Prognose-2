@@ -13799,7 +13799,14 @@ export default function PensumPrognoseModell() {
 
       </main>
 
-      <LunaAssistant onApply={brukLunaFelter} />
+      <LunaAssistant
+        onApply={brukLunaFelter}
+        context={{
+          kundeNavn, kundeSelskap, risikoprofil, horisont, investeringsFormaal, likviditetsbehov,
+          aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde,
+          unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde,
+        }}
+      />
 
       <footer className="mt-12 py-6 text-center border-t border-gray-200 bg-white no-print">
         <img src={PENSUM_LOGO} alt="Pensum" className="h-14 mx-auto mb-3" />
