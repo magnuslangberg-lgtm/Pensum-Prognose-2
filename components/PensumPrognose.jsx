@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { BarChart, Bar, ComposedChart, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, ReferenceDot, ScatterChart, Scatter, ZAxis, LabelList } from 'recharts';
 import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk';
-import { defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
+import { PENSUM_SELSKAPSNOEKKELTALL, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
 import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
+import LunaAssistant from './pensum/LunaAssistant';
 
 const PENSUM_LOGO = 'data:image/webp;base64,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';
 
@@ -44,15 +45,15 @@ export default function PensumPrognoseModell() {
   const [radgiver, setRadgiver] = useState('');
   const [dato, setDato] = useState(new Date().toISOString().split('T')[0]);
   
-  // Standardverdier: 10 mill totalt (8 mill likvid + 1 mill PE + 1 mill eiendom)
-  const [aksjerKunde, setAksjerKunde] = useState(1000000);       // 1 mill
-  const [aksjefondKunde, setAksjefondKunde] = useState(3000000); // 3 mill
-  const [renterKunde, setRenterKunde] = useState(2000000);       // 2 mill
-  const [kontanterKunde, setKontanterKunde] = useState(2000000); // 2 mill
-  const [peFondKunde, setPeFondKunde] = useState(1000000);       // 1 mill
+  // Kundens økonomiske situasjon starter tom og fylles inn per kundekort.
+  const [aksjerKunde, setAksjerKunde] = useState(0);
+  const [aksjefondKunde, setAksjefondKunde] = useState(0);
+  const [renterKunde, setRenterKunde] = useState(0);
+  const [kontanterKunde, setKontanterKunde] = useState(0);
+  const [peFondKunde, setPeFondKunde] = useState(0);
   const [unoterteAksjerKunde, setUnoterteAksjerKunde] = useState(0);
   const [shippingKunde, setShippingKunde] = useState(0);
-  const [egenEiendomKunde, setEgenEiendomKunde] = useState(1000000); // 1 mill
+  const [egenEiendomKunde, setEgenEiendomKunde] = useState(0);
   const [eiendomSyndikatKunde, setEiendomSyndikatKunde] = useState(0);
   const [eiendomFondKunde, setEiendomFondKunde] = useState(0);
   const [innskudd, setInnskudd] = useState(0);
@@ -145,7 +146,6 @@ export default function PensumPrognoseModell() {
   const [rapportModuler, setRapportModuler] = useState([
     // Standard-sider (alltid synlige, ikke fjernbare)
     { id: 'cover', label: 'Forside', standard: true, aktiv: true },
-    { id: 'folgebrev', label: 'Personlig følgebrev', standard: true, aktiv: true },
     { id: 'kundeprofil', label: 'Kundeprofil og egnethet', standard: true, aktiv: true },
     { id: 'utgangspunkt', label: 'Utgangspunkt og mandat', standard: true, aktiv: true },
     { id: 'byggesteiner', label: 'Hvordan porteføljen er bygget', standard: true, aktiv: true },
@@ -176,6 +176,8 @@ export default function PensumPrognoseModell() {
     { id: 'markedssyn', label: 'Markedssyn og kontekst', aktiv: false, posisjon: 'etter-cover', gruppe: 'marked' },
     { id: 'markedshistorikk', label: 'Aksjemarkedet – Historisk utvikling', aktiv: false, posisjon: 'appendix', gruppe: 'marked' },
     // Om Pensum & vilkår
+    { id: 'side-2-alternativ', label: 'Side 2-alternativ — Om oss', aktiv: false, posisjon: 'etter-cover', gruppe: 'ompensum' },
+    { id: 'folgebrev', label: 'Personlig følgebrev', aktiv: false, posisjon: 'etter-cover', gruppe: 'ompensum' },
     { id: 'om-oss', label: 'Om oss', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
     { id: 'kommunikasjon', label: 'Kommunikasjon & løpende oppdateringer', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
     { id: 'rapportering', label: 'Rapportering', aktiv: false, posisjon: 'appendix', gruppe: 'ompensum' },
@@ -294,6 +296,7 @@ export default function PensumPrognoseModell() {
     'beskatning': 'Oversikt over beskatning av aksjer og fond for privat eie, ASK og aksjeselskap',
     'markedshistorikk': 'MSCI AC World arsavkastning og intraarsfall siden 1988 — viser at markedet historisk har vaert positivt i 70% av arene',
     'om-oss': 'Presentasjon av Pensum — fire virksomhetsområder, nøkkeltall og forvaltningskapital',
+    'side-2-alternativ': 'Alternativ side 2 fra månedsrapporten — virksomhetsområder og oppdaterte nøkkeltall',
     'kommunikasjon': 'Oversikt over Pensums kommunikasjonskanaler: investeringskommentar, månedsrapport, konferanse, podcast og TV',
     'rapportering': 'Pensums rapporteringsløsning med BankID-innlogging, porteføljeoversikt og skatterapportering',
     'honorarstruktur': 'Transparent honorarstruktur med priser for investeringsrådgivning og diskresjonær forvaltning',
@@ -315,7 +318,7 @@ export default function PensumPrognoseModell() {
   const [markedssynAnalyserer, setMarkedssynAnalyserer] = useState(false);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
-  const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
+  const [allokering, setAllokering] = useState(() => beregnAllokering(0, 0, 0, 'Moderat'));
 
   // Rebalansering - årlig endring i allokering
   const [pensumRebalanseringAktiv, setPensumRebalanseringAktiv] = useState(false);
@@ -531,8 +534,10 @@ export default function PensumPrognoseModell() {
   }, [produktHistorikk]);
 
   const hentAarsverdiForProdukt = useCallback((produkt, felt, aar) => {
+    const fraHistorikk = beregnAarsavkastningFraHistorikk(produkt?.id, aar);
+    if (aar === RAPPORT_DATO_OBJEKT.getFullYear() && erGyldigTall(fraHistorikk)) return fraHistorikk;
     if (erGyldigTall(produkt?.[felt])) return produkt[felt];
-    return beregnAarsavkastningFraHistorikk(produkt?.id, aar);
+    return fraHistorikk;
   }, [beregnAarsavkastningFraHistorikk]);
 
   useEffect(() => {
@@ -795,7 +800,14 @@ export default function PensumPrognoseModell() {
         const produkt = alleProdukt.find((p) => p.id === allok.id);
         if (!produkt || allok.vekt <= 0) return;
 
-        let avkastning = erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null;
+        // Inneværende YTD skal alltid komme fra den ferske datafeeden. De statiske
+        // produktfeltene er kun fallback for eldre år eller manglende historikk.
+        let avkastning = aarMapping[aarFelt] === RAPPORT_DATO_OBJEKT.getFullYear()
+          ? beregnFraHistorikk(produkt.id, aarMapping[aarFelt])
+          : null;
+        if (!erGyldigTall(avkastning)) {
+          avkastning = erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null;
+        }
         if (!erGyldigTall(avkastning)) {
           avkastning = beregnFraHistorikk(produkt.id, aarMapping[aarFelt]);
         }
@@ -1274,7 +1286,7 @@ export default function PensumPrognoseModell() {
     setLagredeKunder(oppdatertListe);
     setAktivKundeId(kundeData.id);
     if (saved) {
-      setLagringsStatus('Lagret!');
+      setLagringsStatus(`Lagret: ${kundeData.kundeNavn || kundeData.kundeSelskap}`);
       setTimeout(() => setLagringsStatus(''), 2000);
     } else {
       alert('Automatisk lagring er ikke tilgjengelig. Bruk "Eksporter" for å lagre kunden som fil.');
@@ -1325,6 +1337,7 @@ export default function PensumPrognoseModell() {
   const nyKunde = useCallback(() => {
     setAktivKundeId(null);
     setKundeNavn('');
+    setKundeSelskap('');
     setDato(new Date().toISOString().split('T')[0]);
     setRisikoprofil('Moderat');
     setHorisont(10);
@@ -1347,6 +1360,30 @@ export default function PensumPrognoseModell() {
     setVisKundeliste(false);
     setActiveTab('input');
   }, []);
+
+  const brukLunaFelter = useCallback((fields = {}) => {
+    const brukTekst = (key, setter) => { if (typeof fields[key] === 'string' && fields[key].trim()) setter(fields[key].trim()); };
+    const brukTall = (key, setter) => { if (typeof fields[key] === 'number' && Number.isFinite(fields[key]) && fields[key] >= 0) setter(fields[key]); };
+    brukTekst('kundeNavn', setKundeNavn);
+    brukTekst('kundeSelskap', setKundeSelskap);
+    brukTekst('investeringsFormaal', setInvesteringsFormaal);
+    brukTekst('likviditetsbehov', setLikviditetsbehov);
+    if (['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].includes(fields.risikoprofil)) setRisikoprofil(fields.risikoprofil);
+    brukTall('horisont', (value) => { setHorisont(value); setLocalHorisont(String(value)); });
+    brukTall('aksjerKunde', setAksjerKunde); brukTall('aksjefondKunde', setAksjefondKunde);
+    brukTall('renterKunde', setRenterKunde); brukTall('kontanterKunde', setKontanterKunde);
+    brukTall('peFondKunde', setPeFondKunde); brukTall('unoterteAksjerKunde', setUnoterteAksjerKunde);
+    brukTall('shippingKunde', setShippingKunde); brukTall('egenEiendomKunde', setEgenEiendomKunde);
+    brukTall('eiendomSyndikatKunde', setEiendomSyndikatKunde); brukTall('eiendomFondKunde', setEiendomFondKunde);
+
+    const likvid = ['aksjerKunde', 'aksjefondKunde', 'renterKunde', 'kontanterKunde']
+      .reduce((sum, key) => sum + (typeof fields[key] === 'number' ? fields[key] : ({ aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde })[key]), 0);
+    const pe = typeof fields.peFondKunde === 'number' ? fields.peFondKunde : peFondKunde;
+    const eiendom = ['egenEiendomKunde', 'eiendomSyndikatKunde', 'eiendomFondKunde']
+      .reduce((sum, key) => sum + (typeof fields[key] === 'number' ? fields[key] : ({ egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde })[key]), 0);
+    setAllokering(beregnAllokering(likvid, pe, eiendom, fields.risikoprofil || risikoprofil, avkastningsrater));
+    setActiveTab('input');
+  }, [aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, risikoprofil, avkastningsrater]);
 
   // Eksporter til fil
   const eksporterKunde = useCallback(() => {
@@ -1469,6 +1506,46 @@ export default function PensumPrognoseModell() {
   // Render tilleggsmodul-innhold basert på id
   const renderTilleggsmodulInnhold = useCallback((modulId) => {
     switch (modulId) {
+      case 'side-2-alternativ':
+        return (
+          <div data-rapport-slide="side-2-alternativ" className="page-break-before space-y-7">
+            <div>
+              <h2 className="text-3xl font-light tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>Om oss</h2>
+              <div className="h-px mt-5 w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+            </div>
+            <p className="text-lg font-semibold leading-snug max-w-4xl" style={{ color: PENSUM_COLORS.darkBlue }}>
+              Pensum har røtter tilbake til 2002 og har i dag fire ulike virksomhetsområder, hvor kjernen ligger innen forvaltningstjenester.
+            </p>
+            <div className="grid grid-cols-4 gap-7 px-12">
+              {[
+                { tittel: 'Helhetlig forvaltning', tekst: 'Skreddersydd og helhetlig rådgivning til institusjoner og «private banking»-markedet.', farge: '#294B5A', tekstfarge: 'white' },
+                { tittel: 'Forvaltning av enkeltprodukter', tekst: 'Forvaltning av aktivt forvaltede mandater, AIF-er, UCITS-fond, fondsporteføljer og eiendom.', farge: '#47788E', tekstfarge: 'white' },
+                { tittel: 'Corporate Finance', tekst: 'Rådgivning knyttet til M&A, verdivurderinger, kapitalstruktur og kapitalinnhenting.', farge: '#96BCD0', tekstfarge: '#263C3D' },
+                { tittel: 'Regnskap', tekst: 'Autorisert regnskapsfører med tjenester mot Pensums kunder samt eksterne kunder.', farge: '#D9E7EC', tekstfarge: '#263C3D' },
+              ].map((boks) => (
+                <div key={boks.tittel} className="min-h-[190px] px-5 py-6 flex flex-col text-center" style={{ backgroundColor: boks.farge, color: boks.tekstfarge }}>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide leading-tight min-h-[42px]">{boks.tittel}</h3>
+                  <p className="text-sm leading-snug mt-5">{boks.tekst}</p>
+                </div>
+              ))}
+            </div>
+            <div className="h-px w-full" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+            <div className="grid grid-cols-4 gap-7 px-12">
+              {[
+                { tittel: 'Antall ansatte', verdi: PENSUM_SELSKAPSNOEKKELTALL.ansatte },
+                { tittel: 'Forvaltningskapital', verdi: PENSUM_SELSKAPSNOEKKELTALL.forvaltningskapital },
+                { tittel: 'Årlig vekst forvaltningskapital', verdi: PENSUM_SELSKAPSNOEKKELTALL.vekstForvaltningskapital },
+                { tittel: 'Årlig vekst inntekter', verdi: PENSUM_SELSKAPSNOEKKELTALL.vekstInntekter },
+              ].map((stat) => (
+                <div key={stat.tittel} className="min-h-[145px] px-4 py-5 flex flex-col items-center justify-between text-center text-white bg-[#929594]">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide leading-tight">{stat.tittel}</h3>
+                  <p className="text-4xl font-light tabular-nums">{stat.verdi}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
       case 'om-oss':
         return (
           <div data-rapport-slide="om-oss" className="space-y-7 page-break-before">
@@ -1500,10 +1577,10 @@ export default function PensumPrognoseModell() {
             </div>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { tittel: 'Antall ansatte', verdi: '39', farge: PENSUM_COLORS.darkBlue },
-                { tittel: 'Forvaltningskapital', verdi: 'NOK 13,3 Mrd', farge: PENSUM_COLORS.teal },
-                { tittel: 'Årlig vekst forvaltningskapital', verdi: '29,1%', farge: PENSUM_COLORS.lightBlue },
-                { tittel: 'Årlig vekst inntekter', verdi: '22,1%', farge: PENSUM_COLORS.salmon },
+                { tittel: 'Antall ansatte', verdi: PENSUM_SELSKAPSNOEKKELTALL.ansatte, farge: PENSUM_COLORS.darkBlue },
+                { tittel: 'Forvaltningskapital', verdi: PENSUM_SELSKAPSNOEKKELTALL.forvaltningskapital, farge: PENSUM_COLORS.teal },
+                { tittel: 'Årlig vekst forvaltningskapital', verdi: PENSUM_SELSKAPSNOEKKELTALL.vekstForvaltningskapital, farge: PENSUM_COLORS.lightBlue },
+                { tittel: 'Årlig vekst inntekter', verdi: PENSUM_SELSKAPSNOEKKELTALL.vekstInntekter, farge: PENSUM_COLORS.salmon },
               ].map((stat, i) => (
                 <div key={i} className="rounded-xl p-5 text-center border border-gray-100 bg-gradient-to-br from-slate-50 to-white">
                   <p className="text-3xl font-bold tabular-nums" style={{ color: stat.farge }}>{stat.verdi}</p>
@@ -1917,16 +1994,20 @@ export default function PensumPrognoseModell() {
                     </p>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Forvaltningskapital</p>
-                      <p className="text-white mt-1"><span className="text-2xl font-bold">NOK 13,3</span> <span className="text-sm text-blue-300">mrd</span></p>
+                      <p className="text-white mt-1"><span className="text-2xl font-bold">{PENSUM_SELSKAPSNOEKKELTALL.forvaltningskapitalKort}</span> <span className="text-sm text-blue-300">mrd</span></p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+                    <div className="grid grid-cols-3 gap-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Ansatte</p>
-                        <p className="text-xl font-bold text-white mt-0.5">39</p>
+                        <p className="text-xl font-bold text-white mt-0.5">{PENSUM_SELSKAPSNOEKKELTALL.ansatte}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Vekst AUM</p>
-                        <p className="text-xl font-bold mt-0.5" style={{ color: PENSUM_COLORS.teal }}>29,1%</p>
+                        <p className="text-xl font-bold mt-0.5" style={{ color: PENSUM_COLORS.teal }}>{PENSUM_SELSKAPSNOEKKELTALL.vekstForvaltningskapital}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.gold }}>Vekst inntekter</p>
+                        <p className="text-xl font-bold mt-0.5" style={{ color: PENSUM_COLORS.teal }}>{PENSUM_SELSKAPSNOEKKELTALL.vekstInntekter}</p>
                       </div>
                     </div>
                     <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
@@ -4193,7 +4274,7 @@ export default function PensumPrognoseModell() {
 
         // Historical return bars (mini SVG)
         const yearReturns = [
-          { label: '2026 YTD', val: produkt?.aar2026 },
+          { label: '2026 YTD', val: hentAarsverdiForProdukt(produkt, 'aar2026', 2026) },
           { label: '2025', val: produkt?.aar2025 },
           { label: '2024', val: produkt?.aar2024 },
           { label: '2023', val: produkt?.aar2023 },
@@ -4286,7 +4367,7 @@ export default function PensumPrognoseModell() {
         .map((p) => ({
           id: p.id,
           navn: p.navn,
-          aar2026: p.aar2026,
+          aar2026: hentAarsverdiForProdukt(p, 'aar2026', 2026),
           aar2025: p.aar2025,
           aar2024: p.aar2024,
           aar2023: p.aar2023,
@@ -4483,7 +4564,6 @@ export default function PensumPrognoseModell() {
       const slideGroups = [
         { name: 'Forside', selectors: ['cover'], cover: true },
         ...tilleggsmodulGruppe('etter-cover'),
-        { name: 'Personlig følgebrev', selectors: ['folgebrev'] },
         { name: 'Utgangspunkt og investeringsmandat', selectors: ['utgangspunkt'] },
         ...tilleggsmodulGruppe('etter-utgangspunkt'),
         { name: 'Hvordan porteføljen er bygget', selectors: ['byggesteiner'] },
@@ -5296,22 +5376,25 @@ export default function PensumPrognoseModell() {
               </button>
             )}
             <div className="flex items-center gap-2">
-              <button onClick={() => setVisKundeliste(!visKundeliste)} className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border max-w-xs " + (visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
+              <button onClick={() => setVisKundeliste(!visKundeliste)} title="Åpne eller bytt aktivt kundekort" className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border max-w-xs " + (aktivKundeId ? "bg-blue-50 border-blue-300" : visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                <span className="truncate">{(kundeNavn || kundeSelskap) ? (kundeNavn || kundeSelskap) : 'Mine kunder'}</span>
+                <span className="truncate">{(kundeNavn || kundeSelskap) ? `Kundekort: ${kundeNavn || kundeSelskap}` : 'Velg kundekort'}</span>
               </button>
               <button onClick={() => { setPdfProduktValg([]); setPdfModal(true); }} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: '#D4886B' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Investeringsforslag
               </button>
-              <button onClick={lagreKunde} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
-                {lagringsStatus ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                )}
-                {lagringsStatus || 'Lagre'}
-              </button>
+              <div className="flex flex-col items-stretch">
+                <button onClick={lagreKunde} title={(kundeNavn || kundeSelskap) ? `Lagre endringene på kundekortet til ${kundeNavn || kundeSelskap}` : 'Oppgi kundenavn før du lagrer'} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
+                  {lagringsStatus ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                  )}
+                  {lagringsStatus || 'Lagre kundekort'}
+                </button>
+                {(kundeNavn || kundeSelskap) && !lagringsStatus && <span className="mt-1 max-w-[180px] truncate text-center text-[10px] font-medium text-gray-500">Lagrer på: {kundeNavn || kundeSelskap}</span>}
+              </div>
             </div>
             <div className="text-right hidden sm:block">
               <div className="text-base font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsprognose</div>
@@ -5367,7 +5450,10 @@ export default function PensumPrognoseModell() {
                   {lagredeKunder.map(kunde => (
                     <div key={kunde.id} className={"flex items-center justify-between p-4 rounded-lg border cursor-pointer hover:bg-gray-50 " + (aktivKundeId === kunde.id ? "border-blue-500 bg-blue-50" : "border-gray-200")} onClick={() => lastKundeData(kunde)}>
                       <div>
-                        <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn || kunde.kundeSelskap || 'Uten navn'}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn || kunde.kundeSelskap || 'Uten navn'}</div>
+                          {aktivKundeId === kunde.id && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">Aktivt kundekort</span>}
+                        </div>
                         {kunde.kundeNavn && kunde.kundeSelskap && <div className="text-xs text-gray-500">{kunde.kundeSelskap}</div>}
                         <div className="text-xs text-gray-500">
                           {formatCurrency((kunde.aksjerKunde || 0) + (kunde.aksjefondKunde || 0) + (kunde.renterKunde || 0) + (kunde.kontanterKunde || 0) + (kunde.peFondKunde || 0) + (kunde.unoterteAksjerKunde || 0) + (kunde.shippingKunde || 0) + (kunde.egenEiendomKunde || 0) + (kunde.eiendomSyndikatKunde || 0) + (kunde.eiendomFondKunde || 0))} • {kunde.risikoprofil}
@@ -11561,9 +11647,6 @@ export default function PensumPrognoseModell() {
 
                 {renderTilleggsmodulerVedPosisjon('etter-cover')}
 
-                {/* === PERSONLIG FØLGEBREV === */}
-                {isStandardModulAktiv('folgebrev') && renderTilleggsmodulInnhold('folgebrev')}
-
                 {/* === UTGANGSPUNKT OG INVESTERINGSMANDAT === */}
                 {isStandardModulAktiv('utgangspunkt') && <div data-rapport-slide="utgangspunkt" className="space-y-5">
                   <div>
@@ -13510,6 +13593,8 @@ export default function PensumPrognoseModell() {
         )}
 
       </main>
+
+      <LunaAssistant onApply={brukLunaFelter} />
 
       <footer className="mt-12 py-6 text-center border-t border-gray-200 bg-white no-print">
         <img src={PENSUM_LOGO} alt="Pensum" className="h-14 mx-auto mb-3" />
