@@ -1,6 +1,14 @@
 // Forventet avkastning er basert på CMA-metodikk (BlackRock, Vanguard, J.P. Morgan + nordisk overlay).
 // Se uploads/CMA_metodikk_.docx for full metodikk.
 // Volatilitet (forventet risiko) angir illustrativ årlig standardavvik.
+export const PENSUM_SELSKAPSNOEKKELTALL = {
+  ansatte: '43',
+  forvaltningskapital: 'NOK 14,0 Mrd',
+  forvaltningskapitalKort: 'NOK 14,0',
+  vekstForvaltningskapital: '29,0%',
+  vekstInntekter: '16,9%',
+};
+
 export const defaultPensumProdukter = {
     enkeltfond: [
       { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 10.8, aar2025: 21.5, aar2024: 12.5, aar2023: 13.2, aar2022: 5.0, forventetAvkastning: 9.5, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 15.7, risiko3ar: 4.1 },
