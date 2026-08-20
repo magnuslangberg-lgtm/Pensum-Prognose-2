@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -46,16 +46,17 @@ export default function PensumPrognoseModell() {
   const [dato, setDato] = useState(new Date().toISOString().split('T')[0]);
   
   // Kundens økonomiske situasjon starter tom og fylles inn per kundekort.
-  const [aksjerKunde, setAksjerKunde] = useState(0);
-  const [aksjefondKunde, setAksjefondKunde] = useState(0);
-  const [renterKunde, setRenterKunde] = useState(0);
-  const [kontanterKunde, setKontanterKunde] = useState(0);
-  const [peFondKunde, setPeFondKunde] = useState(0);
-  const [unoterteAksjerKunde, setUnoterteAksjerKunde] = useState(0);
-  const [shippingKunde, setShippingKunde] = useState(0);
-  const [egenEiendomKunde, setEgenEiendomKunde] = useState(0);
-  const [eiendomSyndikatKunde, setEiendomSyndikatKunde] = useState(0);
-  const [eiendomFondKunde, setEiendomFondKunde] = useState(0);
+  // Standardverdier: 10 mill totalt (8 mill likvid + 1 mill PE + 1 mill eiendom)
+  const [aksjerKunde, setAksjerKunde] = useState(DEFAULT_KUNDEKAPITAL.aksjerKunde);
+  const [aksjefondKunde, setAksjefondKunde] = useState(DEFAULT_KUNDEKAPITAL.aksjefondKunde);
+  const [renterKunde, setRenterKunde] = useState(DEFAULT_KUNDEKAPITAL.renterKunde);
+  const [kontanterKunde, setKontanterKunde] = useState(DEFAULT_KUNDEKAPITAL.kontanterKunde);
+  const [peFondKunde, setPeFondKunde] = useState(DEFAULT_KUNDEKAPITAL.peFondKunde);
+  const [unoterteAksjerKunde, setUnoterteAksjerKunde] = useState(DEFAULT_KUNDEKAPITAL.unoterteAksjerKunde);
+  const [shippingKunde, setShippingKunde] = useState(DEFAULT_KUNDEKAPITAL.shippingKunde);
+  const [egenEiendomKunde, setEgenEiendomKunde] = useState(DEFAULT_KUNDEKAPITAL.egenEiendomKunde);
+  const [eiendomSyndikatKunde, setEiendomSyndikatKunde] = useState(DEFAULT_KUNDEKAPITAL.eiendomSyndikatKunde);
+  const [eiendomFondKunde, setEiendomFondKunde] = useState(DEFAULT_KUNDEKAPITAL.eiendomFondKunde);
   const [innskudd, setInnskudd] = useState(0);
   const [uttak, setUttak] = useState(0);
   
@@ -318,7 +319,7 @@ export default function PensumPrognoseModell() {
   const [markedssynAnalyserer, setMarkedssynAnalyserer] = useState(false);
   const [sammenligningProfil, setSammenligningProfil] = useState('Offensiv');
   const [sammenligningAllokering, setSammenligningAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Offensiv'));
-  const [allokering, setAllokering] = useState(() => beregnAllokering(0, 0, 0, 'Moderat'));
+  const [allokering, setAllokering] = useState(() => beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat'));
 
   // Rebalansering - årlig endring i allokering
   const [pensumRebalanseringAktiv, setPensumRebalanseringAktiv] = useState(false);
@@ -1342,19 +1343,19 @@ export default function PensumPrognoseModell() {
     setRisikoprofil('Moderat');
     setHorisont(10);
     setLocalHorisont('10');
-    setAksjerKunde(0);
-    setAksjefondKunde(0);
-    setRenterKunde(0);
-    setKontanterKunde(0);
-    setPeFondKunde(0);
-    setUnoterteAksjerKunde(0);
-    setShippingKunde(0);
-    setEgenEiendomKunde(0);
-    setEiendomSyndikatKunde(0);
-    setEiendomFondKunde(0);
+    setAksjerKunde(DEFAULT_KUNDEKAPITAL.aksjerKunde);
+    setAksjefondKunde(DEFAULT_KUNDEKAPITAL.aksjefondKunde);
+    setRenterKunde(DEFAULT_KUNDEKAPITAL.renterKunde);
+    setKontanterKunde(DEFAULT_KUNDEKAPITAL.kontanterKunde);
+    setPeFondKunde(DEFAULT_KUNDEKAPITAL.peFondKunde);
+    setUnoterteAksjerKunde(DEFAULT_KUNDEKAPITAL.unoterteAksjerKunde);
+    setShippingKunde(DEFAULT_KUNDEKAPITAL.shippingKunde);
+    setEgenEiendomKunde(DEFAULT_KUNDEKAPITAL.egenEiendomKunde);
+    setEiendomSyndikatKunde(DEFAULT_KUNDEKAPITAL.eiendomSyndikatKunde);
+    setEiendomFondKunde(DEFAULT_KUNDEKAPITAL.eiendomFondKunde);
     setInnskudd(0);
     setUttak(0);
-    setAllokering(beregnAllokering(0, 0, 0, 'Moderat', avkastningsrater));
+    setAllokering(beregnAllokering(DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_EIENDOM, 'Moderat', avkastningsrater));
     setInvesteringsFormaal('Utvikle finansiell formue');
     setLikviditetsbehov('Begrenset');
     setVisKundeliste(false);
