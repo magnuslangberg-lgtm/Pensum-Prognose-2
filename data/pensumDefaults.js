@@ -289,212 +289,252 @@ export const produktBeskrivelser = {
 export const defaultProduktEksponering = {
     'global-core-active': {
       underliggende: [
-        {navn: 'Capital Group InvCoAmer (LUX) A4', vekt: 20.0},
-        {navn: 'AB Select US Equity S1 USD', vekt: 19.9},
-        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 10.5},
-        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 10.0},
-        {navn: 'Capital Group New Pers (LUX) ZL', vekt: 9.7},
-        {navn: 'BGF European Value D2', vekt: 9.6},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 8.8},
-        {navn: 'DNB Teknologi A', vekt: 6.0},
-        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 5.4}
+        {navn: 'AB Select US Equity S1 USD', vekt: 20.3},
+        {navn: 'Capital Group InvCoAmer (LUX) A4', vekt: 20.1},
+        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 13.1},
+        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 10.5},
+        {navn: 'Capital Group New Pers (LUX) Z L', vekt: 10.0},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 9.8},
+        {navn: 'DNB Teknologi A', vekt: 6.2},
+        {navn: 'BGF European Value D2', vekt: 5.2},
+        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 5.0}
       ],
       regioner: [
-        {navn: 'United States', vekt: 60.9}, {navn: 'Japan', vekt: 6.4}, {navn: 'United Kingdom', vekt: 4.3},
-        {navn: 'Taiwan', vekt: 4.0}, {navn: 'France', vekt: 3.5}, {navn: 'China', vekt: 2.7},
-        {navn: 'Switzerland', vekt: 2.6}, {navn: 'Germany', vekt: 2.1}, {navn: 'South Korea', vekt: 2.1},
-        {navn: 'Sweden', vekt: 2.0}, {navn: 'Other', vekt: 9.5}
+        {navn: 'United States', vekt: 64.2}, {navn: 'Japan', vekt: 6.1}, {navn: 'Taiwan', vekt: 4.3},
+        {navn: 'China', vekt: 2.8}, {navn: 'United Kingdom', vekt: 2.8}, {navn: 'France', vekt: 2.7},
+        {navn: 'South Korea', vekt: 2.6}, {navn: 'Switzerland', vekt: 2.6}, {navn: 'Germany', vekt: 1.7},
+        {navn: 'Netherlands', vekt: 1.5}, {navn: 'Other', vekt: 8.7}
       ],
       sektorer: [
-        {navn: 'Technology', vekt: 30.2}, {navn: 'Financial Services', vekt: 15.3}, {navn: 'Industrials', vekt: 13.1},
-        {navn: 'Communication Services', vekt: 9.4}, {navn: 'Healthcare', vekt: 9.1}, {navn: 'Consumer Cyclical', vekt: 8.6},
-        {navn: 'Consumer Defensive', vekt: 5.1}, {navn: 'Energy', vekt: 4.0}, {navn: 'Basic Materials', vekt: 2.6},
-        {navn: 'Utilities', vekt: 1.9}, {navn: 'Other', vekt: 0.8}
+        {navn: 'Technology', vekt: 33.4}, {navn: 'Financial Services', vekt: 15.7}, {navn: 'Industrials', vekt: 11.7},
+        {navn: 'Healthcare', vekt: 9.4}, {navn: 'Communication Services', vekt: 8.4}, {navn: 'Consumer Cyclical', vekt: 8.4},
+        {navn: 'Consumer Defensive', vekt: 5.2}, {navn: 'Energy', vekt: 3.3}, {navn: 'Basic Materials', vekt: 2.2},
+        {navn: 'Utilities', vekt: 1.5}, {navn: 'Other', vekt: 0.8}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 27.7}, {navn: 'Large Core', vekt: 33.0}, {navn: 'Large Growth', vekt: 22.8},
-        {navn: 'Mid Value', vekt: 3.9}, {navn: 'Mid Core', vekt: 7.0}, {navn: 'Mid Growth', vekt: 3.2},
-        {navn: 'Small Value', vekt: 1.1}, {navn: 'Small Core', vekt: 1.1}, {navn: 'Small Growth', vekt: 0.3}
+        {navn: 'Large Value', vekt: 27.5}, {navn: 'Large Core', vekt: 32.0}, {navn: 'Large Growth', vekt: 22.2},
+        {navn: 'Mid Value', vekt: 3.9}, {navn: 'Mid Core', vekt: 7.8}, {navn: 'Mid Growth', vekt: 3.6},
+        {navn: 'Small Value', vekt: 1.2}, {navn: 'Small Core', vekt: 1.3}, {navn: 'Small Growth', vekt: 0.5}
       ],
-      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 31.07.2026.'
     },
     'global-edge': {
       underliggende: [
         {navn: 'Janus Henderson Hrzn Glb SC IU2 USD', vekt: 16.8},
-        {navn: 'Capital Group InvCoAmer (LUX) Z', vekt: 13.7},
-        {navn: 'DNB Teknologi A', vekt: 13.3},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 10.2},
-        {navn: 'BGF European Value D2', vekt: 7.9},
+        {navn: 'DNB Teknologi A', vekt: 14.9},
+        {navn: 'Capital Group InvCoAmer (LUX) Z', vekt: 13.6},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 10.3},
+        {navn: 'Arctic Aurora LifeScience I', vekt: 8.2},
         {navn: 'ORIGO SELEQT A', vekt: 7.3},
-        {navn: 'Arctic Aurora LifeScience I', vekt: 7.0},
-        {navn: 'Bakersteel Glb Fds SICAV- Elctm I USD', vekt: 6.5},
-        {navn: 'Granahan US Focused Growth A USD Acc', vekt: 6.5},
-        {navn: 'Guinness Sustainable Energy Y USD Acc', vekt: 5.4},
-        {navn: 'FIRST Impact', vekt: 5.3}
+        {navn: 'Granahan US Focused Growth A USD Acc', vekt: 6.4},
+        {navn: 'PineBridge India Equity Y', vekt: 6.1},
+        {navn: 'Bakersteel Glb Fds SICAV- Elctm I USD', vekt: 5.8},
+        {navn: 'Guinness Sustainable Energy Y USD Acc', vekt: 5.2},
+        {navn: 'FIRST Impact', vekt: 5.2}
       ],
       regioner: [
-        {navn: 'United States', vekt: 48.6}, {navn: 'Sweden', vekt: 6.6}, {navn: 'United Kingdom', vekt: 4.6},
-        {navn: 'China', vekt: 4.2}, {navn: 'Canada', vekt: 3.8}, {navn: 'Japan', vekt: 3.7},
-        {navn: 'France', vekt: 3.2}, {navn: 'Taiwan', vekt: 3.0}, {navn: 'Denmark', vekt: 2.7},
-        {navn: 'Germany', vekt: 2.3}, {navn: 'Other', vekt: 17.3}
+        {navn: 'United States', vekt: 51.5}, {navn: 'India', vekt: 6.8}, {navn: 'Sweden', vekt: 6.4},
+        {navn: 'China', vekt: 3.9}, {navn: 'Japan', vekt: 3.9}, {navn: 'Canada', vekt: 3.2},
+        {navn: 'Taiwan', vekt: 3.1}, {navn: 'United Kingdom', vekt: 2.7}, {navn: 'South Korea', vekt: 2.4},
+        {navn: 'Denmark', vekt: 2.3}, {navn: 'Other', vekt: 13.8}
       ],
       sektorer: [
-        {navn: 'Technology', vekt: 25.2}, {navn: 'Industrials', vekt: 16.5}, {navn: 'Healthcare', vekt: 13.4},
-        {navn: 'Financial Services', vekt: 10.5}, {navn: 'Consumer Cyclical', vekt: 9.7}, {navn: 'Basic Materials', vekt: 8.6},
-        {navn: 'Communication Services', vekt: 7.1}, {navn: 'Energy', vekt: 3.1}, {navn: 'Utilities', vekt: 2.5},
-        {navn: 'Consumer Defensive', vekt: 1.9}, {navn: 'Other', vekt: 1.5}
+        {navn: 'Technology', vekt: 27.2}, {navn: 'Industrials', vekt: 14.7}, {navn: 'Healthcare', vekt: 14.1},
+        {navn: 'Financial Services', vekt: 10.7}, {navn: 'Consumer Cyclical', vekt: 10.3}, {navn: 'Basic Materials', vekt: 7.7},
+        {navn: 'Communication Services', vekt: 7.3}, {navn: 'Energy', vekt: 2.6}, {navn: 'Utilities', vekt: 2.1},
+        {navn: 'Consumer Defensive', vekt: 2.1}, {navn: 'Other', vekt: 1.3}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 12.9}, {navn: 'Large Core', vekt: 22.1}, {navn: 'Large Growth', vekt: 14.7},
-        {navn: 'Mid Value', vekt: 4.0}, {navn: 'Mid Core', vekt: 7.9}, {navn: 'Mid Growth', vekt: 9.1},
-        {navn: 'Small Value', vekt: 7.0}, {navn: 'Small Core', vekt: 10.5}, {navn: 'Small Growth', vekt: 11.9}
+        {navn: 'Large Value', vekt: 15.4}, {navn: 'Large Core', vekt: 17.6}, {navn: 'Large Growth', vekt: 13.1},
+        {navn: 'Mid Value', vekt: 4.5}, {navn: 'Mid Core', vekt: 8.5}, {navn: 'Mid Growth', vekt: 9.5},
+        {navn: 'Small Value', vekt: 5.2}, {navn: 'Small Core', vekt: 13.9}, {navn: 'Small Growth', vekt: 12.3}
       ],
-      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 31.07.2026.'
     },
     'basis': {
       underliggende: [
-        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 19.4},
-        {navn: 'Arctic Return Class I', vekt: 15.5},
-        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 12.0},
-        {navn: 'KLP Obligasjon Global S', vekt: 10.3},
-        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 8.3},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 7.3},
+        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 19.1},
+        {navn: 'Arctic Return Class I', vekt: 15.1},
+        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 12.5},
+        {navn: 'KLP Obligasjon Global S', vekt: 9.8},
+        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 8.5},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 7.7},
         {navn: 'Janus Henderson Hrzn Glb SC IU2 USD', vekt: 6.0},
-        {navn: 'BGF European Value D2', vekt: 4.2},
-        {navn: 'ORIGO SELEQT A', vekt: 4.1},
-        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 3.9},
-        {navn: 'Sentia ASA Registered Shares', vekt: 3.8},
-        {navn: 'PPI Public Property Invest AB', vekt: 2.6},
-        {navn: 'Elopak ASA', vekt: 2.6}
+        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 4.1},
+        {navn: 'DNB Teknologi A', vekt: 4.1},
+        {navn: 'ORIGO SELEQT A', vekt: 3.9},
+        {navn: 'Sentia ASA Registered Shares', vekt: 3.7},
+        {navn: 'Aker ASA Class A', vekt: 2.9},
+        {navn: 'AutoStore Holdings Ltd Ordinary Shares', vekt: 2.6}
       ],
       regioner: [
-        {navn: 'United States', vekt: 31.0}, {navn: 'Norway', vekt: 17.0}, {navn: 'Japan', vekt: 8.7},
-        {navn: 'Sweden', vekt: 6.3}, {navn: 'Taiwan', vekt: 4.8}, {navn: 'United Kingdom', vekt: 4.2},
-        {navn: 'China', vekt: 4.1}, {navn: 'Switzerland', vekt: 3.4}, {navn: 'France', vekt: 2.9},
-        {navn: 'South Korea', vekt: 2.9}, {navn: 'Other', vekt: 14.7}
+        {navn: 'United States', vekt: 37.0}, {navn: 'Norway', vekt: 17.1}, {navn: 'Japan', vekt: 8.9},
+        {navn: 'Sweden', vekt: 6.0}, {navn: 'Taiwan', vekt: 4.6}, {navn: 'China', vekt: 4.0},
+        {navn: 'Switzerland', vekt: 3.3}, {navn: 'South Korea', vekt: 3.2}, {navn: 'United Kingdom', vekt: 2.1},
+        {navn: 'France', vekt: 1.6}, {navn: 'Other', vekt: 12.0}
       ],
       sektorer: [
-        {navn: 'Industrials', vekt: 22.2}, {navn: 'Technology', vekt: 19.8}, {navn: 'Financial Services', vekt: 13.1},
-        {navn: 'Consumer Cyclical', vekt: 11.8}, {navn: 'Healthcare', vekt: 8.9}, {navn: 'Real Estate', vekt: 6.1},
-        {navn: 'Consumer Defensive', vekt: 5.3}, {navn: 'Communication Services', vekt: 4.9},
-        {navn: 'Energy', vekt: 4.1}, {navn: 'Basic Materials', vekt: 2.8}, {navn: 'Other', vekt: 0.9}
+        {navn: 'Industrials', vekt: 28.8}, {navn: 'Technology', vekt: 25.5}, {navn: 'Financial Services', vekt: 13.7},
+        {navn: 'Healthcare', vekt: 8.9}, {navn: 'Consumer Cyclical', vekt: 6.8}, {navn: 'Consumer Defensive', vekt: 5.3},
+        {navn: 'Communication Services', vekt: 4.9}, {navn: 'Energy', vekt: 2.7}, {navn: 'Basic Materials', vekt: 2.1},
+        {navn: 'Real Estate', vekt: 1.1}, {navn: 'Other', vekt: 0.2}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 17.3}, {navn: 'Large Core', vekt: 20.6}, {navn: 'Large Growth', vekt: 12.6},
-        {navn: 'Mid Value', vekt: 4.6}, {navn: 'Mid Core', vekt: 7.5}, {navn: 'Mid Growth', vekt: 5.5},
-        {navn: 'Small Value', vekt: 4.0}, {navn: 'Small Core', vekt: 17.3}, {navn: 'Small Growth', vekt: 10.5}
+        {navn: 'Large Value', vekt: 17.4}, {navn: 'Large Core', vekt: 20.3}, {navn: 'Large Growth', vekt: 11.9},
+        {navn: 'Mid Value', vekt: 9.4}, {navn: 'Mid Core', vekt: 8.9}, {navn: 'Mid Growth', vekt: 9.4},
+        {navn: 'Small Value', vekt: 3.1}, {navn: 'Small Core', vekt: 14.6}, {navn: 'Small Growth', vekt: 4.9}
       ],
-      disclaimer: 'Avkastning før oppstart 12. september 2023 er estimert med en lignende portefølje med 50% rentefond og 50% aksjer. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Avkastning før oppstart 12. september 2023 er estimert med en lignende portefølje med 50% rentefond og 50% aksjer. Eksponeringsdata per 31.07.2026.'
     },
     'global-hoyrente': {
       underliggende: [
+        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 30.3},
         {navn: 'Barings Global High Yield Bd I NOK Acc', vekt: 23.2},
         {navn: 'Storm Bond ICN NOK', vekt: 16.2},
-        {navn: 'Alfred Berg Nordic IG Medium Dur C (NOK)', vekt: 15.2},
-        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 15.2},
         {navn: 'BlueBay Global High Yield Bd I NOK', vekt: 15.2},
         {navn: 'KLP Obligasjon Global S', vekt: 15.2}
       ],
-      disclaimer: 'Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Eksponeringsdata per 31.07.2026.'
     },
     'nordisk-hoyrente': {
       underliggende: [
         {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 33.8},
         {navn: 'Storm Bond ICN NOK', vekt: 33.6},
-        {navn: 'Alfred Berg Nordic HY C (NOK)', vekt: 17.3},
-        {navn: 'Alfred Berg Nordic IG Medium Dur C (NOK)', vekt: 15.2}
+        {navn: 'Alfred Berg Nordic HY C (NOK)', vekt: 32.6}
       ],
-      disclaimer: 'Oppstart februar 2024. Utvikling før dette er estimert med underliggende fonds utvikling før oppstart. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart februar 2024. Utvikling før dette er estimert med underliggende fonds utvikling før oppstart. Eksponeringsdata per 31.07.2026.'
     },
     'energy-a': {
       underliggende: [
-        {navn: 'Equinor ASA', vekt: 7.2}, {navn: 'Var Energi ASA', vekt: 6.4}, {navn: 'Exxon Mobil Corp', vekt: 5.5},
-        {navn: 'Aker BP ASA', vekt: 5.4}, {navn: 'International Petroleum Corp', vekt: 4.7}, {navn: 'DNO ASA', vekt: 4.4},
-        {navn: 'Valero Energy Corp', vekt: 4.2}, {navn: 'Frontline PLC', vekt: 3.9}, {navn: 'Shell PLC', vekt: 3.8},
-        {navn: 'Cheniere Energy Inc', vekt: 3.6}, {navn: 'BP PLC', vekt: 3.1}, {navn: 'Chevron Corp', vekt: 3.0},
-        {navn: 'TotalEnergies SE', vekt: 3.0}
+        {navn: 'Equinor ASA', vekt: 7.6}, {navn: 'Var Energi ASA', vekt: 7.2},
+        {navn: 'ExxonMobil Holdings Corp', vekt: 6.3}, {navn: 'Aker BP ASA', vekt: 5.9},
+        {navn: 'Valero Energy Corp', vekt: 4.5}, {navn: 'Chevron Corp', vekt: 4.2},
+        {navn: 'International Petroleum Corp', vekt: 4.0}, {navn: 'Frontline PLC', vekt: 3.8},
+        {navn: 'ConocoPhillips', vekt: 3.6}, {navn: 'Cheniere Energy Inc', vekt: 3.6},
+        {navn: 'Shell PLC', vekt: 3.3}, {navn: 'BlueNord ASA', vekt: 3.3},
+        {navn: 'Marathon Petroleum Corp', vekt: 3.2}, {navn: 'TotalEnergies SE', vekt: 2.9},
+        {navn: 'DNO ASA', vekt: 2.9}, {navn: 'Eni SpA', vekt: 2.7},
+        {navn: 'EOG Resources Inc', vekt: 2.5}, {navn: 'Occidental Petroleum Corp', vekt: 2.2},
+        {navn: 'Devon Energy Corp', vekt: 2.2}, {navn: 'Subsea 7 SA', vekt: 2.1},
+        {navn: 'DOF Group ASA', vekt: 1.9}, {navn: 'Panoro Energy ASA', vekt: 1.8},
+        {navn: 'Siemens Energy AG Ordinary Shares', vekt: 1.7}, {navn: 'First Solar Inc', vekt: 1.7},
+        {navn: 'TGS ASA', vekt: 1.6}, {navn: 'Baker Hughes Co Class A', vekt: 1.6},
+        {navn: 'GE Vernova Inc', vekt: 1.6}, {navn: 'SLB Ltd', vekt: 1.4},
+        {navn: 'Iberdrola SA', vekt: 1.3}, {navn: 'Harbour Energy PLC', vekt: 1.3},
+        {navn: 'Bloom Energy Corp Class A', vekt: 1.2}, {navn: 'Nextpower Inc Class A', vekt: 0.9},
+        {navn: 'Halliburton Co', vekt: 0.9}, {navn: 'Noble Corp PLC Class A', vekt: 0.8},
+        {navn: 'Vestas Wind Systems AS', vekt: 0.8}, {navn: 'Valaris Ltd', vekt: 0.7},
+        {navn: 'Cameco Corp', vekt: 0.6}
       ],
       regioner: [
-        {navn: 'United States', vekt: 37.7}, {navn: 'Norway', vekt: 34.3}, {navn: 'United Kingdom', vekt: 8.9},
-        {navn: 'Canada', vekt: 5.6}, {navn: 'Other Countries', vekt: 3.9}, {navn: 'France', vekt: 3.0},
-        {navn: 'Italy', vekt: 2.6}, {navn: 'Denmark', vekt: 1.8}, {navn: 'Spain', vekt: 1.2},
-        {navn: 'Brazil', vekt: 0.9}
+        {navn: 'United States', vekt: 42.4}, {navn: 'Norway', vekt: 34.3}, {navn: 'Canada', vekt: 4.6},
+        {navn: 'United Kingdom', vekt: 4.6}, {navn: 'Other Countries', vekt: 3.8}, {navn: 'France', vekt: 2.9},
+        {navn: 'Italy', vekt: 2.7}, {navn: 'Germany', vekt: 1.7}, {navn: 'Spain', vekt: 1.3},
+        {navn: 'Denmark', vekt: 0.8}, {navn: 'Brazil', vekt: 0.7}
       ],
       sektorer: [
-        {navn: 'Energy', vekt: 91.2}, {navn: 'Industrials', vekt: 5.4}, {navn: 'Utilities', vekt: 2.2},
-        {navn: 'Technology', vekt: 1.2}
+        {navn: 'Energy', vekt: 88.9}, {navn: 'Industrials', vekt: 7.1}, {navn: 'Technology', vekt: 2.6},
+        {navn: 'Utilities', vekt: 1.3}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 39.4}, {navn: 'Large Core', vekt: 1.3}, {navn: 'Large Growth', vekt: 4.1},
-        {navn: 'Mid Value', vekt: 25.0}, {navn: 'Mid Core', vekt: 9.6}, {navn: 'Mid Growth', vekt: 4.5},
-        {navn: 'Small Value', vekt: 6.8}, {navn: 'Small Core', vekt: 9.2}, {navn: 'Small Growth', vekt: 0.0}
+        {navn: 'Large Value', vekt: 32.4}, {navn: 'Large Core', vekt: 12.1}, {navn: 'Large Growth', vekt: 3.1},
+        {navn: 'Mid Value', vekt: 24.1}, {navn: 'Mid Core', vekt: 10.3}, {navn: 'Mid Growth', vekt: 2.0},
+        {navn: 'Small Value', vekt: 5.8}, {navn: 'Small Core', vekt: 9.2}, {navn: 'Small Growth', vekt: 1.0}
       ],
-      disclaimer: 'Avkastning før oppstart desember 2022 er estimert med et lignende diskresjonært mandat forvaltet av samme forvalter. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Avkastning før oppstart desember 2022 er estimert med et lignende diskresjonært mandat forvaltet av samme forvalter. Eksponeringsdata per 31.07.2026.'
     },
     'banking-d': {
       underliggende: [
-        {navn: 'DNB Bank ASA', vekt: 16.6},
-        {navn: 'Sparebank 1 Sorost-Norge', vekt: 14.1},
-        {navn: 'SpareBank 1 SMN Depository Receipts', vekt: 10.7},
-        {navn: 'Sparebanken Norge Depository Receipts', vekt: 7.4},
-        {navn: 'Sparebanken More', vekt: 4.3},
-        {navn: 'SpareBank 1 SMN', vekt: 4.3},
-        {navn: 'Swedbank AB Class A', vekt: 4.2},
-        {navn: 'SpareBank 1 Ostfold Akershus Depository Receipts', vekt: 2.8},
-        {navn: 'SpareBank 1 Nord-Norge', vekt: 2.8},
-        {navn: 'Sparebank 1 Ostfold Akershus', vekt: 2.8},
-        {navn: 'Nordea Bank Abp', vekt: 2.4},
-        {navn: 'Sparebank 1 Sogn Og Fjordane', vekt: 2.3},
-        {navn: 'SpareBank 1 Ringerike Hadeland', vekt: 2.3}
+        {navn: 'DNB Bank ASA', vekt: 17.6},
+        {navn: 'SpareBank 1 SMN Depository Receipts', vekt: 17.0},
+        {navn: 'SpareBank 1 Sor Norge ASA', vekt: 9.6},
+        {navn: 'Sparebanken Norge Depository Receipts', vekt: 9.5},
+        {navn: 'Sparebank 1 Sorost-Norge', vekt: 5.5},
+        {navn: 'Swedbank AB Class A', vekt: 4.8},
+        {navn: 'Sparebanken More', vekt: 4.2},
+        {navn: 'SpareBank 1 Nord-Norge Depository Receipts', vekt: 4.1},
+        {navn: 'Nordea Bank Abp', vekt: 2.6},
+        {navn: 'Sparebank 1 Ostfold Akershus Depository Receipts', vekt: 2.6},
+        {navn: 'Sparebank 1 Sogn Og Fjordane', vekt: 2.2},
+        {navn: 'SpareBank 1 Ostlandet Depository Receipts', vekt: 1.9},
+        {navn: 'Skandinaviska Enskilda Banken AB Class A', vekt: 1.5},
+        {navn: 'SpareBank 1 Ostlandet', vekt: 1.4},
+        {navn: 'Haugesund Sparebank', vekt: 1.4},
+        {navn: 'Skue Sparebank', vekt: 1.4},
+        {navn: 'SpareBank 1 Ringerike Hadeland', vekt: 1.4},
+        {navn: 'SpareBank 1 Nord-Norge', vekt: 1.4},
+        {navn: 'Danske Bank AS', vekt: 1.4},
+        {navn: 'Sparebank 1 Sorost-Norge', vekt: 1.4},
+        {navn: 'Sparebanken Ost', vekt: 1.3},
+        {navn: 'NOBA Bank Group AB (publ)', vekt: 1.1},
+        {navn: 'Rogaland Sparebank', vekt: 1.1},
+        {navn: 'SpareBank 1 Ringerike Hadeland', vekt: 1.1},
+        {navn: 'Morrow Bank AB', vekt: 1.0},
+        {navn: 'SpareBank 1 Helgeland Depository Receipts', vekt: 0.6},
+        {navn: 'Sparebanken Øst Depository Receipts', vekt: 0.6},
+        {navn: 'SpareBank 1 Nordmore Depository Receipts', vekt: 0.3},
+        {navn: 'Enity Holding AB', vekt: 0.0}
       ],
       regioner: [
-        {navn: 'Norway', vekt: 83.4}, {navn: 'Sweden', vekt: 14.4}, {navn: 'Denmark', vekt: 2.2}
+        {navn: 'Norway', vekt: 85.0}, {navn: 'Sweden', vekt: 13.2}, {navn: 'Denmark', vekt: 1.8}
       ],
       sektorer: [
         {navn: 'Financial Services', vekt: 100.0}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 44.7}, {navn: 'Mid Value', vekt: 19.6}, {navn: 'Mid Core', vekt: 16.2},
-        {navn: 'Mid Growth', vekt: 2.2}, {navn: 'Small Value', vekt: 6.1}, {navn: 'Small Core', vekt: 11.3}
+        {navn: 'Large Value', vekt: 36.5}, {navn: 'Mid Value', vekt: 12.5}, {navn: 'Mid Core', vekt: 12.6},
+        {navn: 'Mid Growth', vekt: 1.5}, {navn: 'Small Value', vekt: 35.5}, {navn: 'Small Core', vekt: 0.0},
+        {navn: 'Small Growth', vekt: 1.4}
       ],
-      disclaimer: 'Oppstart 29. januar 2025. Utvikling før dette er estimert med det lignende mandatet Pensum Sparebank+. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart 29. januar 2025. Utvikling før dette er estimert med det lignende mandatet Pensum Sparebank+. Eksponeringsdata per 31.07.2026.'
     },
     'norge-a': {
       underliggende: [
-        {navn: 'DNB Bank ASA', vekt: 6.4}, {navn: 'Protector Forsikring ASA', vekt: 5.5},
-        {navn: 'Equinor ASA', vekt: 4.8}, {navn: 'Mowi ASA', vekt: 4.7},
-        {navn: 'Storebrand ASA', vekt: 4.6}, {navn: 'Aker ASA Class A', vekt: 4.5},
-        {navn: 'BW LPG Ltd', vekt: 3.6}, {navn: 'DOF Group ASA', vekt: 3.6},
-        {navn: 'SpareBank 1 SMN Depository Receipts', vekt: 3.4}, {navn: 'Capital Tankers Corp', vekt: 3.3},
-        {navn: 'SpareBank 1 Sor Norge ASA', vekt: 3.3}, {navn: 'Endur ASA', vekt: 3.2},
-        {navn: 'AutoStore Holdings Ltd Ordinary Shares', vekt: 3.1}
+        {navn: 'DNB Bank ASA', vekt: 7.6}, {navn: 'Aker ASA Class A', vekt: 6.3},
+        {navn: 'Protector Forsikring ASA', vekt: 5.5}, {navn: 'Storebrand ASA', vekt: 5.0},
+        {navn: 'Mowi ASA', vekt: 4.4}, {navn: 'Equinor ASA', vekt: 4.2},
+        {navn: 'BW LPG Ltd', vekt: 4.0}, {navn: 'Kongsberg Gruppen ASA', vekt: 3.7},
+        {navn: 'Gjensidige Forsikring ASA', vekt: 3.5}, {navn: 'SpareBank 1 Sor Norge ASA', vekt: 3.3},
+        {navn: 'Endur ASA', vekt: 3.2}, {navn: 'Capital Tankers Corp', vekt: 3.2},
+        {navn: 'DOF Group ASA', vekt: 3.1}, {navn: 'SpareBank 1 SMN Depository Receipts', vekt: 3.1},
+        {navn: 'AutoStore Holdings Ltd Ordinary Shares', vekt: 3.0}, {navn: 'Scatec ASA Ordinary Shares', vekt: 2.9},
+        {navn: 'Sentia ASA Registered Shares', vekt: 2.7}, {navn: 'Europris ASA', vekt: 2.7},
+        {navn: 'SATS ASA Ordinary Shares', vekt: 2.6}, {navn: 'Nordic Semiconductor ASA', vekt: 2.5},
+        {navn: 'PPI Public Property Invest AB', vekt: 2.4}, {navn: 'Klaveness Combination Carriers ASA', vekt: 2.2},
+        {navn: 'SalMar ASA', vekt: 2.1}, {navn: 'Hafnia Ltd Ordinary Shares', vekt: 1.8},
+        {navn: 'Okeanis Eco Tankers Corp', vekt: 1.8}, {navn: 'Frontline PLC', vekt: 1.8},
+        {navn: 'Odfjell Drilling Ltd', vekt: 1.7}, {navn: 'Elopak ASA', vekt: 1.7},
+        {navn: 'ABG Sundal Collier Holding ASA', vekt: 1.7}, {navn: 'Paratus Energy Services Ltd', vekt: 1.5},
+        {navn: 'Kid ASA', vekt: 1.4}, {navn: 'Dellia Group ASA Ordinary Shares', vekt: 1.2},
+        {navn: 'Kongsberg Maritime ASA', vekt: 1.0}, {navn: 'Smartoptics Group ASA Ordinary Shares', vekt: 0.7},
+        {navn: 'MPC Container Ships ASA', vekt: 0.2}
       ],
       regioner: [
-        {navn: 'Norway', vekt: 86.0}, {navn: 'Singapore', vekt: 5.2}, {navn: 'Greece', vekt: 4.9},
-        {navn: 'Other Countries', vekt: 2.2}, {navn: 'Mexico', vekt: 1.7}
+        {navn: 'Norway', vekt: 83.5}, {navn: 'Singapore', vekt: 5.9}, {navn: 'Greece', vekt: 5.0},
+        {navn: 'Sweden', vekt: 2.4}, {navn: 'Other Countries', vekt: 1.8}, {navn: 'Mexico', vekt: 1.5}
       ],
       sektorer: [
-        {navn: 'Industrials', vekt: 28.8}, {navn: 'Financial Services', vekt: 24.8}, {navn: 'Energy', vekt: 14.2},
-        {navn: 'Consumer Defensive', vekt: 12.8}, {navn: 'Technology', vekt: 6.7}, {navn: 'Consumer Cyclical', vekt: 6.1},
-        {navn: 'Real Estate', vekt: 2.6}, {navn: 'Utilities', vekt: 2.3}, {navn: 'Communication Services', vekt: 1.7}
+        {navn: 'Industrials', vekt: 32.3}, {navn: 'Financial Services', vekt: 29.9}, {navn: 'Energy', vekt: 13.2},
+        {navn: 'Consumer Defensive', vekt: 10.4}, {navn: 'Consumer Cyclical', vekt: 5.7}, {navn: 'Technology', vekt: 3.2},
+        {navn: 'Utilities', vekt: 2.9}, {navn: 'Real Estate', vekt: 2.4}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 12.1}, {navn: 'Large Core', vekt: 0.0}, {navn: 'Large Growth', vekt: 3.3},
-        {navn: 'Mid Value', vekt: 10.2}, {navn: 'Mid Core', vekt: 26.6}, {navn: 'Mid Growth', vekt: 14.3},
-        {navn: 'Small Value', vekt: 4.2}, {navn: 'Small Core', vekt: 18.4}, {navn: 'Small Growth', vekt: 11.0}
+        {navn: 'Large Value', vekt: 12.7}, {navn: 'Large Core', vekt: 0.0}, {navn: 'Large Growth', vekt: 4.0},
+        {navn: 'Mid Value', vekt: 16.4}, {navn: 'Mid Core', vekt: 26.7}, {navn: 'Mid Growth', vekt: 5.9},
+        {navn: 'Small Value', vekt: 9.5}, {navn: 'Small Core', vekt: 16.8}, {navn: 'Small Growth', vekt: 8.0}
       ],
-      disclaimer: 'Oppstart 27. november 2023. Utvikling før dette er estimert med lignende porteføljer. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart 27. november 2023. Utvikling før dette er estimert med lignende porteføljer. Eksponeringsdata per 31.07.2026.'
     },
     'financial-d': {
       underliggende: [
-        {navn: 'IuteCredit Finance S.a r.l.', vekt: 27.2},
-        {navn: 'Eleving Group SA', vekt: 19.2},
-        {navn: 'Stichting AK Rabobank Certificaten', vekt: 18.0},
-        {navn: 'Worldline SA', vekt: 17.4},
-        {navn: 'Multitude Capital Oyj', vekt: 10.3},
-        {navn: 'Sherwood Financing PLC', vekt: 7.9}
+        {navn: 'IuteCredit Finance S.a r.l.', vekt: 33.2},
+        {navn: 'Worldline SA', vekt: 17.7},
+        {navn: 'Eleving Group SA', vekt: 15.6},
+        {navn: 'Stichting AK Rabobank Certificaten', vekt: 15.3},
+        {navn: 'Sherwood Financing PLC', vekt: 9.6},
+        {navn: 'Multitude Capital Oyj', vekt: 8.5}
       ],
-      disclaimer: 'Oppstart 05.04.2025. Utvikling før dette er estimert med indeksen Bloomberg Global High Yield, valutasikret til NOK. Eksponeringsdata per 30.04.2026.'
+      disclaimer: 'Oppstart 05.04.2025. Utvikling før dette er estimert med indeksen Bloomberg Global High Yield, valutasikret til NOK. Eksponeringsdata per 31.07.2026.'
     },
     'kairos-a': {
       underliggende: [
@@ -509,7 +549,24 @@ export const defaultProduktEksponering = {
         {navn: 'Vinci SA', vekt: 2.9}, {navn: 'Bloom Energy Corp Class A', vekt: 2.6},
         {navn: 'Alamos Gold Inc Class A', vekt: 2.6}
       ],
-      disclaimer: 'Tematisk global aksjeløsning. Konsentrert tematisk aksjefond. Eksponeringsdata per 30.04.2026.'
+      regioner: [
+        {navn: 'North America', vekt: 62.8}, {navn: 'Europe dev', vekt: 27.5}, {navn: 'Asia emrg', vekt: 2.3},
+        {navn: 'United Kingdom', vekt: 1.8}, {navn: 'Japan', vekt: 1.7}, {navn: 'Asia dev', vekt: 1.7},
+        {navn: 'Latin America', vekt: 1.6}, {navn: 'Australasia', vekt: 0.7}, {navn: 'Europe emrg', vekt: 0.0},
+        {navn: 'Africa/Middle East', vekt: 0.0}
+      ],
+      sektorer: [
+        {navn: 'Industrials', vekt: 23.1}, {navn: 'Healthcare', vekt: 18.9}, {navn: 'Financial Services', vekt: 18.2},
+        {navn: 'Technology', vekt: 15.3}, {navn: 'Consumer Cyclical', vekt: 9.4}, {navn: 'Utilities', vekt: 5.8},
+        {navn: 'Energy', vekt: 5.6}, {navn: 'Communication Services', vekt: 2.1}, {navn: 'Basic Materials', vekt: 1.6},
+        {navn: 'Real Estate', vekt: 0.0}
+      ],
+      stil: [
+        {navn: 'Large Value', vekt: 19.3}, {navn: 'Large Core', vekt: 15.3}, {navn: 'Large Growth', vekt: 18.0},
+        {navn: 'Mid Value', vekt: 10.5}, {navn: 'Mid Core', vekt: 9.1}, {navn: 'Mid Growth', vekt: 16.7},
+        {navn: 'Small Value', vekt: 1.3}, {navn: 'Small Core', vekt: 6.3}, {navn: 'Small Growth', vekt: 3.5}
+      ],
+      disclaimer: 'Tematisk global aksjeløsning. Konsentrert tematisk aksjefond. Region-, sektor- og stildata per 31.07.2026. Underliggende beholdninger per 30.04.2026.'
     }
   };
 
