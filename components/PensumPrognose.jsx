@@ -535,8 +535,11 @@ export default function PensumPrognoseModell() {
   }, [produktHistorikk]);
 
   const hentAarsverdiForProdukt = useCallback((produkt, felt, aar) => {
+    if (aar === RAPPORT_DATO_OBJEKT.getFullYear()
+      && Object.prototype.hasOwnProperty.call(HISTORIKK_2026_YTD, produkt?.id)) {
+      return HISTORIKK_2026_YTD[produkt.id];
+    }
     const fraHistorikk = beregnAarsavkastningFraHistorikk(produkt?.id, aar);
-    if (aar === RAPPORT_DATO_OBJEKT.getFullYear() && erGyldigTall(fraHistorikk)) return fraHistorikk;
     if (erGyldigTall(produkt?.[felt])) return produkt[felt];
     return fraHistorikk;
   }, [beregnAarsavkastningFraHistorikk]);
@@ -801,18 +804,21 @@ export default function PensumPrognoseModell() {
         const produkt = alleProdukt.find((p) => p.id === allok.id);
         if (!produkt || allok.vekt <= 0) return;
 
-        // Inneværende YTD skal alltid komme fra den ferske datafeeden. De statiske
-        // produktfeltene er kun fallback for eldre år eller manglende historikk.
-        let avkastning = aarMapping[aarFelt] === RAPPORT_DATO_OBJEKT.getFullYear()
-          ? beregnFraHistorikk(produkt.id, aarMapping[aarFelt])
-          : null;
+        // Publisert YTD fra månedsrapporten er fasit. Datafeed-historikken brukes
+        // til grafer og som fallback for produkter uten et rapportert YTD-tall.
+        const erInnevaerendeAar = aarMapping[aarFelt] === RAPPORT_DATO_OBJEKT.getFullYear();
+        const harRapportertYtd = erInnevaerendeAar
+          && Object.prototype.hasOwnProperty.call(HISTORIKK_2026_YTD, produkt.id);
+        let avkastning = harRapportertYtd ? HISTORIKK_2026_YTD[produkt.id] : null;
         if (!erGyldigTall(avkastning)) {
-          avkastning = erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null;
+          avkastning = harRapportertYtd
+            ? null
+            : (erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null);
         }
-        if (!erGyldigTall(avkastning)) {
+        if (!harRapportertYtd && !erGyldigTall(avkastning)) {
           avkastning = beregnFraHistorikk(produkt.id, aarMapping[aarFelt]);
         }
-        if (!erGyldigTall(avkastning) && erGyldigTall(produkt?.forventetAvkastning)) {
+        if (!harRapportertYtd && !erGyldigTall(avkastning) && erGyldigTall(produkt?.forventetAvkastning)) {
           avkastning = Number(produkt.forventetAvkastning);
         }
 
