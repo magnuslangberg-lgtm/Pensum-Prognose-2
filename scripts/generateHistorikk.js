@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_FILENAME = 'Datafeed til rådgiververktøy - juli26.xlsx';
+const XLSX_FILENAME = 'Datafeed til rådgiververktøy 31.08.26.xlsx';
 const requestedFile = process.argv[2] || XLSX_FILENAME;
 const XLSX_PATH = path.isAbsolute(requestedFile)
   ? requestedFile
