@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "data:generate": "node scripts/generateHistorikk.js",
+    "data:check": "node scripts/generateHistorikk.js --check",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"

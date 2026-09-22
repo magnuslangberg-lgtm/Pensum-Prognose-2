@@ -5,7 +5,7 @@
 2. Oppdater Morningstar-/produktgrunnlag for hver Pensum-løsning.
 3. Last opp filer til `uploads/`.
 4. Oppdater standardfilen i `scripts/generateHistorikk.js`, og kjør `npm run data:generate`. Alternativt kan filnavnet oppgis direkte: `npm run data:generate -- "filnavn.xlsx"`.
-5. Kontroller at generatoren finner alle obligatoriske ark og at alle produkt- og indeksserier slutter på rapportdatoen.
+5. Kjør `npm run data:check`. Kontrollen stopper dersom et obligatorisk ark eller produkt mangler, kolonnene har flyttet seg, rapportdatoene er ulike, en serie ikke ender på rapportdatoen, eller generert historikk ikke er oppdatert.
 6. Verifiser at `report-config-v2` viser riktige produkter og rapportdato.
 7. Test `proposal-v2-debug` og `generate-pptx-v2` før bruk i kundemøter.
 
