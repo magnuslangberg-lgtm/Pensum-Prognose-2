@@ -65,18 +65,16 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
   // Baserenter (3M) – lastes fra /rates.json, med fallback-verdier
   const [baserenter, setBaserenter] = useState({
-    NOK: { navn: 'NIBOR 3M', rate: 4.00, oppdatert: '03.01.2026' },
-    EUR: { navn: 'EURIBOR 3M', rate: 2.25, oppdatert: '03.01.2026' },
-    USD: { navn: 'SOFR 3M', rate: 3.60, oppdatert: '02.01.2026' },
-    SEK: { navn: 'STIBOR 3M', rate: 2.00, oppdatert: '03.03.2026' }
+    NOK: { navn: 'NIBOR 3M', rate: 4.79, oppdatert: '29.09.2026' },
+    EUR: { navn: 'EURIBOR 3M', rate: 2.60, oppdatert: '02.10.2026' },
+    USD: { navn: 'SOFR 3M', rate: 4.03, oppdatert: '02.10.2026' },
+    SEK: { navn: 'STIBOR 3M', rate: 2.05, oppdatert: '30.09.2026' }
   });
   const [renteOppdatert, setRenteOppdatert] = useState(null);
 
   useEffect(() => {
-    // Henter direkte fra GitHub – oppdateres uten redeploy
-    const RATES_URL =
-      'https://raw.githubusercontent.com/magnuslangberg-lgtm/Modell-for-Verdipapirbel-ning/main/public/rates.json';
-    fetch(RATES_URL)
+    // Henter fra public/rates.json i dette repoet – oppdater den filen ved renteendringer
+    fetch('/rates.json', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.rates) setBaserenter(data.rates);

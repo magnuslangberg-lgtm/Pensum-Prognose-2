@@ -1,25 +1,25 @@
 {
-  "updated": "2026-05-04",
+  "updated": "2026-10-07",
   "rates": {
     "NOK": {
       "navn": "NIBOR 3M",
-      "rate": 4.0,
-      "oppdatert": "03.03.2026"
+      "rate": 4.79,
+      "oppdatert": "29.09.2026"
     },
     "EUR": {
       "navn": "EURIBOR 3M",
-      "rate": 2.25,
-      "oppdatert": "03.03.2026"
+      "rate": 2.6,
+      "oppdatert": "02.10.2026"
     },
     "USD": {
       "navn": "SOFR 3M",
-      "rate": 3.6,
-      "oppdatert": "03.03.2026"
+      "rate": 4.03,
+      "oppdatert": "02.10.2026"
     },
     "SEK": {
       "navn": "STIBOR 3M",
-      "rate": 2.0,
-      "oppdatert": "03.03.2026"
+      "rate": 2.05,
+      "oppdatert": "30.09.2026"
     }
   }
 }
