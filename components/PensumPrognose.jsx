@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -715,23 +715,7 @@ export default function PensumPrognoseModell() {
   const pensumTotalVekt = pensumAllokering.reduce((s, p) => s + p.vekt, 0);
 
   const aggregertPensumEksponering = useMemo(() => {
-    const totalVekt = pensumAllokering.reduce((s, p) => s + (p.vekt || 0), 0) || 1;
-    const lagAgg = (felt) => {
-      const map = new Map();
-      pensumAllokering.forEach((p) => {
-        const data = produktEksponering?.[p.id]?.[felt];
-        if (!Array.isArray(data) || p.vekt <= 0) return;
-        const faktor = p.vekt / totalVekt;
-        data.forEach((rad) => {
-          const key = rad.navn;
-          map.set(key, (map.get(key) || 0) + ((Number(rad.vekt) || 0) * faktor));
-        });
-      });
-      return Array.from(map.entries())
-        .map(([navn, vekt]) => ({ navn, vekt: Number(vekt.toFixed(1)) }))
-        .sort((a, b) => b.vekt - a.vekt)
-        .slice(0, 8);
-    };
+    const lagAgg = (felt) => aggregerEksponering(pensumAllokering, produktEksponering, felt, 8);
     return {
       sektorer: lagAgg('sektorer'),
       regioner: lagAgg('regioner')
@@ -7876,24 +7860,7 @@ export default function PensumPrognoseModell() {
                     if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
                     return true;
                   });
-                  const totalAksjeVekt = aksjeProdukter.reduce((s, a) => s + a.vekt, 0) || 1;
-
-                  const aggreger = (key) => {
-                    const sumMap = {};
-                    aksjeProdukter.forEach(a => {
-                      const eks = produktEksponering?.[a.id]?.[key];
-                      if (!eks) return;
-                      const relVekt = a.vekt / totalAksjeVekt;
-                      eks.forEach(row => {
-                        if (!sumMap[row.navn]) sumMap[row.navn] = 0;
-                        sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt;
-                      });
-                    });
-                    return Object.entries(sumMap)
-                      .map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) }))
-                      .sort((a, b) => b.vekt - a.vekt)
-                      .slice(0, 10);
-                  };
+                  const aggreger = (key) => aggregerEksponering(aksjeProdukter, produktEksponering, key, 10);
 
                   const aggRegioner = aggreger('regioner');
                   const aggSektorer = aggreger('sektorer');
@@ -12553,24 +12520,7 @@ export default function PensumPrognoseModell() {
                     if (a.id === 'global-hoyrente' || a.id === 'nordisk-hoyrente') return false;
                     return true;
                   });
-                  const totalAksjeVektRap = aksjeProdRap.reduce((s, a) => s + a.vekt, 0) || 1;
-
-                  const aggregerRap = (key) => {
-                    const sumMap = {};
-                    aksjeProdRap.forEach(a => {
-                      const eks = produktEksponering?.[a.id]?.[key];
-                      if (!eks) return;
-                      const relVekt = a.vekt / totalAksjeVektRap;
-                      eks.forEach(row => {
-                        if (!sumMap[row.navn]) sumMap[row.navn] = 0;
-                        sumMap[row.navn] += (Number(row.vekt) || 0) * relVekt;
-                      });
-                    });
-                    return Object.entries(sumMap)
-                      .map(([navn, vekt]) => ({ navn, vekt: parseFloat(vekt.toFixed(1)) }))
-                      .sort((a, b) => b.vekt - a.vekt)
-                      .slice(0, 10);
-                  };
+                  const aggregerRap = (key) => aggregerEksponering(aksjeProdRap, produktEksponering, key, 10);
 
                   const aggRegionerRap = aggregerRap('regioner');
                   const aggSektorerRap = aggregerRap('sektorer');
