@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -512,27 +512,10 @@ export default function PensumPrognoseModell() {
 
   // Last admin-data fra storage ved oppstart
 
-  const beregnAarsavkastningFraHistorikk = useCallback((produktId, aar) => {
-    const hist = produktHistorikk?.[produktId];
-    const data = Array.isArray(hist?.data) ? hist.data : [];
-    const sortert = data
-      .filter((punkt) => erGyldigTall(punkt?.verdi) && parseHistorikkDato(punkt?.dato))
-      .sort((a, b) => parseHistorikkDato(a.dato) - parseHistorikkDato(b.dato));
-    if (sortert.length < 2) return null;
-
-    const startDato = new Date(aar, 0, 1);
-    const sluttDato = aar === 2026 ? RAPPORT_DATO_OBJEKT : new Date(aar, 11, 31);
-
-    const startKandidat = sortert.filter((punkt) => parseHistorikkDato(punkt.dato) <= startDato).slice(-1)[0]
-      || sortert.find((punkt) => parseHistorikkDato(punkt.dato) >= startDato);
-    const sluttKandidat = sortert.filter((punkt) => {
-      const dato = parseHistorikkDato(punkt.dato);
-      return dato && dato >= startDato && dato <= sluttDato;
-    }).slice(-1)[0];
-
-    if (!startKandidat || !sluttKandidat || startKandidat === sluttKandidat || !erGyldigTall(startKandidat.verdi) || startKandidat.verdi === 0) return null;
-    return ((sluttKandidat.verdi / startKandidat.verdi) - 1) * 100;
-  }, [produktHistorikk]);
+  const beregnAarsavkastningFraHistorikk = useCallback(
+    (produktId, aar) => beregnAarsavkastningFraData(produktHistorikk?.[produktId]?.data, aar),
+    [produktHistorikk]
+  );
 
   const hentAarsverdiForProdukt = useCallback((produkt, felt, aar) => {
     if (aar === RAPPORT_DATO_OBJEKT.getFullYear()
@@ -759,27 +742,7 @@ export default function PensumPrognoseModell() {
     const aarMapping = { aar2026: 2026, aar2025: 2025, aar2024: 2024, aar2023: 2023, aar2022: 2022 };
     const resultat = {};
 
-    const beregnFraHistorikk = (produktId, aar) => {
-      const hist = produktHistorikk?.[produktId];
-      const data = Array.isArray(hist?.data) ? hist.data : [];
-      const sortert = data
-        .filter((punkt) => erGyldigTall(punkt?.verdi) && parseHistorikkDato(punkt?.dato))
-        .sort((a, b) => parseHistorikkDato(a.dato) - parseHistorikkDato(b.dato));
-      if (sortert.length < 2) return null;
-
-      const startDato = new Date(aar, 0, 1);
-      const sluttDato = aar === 2026 ? RAPPORT_DATO_OBJEKT : new Date(aar, 11, 31);
-
-      const startKandidat = sortert.filter((punkt) => parseHistorikkDato(punkt.dato) <= startDato).slice(-1)[0]
-        || sortert.find((punkt) => parseHistorikkDato(punkt.dato) >= startDato);
-      const sluttKandidat = sortert.filter((punkt) => {
-        const dato = parseHistorikkDato(punkt.dato);
-        return dato && dato >= startDato && dato <= sluttDato;
-      }).slice(-1)[0];
-
-      if (!startKandidat || !sluttKandidat || startKandidat === sluttKandidat || !erGyldigTall(startKandidat.verdi) || startKandidat.verdi === 0) return null;
-      return ((sluttKandidat.verdi / startKandidat.verdi) - 1) * 100;
-    };
+    const beregnFraHistorikk = (produktId, aar) => beregnAarsavkastningFraData(produktHistorikk?.[produktId]?.data, aar);
 
     aarKolonner.forEach((aarFelt) => {
       let vektetSum = 0;
@@ -5832,6 +5795,9 @@ export default function PensumPrognoseModell() {
                       setAksjerKunde(0); setAksjefondKunde(0); setRenterKunde(0); setKontanterKunde(0);
                       setPeFondKunde(0); setUnoterteAksjerKunde(0); setShippingKunde(0);
                       setEgenEiendomKunde(0); setEiendomSyndikatKunde(0); setEiendomFondKunde(0);
+                      // Manuelt innskrevne beløp i Pensum-forslaget og Formuesplanleggeren følger
+                      // ellers ikke med, og ville blitt stående igjen etter nullstilling.
+                      setInvestertBelop(null); setFormuesPlanleggerBelop(null);
                     }}
                     className="w-full mt-2 py-2 px-4 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
                   >
