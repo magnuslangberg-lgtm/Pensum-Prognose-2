@@ -52,6 +52,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Luna-chat feilet:', error);
-    return res.status(500).json({ error: error.message || 'Luna kunne ikke svare.' });
+    console.error(error);
+    return res.status(500).json({ error: 'Luna kunne ikke svare.' });
   }
 }

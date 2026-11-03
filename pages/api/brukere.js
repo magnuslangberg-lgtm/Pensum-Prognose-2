@@ -1,8 +1,16 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 const DATA_DIR = path.join(process.cwd(), '.data');
 const BRUKERE_FILE = path.join(DATA_DIR, 'brukere.json');
+
+// Admin-passordet ligger bare på serveren. Sett PENSUM_ADMIN_PASSORD i miljøvariablene
+// (f.eks. i Vercel). Reserveverdien gjør at eksisterende oppsett fortsatt virker.
+const ADMIN_PASSORD = process.env.PENSUM_ADMIN_PASSORD || 'pensum2024';
+
+// Felt en bruker selv kan endre på egen profil.
+const PROFILFELT = ['navn', 'telefon', 'tittel', 'bilde'];
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -11,9 +19,9 @@ function ensureDataDir() {
 }
 
 function readBrukere() {
-  ensureDataDir();
-  if (!fs.existsSync(BRUKERE_FILE)) return {};
   try {
+    ensureDataDir();
+    if (!fs.existsSync(BRUKERE_FILE)) return {};
     return JSON.parse(fs.readFileSync(BRUKERE_FILE, 'utf8'));
   } catch {
     return {};
@@ -25,73 +33,130 @@ function writeBrukere(brukere) {
   fs.writeFileSync(BRUKERE_FILE, JSON.stringify(brukere, null, 2), 'utf8');
 }
 
+// Sammenligner uten å lekke lengde/innhold via svartid.
+function likeHemmeligheter(a, b) {
+  const x = Buffer.from(String(a ?? ''));
+  const y = Buffer.from(String(b ?? ''));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+
+// PIN sendes aldri ut av serveren.
+function utenPin(bruker) {
+  if (!bruker) return bruker;
+  const { pin, ...rest } = bruker;
+  return rest;
+}
+
+function erAdmin(req) {
+  return likeHemmeligheter(req.headers['x-admin-passord'], ADMIN_PASSORD);
+}
+
 export default function handler(req, res) {
+  const body = req.body || {};
+  const epostNormalisert = typeof body.epost === 'string' ? body.epost.toLowerCase().trim() : '';
+
   if (req.method === 'GET') {
-    // Get all users (for login lookup)
+    // Brukerlisten (uten PIN) er bare for admin.
+    if (!erAdmin(req)) return res.status(401).json({ error: 'Krever admin-tilgang' });
     const brukere = readBrukere();
-    return res.status(200).json(brukere);
+    const liste = Object.fromEntries(Object.entries(brukere).map(([k, b]) => [k, utenPin(b)]));
+    return res.status(200).json(liste);
+  }
+
+  if (req.method === 'POST' && body.action === 'login') {
+    const bruker = readBrukere()[epostNormalisert];
+    if (!bruker) return res.status(404).json({ error: 'Fant ingen bruker med denne e-postadressen' });
+    if (!likeHemmeligheter(body.pin, bruker.pin)) return res.status(401).json({ error: 'Feil PIN-kode' });
+    return res.status(200).json(utenPin(bruker));
+  }
+
+  if (req.method === 'POST' && body.action === 'admin') {
+    if (!likeHemmeligheter(body.passord, ADMIN_PASSORD)) return res.status(401).json({ error: 'Feil passord' });
+    return res.status(200).json({ ok: true });
   }
 
   if (req.method === 'POST') {
-    // Register new user
-    const { epost, pin, navn, telefon, tittel } = req.body;
-    if (!epost || !pin || !navn) {
+    // Registrer ny bruker
+    const { pin, navn, telefon, tittel } = body;
+    if (!epostNormalisert || !pin || !navn) {
       return res.status(400).json({ error: 'Mangler påkrevde felt' });
+    }
+    if (!/^\d{4,8}$/.test(String(pin))) {
+      return res.status(400).json({ error: 'PIN må være 4–8 sifre' });
     }
 
     const brukere = readBrukere();
-    const epostNormalisert = epost.toLowerCase().trim();
-
     if (brukere[epostNormalisert]) {
       return res.status(409).json({ error: 'Denne e-postadressen er allerede registrert' });
     }
 
     const nyBruker = {
       epost: epostNormalisert,
-      pin,
-      navn,
-      telefon: telefon || '',
-      tittel: tittel || 'Investeringsrådgiver',
+      pin: String(pin),
+      navn: String(navn).slice(0, 120),
+      telefon: String(telefon || '').slice(0, 40),
+      tittel: String(tittel || 'Investeringsrådgiver').slice(0, 80),
       bilde: '',
       opprettet: new Date().toISOString()
     };
 
     brukere[epostNormalisert] = nyBruker;
-    writeBrukere(brukere);
+    try {
+      writeBrukere(brukere);
+    } catch {
+      return res.status(503).json({ error: 'Kunne ikke lagre bruker på serveren' });
+    }
 
-    return res.status(201).json(nyBruker);
+    return res.status(201).json(utenPin(nyBruker));
   }
 
   if (req.method === 'PUT') {
-    // Update user (e.g. admin operations)
-    const { epost, ...updates } = req.body;
-    if (!epost) {
+    if (!epostNormalisert) {
       return res.status(400).json({ error: 'Mangler e-post' });
     }
 
     const brukere = readBrukere();
-    const epostNormalisert = epost.toLowerCase().trim();
-
-    if (!brukere[epostNormalisert]) {
+    const eksisterende = brukere[epostNormalisert];
+    if (!eksisterende) {
       return res.status(404).json({ error: 'Bruker ikke funnet' });
     }
 
-    brukere[epostNormalisert] = { ...brukere[epostNormalisert], ...updates };
-    writeBrukere(brukere);
+    // Admin kan endre profil og PIN. En bruker kan endre egen profil med riktig PIN.
+    const admin = erAdmin(req);
+    if (!admin && !likeHemmeligheter(body.pin, eksisterende.pin)) {
+      return res.status(401).json({ error: 'Krever PIN eller admin-tilgang' });
+    }
+    const oppdatering = {};
+    PROFILFELT.forEach((felt) => {
+      if (typeof body[felt] === 'string') oppdatering[felt] = body[felt].slice(0, felt === 'bilde' ? 700000 : 200);
+    });
+    if (admin && typeof body.nyPin === 'string' && /^\d{4,8}$/.test(body.nyPin)) {
+      oppdatering.pin = body.nyPin;
+    }
 
-    return res.status(200).json(brukere[epostNormalisert]);
+    brukere[epostNormalisert] = { ...eksisterende, ...oppdatering };
+    try {
+      writeBrukere(brukere);
+    } catch {
+      return res.status(503).json({ error: 'Kunne ikke lagre endringen på serveren' });
+    }
+
+    return res.status(200).json(utenPin(brukere[epostNormalisert]));
   }
 
   if (req.method === 'DELETE') {
-    const { epost } = req.body;
-    if (!epost) {
+    if (!erAdmin(req)) return res.status(401).json({ error: 'Krever admin-tilgang' });
+    if (!epostNormalisert) {
       return res.status(400).json({ error: 'Mangler e-post' });
     }
 
     const brukere = readBrukere();
-    const epostNormalisert = epost.toLowerCase().trim();
     delete brukere[epostNormalisert];
-    writeBrukere(brukere);
+    try {
+      writeBrukere(brukere);
+    } catch {
+      return res.status(503).json({ error: 'Kunne ikke slette bruker på serveren' });
+    }
 
     return res.status(200).json({ ok: true });
   }
