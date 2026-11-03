@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '20mb',
+      sizeLimit: '10mb',
     },
   },
 };
@@ -67,13 +67,15 @@ Svar BARE med JSON i dette formatet (ingen annen tekst):
     // Extract JSON from response (handle potential markdown code blocks)
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return res.status(500).json({ error: 'Kunne ikke parse AI-respons', raw: text });
+      console.error('Kunne ikke tolke AI-respons:', text);
+      return res.status(500).json({ error: 'Kunne ikke tolke svaret fra AI-tjenesten.' });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     return res.status(200).json(parsed);
   } catch (error) {
     console.error('Markedssyn-analyse feilet:', error);
-    return res.status(500).json({ error: error.message || 'Ukjent feil' });
+    console.error(error);
+    return res.status(500).json({ error: 'Kunne ikke analysere markedssynet.' });
   }
 }

@@ -372,7 +372,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
   const formatProsent = (value) => {
     if (value === undefined || value === null || isNaN(value)) return '0,0%';
-    return `${value.toFixed(1)}%`;
+    return `${value.toFixed(1).replace('.', ',')} %`;
   };
 
   const updatePortefolje = (key, value) => {
@@ -586,7 +586,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                           <div className="portfolio-bar">
                             <div className="portfolio-bar-fill" style={{ width: `${andel}%`, background: value.farge }} />
                           </div>
-                          <div style={{ width: '35px', textAlign: 'right', fontSize: '10px', color: colors.textMuted }}>{andel.toFixed(0)}%</div>
+                          <div style={{ width: '35px', textAlign: 'right', fontSize: '10px', color: colors.textMuted }}>{andel.toFixed(0).replace('.', ',')} %</div>
                         </div>
                       );
                     })}
@@ -617,7 +617,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                   {Object.entries(baserenter).map(([key, value]) => (
                     <button key={key} className={`valuta-btn ${valuta === key ? 'selected' : ''}`} onClick={() => setValuta(key)}>
                       <span style={{ fontSize: '12px' }}>{key}</span>
-                      <span style={{ fontSize: '9px', color: colors.textMuted }}>{value.rate.toFixed(2)}%</span>
+                      <span style={{ fontSize: '9px', color: colors.textMuted }}>{value.rate.toFixed(2).replace('.', ',')} %</span>
                     </button>
                   ))}
                 </div>
@@ -626,7 +626,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <span className="label-text">Rentepåslag</span>
-                  <span className="value-text">+{rentepaaslag.toFixed(2)}%</span>
+                  <span className="value-text">+{rentepaaslag.toFixed(2).replace('.', ',')} %</span>
                 </label>
                 <input type="range" min="0" max="3" step="0.05" value={rentepaaslag} onChange={(e) => setRentepaaslag(Number(e.target.value))} />
               </div>
@@ -634,9 +634,9 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
               <div style={{ background: colors.lightGray, padding: '12px 14px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: '11px', color: colors.textMuted }}>Total lånerente</div>
-                  <div style={{ fontSize: '9px', color: colors.textMuted }}>{valgtValuta.rate.toFixed(2)}% + {rentepaaslag.toFixed(2)}%</div>
+                  <div style={{ fontSize: '9px', color: colors.textMuted }}>{valgtValuta.rate.toFixed(2).replace('.', ',')} % + {rentepaaslag.toFixed(2).replace('.', ',')} %</div>
                 </div>
-                <span style={{ fontSize: '18px', fontWeight: '700', color: colors.danger }}>{totalRente.toFixed(2)}%</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: colors.danger }}>{totalRente.toFixed(2).replace('.', ',')} %</span>
               </div>
               {renteOppdatert && (
                 <div style={{ marginTop: '6px', fontSize: '9px', color: colors.textMuted, textAlign: 'right' }}>
@@ -654,7 +654,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                     <span className="label-text">Belåningsgrad (lån i % av pantet)</span>
                     <span className="value-text" style={{ color: ltvOverMaks ? colors.danger : colors.primary }}>
-                      {ltv}%{ltvOverMaks && <span style={{ fontWeight: '400', fontSize: '10px' }}> → {portefoljeBeregning.vektetMaksLTV.toFixed(0)}%</span>}
+                      {ltv}%{ltvOverMaks && <span style={{ fontWeight: '400', fontSize: '10px' }}> → {portefoljeBeregning.vektetMaksLTV.toFixed(0).replace('.', ',')} %</span>}
                     </span>
                   </label>
                   <input type="range" min="0" max="100" value={ltv} onChange={(e) => setLtv(Number(e.target.value))} />
@@ -1219,7 +1219,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
                 {/* Tabell - År for år utvikling */}
                 <h3 style={{ fontSize: '13px', fontWeight: '600', color: colors.primary, marginBottom: '10px' }}>
-                  Utvikling over tid (ved {reinvesteringAvkastning}% avkastning, {totalRente.toFixed(1)}% rente)
+                  Utvikling over tid (ved {reinvesteringAvkastning}% avkastning, {totalRente.toFixed(1).replace('.', ',')} % rente)
                 </h3>
                 
                 <div style={{ overflowX: 'auto' }}>
@@ -1352,7 +1352,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
     };
     return {
       tittel: 'Hedgekostnad høy relativt til forventet FX-bevegelse', farge: colors.primaryLight,
-      tekst: `Hedgekostnad (${hedgeKostnad.toFixed(2)}% p.a.) er høy sammenlignet med historisk volatilitet i ${valuta}/NOK. Hedge gir lavere forventet avkastning, men kan likevel være aktuelt for kunder med lav risikoevne eller behov for forutsigbarhet.`
+      tekst: `Hedgekostnad (${hedgeKostnad.toFixed(2).replace('.', ',')} % p.a.) er høy sammenlignet med historisk volatilitet i ${valuta}/NOK. Hedge gir lavere forventet avkastning, men kan likevel være aktuelt for kunder med lav risikoevne eller behov for forutsigbarhet.`
     };
   }, [valuta, lanebelop, fxVol, hedgeKostnad, colors]);
 
@@ -1463,8 +1463,8 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
         </div>
         <div className="result-box highlight">
           <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Effektiv rente m/{hedgeRatio}% hedge</div>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2)}%</div>
-          <div style={{ fontSize: '9px', color: colors.textMuted }}>Uten hedge: {totalRente.toFixed(2)}%</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2).replace('.', ',')} %</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>Uten hedge: {totalRente.toFixed(2).replace('.', ',')} %</div>
         </div>
         <div className="result-box">
           <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Hist. FX-vol {valuta}/NOK</div>
@@ -1473,8 +1473,8 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
         </div>
         <div className="result-box">
           <div style={{ fontSize: '9px', color: colors.textMuted, marginBottom: '3px', textTransform: 'uppercase' }}>Break-even FX-bevegelse</div>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary }}>±{breakEvenFX.toFixed(1)}%</div>
-          <div style={{ fontSize: '9px', color: colors.textMuted }}>Over {tidshorisont} år ved {hedgeKostnad.toFixed(2)}%/år</div>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary }}>±{breakEvenFX.toFixed(1).replace('.', ',')} %</div>
+          <div style={{ fontSize: '9px', color: colors.textMuted }}>Over {tidshorisont} år ved {hedgeKostnad.toFixed(2).replace('.', ',')} %/år</div>
         </div>
       </div>
 
@@ -1495,7 +1495,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
           <div>
             <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <span className="label-text">Hedgekostnad p.a.</span>
-              <span className="value-text">{hedgeKostnad.toFixed(2)}%</span>
+              <span className="value-text">{hedgeKostnad.toFixed(2).replace('.', ',')} %</span>
             </label>
             <input type="range" min="0" max="3" step="0.05" value={hedgeKostnad} onChange={(e) => setHedgeKostnad(Number(e.target.value))} />
           </div>
@@ -1575,7 +1575,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
       <div style={{ background: carryEstimat > 0 ? `${colors.danger}10` : `${colors.success}10`, padding: '12px 14px', borderRadius: '6px', border: `1px solid ${carryEstimat > 0 ? colors.danger : colors.success}30`, marginBottom: '14px' }}>
         <div style={{ fontSize: '11px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>Carry-analyse</div>
         <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.5 }}>
-          NOK ({baserenter['NOK']?.navn}: {NOKRente.toFixed(2)}%) vs {valuta} ({baserenter[valuta]?.navn}: {baseRente.toFixed(2)}%) — renteforskjell <strong style={{ color: carryEstimat > 0 ? colors.danger : colors.success }}>{carryEstimat >= 0 ? '+' : ''}{carryEstimat.toFixed(2)}%</strong>.{' '}
+          NOK ({baserenter['NOK']?.navn}: {NOKRente.toFixed(2).replace('.', ',')} %) vs {valuta} ({baserenter[valuta]?.navn}: {baseRente.toFixed(2).replace('.', ',')} %) — renteforskjell <strong style={{ color: carryEstimat > 0 ? colors.danger : colors.success }}>{carryEstimat >= 0 ? '+' : ''}{carryEstimat.toFixed(2).replace('.', ',')} %</strong>.{' '}
           {carryEstimat > 0
             ? `Du betaler "negativ carry" på hedge — markedet priser inn at NOK skal svekkes (eller at hedge-tilbyder skal ha forskjellen).`
             : `Du mottar "positiv carry" på hedge — det er teoretisk gratis å hedge inn til NOK fordi NOK har lavere rente.`}
@@ -1594,15 +1594,15 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
             </div>
             <div>
               <div style={{ fontSize: '11px', color: colors.textMuted }}>Effektiv lånerente m/hedge</div>
-              <div style={{ fontSize: '20px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2)}%</div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: colors.accent }}>{effektivRenteHedget.toFixed(2).replace('.', ',')} %</div>
             </div>
           </div>
           <ul style={{ fontSize: '12px', color: colors.textMuted, lineHeight: 1.7, paddingLeft: '20px', margin: 0 }}>
-            <li><strong>Hedge-kostnad:</strong> {hedgeKostnad.toFixed(2)}% p.a. ({formatNOK(lanebelop * (hedgeRatio/100) * (hedgeKostnad/100))} per år ved {hedgeRatio}% hedge)</li>
+            <li><strong>Hedge-kostnad:</strong> {hedgeKostnad.toFixed(2).replace('.', ',')} % p.a. ({formatNOK(lanebelop * (hedgeRatio/100) * (hedgeKostnad/100))} per år ved {hedgeRatio}% hedge)</li>
             <li><strong>Forventet FX-volatilitet:</strong> ~{fxVol}% p.a. for {valuta}/NOK</li>
-            <li><strong>Break-even:</strong> Hedge lønner seg hvis valutaen beveger seg mer enn ±{breakEvenFX.toFixed(1)}% over horisonten</li>
+            <li><strong>Break-even:</strong> Hedge lønner seg hvis valutaen beveger seg mer enn ±{breakEvenFX.toFixed(1).replace('.', ',')} % over horisonten</li>
             <li><strong>Til vurdering:</strong> {risikoBilde?.tittel}</li>
-            <li>Carry-effekt: {carryEstimat >= 0 ? `negativ ${carryEstimat.toFixed(2)}% (kostnad)` : `positiv ${Math.abs(carryEstimat).toFixed(2)}% (gevinst)`}</li>
+            <li>Carry-effekt: {carryEstimat >= 0 ? `negativ ${carryEstimat.toFixed(2).replace('.', ',')} % (kostnad)` : `positiv ${Math.abs(carryEstimat).toFixed(2).replace('.', ',')} % (gevinst)`}</li>
           </ul>
         </div>
       )}

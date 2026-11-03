@@ -11,7 +11,9 @@ import LunaAssistant from './pensum/LunaAssistant';
 
 const PENSUM_LOGO = 'data:image/webp;base64,UklGRrgYAABXRUJQVlA4WAoAAAAwAAAASwIAHQEASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZBTFBIcQ0AAA3wn22bl2bb/s1VwT0dyFmB04GkAkkFYAVoBcYKDBUoFQQrCHYwqeCadMBVwb0Mc/ziRyJy/yAiHEqy2jYkjkvaA6NHkb5ALf4/Fv9l8V8W/2XxXxb/ZfFf/n+ELP7LJXqZkSRyavH/sbwli/8SJVuj+5Y6iPtWdWNnBsnyIbDGwPdXKtbG2a+6ng+2zeBsatZxXN8rOwu8e5SgH4QfN4muCvf0y3FM2V7uyuuTLwnSYSRfT+PTc3+gRxep40M1JzU2znr39P/duH7mXDztX6rjMYbrszo0z7kU+Th7ZemT/qmqyUapjbnsnvOe6WGTjLMs/Tg85c9mp3Mz0udzfngtbDxI+NSryC9r6PS87J7HH+t77cogCwxs8+2sMvHWyDtcl5dBe1hPeWC29c0l20TKmOmh7YnOLW9VN5vlsii7d7PMPI67lsKDC+iVzjAff7+dY8kP5Kd2+m+W+cDOnCWXajvXTCa/l5+CT53ngq8M0p44nA2/WMG3Oeab5+nCH+ZFu2ZqtvmJD/aZWL9SYb45LM+j3T3nk4qabb5nVzXjPHZnzfW2YtR0n2e6pWXOAdne5pzdWxZxH/Yvc86jTLnTaAQ995gqUEM1yqnFtdJ8H41cbRMhrNSSCQ2xs9HfAHi145SFCzBI/QBmTuMuWCZj332vRrf7JN2yunFFBD9j9EKWGyn0qxdiZtv3cMMYw8AhqnOCVIpVVThSWdj2JfUDmDmNITbSxiGxCLpNwkoHcEjN/cj6a2it2BGxjV97JFgo2TsDihsCHwEDOkjyXT2IJeqGSkqn5+ltywWpkUzfkK52OfT9PJaug3/jre+QyBM+Faanp1QJ5ye6j6Slb4K7vHYF2ufMNhGYUUgcyA6bO+HNU/SHneEIbDBhk/m7UqtEw5TqKgAlE8K1Gp6SOaerCqXMJtbKB+GhXibL+UjcLR7l6f1Tqe/6w0AGEoDqiPmyk4qBWxky97uNdY/8LG4Dx1NUvtaM/OufMVHt7gMybJ9INcjmpUynYURFCCsqd+9VLTCkMLuGwWCmn3Cpc8Sxjh2XSr1rUuTgK4XYPyG7DmUH4LE6CqfoPDj1fTs5T/pLAgcjoKZXG7gsEF9+6jIi9s116AIn0ha+BBzn6dmAH/ELaqH3qvRrroOf1lYmjQFpXNRrd4PPEDcq7MA5bMRMSmFzlUBGg+Q/HZoHEgGx8w2320N9wShtb3mXfzgdYa5+dkVvhQmv1tVXCmHeHJzDBvH0/FE9Rl1Wf5QyaGqk5yUP70kU3FQLppBCJGzayAu4LG8ObiCuD6emcej8uZlAp2f1KLp1PQ+o07nLbrfxT3RwLN8HPUXno1/YM0V7sIdecQaO8lMqIcPL3oTP5qJRmDzq3VCzC+EUnz9dW5i5kffbIxnSA9jlNyf0wUPmqwJEubr/Q5yZxbaB58/WUQEaB/3026lYbNE/+IabTJP3MjlqWDqchjx9Zs5llAfIp4c5ReHO+2igO1eupOPiWhz9fwQ3N/WAp0/OuWCqb1ASLXNId11SP/+fsAVH1sAQB57igw01aXMszHVO1/NfaCrsLQP/IN3DycAUtuDI3lzAEeHnGjZn5dMLGqSC90kqXFvr5wUc6VcEFUGItsrPIzOmaug+L6RQNCohZNvB/T2dTs4XXMT9DFMM8A8yAx3j+lYBBCnto2gSJuTy25ODTTXgo13mleE2gaUZowjmboie1V8ddlLmTraJbVpTQQtZksXb1Cx899g0PlfAix26zKFP12+z1PP1c2zR+R/kkAyRCpzYopOFJet6wXnkSfqC82NO3A82BuuS3aFdG8bri7PmYEkGI/JdP68Mt2n6TVZ+jeZqWIvAWkRrer6wYV2zOMb8jJH8FJ5P1E8O/jUeuLSQYFMriYc6AJeIjJGGZiEZ7hRvjB9xoLt5h3TGHB7UNjZABetLg04a+94rlY/6rC9UPVNR2on6Ee3xYigKk8TPeJoiPbTkcLw2khFQ3a3tNnpute2iMcmcZAy30/LFL0ph21pzziMic2vQhJ51xKfWM9KLb2yz35519nsSB+j2zDrvo09TdfqcIxfBqqJZ6Bqehn2Q20SdtUkFTcgZZxMsKJmHNmL1yIyzSabiHu42IaeScwSFXj4y17TZj359h+TaXHP1KFsNMs9MAcbhSHLtMMccZakUz2GG+e1tAhFJfnGEY+Wi/jiahfMErKWxhZMC+STHk23LWy7wH/hxeKrJKahIqRcyC/1bH94ZlLd3CoRXgZwH/VvtgMVJKHlsgKb2htp8Z0MaBKu9I236oYNdOOO1hkCgAVisQXnFipAAf1dBPmM2sRAU8KQRTianSmXYPcB9w9qvDlIgpFFso7ThIr9l/CxSal1QMALkmhypSuUFg3JTOgIErUKu1PbGFUN4kBuzLSuIQJMGEamdQLswxguGwKDTXSsIhHNYEQrgb5kfY7tG0ToyImjUvRnZL+L7nJbUfY5Uc7JKmU1SCoAQN/OOQSvlIJojAhNJqN0SjJQBSKRnBrVrxjXPO2l8APhJfB8hNNydUmadYGdHRgDqU4ipuQmYrFDG45UzyRu3CAQOqE38wyv2f49JHy5yjeJDAj9yUWQqCkbzCjS81zwQytnuZGRykEvfGDAkrKj1IsKJPAzg49jRtHJRShN8o2PzLtuCApC1idBYe28H9viqI9IInNrQptjvY1ptZCdG6eONZPMwSBwIqRv19qOzt19xoziqXBsftwhOJiJIwwPpYXmNUGziwyfliXXMDZ/ymFUNiVJFR3+JEsr5K5V4b6fXa9Seo7A9BAahFWkHCWHh5pZ2MBGwyWX30AoBbniO6xuUX1X/pK0jjc9WmITKLRE+t6r+swqCnSp4JpMkNqez7FJk1K1JOdbuzduqJKkbDPZ66Qbx63PfXnqUchiDn8mYxiqbtY5EkEJsoX4kkF4VFuQ++0R7RoLunKgy8BGZtRWqbmmOcrng1LGGmRWNsF2R0a74aRGihL3PMrrIW5tCC6hW7Y4YT2mU39wDkU5RYhy0L2OaQjU1jn/hNusPWJMzQISq9cpIKLZVGTd8glpG0VrtzvriBys/0LzLBoQtsxFy6+92udjbFO2tf4sQaff54muOh3jpfSwfkzFNcA8i/l2NMRcHinspEFBRveAUuydG0nGFki22cC2UqmLtf1jgR4L4X7ZjgQrDq7YvIB2SGWsQYFNt4ae9fjLj1VAF2LrbtzXHg5M2wR1RMSxiGuBIIG6Bamm7V0kaF++NDAjiow0q/XsZWIGFgpe2XOSdiPtl4NPXrKU57lJCODvO73yXCVUPqNNA+SxyWSwpaxA0SEBCCrURGM/XxeSlXPua42FdQnfkNFKzhhsbghR2JJx2V8dE6zw7XQVACEMgO+helAPhs3EgtnE6+1wLxu6WLpl09EhdwvkdcMlbqB4Q/xE+y7ms73DxBmkThxDbwafh3eSNFz3US7aox6cT1TUMjcEgqnUkashUSRrr8/0qB+InNvpTDg4QlRchtpXs8NH7YNaGOw39CX08cPF/1fpV8EHP2tDVNOGzoM1ONmvEsT300DB5C4wnqDkejuCbVJXNiLVq/co3yvEaCO9ITNfDnNX5IADSq+0YRsqurc96QmKHT7KGEFq6ZFJSE2euZoJwhloYbc8EdA3Wyljos2C2risH6La1FXpoXYKKoOb4/UU2Om+j/DzNNETurE1bxjGOpPba1DyQIcxAhM82I2QLV0tUg34n9CNcLFIIUe/eGhXLTSDbxc5lft9lwD2+S67yyej4dcvbYgLPq9GOBLMiD5IFMuBQNFF6j3z7gB0+r0iOcdsmZS9F6YkizuaFWN7gjQM648Hte1MbFp6N8u/0hlLHia9OH8ln3d2O24oU0yCSAMUZMflKpcIckIFbW2vlCL5FjQmSLpPWwWjujc3+k/g09j6iCRb6Y1HeR6CnbJr6X+mWfAnY2P76EgZh86XqnzAYSabhHCkUXg1ynTQk1CwQwa3ttenNf5qix2voyLN+dPHICIQeMVM9oBpzvzp1Tqfo1pbpes7XHNFvJLgz9OtQtYBpqNaW+azvtnHGpKALxQKh2ovEBH5/Te82tjGtqjB8KNeM2YTc3lApgloYPGs3rx96n9a3EGWNo3ukpEFom6qGuPe88cDiA7bmUNPowaVKLUlwjhT4Z2M8HRBuwAGh2otIfD+xP0bysY0fPhxd4iwK+1USikKis8qEYfiXlyhKtgp7G9EjZQxC8Sj5Pm88vyhKdGl6yaqmb3SxVlmtbLkFbtHU0HNIINiV6NjvuwAEGGEe52kOJ9LqmwTSVn8eB4mujtJvAEpTfpQqjRCCEIrwK505aI/XeJsgkrwj8XPftEGgItCjV+oLIsMdMTKBIUBH1KUNbUXP1VNI/EyxZM66uZLtDwyETxWE+UOH1TkwFhJAoC8WHAE5vJaH7HaiQEdPHoeak9LpxqfxfupboDZunRLICDtJ7wJWdvxLjBb/H4v/svgv/yUpi//iZh6pEnqbexiwyEk5zT1Su4zEMPukZrtNhrfC5/nzz9Pl4Qu2mHmOCR6s1OL/45eUxX9x0ZwkOzcnyeL/Y/FfFv9l8V8W/2XxXxb/5b+BZPFfFABWUDggUAkAADBKAJ0BKkwCHgE+USiSRiOioaEik1lQcAoJZ27hc95rWCB8gHX/n1b/l+2C0H6r+q+kNyn3FPF9DvT/ly83efT+weoT9SewF4s36Ue4P7L/cB+yvrJ/8P1Bf331AP8F/pPWe/3P/////wBfu37Df7OenT7J3978+D1AP//6gH//67/oB/APoA/P3v8FNZUsbDDFJBikgxSQYpIMUkGKSDFJBikgxSQYpIMUkGKSDFJBikgxSQYpIMUkGKSDFJBikgxSQYpILMe7rPT71lSxsMMUkGKSDFJBikf7iZ6fesqWNhhikgxSQYd6fyZdl2XZGrAo9wetrAcd56fesqWNhhikgth5uC7LkfVkJ0hFjllNQD7VCzsxyEa1J1vWt1p4blTjZadBK0DEND3Xeen3rKljYX1J1CY/qAfaozXxRTtbZhf2a2S+VZ2QYpIMUkGKEi7t5JtfExPJz48VazxHkT2sMNbvgLkFUsbDDFI/lIkrEcfx+VdC2ZxMbokT2orWHYU9phzVx+DyDCq70Fr54fHmykCNkF//4sh+UwEgju6KB0U5SFKEma4YJCwgk57YiWNoZZ0nBexkFAMA85KfSk271JDDDxSSn32E33yPwQ6nsdfEAReRjI0ogrZU57HX20FCbhY2ETznJkenfI/fZWNhhikgxSQYpIMOqa+79MobxkySAHeen3rKljYYYpIMUkGKSDDzlrfFQcd56fesqWNhhikgxSQYpIMUkGKSDFJBikgxSQYpIMUkGKSDFJBikgxSQYpIMUkGKSDFJBikgxSQYpIMUkGKR+gAAP79SkAAAAAAHZuwA2VaBRfArf/69s08t0BYXfxPfEXIGr5KHyi3EsvlB6OoXIwRp6WHLpRp3m0TjCBRw+4sV1RrwhnB4Wc61k/oIqlzPitE7dXqj+7AAASeVDZL4kPoqfFpSk6Wr0AG2R+4HOwxNvWLIX5U3tJTpTPkqMFjBYAvxIzaCsYQ42iTPavnTLwxfHNRiF7TabEySrMsYF83XE0SSizTAC45NJ+Gl1craUZ+JYLPottcGPhwBfLgZ8w/sTdcvSSTwpRV+DzYQpicELAW5F9Dp0Hn0RW+QxeysWg91fNzXcbmnxGcWlvaF/tLikguvwUBfQo7rZVI0utFQNHkr9Au6B60XhqQ44LkklEj0Jd4Tb82foFZLyi1Y24uJDfis80lonJ5eji4AyOa8TA+/CPNgInlzbBSYQUOybwxQ3pF6I6864sLUJo4IHrkcFyL/08hBtwwVP9xDGcfwFAxmvrT+Px75WsQZKzkUJ1h/RHeHCcq+5TV2JgK5PD9WCHhu5EF0WiOwvMzg57MY7VB71ne0aQCBIgTM3ShLVnk7PvMk0uWww9Hy/EPUnvSBLECGcNLZf7ivHIIYMDlSnmv1qYuKlTJsVabdAuMkd4AVDXULelTaNx4cDur7/hIzRnbAr2jvEUVSLvjMAXbAJ/CJOjlfhQ9fgjTDI+mBpOlfbPv/+rl+hnfUKncu8Avzus1k//1jDkTiR2IQ/GsBejGyxtZQqDb0NVIylJjCgwUwXfLPFhHaGHzrTbmFuxhw4gsvUlv9bY78co3B9c7qvbRmaoFDqPw7ZbPYABw4oyjr81Ns/Ioh5pk7kOd2FT1tvoNtrwAy6Qk6ekPET1B7uIsqyPExrcb9MU1hj6tMkf6afUhK+pME4UaBz8MpInFCG0ixATttQwXhYjqlQoqmRavsBC+HkaWe5UXti21OgrNI/Ugk8NYq6h3OcutLMYXLG8hPAZPwh8HhctUrtdwT8vnl5on7H/k9uVDO0+2MyhZ8Ns6www1BtUAN0pz+vFqABojLbfkojH7huP2NrtlQWLRoN+kiD9+NyBrG7PscXMN62uTHI6dOyEBDV5wZAYVYZNgNAzugAYgQoxf0ZZk165WN3M/OwodpbLeaPC4Fh0bBibCus2EkC+RhfaZ0FBkznAtRfpDBCVLLkCwOTXjAdlk4DB7JfmYaJdLoPT6E/oWsu5l5DN0s5acWMgnDDIup/qRQuYO+jurVOW+rxvT9PPc5jPVQMOZGowP7IO344lNqKsBTszdVVzPuVHugBT+5VSPvKv9rbRcKQBBZPZS2rJydTx5FRQZolKK4fqbEFSpyy1wXIKfsoRVxEF4dYGweDkXBjguscpGkgvP4wRwY+nPLO2c7X1SKZJf8zycLacv/8YBbcmj+heUQOqjMqDxI32mVRVnH6FS1wV3GbTEml9GiytPATjEU5Nn8+x3LA2DuBQpye9w80VOhivsU+n//WJD62+zF+kqlXDVgTpeEcLYTYbskebfyL9qabAhjW/NnILaE+i6jWAQQgxTFgdsoWWfBxN4HAcZ2fEtTqx7vc2yUVm0a0h8b1HoK5FinnF0uA6lFjnytzcWVoXsusX8fjvBmsDX18JfJmTxxY0cPpN7/WGCu5rmlsmE1danVxC93WZfbRlMv2Om3D22UR3Bt2x7GSTEJIEaM+mEa4YkmerlKQIiPOV61fRqnXwlFT1Zt750N4sft7WS8oSasSV3PEh39e6anKcCcOy6RFVnhYfiWp5BogzPM4CXLDZSD7gXsAKvU+9u1zov32aqGfGZxq927LBF/hAGNZD+znLaGRFJ/lRyl4nlcrbyqMFsxe3Yyv6VwACsFqwfbL5z3oau8O/rmfkvjY/cGKVpIxXLp6brXpjEHxiTHM/EAsnf7nlY5rkW17PE81Y7DD5Ba/S1MC4mbuAjHazGYhKqN8dvsxCFrekRLEoMQcsYcHdEVvOIuar2shAJ4ZHTs8sQv3uEzaq/D6pJw9Zmnp3Gjkx/8/Vmvv7mrR2BTrjKbf3uIt4w/vBm8c+vO8CNEXMh4H9NcEqzf5/BBElth44vKBJw55EZ4jF6QkLpQKXtZIojU6gSd/BY+xz3UsOG5nqKmeEorWfJdPJ8O9Ai/wgNc8WAKvKAF3QIpBDeyYdE2+YK+ysQcXPXVV6oXe9jsJ/zia3sqBjTNlg0hiLN4oVebht1TLyfB4oDgR71s/QbN8I8yq7e9ICua59FWOx2vdWlu/HxA+alQmvGLxUJXJlLr4n2N//6H1Ci5g76GoDF/vaAQkA3ZI/NnJUH/PcBjBCzVMAAAAAAAAAAAAAAAlRwDsfAiqDUYtQDTNhEFfdbUalHtktoRlfoKH9fa7d2xWkgAAAAAAAAAAAA';
 
-const RISIKOFRI_RENTE_TEKST = `${String(RISIKOFRI_RENTE).replace('.', ',')} %`;
+const RISIKOFRI_RENTE_TEKST = `${String(RISIKOFRI_RENTE).replace('.', ',')} %`;
+// Norsk desimaltegn for tall som vises med prosenttegn; annen tekst returneres uendret.
+const pst = (v) => (typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(String(v ?? ''))) ? String(v).replace('.', ',') : v;
 
 export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
@@ -378,7 +380,19 @@ export default function PensumPrognoseModell() {
   const [erAdmin, setErAdmin] = useState(false);
   const [adminMelding, setAdminMelding] = useState('');
   const [adminBrukere, setAdminBrukere] = useState(null);
-  const ADMIN_PASSORD = 'pensum2024'; // Enkelt passord - kan endres
+  // Admin-passordet sjekkes på serveren (PENSUM_ADMIN_PASSORD) og sendes med admin-kall.
+  const loggInnAdmin = async () => {
+    try {
+      const resp = await fetch('/api/brukere', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin', passord: adminPassord })
+      });
+      if (resp.ok) { setErAdmin(true); setAdminMelding(''); } else { setAdminMelding('Feil passord'); }
+    } catch (e) {
+      setAdminMelding('Kunne ikke kontakte serveren');
+    }
+  };
 
   // Debounce fond search — only update state for debounced results, not per keystroke
   const handleFondSokChange = useCallback((e) => {
@@ -1089,34 +1103,35 @@ export default function PensumPrognoseModell() {
       const epostNormalisert = loginEpost.toLowerCase().trim();
       let brukerData = null;
 
-      // Try server API first
+      // PIN sjekkes på serveren; serveren sender aldri PIN tilbake.
       try {
-        const resp = await fetch('/api/brukere');
-        if (resp.ok) {
-          const brukere = await resp.json();
-          brukerData = brukere[epostNormalisert] || null;
+        const resp = await fetch('/api/brukere', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', epost: epostNormalisert, pin: loginPin })
+        });
+        if (resp.status === 401) {
+          setAuthFeilmelding('Feil PIN-kode');
+          return;
         }
+        if (resp.ok) brukerData = { ...(await resp.json()), pin: loginPin };
       } catch (apiErr) {
         console.log('API ikke tilgjengelig, bruker lokal lagring:', apiErr);
       }
 
-      // Fallback to local storage if API didn't find user
+      // Reserve: brukere som bare er lagret lokalt i denne nettleseren
       if (!brukerData) {
-        const brukereKey = 'pensum_brukere';
-        let brukere = {};
-        const raw = await storageGet(brukereKey);
-        if (raw) brukere = JSON.parse(raw);
-        brukerData = brukere[epostNormalisert] || null;
-      }
-
-      if (!brukerData) {
-        setAuthFeilmelding('Fant ingen bruker med denne e-postadressen');
-        return;
-      }
-
-      if (brukerData.pin !== loginPin) {
-        setAuthFeilmelding('Feil PIN-kode');
-        return;
+        const raw = await storageGet('pensum_brukere');
+        const lokal = (raw ? JSON.parse(raw) : {})[epostNormalisert] || null;
+        if (!lokal) {
+          setAuthFeilmelding('Fant ingen bruker med denne e-postadressen');
+          return;
+        }
+        if (lokal.pin !== loginPin) {
+          setAuthFeilmelding('Feil PIN-kode');
+          return;
+        }
+        brukerData = lokal;
       }
 
       await storageSet('pensum_aktiv_bruker', JSON.stringify(brukerData));
@@ -1160,7 +1175,7 @@ export default function PensumPrognoseModell() {
       await fetch('/api/brukere', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ epost: bruker.epost, [felt]: verdi })
+        body: JSON.stringify({ epost: bruker.epost, pin: bruker.pin, [felt]: verdi })
       });
     } catch (e) {
       console.log('Kunne ikke oppdatere bruker på server:', e);
@@ -1838,7 +1853,7 @@ export default function PensumPrognoseModell() {
                     <ComposedChart data={msciData} barCategoryGap="15%">
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                       <XAxis dataKey="aar" tick={{ fontSize: 9, fill: '#6B7280' }} interval={0} angle={0} />
-                      <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} domain={[-60, 40]} />
+                      <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${pst(v)} %`} domain={[-60, 40]} />
                       <Tooltip content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
                         const avkVal = payload.find(p => p.dataKey === 'avk');
@@ -1846,8 +1861,8 @@ export default function PensumPrognoseModell() {
                         return (
                           <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
                             <div className="font-semibold text-gray-700 mb-1">{label}</div>
-                            {avkVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B0B0B0' }}></span><span>Arsavkastning:</span><span className={"font-bold " + (avkVal.value >= 0 ? 'text-green-700' : 'text-red-600')}>{avkVal.value}%</span></div>}
-                            {fallVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#2E5B5E' }}></span><span>Arsfall:</span><span className="font-bold text-red-600">{fallVal.value}%</span></div>}
+                            {avkVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B0B0B0' }}></span><span>Arsavkastning:</span><span className={"font-bold " + (avkVal.value >= 0 ? 'text-green-700' : 'text-red-600')}>{pst(avkVal.value)} %</span></div>}
+                            {fallVal && <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#2E5B5E' }}></span><span>Arsfall:</span><span className="font-bold text-red-600">{pst(fallVal.value)} %</span></div>}
                           </div>
                         );
                       }} />
@@ -1885,7 +1900,7 @@ export default function PensumPrognoseModell() {
         const _vektetYield = _yieldTotal > 0 ? _yieldSum / _yieldTotal : 0;
         // Samme bane som prognosegrafen i porteføljebyggeren (inkl. innskudd, uttak og lån).
         const _sluttverdi = Math.round(pensumPrognose[pensumPrognose.length - 1]?.total ?? (_effektivtBelop * Math.pow(1 + _baseAvk / 100, horisont)));
-        const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
+        const _formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1).replace('.', ',') + ' MNOK' : formatCurrency(v);
         const _erRenAksje = _renteAndel < 1;
         const _strukturTekst = _erRenAksje
           ? 'Porteføljen er en ren aksjeportefølje bygget rundt en bred kjerne som er sentral kilde til langsiktig avkastning, supplert med utvalgte satellitter som gir mulighet for meravkastning, men også risiko for mindreavkastning.'
@@ -2365,9 +2380,9 @@ export default function PensumPrognoseModell() {
                 </div>
                 <div className="space-y-1">
                   {naaTotal > 0 && <div className="flex justify-between text-[10px]"><span className="text-gray-500">Total verdi</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(naaTotal)}</span></div>}
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{naaAksjeAndel.toFixed(0).replace('.', ',')} % / {naaRenteAndel.toFixed(0).replace('.', ',')} %</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{naaVektetVol != null ? naaVektetVol.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk1y) }}>{[naaVektetAvk1y, naaVektetAvk3y, naaVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—').join(' / ')}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{naaAksjeAndel.toFixed(0).replace('.', ',')} % / {naaRenteAndel.toFixed(0).replace('.', ',')} %</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{naaVektetVol != null ? naaVektetVol.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(naaVektetAvk1y) }}>{[naaVektetAvk1y, naaVektetAvk3y, naaVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—').join(' / ')}</span></div>
                 </div>
               </div>}
 
@@ -2379,10 +2394,10 @@ export default function PensumPrognoseModell() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px]"><span className="text-gray-500">Investert beløp</span><span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(pensumBelop)}</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{aksjeAndelPensum.toFixed(0).replace('.', ',')} % / {renteAndelPensum.toFixed(0).replace('.', ',')} %</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{pensumVektetVol != null ? pensumVektetVol.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk1y) }}>{[pensumVektetAvk1y, pensumVektetAvk3y, pensumVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—').join(' / ')}</span></div>
-                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Forv. avk. p.a.</span><span className="font-bold" style={{ color: '#059669' }}>{pensumAvk ? pensumAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Aksje / Rente</span><span className="font-medium">{aksjeAndelPensum.toFixed(0).replace('.', ',')} % / {renteAndelPensum.toFixed(0).replace('.', ',')} %</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Vol. (3 år)</span><span className="font-medium">{pensumVektetVol != null ? pensumVektetVol.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">1 år / 3 år / 5 år</span><span className="font-bold" style={{ color: avkFargeInline(pensumVektetAvk1y) }}>{[pensumVektetAvk1y, pensumVektetAvk3y, pensumVektetAvk5y].map(v => v != null ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—').join(' / ')}</span></div>
+                  <div className="flex justify-between text-[10px]"><span className="text-gray-500">Forv. avk. p.a.</span><span className="font-bold" style={{ color: '#059669' }}>{pensumAvk ? pensumAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</span></div>
                 </div>
               </div>
 
@@ -2393,8 +2408,8 @@ export default function PensumPrognoseModell() {
                     <BarChart data={avkBarData} margin={{ top: 5, right: 10, left: 5, bottom: 0 }} barCategoryGap="30%">
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                       <XAxis dataKey="periode" tick={{ fontSize: 9, fill: '#6B7280' }} axisLine={{ stroke: '#D1D5DB' }} />
-                      <YAxis tickFormatter={(v) => (v >= 0 ? '+' : '') + v.toFixed(0).replace('.', ',') + ' %'} tick={{ fontSize: 8, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={35} />
-                      <Tooltip formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'eksisterende' ? 'Nåværende' : 'Pensum']} contentStyle={{ borderRadius: '8px', fontSize: '10px' }} />
+                      <YAxis tickFormatter={(v) => (v >= 0 ? '+' : '') + v.toFixed(0).replace('.', ',') + ' %'} tick={{ fontSize: 8, fill: '#9CA3AF' }} axisLine={false} tickLine={false} width={35} />
+                      <Tooltip formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'eksisterende' ? 'Nåværende' : 'Pensum']} contentStyle={{ borderRadius: '8px', fontSize: '10px' }} />
                       <Legend iconType="circle" formatter={(v) => v === 'eksisterende' ? 'Nåværende' : 'Pensum'} wrapperStyle={{ fontSize: '9px' }} />
                       <Bar dataKey="eksisterende" fill="#94A3B8" radius={[3, 3, 0, 0]} maxBarSize={30} />
                       <Bar dataKey="pensum" fill={PENSUM_COLORS.teal} radius={[3, 3, 0, 0]} maxBarSize={30} />
@@ -2409,16 +2424,16 @@ export default function PensumPrognoseModell() {
               {harNoeNaaværendeData && <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Nåværende</p>
                 <div className="flex h-5 rounded-full overflow-hidden">
-                  {naaAksjeAndel > 0 && <div style={{ width: naaAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaAksjeAndel >= 15 ? 'Aksje ' + naaAksjeAndel.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
-                  {naaRenteAndel > 0 && <div style={{ width: naaRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaRenteAndel >= 15 ? 'Rente ' + naaRenteAndel.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
+                  {naaAksjeAndel > 0 && <div style={{ width: naaAksjeAndel + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaAksjeAndel >= 15 ? 'Aksje ' + naaAksjeAndel.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
+                  {naaRenteAndel > 0 && <div style={{ width: naaRenteAndel + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{naaRenteAndel >= 15 ? 'Rente ' + naaRenteAndel.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
                   {naaKontantAndel > 0 && <div style={{ width: naaKontantAndel + '%', backgroundColor: '#CBD5E1' }} className="flex items-center justify-center text-[8px] font-medium">{naaKontantAndel >= 15 ? 'Kont.' : ''}</div>}
                 </div>
               </div>}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Aktivafordeling — Pensum</p>
                 <div className="flex h-5 rounded-full overflow-hidden">
-                  {aksjeAndelPensum > 0 && <div style={{ width: aksjeAndelPensum + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{aksjeAndelPensum >= 15 ? 'Aksje ' + aksjeAndelPensum.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
-                  {renteAndelPensum > 0 && <div style={{ width: renteAndelPensum + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{renteAndelPensum >= 15 ? 'Rente ' + renteAndelPensum.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
+                  {aksjeAndelPensum > 0 && <div style={{ width: aksjeAndelPensum + '%', backgroundColor: PENSUM_COLORS.darkBlue }} className="flex items-center justify-center text-white text-[8px] font-medium">{aksjeAndelPensum >= 15 ? 'Aksje ' + aksjeAndelPensum.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
+                  {renteAndelPensum > 0 && <div style={{ width: renteAndelPensum + '%', backgroundColor: PENSUM_COLORS.salmon }} className="flex items-center justify-center text-white text-[8px] font-medium">{renteAndelPensum >= 15 ? 'Rente ' + renteAndelPensum.toFixed(0).replace('.', ',') + ' %' : ''}</div>}
                   {altAndelPensum > 0 && <div style={{ width: altAndelPensum + '%', backgroundColor: PENSUM_COLORS.teal }} className="flex items-center justify-center text-white text-[8px] font-medium">{altAndelPensum >= 15 ? 'Alt.' : ''}</div>}
                 </div>
               </div>
@@ -2450,7 +2465,7 @@ export default function PensumPrognoseModell() {
                                 <div className="h-full rounded-full" style={{ width: Math.min(r.vekt, 100) + '%', backgroundColor: block.color }}></div>
                               </div>
                               <span className="text-[9px] text-gray-600 flex-1 truncate">{oversettEksponering(r.navn)}</span>
-                              <span className="text-[9px] font-semibold w-8 text-right flex-shrink-0">{r.vekt}%</span>
+                              <span className="text-[9px] font-semibold w-8 text-right flex-shrink-0">{pst(r.vekt)} %</span>
                             </div>
                           ))}
                         </div>
@@ -2484,12 +2499,12 @@ export default function PensumPrognoseModell() {
                       <tr key={f.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                         <td className="py-1.5 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.navn}</td>
                         <td className="py-1.5 px-2 text-right">{f.belop > 0 ? formatCurrency(f.belop) : '—'}</td>
-                        <td className="py-1.5 px-2 text-center text-gray-500">{eksTotal > 0 && f.belop > 0 ? (f.belop / eksTotal * 100).toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-center text-gray-500">{eksTotal > 0 && f.belop > 0 ? (f.belop / eksTotal * 100).toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         <td className="py-1.5 px-2 text-center">{f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk3y) }}>{f.avk3y != null ? (f.avk3y >= 0 ? '+' : '') + f.avk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk3y) }}>{f.avk3y != null ? (f.avk3y >= 0 ? '+' : '') + f.avk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                       </tr>
                     ))}
                     {eksterneFondRapport.map((f, idx) => {
@@ -2499,12 +2514,12 @@ export default function PensumPrognoseModell() {
                         <tr key={f.isin} className={(eksFond.length + idx) % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                           <td className="py-1.5 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.navn}</td>
                           <td className="py-1.5 px-2 text-right text-gray-400">—</td>
-                          <td className="py-1.5 px-2 text-center text-gray-500">{(f.vekt / extTotalVekt * 100).toFixed(0).replace('.', ',')} %</td>
+                          <td className="py-1.5 px-2 text-center text-gray-500">{(f.vekt / extTotalVekt * 100).toFixed(0).replace('.', ',')} %</td>
                           <td className="py-1.5 px-2 text-center">{fKat}</td>
-                          <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk3y) }}>{f.avk3y != null ? (f.avk3y >= 0 ? '+' : '') + f.avk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-1.5 px-2 text-right text-gray-500">{f.volatilitet != null ? f.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk1y) }}>{f.avk1y != null ? (f.avk1y >= 0 ? '+' : '') + f.avk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk3y) }}>{f.avk3y != null ? (f.avk3y >= 0 ? '+' : '') + f.avk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-1.5 px-2 text-right" style={{ color: avkFargeInline(f.avk5y) }}>{f.avk5y != null ? (f.avk5y >= 0 ? '+' : '') + f.avk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         </tr>
                       );
                     })}
@@ -2512,7 +2527,7 @@ export default function PensumPrognoseModell() {
                       <tr className="bg-gray-50/50">
                         <td className="py-1.5 px-3 font-medium italic text-gray-500">Enkeltaksjer ({eksAksjer.map(a => a.navn).filter(Boolean).join(', ') || eksAksjer.length + ' poster'})</td>
                         <td className="py-1.5 px-2 text-right">{sumAksjer > 0 ? formatCurrency(sumAksjer) : '—'}</td>
-                        <td className="py-1.5 px-2 text-center text-gray-500">{eksTotal > 0 && sumAksjer > 0 ? (sumAksjer / eksTotal * 100).toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                        <td className="py-1.5 px-2 text-center text-gray-500">{eksTotal > 0 && sumAksjer > 0 ? (sumAksjer / eksTotal * 100).toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         <td className="py-1.5 px-2 text-center">Aksje</td>
                         <td colSpan={4} className="py-1.5 px-2 text-center text-gray-400 italic text-[10px]">Benchmarkes mot Oslo Børs</td>
                       </tr>
@@ -2521,7 +2536,7 @@ export default function PensumPrognoseModell() {
                       <tr className="bg-gray-50/50">
                         <td className="py-1.5 px-3 font-medium text-gray-500">Kontanter</td>
                         <td className="py-1.5 px-2 text-right">{formatCurrency(eksKontanter)}</td>
-                        <td className="py-1.5 px-2 text-center text-gray-500">{(eksKontantAndel).toFixed(1).replace('.', ',')} %</td>
+                        <td className="py-1.5 px-2 text-center text-gray-500">{(eksKontantAndel).toFixed(1).replace('.', ',')} %</td>
                         <td className="py-1.5 px-2 text-center text-gray-400">—</td>
                         <td className="py-1.5 px-2 text-right text-gray-400">0%</td>
                         <td colSpan={3} className="py-1.5 px-2 text-center text-gray-400 italic text-[10px]">Null avkastning</td>
@@ -2534,10 +2549,10 @@ export default function PensumPrognoseModell() {
                       <td className="py-2 px-2 text-right font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(eksTotal)}</td>
                       <td className="py-2 px-2 text-center font-medium">100%</td>
                       <td></td>
-                      <td className="py-2 px-2 text-right font-medium">{eksVektetVolatilitet != null ? eksVektetVolatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                      <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk1y) }}>{eksVektetAvk1y != null ? (eksVektetAvk1y >= 0 ? '+' : '') + eksVektetAvk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                      <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk3y) }}>{eksVektetAvk3y != null ? (eksVektetAvk3y >= 0 ? '+' : '') + eksVektetAvk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                      <td className="py-2 px-2 text-right font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                      <td className="py-2 px-2 text-right font-medium">{eksVektetVolatilitet != null ? eksVektetVolatilitet.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                      <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk1y) }}>{eksVektetAvk1y != null ? (eksVektetAvk1y >= 0 ? '+' : '') + eksVektetAvk1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                      <td className="py-2 px-2 text-right font-medium" style={{ color: avkFargeInline(eksVektetAvk3y) }}>{eksVektetAvk3y != null ? (eksVektetAvk3y >= 0 ? '+' : '') + eksVektetAvk3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                      <td className="py-2 px-2 text-right font-bold" style={{ color: avkFargeInline(eksVektetAvk5y) }}>{eksVektetAvk5y != null ? (eksVektetAvk5y >= 0 ? '+' : '') + eksVektetAvk5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -2581,14 +2596,14 @@ export default function PensumPrognoseModell() {
                 <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
                   {data.map((e) => <Cell key={e.name} fill={e.color} />)}
                 </Pie>
-                <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} />
+                <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="space-y-1.5 mt-2">
               {data.map((d, i) => (
                 <div key={i} className="flex items-center justify-between text-xs px-4">
                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div><span className="text-gray-600">{d.name}</span></div>
-                  <span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
+                  <span className="font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
                 </div>
               ))}
             </div>
@@ -2628,7 +2643,7 @@ export default function PensumPrognoseModell() {
                               <Cell fill={PENSUM_COLORS.darkBlue} />
                               {illikvCurrent > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                             </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -2636,13 +2651,13 @@ export default function PensumPrognoseModell() {
                         <div className="flex items-center gap-2.5 text-sm">
                           <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
                           <span className="flex-1 text-gray-700">Likvid</span>
-                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{likvidCurrent.toFixed(0).replace('.', ',')} %</span>
+                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{likvidCurrent.toFixed(0).replace('.', ',')} %</span>
                         </div>
                         {illikvCurrent > 0 && (
                           <div className="flex items-center gap-2.5 text-sm">
                             <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
                             <span className="flex-1 text-gray-700">Illikvid</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{illikvCurrent.toFixed(0).replace('.', ',')} %</span>
+                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{illikvCurrent.toFixed(0).replace('.', ',')} %</span>
                           </div>
                         )}
                       </div>
@@ -2658,7 +2673,7 @@ export default function PensumPrognoseModell() {
                             <Pie data={katCurrentArr.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                               {katCurrentArr.filter(d => d.value > 0).map((e) => <Cell key={e.name} fill={e.color} />)}
                             </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -2667,7 +2682,7 @@ export default function PensumPrognoseModell() {
                           <div key={d.name} className="flex items-center gap-2.5 text-sm">
                             <div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div>
                             <span className="flex-1 text-gray-700">{d.name}</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
+                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
                           </div>
                         ))}
                       </div>
@@ -2688,7 +2703,7 @@ export default function PensumPrognoseModell() {
                               <Cell fill={PENSUM_COLORS.darkBlue} />
                               {illikvProposed > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                             </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -2696,13 +2711,13 @@ export default function PensumPrognoseModell() {
                         <div className="flex items-center gap-2.5 text-sm">
                           <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
                           <span className="flex-1 text-gray-700">Likvid</span>
-                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{likvidProposed.toFixed(0).replace('.', ',')} %</span>
+                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{likvidProposed.toFixed(0).replace('.', ',')} %</span>
                         </div>
                         {illikvProposed > 0 && (
                           <div className="flex items-center gap-2.5 text-sm">
                             <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
                             <span className="flex-1 text-gray-700">Illikvid</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{illikvProposed.toFixed(0).replace('.', ',')} %</span>
+                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{illikvProposed.toFixed(0).replace('.', ',')} %</span>
                           </div>
                         )}
                       </div>
@@ -2718,7 +2733,7 @@ export default function PensumPrognoseModell() {
                             <Pie data={katProposedArr.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                               {katProposedArr.filter(d => d.value > 0).map((e) => <Cell key={e.name} fill={e.color} />)}
                             </Pie>
-                            <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                            <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -2727,7 +2742,7 @@ export default function PensumPrognoseModell() {
                           <div key={d.name} className="flex items-center gap-2.5 text-sm">
                             <div className="w-3 h-3 rounded" style={{ backgroundColor: d.color }}></div>
                             <span className="flex-1 text-gray-700">{d.name}</span>
-                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
+                            <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
                           </div>
                         ))}
                       </div>
@@ -2743,7 +2758,7 @@ export default function PensumPrognoseModell() {
               <div className="mb-4 p-3 rounded-lg border border-blue-200 bg-blue-50">
                 <p className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Årlig rebalansering</p>
                 {rebalanseringer.map((reb, i) => (
-                  <p key={i} className="text-xs text-gray-600">{reb.prosentPerAar}% av {reb.fraAktiva} selges årlig og reinvesteres i {reb.tilAktiva}</p>
+                  <p key={i} className="text-xs text-gray-600">{pst(reb.prosentPerAar)} % av {reb.fraAktiva} selges årlig og reinvesteres i {reb.tilAktiva}</p>
                 ))}
               </div>
             )}
@@ -2761,11 +2776,11 @@ export default function PensumPrognoseModell() {
                 </thead>
                 <tbody>
                   {[
-                    { label: 'Forventet avkastning p.a.', curr: vektetAvkastning, prop: sammenligningAvkastning, fmt: v => v.toFixed(1).replace('.', ',') + ' %' },
-                    { label: 'Aksjeandel', curr: _allok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
-                    { label: 'Renteandel', curr: _allok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
-                    { label: 'Eiendomsandel', curr: _allok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
-                    { label: 'Likvid andel', curr: likvidCurrent, prop: likvidProposed, fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
+                    { label: 'Forventet avkastning p.a.', curr: vektetAvkastning, prop: sammenligningAvkastning, fmt: v => v.toFixed(1).replace('.', ',') + ' %' },
+                    { label: 'Aksjeandel', curr: _allok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'aksjer').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
+                    { label: 'Renteandel', curr: _allok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'renter').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
+                    { label: 'Eiendomsandel', curr: _allok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), prop: _sammAllok.filter(a => a.kategori === 'eiendom').reduce((s, a) => s + a.vekt, 0), fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
+                    { label: 'Likvid andel', curr: likvidCurrent, prop: likvidProposed, fmt: v => v.toFixed(0).replace('.', ',') + ' %' },
                     { label: 'Sluttverdi (' + horisont + ' år)', curr: verdiutvikling?.[verdiutvikling?.length - 1]?.total, prop: sammenligningVerdiutvikling?.[sammenligningVerdiutvikling?.length - 1]?.total, fmt: v => v ? formatCurrency(Math.round(v)) : '—' },
                   ].map((row, i) => (
                     <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
@@ -2831,7 +2846,7 @@ export default function PensumPrognoseModell() {
               ) : (
                 <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#F0F4F8' }}>
                   <p className="text-[10px] text-gray-500 uppercase">Forv. avkastning p.a.</p>
-                  <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{vektetAvkastning.toFixed(1).replace('.', ',')} %</p>
+                  <p className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{vektetAvkastning.toFixed(1).replace('.', ',')} %</p>
                 </div>
               )}
             </div>
@@ -2843,7 +2858,7 @@ export default function PensumPrognoseModell() {
                 <AreaChart data={chartRows} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#6B7280' }} />
-                  <YAxis tickFormatter={(v) => (v / 1000000).toFixed(0) + 'M'} tick={{ fontSize: 10, fill: '#6B7280' }} width={50} />
+                  <YAxis tickFormatter={(v) => (v / 1000000).toFixed(0).replace('.', ',') + 'M'} tick={{ fontSize: 10, fill: '#6B7280' }} width={50} />
                   <Tooltip formatter={(v) => formatCurrency(Math.round(v))} />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
                   {_scenario.length > 0 && <Area type="monotone" dataKey="optimistisk" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.08} strokeDasharray="5 5" strokeWidth={1.5} name="Optimistisk" />}
@@ -3395,7 +3410,7 @@ export default function PensumPrognoseModell() {
               <h2 className="text-2xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Forventet verdiutvikling</h2>
               <div className="h-0.5 mt-2 w-32" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
               <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-                Prognose for porteføljens utvikling over {horisont} år ved valgt risikoprofil og forventet vektet avkastning på {vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.
+                Prognose for porteføljens utvikling over {horisont} år ved valgt risikoprofil og forventet vektet avkastning på {vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.
               </p>
             </div>
             <div className="grid grid-cols-4 gap-3">
@@ -3413,7 +3428,7 @@ export default function PensumPrognoseModell() {
               </div>
               <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8', border: '1px solid #DCE3EB' }}>
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>CAGR</div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{cagr.toFixed(1).replace('.', ',')} %</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{cagr.toFixed(1).replace('.', ',')} %</div>
               </div>
             </div>
             <div className="rounded-xl border border-gray-100 bg-white p-4">
@@ -3446,7 +3461,7 @@ export default function PensumPrognoseModell() {
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-gray-500 italic">
-              Estimater bygger på forventet vektet avkastning ({vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.) for porteføljens sammensetning. Historisk avkastning er ikke en garanti for fremtidig utvikling.
+              Estimater bygger på forventet vektet avkastning ({vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.) for porteføljens sammensetning. Historisk avkastning er ikke en garanti for fremtidig utvikling.
             </p>
           </div>
         );
@@ -3494,7 +3509,7 @@ export default function PensumPrognoseModell() {
               <div className="rounded-lg p-4 bg-emerald-50 border border-emerald-100">
                 <div className="text-[10px] uppercase tracking-wide text-emerald-700">Renters rente (isolert)</div>
                 <div className="text-lg font-bold tabular-nums text-emerald-900">{formatCurrency(compoundBidrag)}</div>
-                <div className="text-[10px] text-emerald-500 mt-0.5">+{ratio.toFixed(0).replace('.', ',')} % av enkel</div>
+                <div className="text-[10px] text-emerald-500 mt-0.5">+{ratio.toFixed(0).replace('.', ',')} % av enkel</div>
               </div>
               <div className="rounded-lg p-4" style={{ backgroundColor: '#F0F4F8', border: '1px solid #DCE3EB' }}>
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: PENSUM_COLORS.darkBlue }}>Sluttverdi (compound)</div>
@@ -3515,7 +3530,7 @@ export default function PensumPrognoseModell() {
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-gray-500 italic">
-              Etter {horisont} år gir compound-effekten {formatCurrency(compoundBidrag)} ekstra ({ratio.toFixed(0).replace('.', ',')} % mer enn enkel avkastning) ved {vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.
+              Etter {horisont} år gir compound-effekten {formatCurrency(compoundBidrag)} ekstra ({ratio.toFixed(0).replace('.', ',')} % mer enn enkel avkastning) ved {vektetAvkastning.toFixed(1).replace('.', ',')} % p.a.
             </p>
           </div>
         );
@@ -3559,7 +3574,7 @@ export default function PensumPrognoseModell() {
                           <Pie data={box.data} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                             {box.data.map((e) => <Cell key={e.name} fill={farge(e.name)} />)}
                           </Pie>
-                          <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} />
+                          <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -3570,7 +3585,7 @@ export default function PensumPrognoseModell() {
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: farge(entry.name) }}></div>
                             <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
                           </div>
-                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
+                          <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
                         </div>
                       ))}
                     </div>
@@ -3585,7 +3600,7 @@ export default function PensumPrognoseModell() {
                   {skift.map((s) => (
                     <div key={s.name} className="rounded-lg p-3 bg-gray-50 border border-gray-100">
                       <div className="text-xs font-semibold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>{s.name}</div>
-                      <div className="text-xs text-gray-500 tabular-nums">{s.fra.toFixed(1).replace('.', ',')} % → {s.til.toFixed(1).replace('.', ',')} %</div>
+                      <div className="text-xs text-gray-500 tabular-nums">{s.fra.toFixed(1).replace('.', ',')} % → {s.til.toFixed(1).replace('.', ',')} %</div>
                       <div className={"text-sm font-bold tabular-nums " + (s.diff > 0 ? 'text-emerald-600' : 'text-red-600')}>{s.diff > 0 ? '+' : ''}{s.diff.toFixed(1)} pp</div>
                     </div>
                   ))}
@@ -3628,12 +3643,12 @@ export default function PensumPrognoseModell() {
               <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
                 <div className="text-[10px] uppercase tracking-wide text-amber-700">Start-lån</div>
                 <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(totalLaan)}</div>
-                <div className="text-[10px] text-amber-500 mt-0.5">LTV {startLtv.toFixed(1).replace('.', ',')} %</div>
+                <div className="text-[10px] text-amber-500 mt-0.5">LTV {startLtv.toFixed(1).replace('.', ',')} %</div>
               </div>
               <div className="rounded-lg p-4 bg-amber-50 border border-amber-100">
                 <div className="text-[10px] uppercase tracking-wide text-amber-700">Lån ved slutt</div>
                 <div className="text-lg font-bold tabular-nums text-amber-900">{formatCurrency(sluttLaan)}</div>
-                <div className="text-[10px] text-amber-500 mt-0.5">LTV {sluttLtv.toFixed(1).replace('.', ',')} %</div>
+                <div className="text-[10px] text-amber-500 mt-0.5">LTV {sluttLtv.toFixed(1).replace('.', ',')} %</div>
               </div>
               <div className="rounded-lg p-4 bg-blue-50 border border-blue-100">
                 <div className="text-[10px] uppercase tracking-wide text-blue-700">Netto EK ved slutt</div>
@@ -3643,7 +3658,7 @@ export default function PensumPrognoseModell() {
               <div className="rounded-lg p-4 bg-red-50 border border-red-100">
                 <div className="text-[10px] uppercase tracking-wide text-red-700">Total rentekostnad</div>
                 <div className="text-lg font-bold tabular-nums text-red-900">{formatCurrency(totalRentekostnad)}</div>
-                <div className="text-[10px] text-red-500 mt-0.5">{renteAvAvkastning.toFixed(0).replace('.', ',')} % av brutto avkastning</div>
+                <div className="text-[10px] text-red-500 mt-0.5">{renteAvAvkastning.toFixed(0).replace('.', ',')} % av brutto avkastning</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -3667,8 +3682,8 @@ export default function PensumPrognoseModell() {
                   <LineChart data={laanSerie} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#CBD5E1" />
                     <XAxis dataKey="year" tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} />
-                    <YAxis tickFormatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={50} domain={[0, 'auto']} />
-                    <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} />
+                    <YAxis tickFormatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} tick={{ fill: PENSUM_COLORS.darkBlue, fontSize: 10 }} width={50} domain={[0, 'auto']} />
+                    <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} />
                     <Line type="monotone" dataKey="ltv" stroke={PENSUM_COLORS.salmon} strokeWidth={2.5} dot={false} name="LTV" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -3876,8 +3891,8 @@ export default function PensumPrognoseModell() {
                 </div>
                 <p className="text-xs text-gray-500 italic mt-2">
                   {eksisterendeLaanModus
-                    ? `Lånet er allerede en del av porteføljen — netto egenkapital er ${formatCurrency(egenkapitalBelop)}. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av porteføljen.`
-                    : `Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): ${effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0}% av total eksponering.`}
+                    ? `Lånet er allerede en del av porteføljen — netto egenkapital er ${formatCurrency(egenkapitalBelop)}. Belåningsgrad (LTV): ${pst(effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0)} % av porteføljen.`
+                    : `Lånebeløpet legges til investert kapital. Belåningsgrad (LTV): ${pst(effektivtInvestertBelop > 0 ? ((totalLaan / effektivtInvestertBelop) * 100).toFixed(0) : 0)} % av total eksponering.`}
                 </p>
               </>
             )}
@@ -4720,7 +4735,7 @@ export default function PensumPrognoseModell() {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-slate-500">Forventet avkastning</p>
-                            <p className="text-lg font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(produktRapportMeta[valgtProduktDetalj.id].expectedReturn) ? `${produktRapportMeta[valgtProduktDetalj.id].expectedReturn}%` : '—'}</p>
+                            <p className="text-lg font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(produktRapportMeta[valgtProduktDetalj.id].expectedReturn) ? `${pst(produktRapportMeta[valgtProduktDetalj.id].expectedReturn)} %` : '—'}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
@@ -4740,7 +4755,7 @@ export default function PensumPrognoseModell() {
                           {eksponering.underliggende.map((inv, idx) => (
                             <div key={idx} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
                               <span className="text-sm truncate mr-2">{inv.navn}</span>
-                              <span className="text-sm font-medium whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{inv.vekt}%</span>
+                              <span className="text-sm font-medium whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(inv.vekt)} %</span>
                             </div>
                           ))}
                         </div>
@@ -4761,7 +4776,7 @@ export default function PensumPrognoseModell() {
                                     <div className="h-full rounded-full" style={{ width: `${region.vekt}%`, backgroundColor: PENSUM_COLORS.lightBlue }}></div>
                                   </div>
                                   <span className="text-xs w-24 truncate">{oversettEksponering(region.navn)}</span>
-                                  <span className="text-xs font-medium w-10 text-right">{region.vekt}%</span>
+                                  <span className="text-xs font-medium w-10 text-right">{pst(region.vekt)} %</span>
                                 </div>
                               ))}
                             </div>
@@ -4779,7 +4794,7 @@ export default function PensumPrognoseModell() {
                                     <div className="h-full rounded-full" style={{ width: `${sektor.vekt}%`, backgroundColor: PENSUM_COLORS.salmon }}></div>
                                   </div>
                                   <span className="text-xs w-32 truncate">{oversettEksponering(sektor.navn)}</span>
-                                  <span className="text-xs font-medium w-10 text-right">{sektor.vekt}%</span>
+                                  <span className="text-xs font-medium w-10 text-right">{pst(sektor.vekt)} %</span>
                                 </div>
                               ))}
                             </div>
@@ -4796,7 +4811,7 @@ export default function PensumPrognoseModell() {
                           {eksponering.stil.map((stil, idx) => (
                             <div key={idx} className="px-3 py-2 bg-gray-100 rounded-lg">
                               <span className="text-xs text-gray-600">{oversettEksponering(stil.navn)}</span>
-                              <span className="ml-2 text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{stil.vekt}%</span>
+                              <span className="ml-2 text-sm font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(stil.vekt)} %</span>
                             </div>
                           ))}
                         </div>
@@ -4807,11 +4822,11 @@ export default function PensumPrognoseModell() {
                     <div>
                       <h4 className="font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Historisk avkastning</h4>
                       <div className="flex flex-wrap gap-4">
-                        {erGyldigTall(valgtProduktDetalj.aar2024) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2024</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2024 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2024 > 0 ? '+' : ''}{valgtProduktDetalj.aar2024}%</span></div>}
-                        {erGyldigTall(valgtProduktDetalj.aar2023) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2023</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2023 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2023 > 0 ? '+' : ''}{valgtProduktDetalj.aar2023}%</span></div>}
-                        {erGyldigTall(valgtProduktDetalj.aar2022) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2022</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2022 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2022 > 0 ? '+' : ''}{valgtProduktDetalj.aar2022}%</span></div>}
-                        {(() => { const nokkeltall = beregnProduktNokkeltall(valgtProduktDetalj, produktHistorikk?.[valgtProduktDetalj?.id]); return nokkeltall.aarlig3ar !== null && <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200"><span className="text-xs text-blue-600 block">Årlig 3 år (beregnet)</span><span className={"text-lg font-bold " + (nokkeltall.aarlig3ar >= 0 ? "text-green-600" : "text-red-600")}>{nokkeltall.aarlig3ar > 0 ? '+' : ''}{nokkeltall.aarlig3ar}%</span></div>; })()}
-                        {(() => { const nokkeltall = beregnProduktNokkeltall(valgtProduktDetalj, produktHistorikk?.[valgtProduktDetalj?.id]); return nokkeltall.risiko3ar !== null && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">Risiko 3 år (beregnet)</span><span className="text-lg font-bold text-gray-700">{nokkeltall.risiko3ar}%</span></div>; })()}
+                        {erGyldigTall(valgtProduktDetalj.aar2024) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2024</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2024 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2024 > 0 ? '+' : ''}{pst(valgtProduktDetalj.aar2024)} %</span></div>}
+                        {erGyldigTall(valgtProduktDetalj.aar2023) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2023</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2023 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2023 > 0 ? '+' : ''}{pst(valgtProduktDetalj.aar2023)} %</span></div>}
+                        {erGyldigTall(valgtProduktDetalj.aar2022) && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">2022</span><span className={"text-lg font-bold " + (valgtProduktDetalj.aar2022 >= 0 ? "text-green-600" : "text-red-600")}>{valgtProduktDetalj.aar2022 > 0 ? '+' : ''}{pst(valgtProduktDetalj.aar2022)} %</span></div>}
+                        {(() => { const nokkeltall = beregnProduktNokkeltall(valgtProduktDetalj, produktHistorikk?.[valgtProduktDetalj?.id]); return nokkeltall.aarlig3ar !== null && <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200"><span className="text-xs text-blue-600 block">Årlig 3 år (beregnet)</span><span className={"text-lg font-bold " + (nokkeltall.aarlig3ar >= 0 ? "text-green-600" : "text-red-600")}>{nokkeltall.aarlig3ar > 0 ? '+' : ''}{pst(nokkeltall.aarlig3ar)} %</span></div>; })()}
+                        {(() => { const nokkeltall = beregnProduktNokkeltall(valgtProduktDetalj, produktHistorikk?.[valgtProduktDetalj?.id]); return nokkeltall.risiko3ar !== null && <div className="text-center p-3 bg-gray-50 rounded-lg"><span className="text-xs text-gray-500 block">Risiko 3 år (beregnet)</span><span className="text-lg font-bold text-gray-700">{pst(nokkeltall.risiko3ar)} %</span></div>; })()}
                       </div>
                     </div>
                   </div>
@@ -4849,7 +4864,7 @@ export default function PensumPrognoseModell() {
                   ['Kunde', kundeNavn || '—'],
                   ['Investerbar kapital', formatCurrency(investertBelop !== null ? investertBelop : totalKapital)],
                   ['Risikoprofil', risikoprofil],
-                  ['Forv. avkastning', vektetAvkastning.toFixed(1).replace('.', ',') + ' % p.a.'],
+                  ['Forv. avkastning', vektetAvkastning.toFixed(1).replace('.', ',') + ' % p.a.'],
                 ].map(([lbl, val]) => (
                   <div key={lbl}>
                     <div className="text-xs text-gray-400 uppercase tracking-wider">{lbl}</div>
@@ -5135,7 +5150,7 @@ export default function PensumPrognoseModell() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{RISK_PROFILES[risikoprofil].aksjer}% aksjer · {RISK_PROFILES[risikoprofil].renter}% renter</p>
+                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{pst(RISK_PROFILES[risikoprofil].aksjer)} % aksjer · {pst(RISK_PROFILES[risikoprofil].renter)} % renter</p>
                 </div>
 
                 {/* Horisont - som slider + tall */}
@@ -5417,7 +5432,7 @@ export default function PensumPrognoseModell() {
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
                                     {f.matchet ? (
-                                      f.avk1y != null ? <span className={f.avk1y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk1y >= 0 ? '+' : ''}{f.avk1y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
+                                      f.avk1y != null ? <span className={f.avk1y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk1y >= 0 ? '+' : ''}{f.avk1y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
                                     ) : (
                                       <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
                                         value={f.avk1y ?? ''} placeholder="—"
@@ -5429,7 +5444,7 @@ export default function PensumPrognoseModell() {
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
                                     {f.matchet ? (
-                                      f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
+                                      f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
                                     ) : (
                                       <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
                                         value={f.avk3y ?? ''} placeholder="—"
@@ -5441,7 +5456,7 @@ export default function PensumPrognoseModell() {
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
                                     {f.matchet ? (
-                                      f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
+                                      f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
                                     ) : (
                                       <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
                                         value={f.avk5y ?? ''} placeholder="—"
@@ -5453,7 +5468,7 @@ export default function PensumPrognoseModell() {
                                   </td>
                                   <td className="py-1.5 px-2 text-right">
                                     {f.matchet ? (
-                                      f.volatilitet != null ? <span className="text-gray-500">{f.volatilitet.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
+                                      f.volatilitet != null ? <span className="text-gray-500">{f.volatilitet.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
                                     ) : (
                                       <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
                                         value={f.volatilitet ?? ''} placeholder="—"
@@ -5819,7 +5834,7 @@ export default function PensumPrognoseModell() {
                           </div>
                           <div className="text-center">
                             <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Snittavkastning</div>
-                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.teal }}>{snittAvkastning.toFixed(1).replace('.', ',')} %</div>
+                            <div className="text-lg font-bold tabular-nums" style={{ color: PENSUM_COLORS.teal }}>{snittAvkastning.toFixed(1).replace('.', ',')} %</div>
                           </div>
                         </div>
                       );
@@ -5904,24 +5919,24 @@ export default function PensumPrognoseModell() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h5>
-                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
                           <div className="space-y-1 mt-1">
                             {pieData.filter(d => d.value > 0).map(d => (
                               <div key={d.name} className="flex items-center justify-between text-xs px-1">
                                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: ASSET_COLORS[d.name] || '#888' }}></div><span className="text-gray-600 truncate">{d.name}</span></div>
-                                <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
+                                <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
                               </div>
                             ))}
                           </div>
                         </div>
                         <div>
                           <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</h5>
-                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={sammenligningPieData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammenligningPieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS_LIGHT[e.name] || ASSET_COLORS[e.name] || '#888'} />)}</Pie><Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
                           <div className="space-y-1 mt-1">
                             {sammenligningPieData.filter(d => d.value > 0).map(d => (
                               <div key={d.name} className="flex items-center justify-between text-xs px-1">
                                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: ASSET_COLORS_LIGHT[d.name] || ASSET_COLORS[d.name] || '#888' }}></div><span className="text-gray-600 truncate">{d.name}</span></div>
-                                <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
+                                <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
                               </div>
                             ))}
                           </div>
@@ -5935,7 +5950,7 @@ export default function PensumPrognoseModell() {
                               <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
                                 {pieData.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} />)}
                               </Pie>
-                              <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -5946,7 +5961,7 @@ export default function PensumPrognoseModell() {
                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[entry.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === entry.name)?.kategori] || '#888' }}></div>
                                 <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
                               </div>
-                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
+                              <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
                             </div>
                           ))}
                         </div>
@@ -5972,24 +5987,24 @@ export default function PensumPrognoseModell() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{risikoprofil}</h5>
-                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={currLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{currLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={currLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{currLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
                             <div className="space-y-1 mt-1">
                               {currLikvidData.map((d, i) => (
                                 <div key={d.name} className="flex items-center justify-between text-xs px-1">
                                   <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div><span className="text-gray-600">{d.name}</span></div>
-                                  <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
+                                  <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                           <div>
                             <h5 className="text-center text-xs font-semibold mb-2" style={{ color: PENSUM_COLORS.teal }}>{sammenligningProfil}</h5>
-                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={sammLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
+                            <ResponsiveContainer width="100%" height={120}><PieChart><Pie data={sammLikvidData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="value" paddingAngle={2} cornerRadius={3}>{sammLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}</Pie><Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} /></PieChart></ResponsiveContainer>
                             <div className="space-y-1 mt-1">
                               {sammLikvidData.map((d, i) => (
                                 <div key={d.name} className="flex items-center justify-between text-xs px-1">
                                   <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div><span className="text-gray-600">{d.name}</span></div>
-                                  <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
+                                  <span className="font-semibold">{d.value.toFixed(0).replace('.', ',')} %</span>
                                 </div>
                               ))}
                             </div>
@@ -6009,7 +6024,7 @@ export default function PensumPrognoseModell() {
                               <Pie data={currLikvidData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
                                 {currLikvidData.map((e, i) => <Cell key={i} fill={[PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i]} />)}
                               </Pie>
-                              <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -6018,7 +6033,7 @@ export default function PensumPrognoseModell() {
                             <div key={d.name} className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: [PENSUM_COLORS.darkBlue, PENSUM_COLORS.gold][i] }}></div>
                               <span className="flex-1 text-gray-700">{d.name}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{d.value.toFixed(0).replace('.', ',')} %</span>
                             </div>
                           ))}
                         </div>
@@ -6070,7 +6085,7 @@ export default function PensumPrognoseModell() {
                                 <Pie data={sluttSammensetning.pie} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={2} cornerRadius={4}>
                                   {sluttSammensetning.pie.map((e) => <Cell key={e.name} fill={ASSET_COLORS[e.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === e.name)?.kategori] || '#888'} />)}
                                 </Pie>
-                                <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                <Tooltip formatter={(v, n) => [v.toFixed(1).replace('.', ',') + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -6081,7 +6096,7 @@ export default function PensumPrognoseModell() {
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ASSET_COLORS[entry.name] || CATEGORY_COLORS[kategorierData.find(c => c.navn === entry.name)?.kategori] || '#888' }}></div>
                                   <span style={{ color: PENSUM_COLORS.darkBlue }}>{entry.name}</span>
                                 </div>
-                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
+                                <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{entry.value.toFixed(1).replace('.', ',')} %</span>
                               </div>
                             ))}
                           </div>
@@ -6100,19 +6115,19 @@ export default function PensumPrognoseModell() {
                                   <Cell fill={PENSUM_COLORS.darkBlue} />
                                   {sluttSammensetning.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                                 </Pie>
-                                <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                <Tooltip formatter={(v) => v.toFixed(0).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
                           <div className="space-y-2 flex-1">
                             <div className="flex items-center justify-between text-sm">
                               <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div><span className="text-gray-700">Likvid</span></div>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.likvid.toFixed(0).replace('.', ',')} %</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.likvid.toFixed(0).replace('.', ',')} %</span>
                             </div>
                             {sluttSammensetning.illikvid > 0 && (
                               <div className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div><span className="text-gray-700">Illikvid</span></div>
-                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.illikvid.toFixed(0).replace('.', ',')} %</span>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{sluttSammensetning.illikvid.toFixed(0).replace('.', ',')} %</span>
                               </div>
                             )}
                           </div>
@@ -6189,7 +6204,7 @@ export default function PensumPrognoseModell() {
                             </div>
                           </div>
                           <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
-                            <p>{reb.prosentPerAar}% av {reb.fraAktiva} → {reb.tilAktiva}</p>
+                            <p>{pst(reb.prosentPerAar)} % av {reb.fraAktiva} → {reb.tilAktiva}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {rebalanseringer.length > 1 && (
@@ -6278,7 +6293,7 @@ export default function PensumPrognoseModell() {
                             return (
                               <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: p.color }}>
                                 <span>{p.dataKey}</span>
-                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.value)} <span style={{ color: '#94A3B8' }}>({pct.toFixed(1).replace('.', ',')} %)</span></span>
+                                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.value)} <span style={{ color: '#94A3B8' }}>({pct.toFixed(1).replace('.', ',')} %)</span></span>
                               </div>
                             );
                           })}
@@ -6362,7 +6377,7 @@ export default function PensumPrognoseModell() {
                             return (
                               <td key={a.navn} className="py-3 px-3 text-right text-gray-600 tabular-nums">
                                 <div>{formatCurrency(v)}</div>
-                                <div className="text-[10px] text-gray-400">{pct.toFixed(1).replace('.', ',')} %</div>
+                                <div className="text-[10px] text-gray-400">{pct.toFixed(1).replace('.', ',')} %</div>
                               </td>
                             );
                           })}
@@ -6743,11 +6758,11 @@ export default function PensumPrognoseModell() {
                         </label>
                         {pensumLikviditet.illikvid > 0 && (
                           <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
-                            {pensumLikviditet.illikvid}% illikvid
+                            {pst(pensumLikviditet.illikvid)} % illikvid
                           </span>
                         )}
                         <span className={"text-sm px-3 py-1 rounded-full " + (Math.abs(pensumTotalVekt - 100) < 0.2 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                          Total: {pensumTotalVekt.toFixed(1).replace('.', ',')} %
+                          Total: {pensumTotalVekt.toFixed(1).replace('.', ',')} %
                         </span>
                       </div>
                     </h4>
@@ -6809,9 +6824,9 @@ export default function PensumPrognoseModell() {
                                       <div className="text-xs text-gray-700 leading-relaxed">{beskr.beskrivelse}</div>
                                       {erGyldigTall(produktInfo?.forventetAvkastning) && (
                                         <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
-                                          Forv. avkastning: <strong style={{ color: PENSUM_COLORS.green }}>{produktInfo.forventetAvkastning}%</strong>
-                                          {erGyldigTall(produktInfo?.forventetYield) && <> · Yield: <strong style={{ color: PENSUM_COLORS.teal }}>{produktInfo.forventetYield}%</strong></>}
-                                          {erGyldigTall(produktInfo?.forventetRisiko) && <> · Vol: <strong>{produktInfo.forventetRisiko}%</strong></>}
+                                          Forv. avkastning: <strong style={{ color: PENSUM_COLORS.green }}>{pst(produktInfo.forventetAvkastning)} %</strong>
+                                          {erGyldigTall(produktInfo?.forventetYield) && <> · Yield: <strong style={{ color: PENSUM_COLORS.teal }}>{pst(produktInfo.forventetYield)} %</strong></>}
+                                          {erGyldigTall(produktInfo?.forventetRisiko) && <> · Vol: <strong>{pst(produktInfo.forventetRisiko)} %</strong></>}
                                         </div>
                                       )}
                                     </div>
@@ -6839,7 +6854,7 @@ export default function PensumPrognoseModell() {
                                       />
                                       <span className="text-xs text-gray-400 pr-1.5">kr</span>
                                     </div>
-                                    <span className="text-xs text-gray-400 tabular-nums w-12 text-right">{(produkt.vekt || 0).toFixed(1).replace('.', ',')} %</span>
+                                    <span className="text-xs text-gray-400 tabular-nums w-12 text-right">{(produkt.vekt || 0).toFixed(1).replace('.', ',')} %</span>
                                   </>
                                 );
                               })() : (
@@ -6972,7 +6987,7 @@ export default function PensumPrognoseModell() {
                                   <Cell key={entry.id} fill={[PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
                                 ))}
                               </Pie>
-                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -6981,7 +6996,7 @@ export default function PensumPrognoseModell() {
                             <div key={p.id} className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: [PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
                               <span className="flex-1 truncate text-gray-700">{p.navn}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt}%</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(p.vekt)} %</span>
                             </div>
                           ))}
                         </div>
@@ -7000,7 +7015,7 @@ export default function PensumPrognoseModell() {
                                   <Cell key={entry.name} fill={entry.color} />
                                 ))}
                               </Pie>
-                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -7009,7 +7024,7 @@ export default function PensumPrognoseModell() {
                             <div key={a.name} className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
                               <span className="flex-1 text-gray-700">{a.name}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(a.value)} %</span>
                             </div>
                           ))}
                         </div>
@@ -7083,9 +7098,9 @@ export default function PensumPrognoseModell() {
                       const yRoofPeak = yRoofBase - spissetH;
 
                       const tooltipFor = (key) => {
-                        if (key === 'kjerne') return `Kjerne: ${kjerneSum.toFixed(1).replace('.', ',')} %\n${kjerneNavn.join(', ')}`;
-                        if (key === 'stab') return `Stabilisator: ${stabSum.toFixed(1).replace('.', ',')} %\n${stabNavn.join(', ')}`;
-                        return `Spisset: ${spissetSum.toFixed(1).replace('.', ',')} %\n${spissetNavn.join(', ')}`;
+                        if (key === 'kjerne') return `Kjerne: ${kjerneSum.toFixed(1).replace('.', ',')} %\n${kjerneNavn.join(', ')}`;
+                        if (key === 'stab') return `Stabilisator: ${stabSum.toFixed(1).replace('.', ',')} %\n${stabNavn.join(', ')}`;
+                        return `Spisset: ${spissetSum.toFixed(1).replace('.', ',')} %\n${spissetNavn.join(', ')}`;
                       };
 
                       const fraTopp = [
@@ -7132,7 +7147,7 @@ export default function PensumPrognoseModell() {
                                   const t = tekstFor(kjerneH);
                                   const yMidt = yKjerneTop + (kjerneH - baseFoot) / 2 + baseLip / 2;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yMidt - (kjerneH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{kjerneSum.toFixed(0).replace('.', ',')} %</text>
+                                    <text x={cx} y={yMidt - (kjerneH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{kjerneSum.toFixed(0).replace('.', ',')} %</text>
                                     {kjerneH >= 48 && <text x={cx} y={yMidt + 13} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>KJERNE</text>}
                                   </g>;
                                 })()}
@@ -7168,7 +7183,7 @@ export default function PensumPrognoseModell() {
                                   const t = tekstFor(stabH);
                                   const yMidt = yStabTop + stabH / 2;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yMidt - (stabH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{stabSum.toFixed(0).replace('.', ',')} %</text>
+                                    <text x={cx} y={yMidt - (stabH >= 48 ? 2 : 4)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{stabSum.toFixed(0).replace('.', ',')} %</text>
                                     {stabH >= 48 && <text x={cx} y={yMidt + 13} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>STABILISATOR</text>}
                                   </g>;
                                 })()}
@@ -7185,7 +7200,7 @@ export default function PensumPrognoseModell() {
                                   // Plassér tekst slik at den ligger godt sentrert i den synlige delen av taket
                                   const yTekst = yRoofBase - spissetH * 0.40;
                                   return <g pointerEvents="none">
-                                    <text x={cx} y={yTekst - (spissetH >= 40 ? 1 : 3)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{spissetSum.toFixed(0).replace('.', ',')} %</text>
+                                    <text x={cx} y={yTekst - (spissetH >= 40 ? 1 : 3)} textAnchor="middle" fill="white" fontSize={t.pct} fontWeight="800" style={{ letterSpacing: '-0.5px' }}>{spissetSum.toFixed(0).replace('.', ',')} %</text>
                                     {spissetH >= 40 && <text x={cx} y={yTekst + 11} textAnchor="middle" fill="white" fontSize={t.label} fontWeight="700" style={{ letterSpacing: '1.5px' }}>SPISSET</text>}
                                   </g>;
                                 })()}
@@ -7202,7 +7217,7 @@ export default function PensumPrognoseModell() {
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between gap-2">
                                         <span className="font-bold text-[11px] tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>{b.kort}</span>
-                                        <span className="font-bold text-sm tabular-nums" style={{ color: b.farge }}>{b.verdi.toFixed(0).replace('.', ',')} %</span>
+                                        <span className="font-bold text-sm tabular-nums" style={{ color: b.farge }}>{b.verdi.toFixed(0).replace('.', ',')} %</span>
                                       </div>
                                       <p className="text-[10px] text-gray-600 mt-0.5 leading-snug">{b.beskr}</p>
                                     </div>
@@ -7234,7 +7249,7 @@ export default function PensumPrognoseModell() {
                                   <Cell fill={PENSUM_COLORS.darkBlue} />
                                   {pensumLikviditet.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
                                 </Pie>
-                                <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -7242,13 +7257,13 @@ export default function PensumPrognoseModell() {
                             <div className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
                               <span className="flex-1 text-gray-700">Likvid (daglig)</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.likvid.toFixed(1).replace('.', ',')} %</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.likvid.toFixed(1).replace('.', ',')} %</span>
                             </div>
                             {pensumLikviditet.illikvid > 0 && (
                               <div className="flex items-center gap-2.5 text-sm">
                                 <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
                                 <span className="flex-1 text-gray-700">Illikvid</span>
-                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.illikvid.toFixed(1).replace('.', ',')} %</span>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.illikvid.toFixed(1).replace('.', ',')} %</span>
                               </div>
                             )}
                           </div>
@@ -7302,7 +7317,7 @@ export default function PensumPrognoseModell() {
                                       <div className="w-24 bg-slate-100 rounded-full h-3.5 overflow-hidden">
                                         <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
                                       </div>
-                                      <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                                      <span className="text-xs font-medium w-10 text-right">{pst(row.vekt)} %</span>
                                     </div>
                                   ))}
                                 </div>
@@ -7385,11 +7400,11 @@ export default function PensumPrognoseModell() {
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. avkastning</p>
-                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${aktivtEksponeringsProdukt.rapport.expectedReturn}%` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${pst(aktivtEksponeringsProdukt.rapport.expectedReturn)} %` : '—'}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. yield</p>
-                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${aktivtEksponeringsProdukt.rapport.expectedYield}%` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${pst(aktivtEksponeringsProdukt.rapport.expectedYield)} %` : '—'}</p>
                                 </div>
                               </div>
                             </div>
@@ -7416,7 +7431,7 @@ export default function PensumPrognoseModell() {
                                             <div className="w-28 bg-slate-100 rounded-full h-4 overflow-hidden">
                                               <div className="h-full rounded-full" style={{ width: `${Math.min(Number(row.vekt) || 0, 100)}%`, backgroundColor: block.color }}></div>
                                             </div>
-                                            <span className="text-xs font-medium w-10 text-right">{row.vekt}%</span>
+                                            <span className="text-xs font-medium w-10 text-right">{pst(row.vekt)} %</span>
                                           </div>
                                         ))}
                                       </div>
@@ -7622,7 +7637,7 @@ export default function PensumPrognoseModell() {
                                 </div>
                               </div>
                               <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5">
-                                <p>{reb.prosentPerAar}% av {pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?'} → {pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?'}</p>
+                                <p>{pst(reb.prosentPerAar)} % av {pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?'} → {pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?'}</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button onClick={() => setPensumRebalanseringer(prev => prev.filter((_, i) => i !== rebIdx))} className="text-red-400 hover:text-red-600 text-sm px-2 py-1 rounded border border-red-200 hover:bg-red-50">Fjern</button>
@@ -7705,7 +7720,7 @@ export default function PensumPrognoseModell() {
                     {pensumRebalanseringer.map((reb, i) => {
                       const fra = pensumAllokering.find(a => a.id === reb.fraId)?.navn || '?';
                       const til = pensumAllokering.find(a => a.id === reb.tilId)?.navn || '?';
-                      return <span key={i}>{i > 0 ? ' · ' : ''}{reb.prosentPerAar}% av {fra} → {til}</span>;
+                      return <span key={i}>{i > 0 ? ' · ' : ''}{pst(reb.prosentPerAar)} % av {fra} → {til}</span>;
                     })}
                   </div>
                 )}
@@ -7942,10 +7957,10 @@ export default function PensumPrognoseModell() {
                           <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                             tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                             interval={Math.max(1, Math.floor(compData.length / 12))} />
-                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
+                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                           <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
                             labelFormatter={(d) => formatHistorikkEtikett(d)}
-                            formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + '%', n]} />
+                            formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + ' %', n]} />
                           <Legend verticalAlign="bottom" height={36} />
                           <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                           {alleCompNavn.map(n => {
@@ -7977,7 +7992,7 @@ export default function PensumPrognoseModell() {
               const pessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : risikoScen.svak;
               const optAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : risikoScen.sterk;
               const scenarioer = [
-                { id: 'pessimistisk', tittel: 'Svakt scenario', undertittel: '5 % sannsynlighet for svakere', avk: pessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: `Svak markedsutvikling: omtrent 1 av 20 utfall blir svakere enn dette, gitt forventet svingning i porteføljen (volatilitet ca. ${pensumScenarioVolatilitet.verdi.toFixed(1).replace('.', ',')} % p.a., CMA). Underveis kan verdien falle betydelig – også om snittet over hele perioden blir positivt.` },
+                { id: 'pessimistisk', tittel: 'Svakt scenario', undertittel: '5 % sannsynlighet for svakere', avk: pessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: `Svak markedsutvikling: omtrent 1 av 20 utfall blir svakere enn dette, gitt forventet svingning i porteføljen (volatilitet ca. ${pensumScenarioVolatilitet.verdi.toFixed(1).replace('.', ',')} % p.a., CMA). Underveis kan verdien falle betydelig – også om snittet over hele perioden blir positivt.` },
                 { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Modellbasert illustrasjon', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Modellbasert illustrasjon basert på CMA-forutsetninger. Ikke en prognose eller garanti for fremtidig avkastning.' },
                 { id: 'optimistisk', tittel: 'Sterkt scenario', undertittel: '5 % sannsynlighet for sterkere', avk: optAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterk markedsutvikling: omtrent 1 av 20 utfall blir sterkere enn dette, gitt forventet svingning i porteføljen.' },
               ];
@@ -7990,7 +8005,7 @@ export default function PensumPrognoseModell() {
                 });
                 scData.push(row);
               }
-              const formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
+              const formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1).replace('.', ',') + ' MNOK' : formatCurrency(v);
 
               return (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -8121,7 +8136,7 @@ export default function PensumPrognoseModell() {
                           <AreaChart data={scData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                             <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={v => v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'k'} />
+                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={v => v >= 1000000 ? (v / 1000000).toFixed(0).replace('.', ',') + 'M' : (v / 1000).toFixed(0) + 'k'} />
                             <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(l) => `År ${l}`} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             <Area type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#059669" fill="#05966915" strokeWidth={2} strokeDasharray="6 3" dot={false} />
                             <Area type="monotone" dataKey="hoved" name="Hovedscenario" stroke={PENSUM_COLORS.darkBlue} fill={PENSUM_COLORS.darkBlue + '20'} strokeWidth={2.5} dot={false} />
@@ -8158,7 +8173,7 @@ export default function PensumPrognoseModell() {
                       <div key={aar}>
                         <p className="text-xs text-gray-500 mb-1">{aar}</p>
                         <p className={"text-lg font-bold " + (erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>
-                          {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1).replace('.', ',') + ' %' : '—'}
+                          {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1).replace('.', ',') + ' %' : '—'}
                         </p>
                       </div>
                     ))}
@@ -8203,18 +8218,18 @@ export default function PensumPrognoseModell() {
                         return (
                           <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                             <td className="py-3 px-4 font-bold text-white">Vektet portefølje</td>
-                            <td className="py-3 px-3 text-right text-white font-bold">{pensumTotalVekt.toFixed(0).replace('.', ',')} %</td>
-                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2026) ? (beregnPensumHistorikk.aar2026 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2026) ? beregnPensumHistorikk.aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2025) ? (beregnPensumHistorikk.aar2025 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2025) ? beregnPensumHistorikk.aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2024) ? (beregnPensumHistorikk.aar2024 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2024) ? beregnPensumHistorikk.aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2023) ? (beregnPensumHistorikk.aar2023 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2023) ? beregnPensumHistorikk.aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2022) ? (beregnPensumHistorikk.aar2022 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2022) ? beregnPensumHistorikk.aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className="py-3 px-3 text-right text-white font-bold">{erGyldigTall(portStat3?.aarlig) ? portStat3.aarlig.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className="py-3 px-3 text-right text-white font-bold">{erGyldigTall(portStat3?.risiko) ? portStat3.risiko.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className="py-3 px-2 text-right text-white font-bold" style={{ borderLeft: '2px solid rgba(255,255,255,0.3)' }}>{erGyldigTall(portStat3?.sharpe) ? portStat3.sharpe.toFixed(2) : '—'}</td>
-                            <td className="py-3 px-2 text-right text-red-300 font-bold">{erGyldigTall(portStat3?.maxDrawdown) ? portStat3.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">{pensumTotalVekt.toFixed(0).replace('.', ',')} %</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2026) ? (beregnPensumHistorikk.aar2026 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2026) ? beregnPensumHistorikk.aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2025) ? (beregnPensumHistorikk.aar2025 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2025) ? beregnPensumHistorikk.aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2024) ? (beregnPensumHistorikk.aar2024 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2024) ? beregnPensumHistorikk.aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2023) ? (beregnPensumHistorikk.aar2023 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2023) ? beregnPensumHistorikk.aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className={"py-3 px-3 text-right font-bold " + (erGyldigTall(beregnPensumHistorikk.aar2022) ? (beregnPensumHistorikk.aar2022 >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{erGyldigTall(beregnPensumHistorikk.aar2022) ? beregnPensumHistorikk.aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">{erGyldigTall(portStat3?.aarlig) ? portStat3.aarlig.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-3 px-3 text-right text-white font-bold">{erGyldigTall(portStat3?.risiko) ? portStat3.risiko.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-3 px-2 text-right text-white font-bold" style={{ borderLeft: '2px solid rgba(255,255,255,0.3)' }}>{erGyldigTall(portStat3?.sharpe) ? portStat3.sharpe.toFixed(2).replace('.', ',') : '—'}</td>
+                            <td className="py-3 px-2 text-right text-red-300 font-bold">{erGyldigTall(portStat3?.maxDrawdown) ? portStat3.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                             <td className="py-3 px-3 text-right font-bold text-white" style={{ borderLeft: '2px solid rgba(255,255,255,0.3)' }}>{formatPercent(pensumForventetAvkastning)}</td>
-                            <td className="py-3 px-3 text-right font-bold text-white">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-3 px-3 text-right font-bold text-white">{erGyldigTall(vektetYield) ? vektetYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                           </tr>
                         );
                       })()}
@@ -8234,17 +8249,17 @@ export default function PensumPrognoseModell() {
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
-                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
-                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2)}</span> : '—'}</td>
-                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
+                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2).replace('.', ',')}</span> : '—'}</td>
+                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         </tr>
                         );
                       })}
@@ -8264,17 +8279,17 @@ export default function PensumPrognoseModell() {
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
-                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
-                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2)}</span> : '—'}</td>
-                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
+                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2).replace('.', ',')}</span> : '—'}</td>
+                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         </tr>
                         );
                       })}
@@ -8294,17 +8309,17 @@ export default function PensumPrognoseModell() {
                         return (
                         <tr key={p.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
-                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
-                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2)}</span> : '—'}</td>
-                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2026) ? (aar2026 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2026) ? aar2026.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2025) ? (aar2025 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2025) ? aar2025.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2024) ? (aar2024 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2024) ? aar2024.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2023) ? (aar2023 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2023) ? aar2023.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className={"py-2 px-3 text-right " + (erGyldigTall(aar2022) ? (aar2022 >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(aar2022) ? aar2022.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          {(() => { const nokkeltall = beregnProduktNokkeltall({ ...p, aar2026, aar2025, aar2024, aar2023, aar2022 }, produktHistorikk?.[p.id]); return <><td className={"py-2 px-3 text-right " + (erGyldigTall(nokkeltall.aarlig3ar) ? (nokkeltall.aarlig3ar >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>{erGyldigTall(nokkeltall.aarlig3ar) ? nokkeltall.aarlig3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td><td className="py-2 px-3 text-right text-gray-600">{erGyldigTall(nokkeltall.risiko3ar) ? nokkeltall.risiko3ar.toFixed(1).replace('.', ',') + ' %' : '—'}</td></>; })()}
+                          <td className="py-2 px-2 text-right" style={{ borderLeft: '2px solid #E5E7EB' }}>{pStat ? <span className={"font-semibold px-1.5 py-0.5 rounded text-xs " + (pStat.sharpe >= 1 ? "bg-green-100 text-green-700" : pStat.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{pStat.sharpe.toFixed(2).replace('.', ',')}</span> : '—'}</td>
+                          <td className="py-2 px-2 text-right text-red-600 text-xs font-medium">{pStat ? pStat.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                          <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                         </tr>
                         );
                       })}
@@ -8320,7 +8335,7 @@ export default function PensumPrognoseModell() {
                             return (
                             <tr key={p.id} className={idx % 2 === 0 ? 'bg-amber-50' : 'bg-white'}>
                               <td className="py-2 px-4 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{p.navn}{p.kortHistorikk && <sup title="Kort historikk - tall kan være estimerte" className="text-amber-600">*</sup>}</td>
-                              <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2 px-3 text-right text-gray-500">{allok ? allok.vekt.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
@@ -8330,8 +8345,8 @@ export default function PensumPrognoseModell() {
                               <td className="py-2 px-3 text-right text-gray-400">—</td>
                               <td className="py-2 px-2 text-right text-gray-400" style={{ borderLeft: '2px solid #E5E7EB' }}>—</td>
                               <td className="py-2 px-2 text-right text-gray-400">—</td>
-                              <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                              <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2 px-3 text-right font-medium" style={{ borderLeft: '2px solid #E5E7EB', color: PENSUM_COLORS.green }}>{erGyldigTall(fAvk) ? fAvk.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2 px-3 text-right font-medium" style={{ color: PENSUM_COLORS.teal }}>{erGyldigTall(fYield) ? fYield.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                             </tr>
                             );
                           })}
@@ -8390,7 +8405,7 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
                     <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-gray-700 leading-relaxed">
-                      Med {formatPercent(baseAvk)} årlig avkastning og renters rente gir <strong>{formatCurrency(pbEffektivtInvestertBelop)}</strong> investert en sluttverdi på <strong>{formatCurrency(sluttverdi)}</strong>. Av totalavkastningen på <strong>{formatCurrency(compoundAvkastning)}</strong> er <strong className="text-emerald-700">{formatCurrency(compoundBidrag)}</strong> ren compound-effekt — avkastning på tidligere års avkastning{ratio > 0 ? ` (${ratio.toFixed(0).replace('.', ',')} % mer enn enkel avkastning)` : ''}.
+                      Med {formatPercent(baseAvk)} årlig avkastning og renters rente gir <strong>{formatCurrency(pbEffektivtInvestertBelop)}</strong> investert en sluttverdi på <strong>{formatCurrency(sluttverdi)}</strong>. Av totalavkastningen på <strong>{formatCurrency(compoundAvkastning)}</strong> er <strong className="text-emerald-700">{formatCurrency(compoundBidrag)}</strong> ren compound-effekt — avkastning på tidligere års avkastning{ratio > 0 ? ` (${ratio.toFixed(0).replace('.', ',')} % mer enn enkel avkastning)` : ''}.
                     </div>
                   </div>
                 </div>
@@ -8531,8 +8546,8 @@ export default function PensumPrognoseModell() {
                             return <div className="bg-white p-2 rounded border border-gray-200 text-xs shadow-lg">
                               <div className="font-semibold">{d.navn}</div>
                               <div className="text-[10px] text-gray-500 mb-1">{typeLabel}</div>
-                              <div>Volatilitet: <strong>{d.x.toFixed(1).replace('.', ',')} %</strong></div>
-                              <div>Avkastning: <strong>{d.y.toFixed(1).replace('.', ',')} %</strong></div>
+                              <div>Volatilitet: <strong>{d.x.toFixed(1).replace('.', ',')} %</strong></div>
+                              <div>Avkastning: <strong>{d.y.toFixed(1).replace('.', ',')} %</strong></div>
                             </div>;
                           }}
                         />
@@ -8816,10 +8831,10 @@ export default function PensumPrognoseModell() {
                                 <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                   tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys2 = ['portefolje', ...Object.keys(SNAPSHOT_INDEKSER)]; const vals = chartData.flatMap(d => allKeys2.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys2 = ['portefolje', ...Object.keys(SNAPSHOT_INDEKSER)]; const vals = chartData.flatMap(d => allKeys2.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                 <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                   labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
-                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
+                                  formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
                                 <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                 <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Pensum-forslaget" />
                                 {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => (
@@ -8831,7 +8846,7 @@ export default function PensumPrognoseModell() {
                               <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
                                 <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
                                 Pensum-forslaget: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
-                                  {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1).replace('.', ',') + ' %' : '—'}
+                                  {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1).replace('.', ',') + ' %' : '—'}
                                 </span>
                               </div>
                               {Object.entries(SNAPSHOT_INDEKSER).map(([navn, cfg]) => {
@@ -8841,7 +8856,7 @@ export default function PensumPrognoseModell() {
                                     <div className="w-4 h-0" style={{ borderTop: '2px dashed ' + cfg.farge }}></div>
                                     <span>{navn}:</span>
                                     <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
-                                      {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1).replace('.', ',') + ' %' : '—'}
+                                      {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1).replace('.', ',') + ' %' : '—'}
                                     </span>
                                   </div>
                                 );
@@ -8979,11 +8994,11 @@ export default function PensumPrognoseModell() {
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
-                                Portefølje maks: {portMaxDD.toFixed(1).replace('.', ',')} %
+                                Portefølje maks: {portMaxDD.toFixed(1).replace('.', ',')} %
                               </span>
                               {Object.entries(indeksMaxDD).map(([navn, dd]) => (
                                 <span key={navn} className="text-xs text-gray-500">
-                                  {navn}: {dd.toFixed(1).replace('.', ',')} %
+                                  {navn}: {dd.toFixed(1).replace('.', ',')} %
                                 </span>
                               ))}
                             </div>
@@ -8995,11 +9010,11 @@ export default function PensumPrognoseModell() {
                                 <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                   tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                   interval={Math.max(1, Math.floor(ddChartData.length / 10))} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={['dataMin - 1', 0]} />
+                                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={['dataMin - 1', 0]} />
                                 <Tooltip
                                   contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                   labelFormatter={formatHistorikkEtikett}
-                                  formatter={(v, name) => [v.toFixed(2).replace('.', ',') + ' %', name]} />
+                                  formatter={(v, name) => [v.toFixed(2).replace('.', ',') + ' %', name]} />
                                 <Legend verticalAlign="bottom" height={36} />
                                 <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
                                 <Area type="monotone" dataKey="Pensum-forslaget" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Pensum-forslaget" />
@@ -9993,7 +10008,7 @@ export default function PensumPrognoseModell() {
                 totalAvk: parseFloat(totalAvk.toFixed(2)),
                 annualisert: parseFloat(annualisert.toFixed(2)),
                 volatilitet: parseFloat(annualVol.toFixed(2)),
-                sharpe: parseFloat(sharpe.toFixed(2)),
+                sharpe: parseFloat(sharpe.toFixed(2).replace('.', ',')),
                 maxDrawdown: parseFloat(maxDD.toFixed(2)),
                 besteMaaned: parseFloat(besteMaaned.toFixed(2)),
                 versteMaaned: parseFloat(versteMaaned.toFixed(2)),
@@ -10175,13 +10190,13 @@ export default function PensumPrognoseModell() {
                                         </td>
                                         <td className="py-2 px-3 text-gray-500">{f.cat}</td>
                                         <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r1y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
-                                          {f.r1y !== undefined ? `${f.r1y > 0 ? '+' : ''}${f.r1y.toFixed(1).replace('.', ',')} %` : '\u2014'}
+                                          {f.r1y !== undefined ? `${f.r1y > 0 ? '+' : ''}${f.r1y.toFixed(1).replace('.', ',')} %` : '\u2014'}
                                         </td>
                                         <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r3y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
-                                          {f.r3y !== undefined ? `${f.r3y > 0 ? '+' : ''}${f.r3y.toFixed(1).replace('.', ',')} %` : '\u2014'}
+                                          {f.r3y !== undefined ? `${f.r3y > 0 ? '+' : ''}${f.r3y.toFixed(1).replace('.', ',')} %` : '\u2014'}
                                         </td>
                                         <td className="py-2 px-3 text-right tabular-nums" style={{ color: f.r5y > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
-                                          {f.r5y !== undefined ? `${f.r5y > 0 ? '+' : ''}${f.r5y.toFixed(1).replace('.', ',')} %` : '\u2014'}
+                                          {f.r5y !== undefined ? `${f.r5y > 0 ? '+' : ''}${f.r5y.toFixed(1).replace('.', ',')} %` : '\u2014'}
                                         </td>
                                         <td className="py-2 px-3 text-center">
                                           <button
@@ -10235,7 +10250,7 @@ export default function PensumPrognoseModell() {
                                       <div key={ef.id} className="flex items-center gap-2 text-xs">
                                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#D97706' }}></span>
                                         <span className="flex-1 truncate text-gray-700">{ef.navn}</span>
-                                        <span className="text-gray-400 w-10 text-right">{andel}%</span>
+                                        <span className="text-gray-400 w-10 text-right">{pst(andel)} %</span>
                                         <span className="text-gray-500 w-20 text-right">{formatCurrency(ef.belop)}</span>
                                       </div>
                                     );
@@ -10337,7 +10352,7 @@ export default function PensumPrognoseModell() {
                         <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                           tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
                           interval={Math.max(1, Math.floor(sammenligningsData.length / 12))} />
-                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                         <Tooltip content={({ active, payload, label }) => {
                           if (!active || !payload?.length) return null;
                           const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
@@ -10349,7 +10364,7 @@ export default function PensumPrognoseModell() {
                                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }}></span>
                                   <span className="text-gray-600 flex-1">{p.name}</span>
                                   <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
-                                    {p.value >= 0 ? '+' : ''}{p.value.toFixed(1).replace('.', ',')}%
+                                    {p.value >= 0 ? '+' : ''}{pst(p.value.toFixed(1).replace('.', ','))} %
                                   </span>
                                 </div>
                               ))}
@@ -10413,7 +10428,7 @@ export default function PensumPrognoseModell() {
                             <BarChart data={avkData} margin={{ top: 20, right: 10, left: 0, bottom: 30 }} barCategoryGap="30%" barGap={3}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} />
-                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${pst(v)} %`} />
                               <Tooltip content={({ active, payload, label }) => {
                                 if (!active || !payload?.length) return null;
                                 const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
@@ -10425,7 +10440,7 @@ export default function PensumPrognoseModell() {
                                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
                                         <span className="text-gray-600 flex-1">{p.name}</span>
                                         <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
-                                          {p.value >= 0 ? '+' : ''}{p.value.toFixed(2).replace('.', ',')}%
+                                          {p.value >= 0 ? '+' : ''}{pst(p.value.toFixed(2).replace('.', ','))} %
                                         </span>
                                       </div>
                                     ))}
@@ -10437,7 +10452,7 @@ export default function PensumPrognoseModell() {
                               {alleSerieNavnTab.map((n, i) => (
                                 <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={28} stroke="#fff" strokeWidth={1} label={({ x, y, width, value }) => {
                                   if (value === undefined || value === null) return null;
-                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1).replace('.', ',')} %</text>;
+                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1).replace('.', ',')} %</text>;
                                 }} />
                               ))}
                             </BarChart>
@@ -10450,7 +10465,7 @@ export default function PensumPrognoseModell() {
                             <BarChart data={aarsData} margin={{ top: 20, right: 10, left: 0, bottom: 30 }} barCategoryGap="25%" barGap={3}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                               <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }} />
-                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                              <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${pst(v)} %`} />
                               <Tooltip content={({ active, payload, label }) => {
                                 if (!active || !payload?.length) return null;
                                 const sortert = [...payload].filter(p => p.value !== undefined && p.value !== null).sort((a, b) => b.value - a.value);
@@ -10462,7 +10477,7 @@ export default function PensumPrognoseModell() {
                                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
                                         <span className="text-gray-600 flex-1">{p.name}</span>
                                         <span className={"font-semibold tabular-nums ml-3 " + (p.value >= 0 ? 'text-green-700' : 'text-red-600')}>
-                                          {p.value >= 0 ? '+' : ''}{p.value.toFixed(2).replace('.', ',')}%
+                                          {p.value >= 0 ? '+' : ''}{pst(p.value.toFixed(2).replace('.', ','))} %
                                         </span>
                                       </div>
                                     ))}
@@ -10474,7 +10489,7 @@ export default function PensumPrognoseModell() {
                               {alleSerieNavnTab.map((n, i) => (
                                 <Bar key={n} dataKey={n} fill={getSerieColor(n, i)} radius={[3, 3, 0, 0]} maxBarSize={28} stroke="#fff" strokeWidth={1} label={({ x, y, width, value }) => {
                                   if (value === undefined || value === null) return null;
-                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1).replace('.', ',')} %</text>;
+                                  return <text x={x + width / 2} y={y - 4} fill="#4B5563" textAnchor="middle" fontSize={8} fontWeight={600}>{value >= 0 ? '+' : ''}{value.toFixed(1).replace('.', ',')} %</text>;
                                 }} />
                               ))}
                             </BarChart>
@@ -10485,7 +10500,7 @@ export default function PensumPrognoseModell() {
                         {fondSammenligningVisning === 'nokkeltall' && nokkeltallData && nokkeltallData.length > 0 && (() => {
                           const metrikker = [
                             { key: 'totalAvk', label: 'Total avkastning', suffix: '%', desc: 'Indeksert avkastning i valgt periode' },
-                            { key: 'annualisert', label: 'Annualisert avk.', suffix: '% p.a.', desc: 'Geometrisk gjennomsnittlig årlig avkastning' },
+                            { key: 'annualisert', label: 'Annualisert avk.', suffix: ' % p.a.', desc: 'Geometrisk gjennomsnittlig årlig avkastning' },
                             { key: 'volatilitet', label: 'Volatilitet', suffix: '%', desc: 'Annualisert standardavvik for månedlig avkastning' },
                             { key: 'sharpe', label: 'Sharpe ratio', suffix: '', desc: 'Risikojustert avkastning (rf = 3%)' },
                             { key: 'maxDrawdown', label: 'Maks nedgang', suffix: '%', desc: 'Største fall fra topp til bunn' },
@@ -10540,7 +10555,7 @@ export default function PensumPrognoseModell() {
                                                   ? (val >= -5 ? 'bg-green-50 text-green-700' : val >= -15 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-600')
                                                   : (erNegativ ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'))
                                             } style={erBest ? { ringColor: d.farge, '--tw-ring-color': d.farge } : {}}>
-                                              {m.key === 'sharpe' ? val.toFixed(2) : (val >= 0 && m.key !== 'maxDrawdown' ? '+' : '') + val.toFixed(1).replace('.', ',') + m.suffix}
+                                              {m.key === 'sharpe' ? val.toFixed(2).replace('.', ',') : (val >= 0 && m.key !== 'maxDrawdown' ? '+' : '') + val.toFixed(1).replace('.', ',') + m.suffix}
                                             </span>
                                           </td>
                                         );
@@ -10564,7 +10579,7 @@ export default function PensumPrognoseModell() {
                             <ResponsiveContainer width="100%" height={Math.max(300, sektorData.length * 40)}>
                               <BarChart data={sektorData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${pst(v)} %`} />
                                 <YAxis type="category" dataKey="sektor" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
                                 <Tooltip content={({ active, payload, label }) => {
                                   if (!active || !payload?.length) return null;
@@ -10576,7 +10591,7 @@ export default function PensumPrognoseModell() {
                                         <div key={p.name} className="flex items-center gap-2 py-0.5">
                                           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
                                           <span className="text-gray-600 flex-1">{p.name}</span>
-                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1).replace('.', ',')} %</span>
+                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1).replace('.', ',')} %</span>
                                         </div>
                                       ))}
                                     </div>
@@ -10599,7 +10614,7 @@ export default function PensumPrognoseModell() {
                             <ResponsiveContainer width="100%" height={Math.max(300, regionData.length * 40)}>
                               <BarChart data={regionData} layout="vertical" margin={{ top: 10, right: 30, left: 100, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${v}%`} />
+                                <XAxis type="number" tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => `${pst(v)} %`} />
                                 <YAxis type="category" dataKey="region" tick={{ fontSize: 11, fill: '#6B7280' }} width={90} />
                                 <Tooltip content={({ active, payload, label }) => {
                                   if (!active || !payload?.length) return null;
@@ -10611,7 +10626,7 @@ export default function PensumPrognoseModell() {
                                         <div key={p.name} className="flex items-center gap-2 py-0.5">
                                           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill || p.color }}></span>
                                           <span className="text-gray-600 flex-1">{p.name}</span>
-                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1).replace('.', ',')} %</span>
+                                          <span className="font-semibold tabular-nums ml-3 text-gray-800">{p.value.toFixed(1).replace('.', ',')} %</span>
                                         </div>
                                       ))}
                                     </div>
@@ -10661,13 +10676,13 @@ export default function PensumPrognoseModell() {
                                     <td className="py-2 px-3 text-gray-600">{f.inc || '\u2014'}</td>
                                     <td className="py-2 px-3 text-gray-500 max-w-[200px] truncate" title={f.bench}>{f.bench || '\u2014'}</td>
                                     <td className="py-2 px-3 text-gray-600">{f.sfdr?.replace('SFDR Product', '').replace('EET ', '').trim() || '\u2014'}</td>
-                                    <td className="py-2 px-3 text-right text-gray-600 tabular-nums">{f.sd3y ? `${f.sd3y.toFixed(1).replace('.', ',')} %` : '\u2014'}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 tabular-nums">{f.sd3y ? `${f.sd3y.toFixed(1).replace('.', ',')} %` : '\u2014'}</td>
                                     <td className="py-2 px-3 text-gray-600">
                                       {f.stVal || f.stCore || f.stGro ? (
                                         <div className="flex gap-1">
-                                          {f.stVal ? <span className="text-[10px] px-1 py-0.5 rounded bg-blue-50 text-blue-600">V {f.stVal.toFixed(0).replace('.', ',')} %</span> : null}
-                                          {f.stCore ? <span className="text-[10px] px-1 py-0.5 rounded bg-gray-100 text-gray-600">C {f.stCore.toFixed(0).replace('.', ',')} %</span> : null}
-                                          {f.stGro ? <span className="text-[10px] px-1 py-0.5 rounded bg-green-50 text-green-600">G {f.stGro.toFixed(0).replace('.', ',')} %</span> : null}
+                                          {f.stVal ? <span className="text-[10px] px-1 py-0.5 rounded bg-blue-50 text-blue-600">V {f.stVal.toFixed(0).replace('.', ',')} %</span> : null}
+                                          {f.stCore ? <span className="text-[10px] px-1 py-0.5 rounded bg-gray-100 text-gray-600">C {f.stCore.toFixed(0).replace('.', ',')} %</span> : null}
+                                          {f.stGro ? <span className="text-[10px] px-1 py-0.5 rounded bg-green-50 text-green-600">G {f.stGro.toFixed(0).replace('.', ',')} %</span> : null}
                                         </div>
                                       ) : '\u2014'}
                                     </td>
@@ -10713,7 +10728,7 @@ export default function PensumPrognoseModell() {
                                 {v !== null && v !== undefined ? (
                                   <span className="inline-block px-1.5 py-1 rounded text-xs font-semibold min-w-[48px]"
                                     style={{ backgroundColor: heatmapFarge(v), color: textFarge(v) }}>
-                                    {v >= 0 ? '+' : ''}{v.toFixed(1).replace('.', ',')} %
+                                    {v >= 0 ? '+' : ''}{v.toFixed(1).replace('.', ',')} %
                                   </span>
                                 ) : (
                                   <span className="text-gray-200">—</span>
@@ -10758,7 +10773,7 @@ export default function PensumPrognoseModell() {
                                 {v !== null && v !== undefined ? (
                                   <span className="inline-block px-1.5 py-1 rounded text-xs font-semibold min-w-[48px]"
                                     style={{ backgroundColor: heatmapFarge(v), color: textFarge(v) }}>
-                                    {v >= 0 ? '+' : ''}{v.toFixed(1).replace('.', ',')} %
+                                    {v >= 0 ? '+' : ''}{v.toFixed(1).replace('.', ',')} %
                                   </span>
                                 ) : (
                                   <span className="text-gray-200">—</span>
@@ -10903,10 +10918,10 @@ export default function PensumPrognoseModell() {
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
                                 tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
                                 interval={20} />
-                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
+                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
                                 labelFormatter={(d) => formatHistorikkEtikett(d)}
-                                formatter={(v, name) => [v.toFixed(1).replace('.', ',') + '%', produktNavn2[name] || name]} />
+                                formatter={(v, name) => [v.toFixed(1).replace('.', ',') + ' %', produktNavn2[name] || name]} />
                               <Legend verticalAlign="bottom" height={36} formatter={(v) => produktNavn2[v] || v} />
                               <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                               {dashboardProdukter.filter(id => alleHistorikk2[id]).map(id => (
@@ -10947,20 +10962,20 @@ export default function PensumPrognoseModell() {
                                   </div>
                                 </td>
                                 <td className={"py-3 px-3 text-right font-semibold " + (s.aarligAvkastning >= 0 ? "text-green-600" : "text-red-600")}>
-                                  {s.aarligAvkastning >= 0 ? "+" : ""}{s.aarligAvkastning.toFixed(2).replace('.', ',')} %
+                                  {s.aarligAvkastning >= 0 ? "+" : ""}{s.aarligAvkastning.toFixed(2).replace('.', ',')} %
                                 </td>
                                 <td className={"py-3 px-3 text-right " + (erGyldigTall(s.avkSidenOppstart) ? (s.avkSidenOppstart >= 0 ? "text-green-600" : "text-red-600") : "text-gray-400")}>
-                                  {erGyldigTall(s.avkSidenOppstart) ? (s.avkSidenOppstart >= 0 ? "+" : "") + s.avkSidenOppstart.toFixed(2) + "% p.a." : "—"}
+                                  {erGyldigTall(s.avkSidenOppstart) ? (s.avkSidenOppstart >= 0 ? "+" : "") + s.avkSidenOppstart.toFixed(2).replace('.', ',') + " % p.a." : "—"}
                                 </td>
-                                <td className="py-3 px-3 text-right text-gray-700">{s.standardavvik.toFixed(1).replace('.', ',')} %</td>
+                                <td className="py-3 px-3 text-right text-gray-700">{s.standardavvik.toFixed(1).replace('.', ',')} %</td>
                                 <td className="py-3 px-3 text-right">
                                   <span className={"font-bold px-2 py-0.5 rounded text-xs " + (s.sharpe >= 1 ? "bg-green-100 text-green-700" : s.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>
-                                    {s.sharpe.toFixed(2)}
+                                    {s.sharpe.toFixed(2).replace('.', ',')}
                                   </span>
                                 </td>
-                                <td className="py-3 px-3 text-right text-red-600 font-medium">{s.maxDrawdown.toFixed(1).replace('.', ',')} %</td>
+                                <td className="py-3 px-3 text-right text-red-600 font-medium">{s.maxDrawdown.toFixed(1).replace('.', ',')} %</td>
                                 <td className={"py-3 px-3 text-right " + (s.totalAvkastning >= 0 ? "text-green-600" : "text-red-600")}>
-                                  {s.totalAvkastning >= 0 ? "+" : ""}{s.totalAvkastning.toFixed(1).replace('.', ',')} %
+                                  {s.totalAvkastning >= 0 ? "+" : ""}{s.totalAvkastning.toFixed(1).replace('.', ',')} %
                                 </td>
                               </tr>
                             ))}
@@ -10985,9 +11000,9 @@ export default function PensumPrognoseModell() {
                               <XAxis dataKey="dato" tick={{ fontSize: 10, fill: "#6B7280" }}
                                 tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; const m = p.getMonth()+1; const day = p.getDate(); if (day <= 3 && (m === 1 || m === 7)) return `${String(m).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; return ''; }}
                                 interval={20} />
-                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0) + "%"} domain={["dataMin - 2", 0]} />
+                              <YAxis tick={{ fontSize: 10, fill: "#6B7280" }} tickFormatter={(v) => v.toFixed(0).replace('.', ',') + " %"} domain={["dataMin - 2", 0]} />
                               <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "12px" }}
-                                formatter={(v, name) => [v.toFixed(1) + "%", produktNavn2[name] || name]} />
+                                formatter={(v, name) => [v.toFixed(1).replace('.', ',') + " %", produktNavn2[name] || name]} />
                               <Legend verticalAlign="bottom" height={36} formatter={(v) => produktNavn2[v] || v} />
                               <ReferenceLine y={0} stroke="#374151" strokeWidth={1} />
                               {allStatistikk.map(s => (
@@ -11032,7 +11047,7 @@ export default function PensumPrognoseModell() {
                                       <td key={idCol} className="p-1 text-center">
                                         <span className="inline-block w-14 py-1.5 rounded text-xs font-semibold"
                                           style={{ backgroundColor: i === j ? PENSUM_COLORS.darkBlue : korrFarge(v), color: i === j ? 'white' : korrTextFarge(v) }}>
-                                          {v !== null ? v.toFixed(2) : '—'}
+                                          {v !== null ? v.toFixed(2).replace('.', ',') : '—'}
                                         </span>
                                       </td>
                                     );
@@ -11042,11 +11057,11 @@ export default function PensumPrognoseModell() {
                             </tbody>
                           </table>
                           <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.teal }}></span> Lav (&lt;-0.2)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D6E8E8' }}></span> Moderat (-0.2 – 0.2)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#E8D8CE' }}></span> Middels (0.2 – 0.5)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D4B8A8' }}></span> Høy (0.5 – 0.8)</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.salmon }}></span> Svært høy (&gt;0.8)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.teal }}></span> Lav (&lt;−0,2)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D6E8E8' }}></span> Moderat (−0,2 – 0,2)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#E8D8CE' }}></span> Middels (0,2 – 0,5)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: '#D4B8A8' }}></span> Høy (0,5 – 0,8)</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.salmon }}></span> Svært høy (&gt;0,8)</span>
                           </div>
                         </div>
                       </div>
@@ -11063,10 +11078,10 @@ export default function PensumPrognoseModell() {
                               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                               <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(1)} />
                               <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                              <Tooltip formatter={(v) => [v.toFixed(2), "Sharpe"]} labelFormatter={id => produktNavn2[id] || id} />
+                              <Tooltip formatter={(v) => [v.toFixed(2).replace('.', ','), "Sharpe"]} labelFormatter={id => produktNavn2[id] || id} />
                               <ReferenceLine x={1} stroke={PENSUM_COLORS.teal} strokeDasharray="4 4" />
                               <ReferenceLine x={0.5} stroke={PENSUM_COLORS.gold} strokeDasharray="4 4" />
-                              <Bar dataKey="sharpe" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(2) }}>
+                              <Bar dataKey="sharpe" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(2).replace('.', ',') }}>
                                 {sortedBySharpe.map(s => (
                                   <Cell key={s.id} fill={s.sharpe >= 1 ? PENSUM_COLORS.teal : s.sharpe >= 0.5 ? PENSUM_COLORS.gold : PENSUM_COLORS.salmon} />
                                 ))}
@@ -11083,10 +11098,10 @@ export default function PensumPrognoseModell() {
                           <ResponsiveContainer width="100%" height={Math.max(200, allStatistikk.length * 38)}>
                             <BarChart data={sortedByVol} layout="vertical" margin={{ left: 120, right: 50, top: 5, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0) + "%"} />
+                              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0).replace('.', ',') + " %"} />
                               <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                              <Tooltip formatter={(v) => [v.toFixed(1) + "%", "Volatilitet"]} labelFormatter={id => produktNavn2[id] || id} />
-                              <Bar dataKey="standardavvik" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(1) + "%" }}>
+                              <Tooltip formatter={(v) => [v.toFixed(1).replace('.', ',') + " %", "Volatilitet"]} labelFormatter={id => produktNavn2[id] || id} />
+                              <Bar dataKey="standardavvik" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(1).replace('.', ',') + " %" }}>
                                 {sortedByVol.map(s => (
                                   <Cell key={s.id} fill={produktFarger2[s.id] || PENSUM_COLORS.darkBlue} fillOpacity={0.85} />
                                 ))}
@@ -11105,11 +11120,11 @@ export default function PensumPrognoseModell() {
                         <ResponsiveContainer width="100%" height={Math.max(180, allStatistikk.length * 38)}>
                           <BarChart data={sortedByDD} layout="vertical" margin={{ left: 120, right: 70, top: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0) + "%"} />
+                            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0).replace('.', ',') + " %"} />
                             <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                            <Tooltip formatter={(v) => [v.toFixed(1) + "%", "Maks drawdown"]} labelFormatter={id => produktNavn2[id] || id} />
+                            <Tooltip formatter={(v) => [v.toFixed(1).replace('.', ',') + " %", "Maks drawdown"]} labelFormatter={id => produktNavn2[id] || id} />
                             <Bar dataKey="maxDrawdown" radius={[0, 4, 4, 0]} fill={PENSUM_COLORS.salmon} fillOpacity={0.85}
-                              label={{ position: "right", fontSize: 10, fill: PENSUM_COLORS.salmon, formatter: v => v.toFixed(1) + "%" }} />
+                              label={{ position: "right", fontSize: 10, fill: PENSUM_COLORS.salmon, formatter: v => v.toFixed(1).replace('.', ',') + " %" }} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -11120,20 +11135,20 @@ export default function PensumPrognoseModell() {
                         <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#E8F0F0', borderColor: '#B8D4D4' }}>
                           <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.teal }}>Beste Sharpe Ratio</div>
                           <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedBySharpe[0].id]}</div>
-                          <div className="font-semibold" style={{ color: PENSUM_COLORS.teal }}>{sortedBySharpe[0].sharpe.toFixed(2)}</div>
-                          <div className="text-xs mt-1" style={{ color: '#4A8A8A' }}>{sortedBySharpe[0].aarligAvkastning.toFixed(1).replace('.', ',')} % p.a. / {sortedBySharpe[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.teal }}>{sortedBySharpe[0].sharpe.toFixed(2).replace('.', ',')}</div>
+                          <div className="text-xs mt-1" style={{ color: '#4A8A8A' }}>{sortedBySharpe[0].aarligAvkastning.toFixed(1).replace('.', ',')} % p.a. / {sortedBySharpe[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
                         </div>
                         <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#E8F0F4', borderColor: '#B8D0DB' }}>
                           <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.lightBlue }}>Høyest avkastning</div>
                           <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedByAvk[0].id]}</div>
-                          <div className="font-semibold" style={{ color: PENSUM_COLORS.lightBlue }}>{sortedByAvk[0].aarligAvkastning.toFixed(2).replace('.', ',')} % p.a.</div>
-                          <div className="text-xs mt-1" style={{ color: '#5A8DA5' }}>{sortedByAvk[0].sharpe.toFixed(2)} Sharpe / {sortedByAvk[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.lightBlue }}>{sortedByAvk[0].aarligAvkastning.toFixed(2).replace('.', ',')} % p.a.</div>
+                          <div className="text-xs mt-1" style={{ color: '#5A8DA5' }}>{sortedByAvk[0].sharpe.toFixed(2).replace('.', ',')} Sharpe / {sortedByAvk[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
                         </div>
                         <div className="p-4 rounded-xl border text-center" style={{ backgroundColor: '#FDF6F2', borderColor: '#E8CFC2' }}>
                           <div className="text-xs font-medium mb-2" style={{ color: PENSUM_COLORS.salmon }}>Lavest risiko</div>
                           <div className="font-bold text-lg" style={{ color: PENSUM_COLORS.darkBlue }}>{produktNavn2[sortedByVol[0].id]}</div>
-                          <div className="font-semibold" style={{ color: PENSUM_COLORS.salmon }}>{sortedByVol[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
-                          <div className="text-xs mt-1" style={{ color: '#B8917D' }}>{sortedByVol[0].aarligAvkastning.toFixed(1).replace('.', ',')} % p.a. / Sharpe: {sortedByVol[0].sharpe.toFixed(2)}</div>
+                          <div className="font-semibold" style={{ color: PENSUM_COLORS.salmon }}>{sortedByVol[0].standardavvik.toFixed(1).replace('.', ',')} % vol.</div>
+                          <div className="text-xs mt-1" style={{ color: '#B8917D' }}>{sortedByVol[0].aarligAvkastning.toFixed(1).replace('.', ',')} % p.a. / Sharpe: {sortedByVol[0].sharpe.toFixed(2).replace('.', ',')}</div>
                         </div>
                       </div>
                     )}
@@ -11179,7 +11194,7 @@ export default function PensumPrognoseModell() {
 
           const produktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
 
-          const formatAvk = (v) => erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—';
+          const formatAvk = (v) => erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—';
           const avkFarge = (v) => erGyldigTall(v) ? (v >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400';
 
           return (
@@ -11243,7 +11258,7 @@ export default function PensumPrognoseModell() {
                           { label: 'Investerbar kapital', value: formatCurrency(investertBelop !== null ? investertBelop : totalKapital) },
                           { label: 'Risikoprofil', value: valgtPensumProfil },
                           { label: 'Tidshorisont', value: horisont + ' år' },
-                          { label: 'Forventet avkastning (modell)', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1).replace('.', ',') + ' % p.a.' : '—' },
+                          { label: 'Forventet avkastning (modell)', value: erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning.toFixed(1).replace('.', ',') + ' % p.a.' : '—' },
                           { label: 'Likviditet', value: (() => { const likvide = valgteProdukterRapport.filter(p => p.produkt?.likviditet === 'likvid').reduce((s, p) => s + p.vekt, 0); return likvide >= 90 ? 'Daglig' : likvide >= 50 ? 'Delvis daglig' : 'Begrenset'; })() },
                         ].map((row, i) => (
                           <div key={i} className="flex items-baseline justify-between py-3 border-b border-gray-100">
@@ -11344,7 +11359,7 @@ export default function PensumPrognoseModell() {
                         borderColor: PENSUM_COLORS.teal,
                         tittel: stabilisator.map(p => p.navn?.replace('Pensum ', '')).join(', ') || 'Rentedel',
                         beskrivelse: 'Skal dempe svingninger og bidra med løpende avkastning i samlet portefølje.',
-                        bidrag: ['Forv. yield ' + (stabilisator.length > 0 ? (stabilisator.reduce((s, p) => s + (p.produkt?.forventetYield || 0) * p.vekt, 0) / Math.max(stabVekt, 1)).toFixed(1) : '0') + '%', 'Lavere svingninger enn aksjer', 'Demper total porteføljerisiko']
+                        bidrag: ['Forv. yield ' + (stabilisator.length > 0 ? (stabilisator.reduce((s, p) => s + (p.produkt?.forventetYield || 0) * p.vekt, 0) / Math.max(stabVekt, 1)).toFixed(1).replace('.', ',') : '0') + ' %', 'Lavere svingninger enn aksjer', 'Demper total porteføljerisiko']
                       },
                       {
                         type: 'SATELLITTER',
@@ -11366,7 +11381,7 @@ export default function PensumPrognoseModell() {
                             <div className="p-5">
                               <div className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white mb-3" style={{ backgroundColor: b.color }}>{b.type}</div>
                               <div className="flex items-baseline gap-2 mb-3">
-                                <span className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{b.vekt.toFixed(0).replace('.', ',')} %</span>
+                                <span className="text-3xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>{b.vekt.toFixed(0).replace('.', ',')} %</span>
                                 <span className="text-sm text-gray-400">av porteføljen</span>
                               </div>
                               <p className="text-sm font-bold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>{b.tittel}</p>
@@ -11410,7 +11425,7 @@ export default function PensumPrognoseModell() {
                                   <Cell key={p.id} fill={produktFarger[idx % produktFarger.length]} />
                                 ))}
                               </Pie>
-                              <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -11419,7 +11434,7 @@ export default function PensumPrognoseModell() {
                             <div key={p.id} className="flex items-center gap-2 text-xs">
                               <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
                               <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
-                              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0).replace('.', ',')} %</span>
+                              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0).replace('.', ',')} %</span>
                             </div>
                           ))}
                         </div>
@@ -11438,7 +11453,7 @@ export default function PensumPrognoseModell() {
                                   <Cell key={entry.name} fill={entry.color} />
                                 ))}
                               </Pie>
-                              <Tooltip formatter={(v) => v + '%'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -11447,7 +11462,7 @@ export default function PensumPrognoseModell() {
                             <div key={a.name} className="flex items-center gap-2.5 text-sm">
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
                               <span className="flex-1 text-gray-700">{a.name}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{a.value}%</span>
+                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(a.value)} %</span>
                             </div>
                           ))}
                         </div>
@@ -11480,13 +11495,13 @@ export default function PensumPrognoseModell() {
                                 {p.navn}
                               </div>
                             </td>
-                            <td className="py-2.5 px-2 text-center text-xs text-gray-500">{p.vekt.toFixed(1).replace('.', ',')} %</td>
+                            <td className="py-2.5 px-2 text-center text-xs text-gray-500">{p.vekt.toFixed(1).replace('.', ',')} %</td>
                             <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat1y?.totalAvkastning)} style={{ borderLeft: '1px solid #E5E7EB' }}>{formatAvk(p.stat1y?.totalAvkastning)}</td>
                             <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat3y?.aarligAvkastning)}>{formatAvk(p.stat3y?.aarligAvkastning)}</td>
                             <td className={"py-2.5 px-2 text-right text-xs font-semibold " + avkFarge(p.stat5y?.aarligAvkastning)}>{formatAvk(p.stat5y?.aarligAvkastning)}</td>
-                            <td className="py-2.5 px-2 text-right text-xs text-gray-600" style={{ borderLeft: '1px solid #E5E7EB' }}>{p.stat5y ? p.stat5y.standardavvik.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                            <td className="py-2.5 px-2 text-right">{p.stat5y ? <span className={"text-[10px] font-bold px-1.5 py-0.5 rounded " + (p.stat5y.sharpe >= 1 ? "bg-green-100 text-green-700" : p.stat5y.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{p.stat5y.sharpe.toFixed(2)}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
-                            <td className="py-2.5 px-2 text-right text-xs text-red-600 font-medium">{p.stat5y ? p.stat5y.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-2.5 px-2 text-right text-xs text-gray-600" style={{ borderLeft: '1px solid #E5E7EB' }}>{p.stat5y ? p.stat5y.standardavvik.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                            <td className="py-2.5 px-2 text-right">{p.stat5y ? <span className={"text-[10px] font-bold px-1.5 py-0.5 rounded " + (p.stat5y.sharpe >= 1 ? "bg-green-100 text-green-700" : p.stat5y.sharpe >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700")}>{p.stat5y.sharpe.toFixed(2).replace('.', ',')}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
+                            <td className="py-2.5 px-2 text-right text-xs text-red-600 font-medium">{p.stat5y ? p.stat5y.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -11511,13 +11526,13 @@ export default function PensumPrognoseModell() {
                           return (
                             <tr style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
                               <td className="py-2.5 px-3 font-bold text-white text-xs">Portefølje (vektet)</td>
-                              <td className="py-2.5 px-2 text-center text-xs text-blue-200">{totalVekt.toFixed(1).replace('.', ',')} %</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har1y ? (vektet1y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')} style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{har1y ? (vektet1y >= 0 ? '+' : '') + vektet1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har3y ? (vektet3y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har3y ? (vektet3y >= 0 ? '+' : '') + vektet3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har5y ? (vektet5y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har5y ? (vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                              <td className="py-2.5 px-2 text-right text-xs font-bold text-white" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{erGyldigTall(portStat5?.risiko) ? portStat5.risiko.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
-                              <td className="py-2.5 px-2 text-right text-xs font-bold text-white">{erGyldigTall(portStat5?.sharpe) ? portStat5.sharpe.toFixed(2) : '—'}</td>
-                              <td className="py-2.5 px-2 text-right text-xs font-bold text-red-300">{erGyldigTall(portStat5?.maxDrawdown) ? portStat5.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2.5 px-2 text-center text-xs text-blue-200">{totalVekt.toFixed(1).replace('.', ',')} %</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har1y ? (vektet1y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')} style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{har1y ? (vektet1y >= 0 ? '+' : '') + vektet1y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har3y ? (vektet3y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har3y ? (vektet3y >= 0 ? '+' : '') + vektet3y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className={"py-2.5 px-2 text-right text-xs font-bold " + (har5y ? (vektet5y >= 0 ? 'text-green-300' : 'text-red-300') : 'text-gray-400')}>{har5y ? (vektet5y >= 0 ? '+' : '') + vektet5y.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2.5 px-2 text-right text-xs font-bold text-white" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{erGyldigTall(portStat5?.risiko) ? portStat5.risiko.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
+                              <td className="py-2.5 px-2 text-right text-xs font-bold text-white">{erGyldigTall(portStat5?.sharpe) ? portStat5.sharpe.toFixed(2).replace('.', ',') : '—'}</td>
+                              <td className="py-2.5 px-2 text-right text-xs font-bold text-red-300">{erGyldigTall(portStat5?.maxDrawdown) ? portStat5.maxDrawdown.toFixed(1).replace('.', ',') + ' %' : '—'}</td>
                             </tr>
                           );
                         })()}
@@ -11541,7 +11556,7 @@ export default function PensumPrognoseModell() {
                       <div key={aar} className="bg-white rounded-lg p-3 shadow-sm">
                         <p className="text-[10px] text-gray-500 mb-1 font-medium">{aar}</p>
                         <p className={"text-xl font-bold " + (erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400')}>
-                          {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1).replace('.', ',') + ' %' : '—'}
+                          {erGyldigTall(beregnPensumHistorikk[key]) ? (beregnPensumHistorikk[key] >= 0 ? '+' : '') + beregnPensumHistorikk[key].toFixed(1).replace('.', ',') + ' %' : '—'}
                         </p>
                       </div>
                     ))}
@@ -11559,7 +11574,7 @@ export default function PensumPrognoseModell() {
                   const rapportPessAvk = scenarioLosninger.pessimistisk !== null ? scenarioLosninger.pessimistisk : risikoScen.svak;
                   const rapportOptAvk = scenarioLosninger.optimistisk !== null ? scenarioLosninger.optimistisk : risikoScen.sterk;
                   const scenarioer = [
-                    { id: 'pessimistisk', tittel: 'Svakt scenario', undertittel: '5 % sannsynlighet for svakere', avk: rapportPessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: `Svak markedsutvikling: omtrent 1 av 20 utfall blir svakere enn dette, gitt forventet svingning i porteføljen (volatilitet ca. ${pensumScenarioVolatilitet.verdi.toFixed(1).replace('.', ',')} % p.a., CMA). Underveis kan verdien falle betydelig – også om snittet over hele perioden blir positivt.` },
+                    { id: 'pessimistisk', tittel: 'Svakt scenario', undertittel: '5 % sannsynlighet for svakere', avk: rapportPessAvk, farge: '#DC2626', borderColor: '#DC2626', beskrivelse: `Svak markedsutvikling: omtrent 1 av 20 utfall blir svakere enn dette, gitt forventet svingning i porteføljen (volatilitet ca. ${pensumScenarioVolatilitet.verdi.toFixed(1).replace('.', ',')} % p.a., CMA). Underveis kan verdien falle betydelig – også om snittet over hele perioden blir positivt.` },
                     { id: 'hoved', tittel: 'Hovedscenario', undertittel: 'Modellbasert illustrasjon', avk: Math.round(baseAvk * 10) / 10, farge: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue, beskrivelse: 'Modellbasert illustrasjon basert på CMA-forutsetninger. Ikke en prognose eller garanti for fremtidig avkastning.' },
                     { id: 'optimistisk', tittel: 'Sterkt scenario', undertittel: '5 % sannsynlighet for sterkere', avk: rapportOptAvk, farge: '#059669', borderColor: '#059669', beskrivelse: 'Sterk markedsutvikling: omtrent 1 av 20 utfall blir sterkere enn dette, gitt forventet svingning i porteføljen.' },
                   ];
@@ -11573,7 +11588,7 @@ export default function PensumPrognoseModell() {
                     });
                     scenarioData.push(row);
                   }
-                  const formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1) + ' MNOK' : formatCurrency(v);
+                  const formatSluttverdi = (v) => v > 1000000 ? (v / 1000000).toFixed(1).replace('.', ',') + ' MNOK' : formatCurrency(v);
 
                   return (
                     <div data-rapport-slide="scenarioanalyse" className="space-y-5 page-break-before">
@@ -11598,7 +11613,7 @@ export default function PensumPrognoseModell() {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Årlig snittavkastning</p>
-                                  <p className="text-2xl font-bold" style={{ color: s.farge }}>{String(s.avk).replace('.', ',')} % p.a.</p>
+                                  <p className="text-2xl font-bold" style={{ color: s.farge }}>{String(s.avk).replace('.', ',')} % p.a.</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Sluttverdi</p>
@@ -11618,7 +11633,7 @@ export default function PensumPrognoseModell() {
                           <AreaChart data={scenarioData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                             <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={v => v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'k'} />
+                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={v => v >= 1000000 ? (v / 1000000).toFixed(0).replace('.', ',') + 'M' : (v / 1000).toFixed(0) + 'k'} />
                             <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(l) => `År ${l}`} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             <Area type="monotone" dataKey="optimistisk" name="Optimistisk" stroke="#059669" fill="#05966915" strokeWidth={2} strokeDasharray="6 3" dot={false} />
                             <Area type="monotone" dataKey="hoved" name="Hovedscenario" stroke={PENSUM_COLORS.darkBlue} fill={PENSUM_COLORS.darkBlue + '20'} strokeWidth={2.5} dot={false} />
@@ -11811,10 +11826,10 @@ export default function PensumPrognoseModell() {
                                     <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                       tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                       interval={Math.max(1, Math.floor(chartData.length / (years <= 1 ? 6 : years <= 3 ? 8 : 10)))} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + '%'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys = ['portefolje', ...Object.keys(RAP_INDEKSER)]; const vals = chartData.flatMap(d => allKeys.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 20 ? 5 : 10; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} ticks={(() => { const allKeys = ['portefolje', ...Object.keys(RAP_INDEKSER)]; const vals = chartData.flatMap(d => allKeys.map(k => d[k]).filter(v => v !== undefined && v !== null)); if (vals.length === 0) return [0]; const min = Math.min(...vals); const max = Math.max(...vals); const step = max - min <= 20 ? 5 : 10; const lo = Math.floor(min / step) * step; const hi = Math.ceil(max / step) * step; const t = []; for (let i = lo; i <= hi; i += step) t.push(i); return t; })()} />
                                     <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
                                       labelFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return dato; const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
-                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
+                                      formatter={(v, name) => [(v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %', name === 'Pensum-forslaget' ? 'Pensum-forslaget' : name]} />
                                     <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
                                     <Line type="monotone" dataKey="portefolje" stroke="#1B3A5F" strokeWidth={3} dot={false} name="Pensum-forslaget" />
                                     {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => (
@@ -11826,7 +11841,7 @@ export default function PensumPrognoseModell() {
                                   <div className="flex items-center gap-2 text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B3A5F10', color: '#1B3A5F' }}>
                                     <div className="w-5 h-0.5 rounded-full" style={{ backgroundColor: '#1B3A5F' }}></div>
                                     Pensum-forslaget: <span className={erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
-                                      {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1).replace('.', ',') + ' %' : '—'}
+                                      {erGyldigTall(avkastninger.portefolje) ? (avkastninger.portefolje >= 0 ? '+' : '') + avkastninger.portefolje.toFixed(1).replace('.', ',') + ' %' : '—'}
                                     </span>
                                   </div>
                                   {Object.entries(RAP_INDEKSER).map(([navn, cfg]) => {
@@ -11836,7 +11851,7 @@ export default function PensumPrognoseModell() {
                                         <div className="w-4 h-0" style={{ borderTop: '2px dashed ' + cfg.farge }}></div>
                                         <span>{navn}:</span>
                                         <span className={erGyldigTall(avk) ? (avk >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400'}>
-                                          {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1).replace('.', ',') + ' %' : '—'}
+                                          {erGyldigTall(avk) ? (avk >= 0 ? '+' : '') + avk.toFixed(1).replace('.', ',') + ' %' : '—'}
                                         </span>
                                       </div>
                                     );
@@ -11861,10 +11876,10 @@ export default function PensumPrognoseModell() {
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className="text-sm text-red-600 font-medium bg-red-50 px-2.5 py-1 rounded">
-                                  Historisk maks: {portMaxDDR.toFixed(1).replace('.', ',')} %
+                                  Historisk maks: {portMaxDDR.toFixed(1).replace('.', ',')} %
                                 </span>
                                 {Object.entries(indeksMaxDDR).map(([navn, dd]) => (
-                                  <span key={navn} className="text-sm text-gray-500">{navn}: {dd.toFixed(1).replace('.', ',')} %</span>
+                                  <span key={navn} className="text-sm text-gray-500">{navn}: {dd.toFixed(1).replace('.', ',')} %</span>
                                 ))}
                               </div>
                             </div>
@@ -11893,11 +11908,11 @@ export default function PensumPrognoseModell() {
                                   <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
                                     tickFormatter={(dato) => { const p = parseHistorikkDato(dato); if (!p) return ''; const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']; return `${months[p.getMonth()]} ${p.getFullYear()}`; }}
                                     interval={Math.max(1, Math.floor(ddChartDataR.length / 10))} />
-                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={['dataMin - 1', 0]} />
+                                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={['dataMin - 1', 0]} />
                                   <Tooltip
                                     contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #FEE2E2' }}
                                     labelFormatter={formatHistorikkEtikett}
-                                    formatter={(v, name) => [v.toFixed(2).replace('.', ',') + ' %', name]} />
+                                    formatter={(v, name) => [v.toFixed(2).replace('.', ',') + ' %', name]} />
                                   <Legend verticalAlign="bottom" height={36} />
                                   <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
                                   <Area type="monotone" dataKey="Pensum-forslaget" stroke={PENSUM_COLORS.teal} fill={PENSUM_COLORS.teal} fillOpacity={0.15} strokeWidth={2.5} dot={false} name="Pensum-forslaget" />
@@ -11971,8 +11986,8 @@ export default function PensumPrognoseModell() {
                                   <div className="rounded-full" style={{ width: `${Math.min(row.pensum, 100) * 0.9}%`, backgroundColor: color, minWidth: row.pensum > 0 ? '3px' : '0', height: '100%' }}></div>
                                   <div className="rounded-full" style={{ width: `${Math.min(row.msci, 100) * 0.9}%`, backgroundColor: msciColor, opacity: 0.4, minWidth: row.msci > 0 ? '3px' : '0', height: '100%' }}></div>
                                 </div>
-                                <span className="text-xs font-semibold w-11 text-right flex-shrink-0" style={{ color }}>{row.pensum > 0 ? row.pensum + '%' : '—'}</span>
-                                <span className="text-xs text-gray-400 w-11 text-right flex-shrink-0">{row.msci > 0 ? row.msci + '%' : '—'}</span>
+                                <span className="text-xs font-semibold w-11 text-right flex-shrink-0" style={{ color }}>{row.pensum > 0 ? pst(row.pensum) + ' %' : '—'}</span>
+                                <span className="text-xs text-gray-400 w-11 text-right flex-shrink-0">{row.msci > 0 ? pst(row.msci) + ' %' : '—'}</span>
                               </div>
                             </div>
                           ))}
@@ -12073,7 +12088,7 @@ export default function PensumPrognoseModell() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-white">{p.vekt.toFixed(1).replace('.', ',')} %</div>
+                          <div className="text-2xl font-bold text-white">{p.vekt.toFixed(1).replace('.', ',')} %</div>
                           <div className="text-xs text-blue-300 uppercase tracking-wider">Porteføljevekt</div>
                         </div>
                       </div>
@@ -12083,11 +12098,11 @@ export default function PensumPrognoseModell() {
                         {isFixedIncome ? (
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                             {[
-                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.teal },
-                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.green },
+                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.teal },
+                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.green },
                               { label: '1 år avk.', value: formatAvk(p.stat1y?.totalAvkastning), color: erGyldigTall(p.stat1y?.totalAvkastning) && p.stat1y.totalAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
                               { label: '3 år p.a.', value: formatAvk(p.stat3y?.aarligAvkastning), color: erGyldigTall(p.stat3y?.aarligAvkastning) && p.stat3y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
-                              { label: 'Volatilitet', value: erGyldigTall(p.stat3y?.stdDev) ? p.stat3y.stdDev.toFixed(1).replace('.', ',') + ' %' : (erGyldigTall(p.produkt?.volatilitet) ? p.produkt.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'), color: PENSUM_COLORS.darkBlue },
+                              { label: 'Volatilitet', value: erGyldigTall(p.stat3y?.stdDev) ? p.stat3y.stdDev.toFixed(1).replace('.', ',') + ' %' : (erGyldigTall(p.produkt?.volatilitet) ? p.produkt.volatilitet.toFixed(1).replace('.', ',') + ' %' : '—'), color: PENSUM_COLORS.darkBlue },
                             ].map((kpi, ki) => (
                               <div key={ki} className="rounded-lg p-3 text-center" style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
                                 <div className="text-xs uppercase tracking-wider text-gray-500">{kpi.label}</div>
@@ -12098,8 +12113,8 @@ export default function PensumPrognoseModell() {
                         ) : (
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                             {[
-                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.green },
-                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.teal },
+                              { label: 'Forv. avkastning', value: erGyldigTall(p.fAvk) ? p.fAvk.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.green },
+                              { label: 'Forv. yield', value: erGyldigTall(p.fYield) ? p.fYield.toFixed(1).replace('.', ',') + ' %' : '—', color: PENSUM_COLORS.teal },
                               { label: '1 år avk.', value: formatAvk(p.stat1y?.totalAvkastning), color: erGyldigTall(p.stat1y?.totalAvkastning) && p.stat1y.totalAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
                               { label: '3 år p.a.', value: formatAvk(p.stat3y?.aarligAvkastning), color: erGyldigTall(p.stat3y?.aarligAvkastning) && p.stat3y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
                               { label: '5 år p.a.', value: formatAvk(p.stat5y?.aarligAvkastning), color: erGyldigTall(p.stat5y?.aarligAvkastning) && p.stat5y.aarligAvkastning >= 0 ? PENSUM_COLORS.green : PENSUM_COLORS.red },
@@ -12150,7 +12165,7 @@ export default function PensumPrognoseModell() {
                                         <div className="w-20 bg-slate-100 rounded-full overflow-hidden flex-shrink-0" style={{ height: '10px' }}>
                                           <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
                                         </div>
-                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
+                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{pst(row.vekt)} %</span>
                                       </div>
                                     ))}
                                   </div>
@@ -12185,7 +12200,7 @@ export default function PensumPrognoseModell() {
                                         <div className="w-20 bg-slate-100 rounded-full overflow-hidden flex-shrink-0" style={{ height: '10px' }}>
                                           <div className="h-full rounded-full" style={{ width: `${Math.min(row.vekt, 100)}%`, backgroundColor: block.color }}></div>
                                         </div>
-                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{row.vekt}%</span>
+                                        <span className="text-xs font-medium w-9 text-right flex-shrink-0">{pst(row.vekt)} %</span>
                                       </div>
                                     ))}
                                   </div>
@@ -12511,12 +12526,12 @@ export default function PensumPrognoseModell() {
                       placeholder="Admin-passord" 
                       value={adminPassord} 
                       onChange={(e) => setAdminPassord(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { if (adminPassord === ADMIN_PASSORD) { setErAdmin(true); setAdminMelding(''); } else { setAdminMelding('Feil passord'); } }}}
+                      onKeyDown={(e) => { if (e.key === 'Enter') loggInnAdmin(); }}
                       className="w-full border border-gray-200 rounded-lg py-3 px-4"
                     />
                     {adminMelding && <p className="text-red-500 text-sm">{adminMelding}</p>}
                     <button 
-                      onClick={() => { if (adminPassord === ADMIN_PASSORD) { setErAdmin(true); setAdminMelding(''); } else { setAdminMelding('Feil passord'); } }}
+                      onClick={loggInnAdmin}
                       className="w-full py-3 text-white rounded-lg font-medium" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}
                     >
                       Logg inn
@@ -12876,7 +12891,7 @@ export default function PensumPrognoseModell() {
                           // Try API first, fallback to localStorage
                           let brukere = null;
                           try {
-                            const resp = await fetch('/api/brukere');
+                            const resp = await fetch('/api/brukere', { headers: { 'x-admin-passord': adminPassord } });
                             if (resp.ok) brukere = await resp.json();
                           } catch (apiErr) {
                             console.log('API ikke tilgjengelig:', apiErr);
@@ -12902,7 +12917,6 @@ export default function PensumPrognoseModell() {
                             <tr style={{ backgroundColor: PENSUM_COLORS.lightGray }}>
                               <th className="py-2 px-3 text-left font-medium">Navn</th>
                               <th className="py-2 px-3 text-left font-medium">E-post</th>
-                              <th className="py-2 px-3 text-left font-medium">PIN</th>
                               <th className="py-2 px-3 text-left font-medium">Opprettet</th>
                               <th className="py-2 px-3 text-center font-medium">Handlinger</th>
                             </tr>
@@ -12912,9 +12926,6 @@ export default function PensumPrognoseModell() {
                               <tr key={b.epost} className="border-b border-gray-100">
                                 <td className="py-2 px-3 font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{b.navn || '–'}</td>
                                 <td className="py-2 px-3 text-gray-600">{b.epost}</td>
-                                <td className="py-2 px-3">
-                                  <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-sm">{b.pin}</span>
-                                </td>
                                 <td className="py-2 px-3 text-gray-500 text-xs">{b.opprettet ? new Date(b.opprettet).toLocaleDateString('nb-NO') : '–'}</td>
                                 <td className="py-2 px-3 text-center">
                                   <button
@@ -12924,15 +12935,19 @@ export default function PensumPrognoseModell() {
                                       try {
                                         await fetch('/api/brukere', {
                                           method: 'DELETE',
-                                          headers: { 'Content-Type': 'application/json' },
+                                          headers: { 'Content-Type': 'application/json', 'x-admin-passord': adminPassord },
                                           body: JSON.stringify({ epost: b.epost })
                                         });
                                       } catch (apiErr) {
                                         console.log('API slett feilet:', apiErr);
                                       }
+                                      // Fjern bare denne brukeren fra den lokale listen (som har PIN-ene).
+                                      const lokalRaw = await storageGet('pensum_brukere');
+                                      const lokal = lokalRaw ? JSON.parse(lokalRaw) : {};
+                                      delete lokal[b.epost];
+                                      await storageSet('pensum_brukere', JSON.stringify(lokal));
                                       const oppdatert = { ...adminBrukere };
                                       delete oppdatert[b.epost];
-                                      await storageSet('pensum_brukere', JSON.stringify(oppdatert));
                                       setAdminBrukere(oppdatert);
                                       setAdminMelding('Bruker ' + b.epost + ' slettet.');
                                     }}

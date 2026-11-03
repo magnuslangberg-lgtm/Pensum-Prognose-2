@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
+export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
 
 const ALLOWED_FIELDS = new Set([
   'kundeNavn', 'kundeSelskap', 'risikoprofil', 'horisont', 'aksjerKunde', 'aksjefondKunde', 'renterKunde',
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ fields, merknad: String(parsed.merknad || '').slice(0, 500) });
   } catch (error) {
     console.error('Luna-analyse feilet:', error);
-    return res.status(500).json({ error: error.message || 'Luna kunne ikke analysere skjermbildet.' });
+    console.error(error);
+    return res.status(500).json({ error: 'Luna kunne ikke analysere skjermbildet.' });
   }
 }
