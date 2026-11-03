@@ -6,7 +6,8 @@
     "data:generate": "node scripts/generateHistorikk.js",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

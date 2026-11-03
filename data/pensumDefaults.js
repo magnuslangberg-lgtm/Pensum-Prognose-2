@@ -574,6 +574,30 @@ export const defaultProduktEksponering = {
   };
 
 
+// Referanseindeks for eksponeringssammenligning: MSCI ACWI All Cap NR (Morningstar,
+// "Pensumprodukter-eksponeringsdata 31.10.26", porteføljedato 30.09.2026).
+export const referanseEksponering = {
+  navn: 'MSCI ACWI All Cap',
+  dato: '30.09.2026',
+  regioner: [
+    {navn: 'United States', vekt: 62.7}, {navn: 'Japan', vekt: 6.0}, {navn: 'Taiwan', vekt: 3.4},
+    {navn: 'United Kingdom', vekt: 3.0}, {navn: 'Canada', vekt: 3.0}, {navn: 'South Korea', vekt: 2.5},
+    {navn: 'China', vekt: 2.2}, {navn: 'Switzerland', vekt: 2.1}, {navn: 'Germany', vekt: 1.7},
+    {navn: 'France', vekt: 1.7}, {navn: 'Other', vekt: 11.7}
+  ],
+  sektorer: [
+    {navn: 'Technology', vekt: 31.9}, {navn: 'Financial Services', vekt: 15.7}, {navn: 'Industrials', vekt: 10.9},
+    {navn: 'Healthcare', vekt: 8.8}, {navn: 'Consumer Cyclical', vekt: 8.4}, {navn: 'Communication Services', vekt: 7.5},
+    {navn: 'Consumer Defensive', vekt: 4.4}, {navn: 'Energy', vekt: 4.0}, {navn: 'Basic Materials', vekt: 3.9},
+    {navn: 'Utilities', vekt: 2.2}, {navn: 'Other', vekt: 2.2}
+  ],
+  stil: [
+    {navn: 'Large Value', vekt: 21.0}, {navn: 'Large Core', vekt: 30.8}, {navn: 'Large Growth', vekt: 22.4},
+    {navn: 'Mid Value', vekt: 5.4}, {navn: 'Mid Core', vekt: 8.0}, {navn: 'Mid Growth', vekt: 5.0},
+    {navn: 'Small Value', vekt: 2.5}, {navn: 'Small Core', vekt: 3.1}, {navn: 'Small Growth', vekt: 1.7}
+  ]
+};
+
 export const defaultProduktRapportMeta = {
   'global-core-active': {
     slideTitle: 'Global kjerneeksponering',

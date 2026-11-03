@@ -230,7 +230,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
       const kontantUttak = initieltLan; // Dette beløpet tas ut og er "ute"
       const arligData = [];
       
-      let bruttoPantVerdi = totalVerdi; // Starter med opprinnelig pant
+      let bruttoPantVerdi = totalVerdi; // Utvikling uten rentebelastning (sammenligningsgrunnlag)
+      let nettoPantVerdi = totalVerdi; // Faktisk pant: renter trekkes fra og gir ikke avkastning videre
       let akkumulertRente = 0;
       
       // Start
@@ -256,11 +257,12 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
         const rentekostnad = initieltLan * (totalRente / 100);
         akkumulertRente += rentekostnad;
         
-        // Netto panteverdi = Brutto - akkumulerte rentekostnader
-        const nettoPantVerdi = bruttoPantVerdi - akkumulertRente;
+        // Netto panteverdi: årets avkastning på faktisk pant, minus årets renter. Rentene
+        // som er betalt fra pantet gir dermed ikke avkastning de påfølgende årene.
+        nettoPantVerdi = Math.max(0, nettoPantVerdi * (1 + reinvesteringAvkastning / 100) - rentekostnad);
         
-        // Effektiv LTV basert på brutto panteverdi
-        const effektivLTV = (initieltLan / bruttoPantVerdi) * 100;
+        // Effektiv LTV = lån / faktisk (netto) panteverdi
+        const effektivLTV = nettoPantVerdi > 0 ? (initieltLan / nettoPantVerdi) * 100 : 100;
         
         arligData.push({
           ar,
@@ -279,7 +281,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
       const sisteAr = arligData[arligData.length - 1];
       const totalAvkastning = sisteAr.bruttoPantVerdi - totalVerdi;
       const totalRentekostnad = sisteAr.akkumulertRente;
-      const nettoResultat = totalAvkastning - totalRentekostnad; // Hva du sitter igjen med i pantet etter renter
+      const nettoResultat = sisteAr.nettoPantVerdi - totalVerdi; // Endring i pantet etter renter (inkl. tapt avkastning på betalte renter)
       
       return {
         initieltLan,
@@ -650,7 +652,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
               {true && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <span className="label-text">Belåningsgrad (LTV)</span>
+                    <span className="label-text">Belåningsgrad (lån i % av pantet)</span>
                     <span className="value-text" style={{ color: ltvOverMaks ? colors.danger : colors.primary }}>
                       {ltv}%{ltvOverMaks && <span style={{ fontWeight: '400', fontSize: '10px' }}> → {portefoljeBeregning.vektetMaksLTV.toFixed(0)}%</span>}
                     </span>
@@ -1274,7 +1276,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             </div>
 
             <div style={{ marginTop: '12px', padding: '12px 14px', background: colors.white, borderRadius: '6px', fontSize: '9px', color: colors.textMuted, lineHeight: '1.4', border: `1px solid ${colors.mediumGray}` }}>
-              <strong>Forutsetninger:</strong> Konstant LTV (ingen rebalansering), lineær avkastning, ingen skatt/gebyrer/valutaeffekter. 
+              <strong>Forutsetninger:</strong> Lånet holdes konstant (ingen nedbetaling), så belåningsgraden endres med verdien av pantet. Fast årlig avkastning uten svingninger – i praksis kan kursfall gi krav om mer sikkerhet eller nedbetaling. Ingen skatt, gebyrer eller valutaeffekter. 
               Baserenter er veiledende. Kontakt Pensum Asset Management for fullstendig analyse.
             </div>
           </div>
