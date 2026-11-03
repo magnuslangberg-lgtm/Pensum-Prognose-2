@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -1042,7 +1042,8 @@ export default function PensumPrognoseModell() {
           return;
         }
         if (resp.ok) {
-          nyBruker = await resp.json();
+          // Serveren sender ikke PIN tilbake; behold den lokalt slik at egne profilendringer kan bekreftes.
+          nyBruker = { ...(await resp.json()), pin: registrerPin };
         }
       } catch (apiErr) {
         console.log('API ikke tilgjengelig, bruker lokal lagring:', apiErr);
@@ -6483,7 +6484,7 @@ export default function PensumPrognoseModell() {
                         onChange={(e) => setScenarioParams(p => ({...p, pessimistisk: parseFloat(e.target.value)}))}
                         className="w-full h-2 bg-red-200 rounded-lg cursor-pointer mt-3" />
                       <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-red-100">
-                        <div><div className="text-xs text-red-400">Gevinst/tap</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - effektivtInvestertBelop - nettoKontantstrom * horisont)}</div></div>
+                        <div><div className="text-xs text-red-400">Gevinst/tap</div><div className="font-semibold text-red-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.pessimistisk||0) - effektivtInvestertBelop - fremskrivMedKontantstrom(effektivtInvestertBelop, scenarioParams.pessimistisk, horisont, nettoKontantstrom).nettoKontantstrom)}</div></div>
                         <div><div className="text-xs text-red-400">CAGR</div><div className="font-semibold text-red-700 text-sm">{formatPercent(scenarioParams.pessimistisk)}</div></div>
                       </div>
                     </div>
@@ -6496,7 +6497,7 @@ export default function PensumPrognoseModell() {
                     <div className="text-[10px] uppercase tracking-wider text-blue-300 font-semibold">Sluttverdi etter {horisont} år</div>
                     <div className="text-4xl font-bold text-white mb-1 tabular-nums">{formatCurrency(scenarioData[scenarioData.length-1]?.forventet || 0)}</div>
                     <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-blue-800">
-                      <div><div className="text-xs text-blue-400">Gevinst/tap</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - effektivtInvestertBelop - nettoKontantstrom * horisont)}</div></div>
+                      <div><div className="text-xs text-blue-400">Gevinst/tap</div><div className="font-semibold text-white text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.forventet||0) - effektivtInvestertBelop - fremskrivMedKontantstrom(effektivtInvestertBelop, vektetAvkastning, horisont, nettoKontantstrom).nettoKontantstrom)}</div></div>
                       <div><div className="text-xs text-blue-400">CAGR</div><div className="font-semibold text-white text-sm">{formatPercent(vektetAvkastning)}</div></div>
                     </div>
                   </div>
@@ -6511,7 +6512,7 @@ export default function PensumPrognoseModell() {
                       onChange={(e) => setScenarioParams(p => ({...p, optimistisk: parseFloat(e.target.value)}))}
                       className="w-full h-2 rounded-lg cursor-pointer bg-green-200 mt-3" />
                     <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-green-100">
-                      <div><div className="text-xs text-green-400">Gevinst/tap</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - effektivtInvestertBelop - nettoKontantstrom * horisont)}</div></div>
+                      <div><div className="text-xs text-green-400">Gevinst/tap</div><div className="font-semibold text-green-700 text-sm">{formatCurrency((scenarioData[scenarioData.length-1]?.optimistisk||0) - effektivtInvestertBelop - fremskrivMedKontantstrom(effektivtInvestertBelop, scenarioParams.optimistisk, horisont, nettoKontantstrom).nettoKontantstrom)}</div></div>
                       <div><div className="text-xs text-green-400">CAGR</div><div className="font-semibold text-green-700 text-sm">{formatPercent(scenarioParams.optimistisk)}</div></div>
                     </div>
                   </div>
@@ -8036,8 +8037,9 @@ export default function PensumPrognoseModell() {
                       <div className={"grid gap-5 " + (showPessimisticLosninger ? "grid-cols-3" : "grid-cols-2")}>
                         {showPessimisticLosninger && (() => {
                           const s = scenarioer[0];
-                          const sluttverdi = Math.round(fremskrivVerdi(kapital, s.avk, horisont, nettoKontantstrom));
-                          const gevinst = sluttverdi - kapital - nettoKontantstrom * horisont; // avkastning, ekskl. egne innskudd/uttak
+                          const { verdi: _slutt, nettoKontantstrom: _faktiskKs } = fremskrivMedKontantstrom(kapital, s.avk, horisont, nettoKontantstrom);
+                          const sluttverdi = Math.round(_slutt);
+                          const gevinst = sluttverdi - kapital - _faktiskKs; // avkastning, ekskl. innskudd og uttak som faktisk ble gjennomført
                           return (
                             <div className="rounded-xl border border-red-200 bg-red-50 overflow-hidden shadow-sm">
                               <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
@@ -8069,8 +8071,9 @@ export default function PensumPrognoseModell() {
                         {/* Hovedscenario - locked to portfolio weighted return */}
                         {(() => {
                           const s = scenarioer[1];
-                          const sluttverdi = Math.round(fremskrivVerdi(kapital, s.avk, horisont, nettoKontantstrom));
-                          const gevinst = sluttverdi - kapital - nettoKontantstrom * horisont; // avkastning, ekskl. egne innskudd/uttak
+                          const { verdi: _slutt, nettoKontantstrom: _faktiskKs } = fremskrivMedKontantstrom(kapital, s.avk, horisont, nettoKontantstrom);
+                          const sluttverdi = Math.round(_slutt);
+                          const gevinst = sluttverdi - kapital - _faktiskKs; // avkastning, ekskl. innskudd og uttak som faktisk ble gjennomført
                           return (
                             <div className="rounded-xl border-2 overflow-hidden shadow-sm" style={{ borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#0D2240' }}>
                               <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
@@ -8097,8 +8100,9 @@ export default function PensumPrognoseModell() {
                         {/* Optimistisk - with slider */}
                         {(() => {
                           const s = scenarioer[2];
-                          const sluttverdi = Math.round(fremskrivVerdi(kapital, s.avk, horisont, nettoKontantstrom));
-                          const gevinst = sluttverdi - kapital - nettoKontantstrom * horisont; // avkastning, ekskl. egne innskudd/uttak
+                          const { verdi: _slutt, nettoKontantstrom: _faktiskKs } = fremskrivMedKontantstrom(kapital, s.avk, horisont, nettoKontantstrom);
+                          const sluttverdi = Math.round(_slutt);
+                          const gevinst = sluttverdi - kapital - _faktiskKs; // avkastning, ekskl. innskudd og uttak som faktisk ble gjennomført
                           return (
                             <div className="rounded-xl border border-green-200 bg-green-50 overflow-hidden shadow-sm">
                               <div className="w-full h-1.5" style={{ backgroundColor: s.borderColor }}></div>
@@ -10008,7 +10012,7 @@ export default function PensumPrognoseModell() {
                 totalAvk: parseFloat(totalAvk.toFixed(2)),
                 annualisert: parseFloat(annualisert.toFixed(2)),
                 volatilitet: parseFloat(annualVol.toFixed(2)),
-                sharpe: parseFloat(sharpe.toFixed(2).replace('.', ',')),
+                sharpe: parseFloat(sharpe.toFixed(2)),
                 maxDrawdown: parseFloat(maxDD.toFixed(2)),
                 besteMaaned: parseFloat(besteMaaned.toFixed(2)),
                 versteMaaned: parseFloat(versteMaaned.toFixed(2)),
@@ -11601,7 +11605,8 @@ export default function PensumPrognoseModell() {
                       {/* Scenario cards */}
                       <div className="grid grid-cols-3 gap-5">
                         {scenarioer.map(s => {
-                          const sluttverdi = Math.round(fremskrivVerdi(kapital, s.avk, horisont, nettoKontantstrom));
+                          const { verdi: _slutt, nettoKontantstrom: _faktiskKs } = fremskrivMedKontantstrom(kapital, s.avk, horisont, nettoKontantstrom);
+                          const sluttverdi = Math.round(_slutt);
                           const erHoved = s.id === 'hoved';
                           return (
                             <div key={s.id} className={"rounded-xl overflow-hidden " + (erHoved ? "border-2 shadow-sm" : "border border-gray-100")} style={erHoved ? { borderColor: PENSUM_COLORS.darkBlue, backgroundColor: '#F8FAFC' } : { backgroundColor: 'white' }}>

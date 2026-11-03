@@ -109,3 +109,13 @@ test('aggregert eksponering summerer til 100', () => {
     naer(aggregerEksponering(allok, defaultProduktEksponering, felt).reduce((s, r) => s + r.vekt, 0), 100, 0.05, felt);
   }
 });
+
+test('fremskrivning: uttak begrenses til det som finnes i porteføljen', async () => {
+  const { fremskrivMedKontantstrom, fremskrivVerdi } = await import('../lib/pensumCore.js');
+  // 1 mill, 0 % avkastning, 200 000 i årlige uttak i 10 år: bare 5 uttak kan gjennomføres.
+  const r = fremskrivMedKontantstrom(1_000_000, 0, 10, -200_000);
+  assert.equal(r.verdi, 0);
+  assert.equal(r.nettoKontantstrom, -1_000_000);
+  assert.equal(r.verdi - 1_000_000 - r.nettoKontantstrom, 0, 'ingen gevinst uten avkastning');
+  naer(fremskrivMedKontantstrom(1e6, 7, 10, 50_000).verdi, fremskrivVerdi(1e6, 7, 10, 50_000), 1e-6, 'samme verdi som fremskrivVerdi');
+});
