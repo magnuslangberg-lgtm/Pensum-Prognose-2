@@ -11,25 +11,25 @@ export const PENSUM_SELSKAPSNOEKKELTALL = {
 
 export const defaultPensumProdukter = {
     enkeltfond: [
-      { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 16.6, aar2025: 21.5, aar2024: 12.5, aar2023: 13.2, aar2022: 5.0, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 15.7, risiko3ar: 4.1 },
-      { id: 'energy-a', navn: 'Pensum Global Energy A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 34.2, aar2025: 7.3, aar2024: -1.0, aar2023: 11.0, aar2022: 55.5, forventetAvkastning: 9.5, forventetRisiko: 22.0, forventetYield: 3.5, aarlig3ar: 5.6, risiko3ar: 5.0 },
-      { id: 'banking-d', navn: 'Pensum Nordic Banking Sector D', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 9.7, aar2025: 26.6, aar2024: 24.9, aar2023: 17.5, aar2022: -8.4, forventetAvkastning: 9.5, forventetRisiko: 18.0, forventetYield: 5.0, aarlig3ar: 22.9, risiko3ar: 4.0 },
-      { id: 'financial-d', navn: 'Pensum Financial Opportunity Fund D', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 3.4, aar2025: 9.4, aar2024: 9.8, aar2023: 11.3, aar2022: -12.6, forventetAvkastning: 8.0, forventetRisiko: 10.0, forventetYield: 8.0, aarlig3ar: 10.2, risiko3ar: 0.8 },
+      { id: 'norge-a', navn: 'Pensum Norge A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 19.3, aar2025: 21.5, aar2024: 12.5, aar2023: 13.2, aar2022: 5.0, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 15.7, risiko3ar: 4.1 },
+      { id: 'energy-a', navn: 'Pensum Global Energy A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 45.2, aar2025: 7.3, aar2024: -1.0, aar2023: 11.0, aar2022: 55.5, forventetAvkastning: 9.5, forventetRisiko: 22.0, forventetYield: 3.5, aarlig3ar: 5.6, risiko3ar: 5.0 },
+      { id: 'banking-d', navn: 'Pensum Nordic Banking Sector D', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 8.9, aar2025: 26.6, aar2024: 24.9, aar2023: 17.5, aar2022: -8.4, forventetAvkastning: 9.5, forventetRisiko: 18.0, forventetYield: 5.0, aarlig3ar: 22.9, risiko3ar: 4.0 },
+      { id: 'financial-d', navn: 'Pensum Financial Opportunity Fund D', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 2.7, aar2025: 9.4, aar2024: 9.8, aar2023: 11.3, aar2022: -12.6, forventetAvkastning: 8.0, forventetRisiko: 10.0, forventetYield: 8.0, aarlig3ar: 10.2, risiko3ar: 0.8 },
       { id: 'kairos-a', navn: 'Pensum Kairos A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: null, aar2025: null, aar2024: null, aar2023: null, aar2022: null, forventetAvkastning: 9.5, forventetRisiko: 20.0, forventetYield: 1.0, aarlig3ar: null, risiko3ar: null, kortHistorikk: true }
     ],
     fondsportefoljer: [
-      { id: 'global-core-active', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 5.6, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.8, aarlig3ar: 21.4, risiko3ar: 10.1 },
-      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 2.5, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
-      { id: 'basis', navn: 'Pensum Basis', aktivatype: 'dynamisk', likviditet: 'likvid', rolle: 'kjerne', aar2026: 4.1, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 7.5, forventetRisiko: 9.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.8 },
-      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.7, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.7, forventetRisiko: 10.0, forventetYield: 7.0, aarlig3ar: 6.8, risiko3ar: 0.8 },
-      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 4.0, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 8.0, forventetRisiko: 12.0, forventetYield: 7.2, aarlig3ar: 9.0, risiko3ar: 2.0 }
+      { id: 'global-core-active', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -0.5, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.8, aarlig3ar: 21.4, risiko3ar: 10.1 },
+      { id: 'global-edge', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -3.0, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
+      { id: 'basis', navn: 'Pensum Basis', aktivatype: 'dynamisk', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.3, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 7.5, forventetRisiko: 9.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.8 },
+      { id: 'global-hoyrente', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.8, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.7, forventetRisiko: 10.0, forventetYield: 7.0, aarlig3ar: 6.8, risiko3ar: 0.8 },
+      { id: 'nordisk-hoyrente', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 3.7, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 8.0, forventetRisiko: 12.0, forventetYield: 7.2, aarlig3ar: 9.0, risiko3ar: 2.0 }
     ],
     eksterneFond: [
-      { id: 'acadian-global-equity', navn: 'Acadian Global Equity UCITS A EUR', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 25.8, aar2025: 2.6, aar2024: 32.3, aar2023: 21.5, aar2022: -13.4, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.5, aarlig3ar: 18.1, risiko3ar: 12.3 },
-      { id: 'capital-group-new-pers', navn: 'Capital Group New Pers (LUX) Z', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 6.4, aar2025: 20.5, aar2024: 16.1, aar2023: 24.2, aar2022: -26.2, forventetAvkastning: 8.5, forventetRisiko: 17.0, forventetYield: 1.0, aarlig3ar: 20.2, risiko3ar: 3.3 },
-      { id: 'dnb-global-enhanced', navn: 'DNB Global Enhanced Index A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 6.4, aar2025: 7.9, aar2024: 33.7, aar2023: null, aar2022: null, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.5, aarlig3ar: null, risiko3ar: null, kortHistorikk: true },
-      { id: 'guinness-global-equity-income', navn: 'Guinness Global Equity Income Y EUR Acc', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 11.6, aar2025: -1.8, aar2024: 20.1, aar2023: 11.9, aar2022: -3.4, forventetAvkastning: 8.5, forventetRisiko: 15.0, forventetYield: 2.5, aarlig3ar: 9.7, risiko3ar: 9.0 },
-      { id: 'janus-henderson-glb-sc', navn: 'Janus Henderson Hrzn Glb SC IU2 USD', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 7.3, aar2025: 26.1, aar2024: 19.7, aar2023: 27.3, aar2022: -19.0, forventetAvkastning: 9.5, forventetRisiko: 20.0, forventetYield: 0.8, aarlig3ar: 24.3, risiko3ar: 3.3 }
+      { id: 'acadian-global-equity', navn: 'Acadian Global Equity UCITS A EUR', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 26.4, aar2025: 2.6, aar2024: 32.3, aar2023: 21.5, aar2022: -13.4, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.5, aarlig3ar: 18.1, risiko3ar: 12.3 },
+      { id: 'capital-group-new-pers', navn: 'Capital Group New Pers (LUX) Z', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 3.3, aar2025: 20.5, aar2024: 16.1, aar2023: 24.2, aar2022: -26.2, forventetAvkastning: 8.5, forventetRisiko: 17.0, forventetYield: 1.0, aarlig3ar: 20.2, risiko3ar: 3.3 },
+      { id: 'dnb-global-enhanced', navn: 'DNB Global Enhanced Index A', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.3, aar2025: 7.9, aar2024: 33.7, aar2023: null, aar2022: null, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.5, aarlig3ar: null, risiko3ar: null, kortHistorikk: true },
+      { id: 'guinness-global-equity-income', navn: 'Guinness Global Equity Income Y EUR Acc', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 18.9, aar2025: -1.8, aar2024: 20.1, aar2023: 11.9, aar2022: -3.4, forventetAvkastning: 8.5, forventetRisiko: 15.0, forventetYield: 2.5, aarlig3ar: 9.7, risiko3ar: 9.0 },
+      { id: 'janus-henderson-glb-sc', navn: 'Janus Henderson Hrzn Glb SC IU2 USD', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 8.3, aar2025: 26.1, aar2024: 19.7, aar2023: 27.3, aar2022: -19.0, forventetAvkastning: 9.5, forventetRisiko: 20.0, forventetYield: 0.8, aarlig3ar: 24.3, risiko3ar: 3.3 }
     ],
     alternative: [
       { id: 'turnstone-pe', navn: 'Turnstone Private Equity', aktivatype: 'alternativ', likviditet: 'illikvid', rolle: 'spisset', aar2026: null, aar2025: null, aar2024: null, aar2023: null, aar2022: null, forventetAvkastning: 11.0, forventetRisiko: 25.0, forventetYield: 0, aarlig3ar: null, risiko3ar: null },
@@ -289,102 +289,102 @@ export const produktBeskrivelser = {
 export const defaultProduktEksponering = {
     'global-core-active': {
       underliggende: [
-        {navn: 'AB Select US Equity S1 USD', vekt: 20.2},
-        {navn: 'Capital Group InvCoAmer (LUX) A4', vekt: 19.8},
+        {navn: 'AB Select US Equity S1 USD', vekt: 20.4},
+        {navn: 'Capital Group InvCoAmer (LUX) A4', vekt: 19.7},
         {navn: 'Acadian Global Equity UCITS A EUR', vekt: 13.4},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 10.2},
-        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 10.0},
-        {navn: 'Capital Group New Pers (LUX) Z L', vekt: 10.0},
-        {navn: 'DNB Teknologi A', vekt: 6.4},
-        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 5.1},
-        {navn: 'BGF European Value D2', vekt: 5.0}
+        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 10.7},
+        {navn: 'Capital Group New Pers (LUX) Z L', vekt: 9.9},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 9.5},
+        {navn: 'DNB Teknologi A', vekt: 6.5},
+        {navn: 'BGF European Value D2', vekt: 5.0},
+        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 5.0}
       ],
       regioner: [
-        {navn: 'United States', vekt: 64.1}, {navn: 'Japan', vekt: 6.4}, {navn: 'Taiwan', vekt: 4.7},
-        {navn: 'South Korea', vekt: 3.0}, {navn: 'China', vekt: 2.9}, {navn: 'United Kingdom', vekt: 2.7},
-        {navn: 'France', vekt: 2.4}, {navn: 'Switzerland', vekt: 2.3}, {navn: 'Germany', vekt: 1.6},
-        {navn: 'Netherlands', vekt: 1.5}, {navn: 'Other', vekt: 8.4}
+        {navn: 'United States', vekt: 64.5}, {navn: 'Japan', vekt: 6.3}, {navn: 'Taiwan', vekt: 4.5},
+        {navn: 'South Korea', vekt: 2.9}, {navn: 'United Kingdom', vekt: 2.8}, {navn: 'China', vekt: 2.7},
+        {navn: 'Switzerland', vekt: 2.3}, {navn: 'France', vekt: 2.3}, {navn: 'Germany', vekt: 1.7},
+        {navn: 'Netherlands', vekt: 1.6}, {navn: 'Other', vekt: 8.3}
       ],
       sektorer: [
-        {navn: 'Technology', vekt: 36.4}, {navn: 'Financial Services', vekt: 14.9}, {navn: 'Industrials', vekt: 10.8},
-        {navn: 'Healthcare', vekt: 9.1}, {navn: 'Communication Services', vekt: 8.9}, {navn: 'Consumer Cyclical', vekt: 7.6},
-        {navn: 'Consumer Defensive', vekt: 4.5}, {navn: 'Energy', vekt: 3.4}, {navn: 'Basic Materials', vekt: 2.2},
+        {navn: 'Technology', vekt: 37.0}, {navn: 'Financial Services', vekt: 14.6}, {navn: 'Industrials', vekt: 10.8},
+        {navn: 'Healthcare', vekt: 9.3}, {navn: 'Communication Services', vekt: 9.0}, {navn: 'Consumer Cyclical', vekt: 7.5},
+        {navn: 'Consumer Defensive', vekt: 4.4}, {navn: 'Energy', vekt: 3.3}, {navn: 'Basic Materials', vekt: 2.1},
         {navn: 'Utilities', vekt: 1.3}, {navn: 'Other', vekt: 0.7}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 25.5}, {navn: 'Large Core', vekt: 34.1}, {navn: 'Large Growth', vekt: 22.7},
-        {navn: 'Mid Value', vekt: 4.7}, {navn: 'Mid Core', vekt: 6.8}, {navn: 'Mid Growth', vekt: 3.2},
-        {navn: 'Small Value', vekt: 1.2}, {navn: 'Small Core', vekt: 1.4}, {navn: 'Small Growth', vekt: 0.5}
+        {navn: 'Large Value', vekt: 25.8}, {navn: 'Large Core', vekt: 33.1}, {navn: 'Large Growth', vekt: 23.4},
+        {navn: 'Mid Value', vekt: 4.4}, {navn: 'Mid Core', vekt: 6.9}, {navn: 'Mid Growth', vekt: 3.4},
+        {navn: 'Small Value', vekt: 1.1}, {navn: 'Small Core', vekt: 1.4}, {navn: 'Small Growth', vekt: 0.5}
       ],
-      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 30.09.2026.'
+      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 31.10.2026.'
     },
     'global-edge': {
       underliggende: [
-        {navn: 'Janus Henderson Hrzn Glb SC IU2 USD', vekt: 16.1},
-        {navn: 'DNB Teknologi A', vekt: 15.7},
-        {navn: 'Capital Group InvCoAmer (LUX) Z', vekt: 13.5},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 10.8},
-        {navn: 'Arctic Aurora LifeScience I', vekt: 8.3},
-        {navn: 'ORIGO SELEQT A', vekt: 7.1},
-        {navn: 'Granahan US Focused Growth A USD Acc', vekt: 6.6},
-        {navn: 'Bakersteel Glb Fds SICAV- Elctm I USD', vekt: 6.2},
+        {navn: 'Janus Henderson Hrzn Glb SC IU2 USD', vekt: 16.5},
+        {navn: 'DNB Teknologi A', vekt: 15.8},
+        {navn: 'Capital Group InvCoAmer (LUX) Z', vekt: 13.3},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 10.1},
+        {navn: 'Arctic Aurora LifeScience I', vekt: 8.7},
+        {navn: 'ORIGO SELEQT A', vekt: 7.6},
+        {navn: 'Granahan US Focused Growth A USD Acc', vekt: 6.4},
         {navn: 'PineBridge India Equity Y', vekt: 5.8},
-        {navn: 'Guinness Sustainable Energy Y USD Acc', vekt: 5.0},
-        {navn: 'FIRST Impact', vekt: 5.0}
+        {navn: 'Bakersteel Glb Fds SICAV- Elctm I USD', vekt: 5.7},
+        {navn: 'FIRST Impact', vekt: 5.3},
+        {navn: 'Guinness Sustainable Energy Y USD Acc', vekt: 4.9}
       ],
       regioner: [
-        {navn: 'United States', vekt: 50.7}, {navn: 'Sweden', vekt: 6.2}, {navn: 'India', vekt: 6.1},
-        {navn: 'China', vekt: 4.4}, {navn: 'Japan', vekt: 4.0}, {navn: 'Canada', vekt: 3.5},
-        {navn: 'Taiwan', vekt: 3.5}, {navn: 'South Korea', vekt: 3.1}, {navn: 'United Kingdom', vekt: 2.2},
-        {navn: 'Denmark', vekt: 2.2}, {navn: 'Other', vekt: 14.0}
+        {navn: 'United States', vekt: 50.7}, {navn: 'Sweden', vekt: 6.6}, {navn: 'India', vekt: 6.3},
+        {navn: 'China', vekt: 4.2}, {navn: 'Japan', vekt: 4.2}, {navn: 'Canada', vekt: 3.5},
+        {navn: 'Taiwan', vekt: 3.3}, {navn: 'South Korea', vekt: 3.0}, {navn: 'Denmark', vekt: 2.3},
+        {navn: 'United Kingdom', vekt: 2.2}, {navn: 'Other', vekt: 13.8}
       ],
       sektorer: [
-        {navn: 'Technology', vekt: 28.7}, {navn: 'Healthcare', vekt: 14.7}, {navn: 'Industrials', vekt: 13.3},
-        {navn: 'Financial Services', vekt: 11.4}, {navn: 'Consumer Cyclical', vekt: 9.5}, {navn: 'Basic Materials', vekt: 8.1},
-        {navn: 'Communication Services', vekt: 7.2}, {navn: 'Energy', vekt: 2.7}, {navn: 'Utilities', vekt: 2.0},
+        {navn: 'Technology', vekt: 28.5}, {navn: 'Healthcare', vekt: 15.0}, {navn: 'Industrials', vekt: 13.6},
+        {navn: 'Financial Services', vekt: 11.2}, {navn: 'Consumer Cyclical', vekt: 9.6}, {navn: 'Basic Materials', vekt: 7.7},
+        {navn: 'Communication Services', vekt: 7.5}, {navn: 'Energy', vekt: 2.6}, {navn: 'Utilities', vekt: 2.0},
         {navn: 'Consumer Defensive', vekt: 1.5}, {navn: 'Other', vekt: 1.0}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 14.1}, {navn: 'Large Core', vekt: 19.4}, {navn: 'Large Growth', vekt: 14.5},
-        {navn: 'Mid Value', vekt: 3.6}, {navn: 'Mid Core', vekt: 8.2}, {navn: 'Mid Growth', vekt: 8.4},
-        {navn: 'Small Value', vekt: 5.9}, {navn: 'Small Core', vekt: 13.4}, {navn: 'Small Growth', vekt: 12.6}
+        {navn: 'Large Value', vekt: 13.0}, {navn: 'Large Core', vekt: 20.0}, {navn: 'Large Growth', vekt: 14.1},
+        {navn: 'Mid Value', vekt: 3.9}, {navn: 'Mid Core', vekt: 8.1}, {navn: 'Mid Growth', vekt: 8.4},
+        {navn: 'Small Value', vekt: 5.7}, {navn: 'Small Core', vekt: 14.6}, {navn: 'Small Growth', vekt: 12.4}
       ],
-      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 30.09.2026.'
+      disclaimer: 'Oppstart 01.01.2026. Historikk er estimert med den samme allokeringen som i oppstartsporteføljene bakover i tid. Eksponeringsdata per 31.10.2026.'
     },
     'basis': {
       underliggende: [
-        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 18.8},
-        {navn: 'Arctic Return Class I', vekt: 14.8},
-        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 12.7},
-        {navn: 'KLP Obligasjon Global S', vekt: 9.4},
-        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 8.2},
-        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 8.0},
+        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 19.3},
+        {navn: 'Arctic Return Class I', vekt: 15.3},
+        {navn: 'Acadian Global Equity UCITS A EUR', vekt: 12.4},
+        {navn: 'KLP Obligasjon Global S', vekt: 9.8},
+        {navn: 'Guinness Global Equity Income Y EUR Acc', vekt: 8.5},
+        {navn: 'Acadian Emerg Mkts Eq II C USD Ins Acc', vekt: 7.2},
         {navn: 'Janus Henderson Hrzn Glb SC IU2 USD', vekt: 5.7},
-        {navn: 'DNB Teknologi A', vekt: 4.3},
-        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 4.2},
-        {navn: 'Sentia ASA Registered Shares', vekt: 3.9},
-        {navn: 'ORIGO SELEQT A', vekt: 3.8},
+        {navn: 'DNB Teknologi A', vekt: 4.2},
+        {navn: 'ORIGO SELEQT A', vekt: 3.9},
+        {navn: 'JPM Japan Strategic Value C acc JPY', vekt: 3.9},
+        {navn: 'Sentia ASA Registered Shares', vekt: 3.8},
         {navn: 'AutoStore Holdings Ltd Ordinary Shares', vekt: 3.2},
-        {navn: 'Aker ASA Class A', vekt: 3.1}
+        {navn: 'Scatec ASA Ordinary Shares', vekt: 2.7}
       ],
       regioner: [
-        {navn: 'United States', vekt: 35.7}, {navn: 'Norway', vekt: 18.7}, {navn: 'Japan', vekt: 9.1},
-        {navn: 'Sweden', vekt: 5.8}, {navn: 'Taiwan', vekt: 5.1}, {navn: 'China', vekt: 4.0},
-        {navn: 'South Korea', vekt: 3.6}, {navn: 'Switzerland', vekt: 2.9}, {navn: 'United Kingdom', vekt: 2.1},
-        {navn: 'France', vekt: 1.6}, {navn: 'Other', vekt: 11.6}
+        {navn: 'United States', vekt: 38.8}, {navn: 'Norway', vekt: 13.1}, {navn: 'Japan', vekt: 9.5},
+        {navn: 'Sweden', vekt: 6.5}, {navn: 'Taiwan', vekt: 5.1}, {navn: 'China', vekt: 4.0},
+        {navn: 'South Korea', vekt: 3.6}, {navn: 'Switzerland', vekt: 3.2}, {navn: 'United Kingdom', vekt: 2.3},
+        {navn: 'France', vekt: 1.8}, {navn: 'Other', vekt: 12.1}
       ],
       sektorer: [
-        {navn: 'Industrials', vekt: 29.1}, {navn: 'Technology', vekt: 27.3}, {navn: 'Financial Services', vekt: 12.6},
-        {navn: 'Healthcare', vekt: 8.7}, {navn: 'Consumer Cyclical', vekt: 6.8}, {navn: 'Communication Services', vekt: 4.9},
-        {navn: 'Consumer Defensive', vekt: 4.5}, {navn: 'Energy', vekt: 3.2}, {navn: 'Basic Materials', vekt: 2.0},
-        {navn: 'Real Estate', vekt: 0.8}, {navn: 'Other', vekt: 0.1}
+        {navn: 'Technology', vekt: 27.4}, {navn: 'Industrials', vekt: 24.0}, {navn: 'Financial Services', vekt: 12.4},
+        {navn: 'Healthcare', vekt: 8.9}, {navn: 'Consumer Cyclical', vekt: 6.8}, {navn: 'Utilities', vekt: 5.0},
+        {navn: 'Communication Services', vekt: 5.0}, {navn: 'Consumer Defensive', vekt: 4.7}, {navn: 'Energy', vekt: 3.1},
+        {navn: 'Basic Materials', vekt: 2.0}, {navn: 'Other', vekt: 0.8}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 18.3}, {navn: 'Large Core', vekt: 18.3}, {navn: 'Large Growth', vekt: 13.1},
-        {navn: 'Mid Value', vekt: 9.8}, {navn: 'Mid Core', vekt: 7.3}, {navn: 'Mid Growth', vekt: 10.3},
-        {navn: 'Small Value', vekt: 3.6}, {navn: 'Small Core', vekt: 15.0}, {navn: 'Small Growth', vekt: 4.3}
+        {navn: 'Large Value', vekt: 19.8}, {navn: 'Large Core', vekt: 19.7}, {navn: 'Large Growth', vekt: 13.9},
+        {navn: 'Mid Value', vekt: 4.7}, {navn: 'Mid Core', vekt: 7.7}, {navn: 'Mid Growth', vekt: 11.5},
+        {navn: 'Small Value', vekt: 3.5}, {navn: 'Small Core', vekt: 14.6}, {navn: 'Small Growth', vekt: 4.7}
       ],
-      disclaimer: 'Avkastning før oppstart 12. september 2023 er estimert med en lignende portefølje med 50% rentefond og 50% aksjer. Eksponeringsdata per 30.09.2026.'
+      disclaimer: 'Avkastning før oppstart 12. september 2023 er estimert med en lignende portefølje med 50% rentefond og 50% aksjer. Eksponeringsdata per 31.10.2026.'
     },
     'global-hoyrente': {
       underliggende: [
@@ -394,15 +394,15 @@ export const defaultProduktEksponering = {
         {navn: 'BlueBay Global High Yield Bd I NOK', vekt: 15.2},
         {navn: 'KLP Obligasjon Global S', vekt: 15.2}
       ],
-      disclaimer: 'Eksponeringsdata per 30.09.2026.'
+      disclaimer: 'Eksponeringsdata per 31.10.2026.'
     },
     'nordisk-hoyrente': {
       underliggende: [
-        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 33.8},
-        {navn: 'Storm Bond ICN NOK', vekt: 33.6},
-        {navn: 'Alfred Berg Nordic HY C (NOK)', vekt: 32.6}
+        {navn: 'Arctic Nordic Corporate Bond Class D', vekt: 33.9},
+        {navn: 'Storm Bond ICN NOK', vekt: 33.7},
+        {navn: 'Alfred Berg Nordic HY C (NOK)', vekt: 32.4}
       ],
-      disclaimer: 'Oppstart februar 2024. Utvikling før dette er estimert med underliggende fonds utvikling før oppstart. Eksponeringsdata per 30.09.2026.'
+      disclaimer: 'Oppstart februar 2024. Utvikling før dette er estimert med underliggende fonds utvikling før oppstart. Eksponeringsdata per 31.10.2026.'
     },
     'energy-a': {
       underliggende: [
@@ -553,23 +553,23 @@ export const defaultProduktEksponering = {
         {navn: 'Alamos Gold Inc Class A', vekt: 2.6}
       ],
       regioner: [
-        {navn: 'North America', vekt: 64.4}, {navn: 'Europe dev', vekt: 27.8}, {navn: 'Africa/Middle East', vekt: 2.6},
-        {navn: 'Asia dev', vekt: 1.6}, {navn: 'Japan', vekt: 1.5}, {navn: 'Latin America', vekt: 1.3},
-        {navn: 'Australasia', vekt: 0.7}, {navn: 'United Kingdom', vekt: 0.0}, {navn: 'Europe emrg', vekt: 0.0},
-        {navn: 'Asia emrg', vekt: 0.0}
+        {navn: 'North America', vekt: 58.1}, {navn: 'Europe dev', vekt: 26.6}, {navn: 'Asia dev', vekt: 4.5},
+        {navn: 'Asia emrg', vekt: 2.9}, {navn: 'United Kingdom', vekt: 2.5}, {navn: 'Africa/Middle East', vekt: 2.4},
+        {navn: 'Latin America', vekt: 1.2}, {navn: 'Japan', vekt: 1.2}, {navn: 'Australasia', vekt: 0.5},
+        {navn: 'Europe emrg', vekt: 0.0}
       ],
       sektorer: [
-        {navn: 'Healthcare', vekt: 20.2}, {navn: 'Industrials', vekt: 19.9}, {navn: 'Financial Services', vekt: 19.4},
-        {navn: 'Technology', vekt: 18.3}, {navn: 'Basic Materials', vekt: 11.4}, {navn: 'Utilities', vekt: 5.1},
-        {navn: 'Communication Services', vekt: 2.3}, {navn: 'Consumer Cyclical', vekt: 1.8}, {navn: 'Energy', vekt: 1.5},
+        {navn: 'Technology', vekt: 23.3}, {navn: 'Healthcare', vekt: 20.9}, {navn: 'Industrials', vekt: 19.0},
+        {navn: 'Financial Services', vekt: 16.2}, {navn: 'Basic Materials', vekt: 9.1}, {navn: 'Energy', vekt: 5.2},
+        {navn: 'Utilities', vekt: 4.3}, {navn: 'Communication Services', vekt: 2.0}, {navn: 'Consumer Cyclical', vekt: 0.0},
         {navn: 'Real Estate', vekt: 0.0}
       ],
       stil: [
-        {navn: 'Large Value', vekt: 16.7}, {navn: 'Large Core', vekt: 18.5}, {navn: 'Large Growth', vekt: 17.4},
-        {navn: 'Mid Value', vekt: 7.1}, {navn: 'Mid Core', vekt: 10.1}, {navn: 'Mid Growth', vekt: 21.5},
-        {navn: 'Small Value', vekt: 0.0}, {navn: 'Small Core', vekt: 8.9}, {navn: 'Small Growth', vekt: 0.0}
+        {navn: 'Large Value', vekt: 17.7}, {navn: 'Large Core', vekt: 17.1}, {navn: 'Large Growth', vekt: 18.5},
+        {navn: 'Mid Value', vekt: 5.3}, {navn: 'Mid Core', vekt: 6.7}, {navn: 'Mid Growth', vekt: 22.7},
+        {navn: 'Small Value', vekt: 0.0}, {navn: 'Small Core', vekt: 10.2}, {navn: 'Small Growth', vekt: 1.9}
       ],
-      disclaimer: 'Tematisk global aksjeløsning. Konsentrert tematisk aksjefond. Region-, sektor- og stildata per 31.08.2026. Underliggende beholdninger per 30.04.2026.'
+      disclaimer: 'Tematisk global aksjeløsning. Konsentrert tematisk aksjefond. Region-, sektor- og stildata per 30.09.2026. Underliggende beholdninger per 30.04.2026.'
     }
   };
 
