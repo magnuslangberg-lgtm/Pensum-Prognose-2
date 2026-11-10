@@ -119,3 +119,32 @@ test('fremskrivning: uttak begrenses til det som finnes i porteføljen', async (
   assert.equal(r.verdi - 1_000_000 - r.nettoKontantstrom, 0, 'ingen gevinst uten avkastning');
   naer(fremskrivMedKontantstrom(1e6, 7, 10, 50_000).verdi, fremskrivVerdi(1e6, 7, 10, 50_000), 1e-6, 'samme verdi som fremskrivVerdi');
 });
+
+test('verdensdeler summerer til 100 og håndterer både land og regioner', async () => {
+  const { aggregerVerdensdeler, tilVerdensdeler, verdensdelFor } = await import('../lib/pensumCore.js');
+  assert.equal(verdensdelFor('Singapore'), 'Asia');
+  assert.equal(verdensdelFor('Europe dev'), 'Europa');
+  assert.equal(verdensdelFor('Other'), 'Ikke fordelt');
+  const rader = tilVerdensdeler([{ navn: 'United States', vekt: 60 }, { navn: 'Norway', vekt: 20 }, { navn: 'North America', vekt: 10 }, { navn: 'Other', vekt: 10 }]);
+  assert.deepEqual(rader, [{ navn: 'Nord-Amerika', vekt: 70 }, { navn: 'Europa', vekt: 20 }, { navn: 'Ikke fordelt', vekt: 10 }]);
+  const allok = [{ id: 'global-core-active', vekt: 40 }, { id: 'norge-a', vekt: 30 }, { id: 'kairos-a', vekt: 30 }];
+  const v = aggregerVerdensdeler(allok, defaultProduktEksponering);
+  naer(v.reduce((s, r) => s + r.vekt, 0), 100, 0.05, 'sum');
+  assert.ok(v.find(r => r.navn === 'Europa').vekt > 25, 'Norge A og Kairos gir stor Europa-andel');
+});
+
+test('Morningstar-fond blir produkt med CMA-anslag, valuta og eksponering', async () => {
+  const { lagProduktFraMorningstar, cmaKlasseForMorningstarFond } = await import('../lib/pensumCore.js');
+  const fs = await import('node:fs');
+  const univers = JSON.parse(fs.readFileSync(new URL('../public/data/eksterne-fond.json', import.meta.url)));
+  const svensk = univers.find(f => f.cSE > 80);
+  const { produkt, eksponering } = lagProduktFraMorningstar(svensk);
+  assert.equal(produkt.id, `ms-${svensk.isin}`);
+  assert.equal(produkt.valuta, 'SEK');
+  assert.equal(produkt.forventetAvkastning, 9.0, 'nordiske aksjer');
+  naer(eksponering.regioner.reduce((s, r) => s + r.vekt, 0), 100, 0.15, 'regioner inkl. Other');
+  assert.equal(cmaKlasseForMorningstarFond({ cat: 'Europe Fixed Income' }), 'ig');
+  assert.equal(cmaKlasseForMorningstarFond({ cat: 'Emerging Markets Fixed Income' }), 'hy');
+  assert.equal(cmaKlasseForMorningstarFond({ cat: 'Global Emerging Markets Equity' }), 'emAksjer');
+  assert.equal(lagProduktFraMorningstar({ isin: 'X', n: 'Rente', cat: 'Global Fixed Income', cur: 'Euro' }).produkt.aktivatype, 'rente');
+});
