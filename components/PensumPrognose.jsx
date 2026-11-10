@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -6861,7 +6861,7 @@ export default function PensumPrognoseModell() {
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? 'Kontanter og pengemarked' : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? (produkt.id === 'gull' ? 'Gull' : 'Kontanter og pengemarked') : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               {pensumBelopModus ? (() => {
@@ -6943,10 +6943,10 @@ export default function PensumPrognoseModell() {
                               </button>
                             ))}
                           </div>
-                          <p className="text-xs font-semibold text-gray-500 mb-2 mt-4">KONTANTER OG PENGEMARKED</p>
+                          <p className="text-xs font-semibold text-gray-500 mb-2 mt-4">KONTANTER, PENGEMARKED OG GULL</p>
                           <div className="space-y-1">
-                            {(pensumProdukter.eksterneFond || []).filter(p => p.aktivatype === 'kontanter' && !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'kontanter')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 border border-gray-200 flex items-start justify-between gap-2" title="Forventet avkastning 4,5 % og volatilitet 1 % (CMA: kontanter/pengemarked)">
+                            {(pensumProdukter.eksterneFond || []).filter(p => p.gruppe === 'kontanter' && !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'kontanter')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 border border-gray-200 flex items-start justify-between gap-2" title={`Forventet avkastning ${pst(produkt.forventetAvkastning)} % og volatilitet ${pst(produkt.forventetRisiko)} %`}>
                                 <span>{produkt.navn}</span>
                                 <svg className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
@@ -6956,7 +6956,7 @@ export default function PensumPrognoseModell() {
                         <div>
                           <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
                           {(() => {
-                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => p.aktivatype !== 'kontanter' && !pensumAllokering.find(a => a.id === p.id));
+                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => p.gruppe !== 'kontanter' && !pensumAllokering.find(a => a.id === p.id));
                             const sok = eksterneFondSok.trim().toLowerCase();
                             const filtrerte = sok ? tilgjengelige.filter(p => p.navn.toLowerCase().includes(sok)) : tilgjengelige;
                             // Treff i hele Morningstar-universet (lastes ved første søk)
@@ -7093,6 +7093,52 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Kostnader: honorar etter beløp og andelsklasse per fond (estimat for rådgiver) */}
+                    {(() => {
+                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                      const belop = investertBelop !== null ? investertBelop : totalKapital;
+                      const k = beregnKostnader(pensumAllokering, alleProd, belop);
+                      if (!k.linjer.length) return null;
+                      const p2 = (v) => pst(Number(v.toFixed(2)));
+                      return (
+                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                          <div className="flex items-baseline justify-between gap-3 mb-1">
+                            <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Kostnader per år</h4>
+                            <span className="text-lg font-bold tabular-nums whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{belop > 0 ? formatCurrency(Math.round(k.kroner)) + ' · ' : ''}{p2(k.pst)} %</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">{belop > 0 ? `Honorartrinn ${k.trinn.navn}: ${p2(k.trinn.sats)} % på mandater og eksterne fond. Pensums egne fond har bare fondets kostnad.` : 'Legg inn beløp for å se kostnad i kroner og riktig andelsklasse.'}</p>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-gray-400 border-b border-gray-200">
+                                <th className="py-1.5 text-left font-medium">Produkt</th>
+                                <th className="py-1.5 text-right font-medium">Honorar</th>
+                                <th className="py-1.5 text-right font-medium">Fond</th>
+                                <th className="py-1.5 text-right font-medium">Sum</th>
+                                {belop > 0 && <th className="py-1.5 text-right font-medium">Kr/år</th>}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {k.linjer.map(l => (
+                                <tr key={l.id} className="border-b border-gray-100 align-top">
+                                  <td className="py-1.5 pr-2">
+                                    <span className="text-gray-700">{l.navn.replace('Pensum ', '')}</span>
+                                    {l.andelsklasse && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">klasse {l.andelsklasse}</span>}
+                                    {l.nesteKlasse && belop > 0 && <span className="block text-[10px] text-teal-700">{formatCurrency(Math.round(l.nesteKlasse.mangler))} til klasse {l.nesteKlasse.klasse} ({p2(l.nesteKlasse.lopendeKostnad)} %)</span>}
+                                    {l.suksesshonorar && <span className="block text-[10px] text-gray-400">+ suksesshonorar: {l.suksesshonorar}</span>}
+                                  </td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.honorarPst > 0 ? p2(l.honorarPst) + ' %' : '–'}</td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.produktkostnadPst != null ? p2(l.produktkostnadPst) + ' %' : (l.honorarPst === 0 ? '–' : 'ukjent')}</td>
+                                  <td className="py-1.5 text-right tabular-nums font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p2(l.totalPst)} %</td>
+                                  {belop > 0 && <td className="py-1.5 text-right tabular-nums text-gray-700 whitespace-nowrap">{formatNumber(Math.round(l.kroner))}</td>}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
+                        </div>
+                      );
+                    })()}
 
                     {/* Valuta: hvilken valuta produktene/andelsklassene handles i */}
                     {(() => {
