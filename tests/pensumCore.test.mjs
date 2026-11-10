@@ -148,3 +148,11 @@ test('Morningstar-fond blir produkt med CMA-anslag, valuta og eksponering', asyn
   assert.equal(cmaKlasseForMorningstarFond({ cat: 'Global Emerging Markets Equity' }), 'emAksjer');
   assert.equal(lagProduktFraMorningstar({ isin: 'X', n: 'Rente', cat: 'Global Fixed Income', cur: 'Euro' }).produkt.aktivatype, 'rente');
 });
+
+test('rentefond fra Morningstar klassifiseres etter navn (høyrente, stat, IG)', async () => {
+  const { cmaKlasseForMorningstarFond } = await import('../lib/pensumCore.js');
+  assert.equal(cmaKlasseForMorningstarFond({ n: 'AXAWF US High Yield Bonds I Cap USD', cat: 'US Fixed Income' }), 'hy');
+  assert.equal(cmaKlasseForMorningstarFond({ n: 'JPM EU Government Bond C (acc) EUR', cat: 'Europe Fixed Income' }), 'stat');
+  assert.equal(cmaKlasseForMorningstarFond({ n: 'Storm Nordic High Yield', cat: 'Europe Fixed Income' }), 'nordiskHy');
+  assert.equal(cmaKlasseForMorningstarFond({ n: 'Arctic Nordic Investment Grade B', cat: 'Europe Fixed Income' }), 'ig');
+});

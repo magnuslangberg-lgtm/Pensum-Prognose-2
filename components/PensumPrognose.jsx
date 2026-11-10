@@ -610,7 +610,9 @@ export default function PensumPrognoseModell() {
 
   const leggTilPensumProdukt = (produkt, kategori) => {
     if (!pensumAllokering.find(p => p.id === produkt.id)) {
-      setPensumAllokering(prev => [...prev, { id: produkt.id, navn: produkt.navn, vekt: 0, kategori }]);
+      // Morningstar-fond tar med seg produkt og eksponering, uansett hvor de legges til fra.
+      const morningstar = produkt.kilde === 'morningstar' ? { produkt, eksponering: produktEksponering?.[produkt.id] || {} } : undefined;
+      setPensumAllokering(prev => [...prev, { id: produkt.id, navn: produkt.navn, vekt: 0, kategori, ...(morningstar ? { morningstar } : {}) }]);
     }
   };
 
