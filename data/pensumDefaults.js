@@ -626,7 +626,7 @@ export const defaultProduktRapportMeta = {
   'global-edge': {
     slideTitle: 'Global offensiv satellitt',
     slideSubtitle: 'Mer aktiv og spisset global aksjeløsning',
-    role: 'Satellitt for meravkastning i aksjedelen',
+    role: 'Aktiv global byggestein for meravkastning i aksjedelen',
     benchmark: 'Global aktiv aksjereferanse',
     expectedReturn: 9.0,
     expectedYield: 1.2,
