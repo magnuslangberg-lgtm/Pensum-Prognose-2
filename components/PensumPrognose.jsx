@@ -532,7 +532,23 @@ export default function PensumPrognoseModell() {
         const produktValue = await storageGet('pensum_admin_produkter');
         const produktDato = await storageGet('pensum_admin_produkter_rapportdato');
         if (produktValue && produktDato === RAPPORT_DATO) {
-          setPensumProdukter(JSON.parse(produktValue));
+          // Lagrede produkter kan være eldre enn feltene for kostnad og valuta, og mangle nye
+          // produkter. Disse feltene og manglende produkter hentes fra standarddataene;
+          // admins egne endringer (avkastning, risiko osv.) beholdes.
+          const lagret = JSON.parse(produktValue);
+          const METAFELT = ['honorar', 'andelsklasser', 'lopendeKostnad', 'suksesshonorar', 'valuta', 'gruppe'];
+          const flettet = {};
+          Object.keys(defaultPensumProdukter).forEach((kat) => {
+            const std = defaultPensumProdukter[kat] || [];
+            const liste = (lagret?.[kat] || []).map((p) => {
+              const d = std.find((x) => x.id === p.id);
+              if (!d) return p;
+              const meta = Object.fromEntries(METAFELT.filter((f) => p[f] === undefined && d[f] !== undefined).map((f) => [f, d[f]]));
+              return { ...p, ...meta };
+            });
+            flettet[kat] = [...liste, ...std.filter((d) => !liste.some((p) => p.id === d.id)).map((d) => JSON.parse(JSON.stringify(d)))];
+          });
+          setPensumProdukter({ ...lagret, ...flettet });
         }
 
         const laastValue = await storageGet('pensum_admin_avkastningsrater_laast');
@@ -7097,7 +7113,8 @@ export default function PensumPrognoseModell() {
                     {/* Kostnader: honorar etter beløp og andelsklasse per fond (estimat for rådgiver) */}
                     {(() => {
                       const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
-                      const belop = investertBelop !== null ? investertBelop : totalKapital;
+                      // Samme beløp som prognosen fordeler på produktene (inkl. lånefinansiert kapital).
+                      const belop = pbEffektivtInvestertBelop;
                       const k = beregnKostnader(pensumAllokering, alleProd, belop);
                       if (!k.linjer.length) return null;
                       const p2 = (v) => pst(Number(v.toFixed(2)));
