@@ -13,6 +13,9 @@
    Skriv riktig «Eksponeringsdata per …» i disclaimer for hvert produkt.
 5. **CMA:** ved ny metodikk, oppdater `forventetAvkastning`/`forventetRisiko` i `data/pensumDefaults.js`,
    `expectedReturn` i `defaultProduktRapportMeta`, `RISIKOFRI_RENTE` og `CMA_METODIKK.dokumentLenke` i `lib/pensumCore.js`.
-6. **Kontroll:** `npm test` og `npm run build`. Åpne appen, gå gjennom fanene og last ned et investeringsforslag.
+6. **Morningstar-universet** (`public/data/eksterne-fond.json`, brukes i fondssøk og Fondssammenligning):
+   ved ny fil, oppdater `MORNINGSTAR_DATO` i `lib/pensumCore.js`.
+7. **Valuta:** nye produkter får `valuta` (handelsvaluta, f.eks. 'NOK', 'SEK') i `data/pensumDefaults.js`.
+8. **Kontroll:** `npm test` og `npm run build`. Åpne appen, gå gjennom fanene og last ned et investeringsforslag.
 
 3-årstall, volatilitet, Sharpe og maks fall beregnes automatisk fra datafeeden og trenger ingen manuell oppdatering.

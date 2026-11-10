@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -13,6 +13,8 @@ const PENSUM_LOGO = 'data:image/webp;base64,UklGRrgYAABXRUJQVlA4WAoAAAAwAAAASwIA
 
 const RISIKOFRI_RENTE_TEKST = `${String(RISIKOFRI_RENTE).replace('.', ',')} %`;
 // Norsk desimaltegn for tall som vises med prosenttegn; annen tekst returneres uendret.
+// Faste farger per verdensdel, slik at samme verdensdel har samme farge overalt.
+const VERDENSDEL_FARGER = { 'Nord-Amerika': '#0D2841', 'Europa': '#6B9DB8', 'Asia': '#C4967E', 'Resten av verden': '#2D6A6A', 'Ikke fordelt': '#CBD5E1' };
 const pst = (v) => (typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(String(v ?? ''))) ? String(v).replace('.', ',') : v;
 
 export default function PensumPrognoseModell() {
@@ -608,8 +610,20 @@ export default function PensumPrognoseModell() {
 
   const leggTilPensumProdukt = (produkt, kategori) => {
     if (!pensumAllokering.find(p => p.id === produkt.id)) {
-      setPensumAllokering(prev => [...prev, { id: produkt.id, navn: produkt.navn, vekt: 0, kategori }]);
+      // Morningstar-fond tar med seg produkt og eksponering, uansett hvor de legges til fra.
+      const morningstar = produkt.kilde === 'morningstar' ? { produkt, eksponering: produktEksponering?.[produkt.id] || {} } : undefined;
+      setPensumAllokering(prev => [...prev, { id: produkt.id, navn: produkt.navn, vekt: 0, kategori, ...(morningstar ? { morningstar } : {}) }]);
     }
+  };
+
+  // Fond fra Morningstar-universet: produkt og eksponering lages fra fondsdataene og
+  // lagres også på allokeringsraden, slik at fondet finnes igjen når kundekortet lastes.
+  const leggTilMorningstarFond = (fond) => {
+    const { produkt, eksponering } = lagProduktFraMorningstar(fond);
+    if (pensumAllokering.find(p => p.id === produkt.id)) return;
+    setPensumProdukter(prev => ((prev.eksterneFond || []).some(p => p.id === produkt.id) ? prev : { ...prev, eksterneFond: [...(prev.eksterneFond || []), produkt] }));
+    setProduktEksponering(prev => ({ ...prev, [produkt.id]: eksponering }));
+    setPensumAllokering(prev => [...prev, { id: produkt.id, navn: produkt.navn, vekt: 0, kategori: 'eksterneFond', morningstar: { produkt, eksponering } }]);
   };
 
   const fjernPensumProdukt = (id) => {
@@ -682,8 +696,16 @@ export default function PensumPrognoseModell() {
     };
   }, [pensumAllokering, produktEksponering]);
 
+  // Morningstar-fond i en lastet portefølje (kundekort) legges tilbake i produktlisten.
+  useEffect(() => {
+    const mangler = pensumAllokering.filter(a => a.morningstar?.produkt && !(pensumProdukter.eksterneFond || []).some(p => p.id === a.id));
+    if (!mangler.length) return;
+    setPensumProdukter(prev => ({ ...prev, eksterneFond: [...(prev.eksterneFond || []), ...mangler.map(a => a.morningstar.produkt)] }));
+    setProduktEksponering(prev => ({ ...prev, ...Object.fromEntries(mangler.map(a => [a.id, a.morningstar.eksponering || {}])) }));
+  }, [pensumAllokering, pensumProdukter.eksterneFond]);
+
   const valgtePensumProdukterMedEksponering = useMemo(() => {
-    const produktMap = new Map([...(pensumProdukter?.enkeltfond || []), ...(pensumProdukter?.fondsportefoljer || []), ...(pensumProdukter?.alternative || [])]
+    const produktMap = new Map([...(pensumProdukter?.enkeltfond || []), ...(pensumProdukter?.fondsportefoljer || []), ...(pensumProdukter?.eksterneFond || []), ...(pensumProdukter?.alternative || [])]
       .filter((p) => p?.id)
       .map((p) => [p.id, p]));
     return pensumAllokering
@@ -763,6 +785,7 @@ export default function PensumPrognoseModell() {
     let aksjeVekt = 0;
     let renteVekt = 0;
     let alternativVekt = 0;
+    let kontantVekt = 0;
 
     pensumAllokering.forEach(allok => {
       const produkt = alleProdukt.find(p => p.id === allok.id);
@@ -773,6 +796,8 @@ export default function PensumPrognoseModell() {
           renteVekt += allok.vekt;
         } else if (produkt.aktivatype === 'alternativ') {
           alternativVekt += allok.vekt;
+        } else if (produkt.aktivatype === 'kontanter') {
+          kontantVekt += allok.vekt;
         } else if (produkt.aktivatype === 'blandet' || produkt.aktivatype === 'dynamisk') {
           aksjeVekt += allok.vekt * 0.5;
           renteVekt += allok.vekt * 0.5;
@@ -783,7 +808,8 @@ export default function PensumPrognoseModell() {
     return [
       { name: 'Aksjer', value: parseFloat(aksjeVekt.toFixed(1)), color: PENSUM_COLORS.darkBlue },
       { name: 'Renter', value: parseFloat(renteVekt.toFixed(1)), color: PENSUM_COLORS.salmon },
-      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal }
+      { name: 'Alternativer', value: parseFloat(alternativVekt.toFixed(1)), color: PENSUM_COLORS.teal },
+      { name: 'Kontanter', value: parseFloat(kontantVekt.toFixed(1)), color: PENSUM_COLORS.gray }
     ];
   }, [pensumAllokering, pensumProdukter]);
 
@@ -1455,7 +1481,7 @@ export default function PensumPrognoseModell() {
     return prognose;
   }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, nettoKontantstrom, pensumRebalanseringAktiv, pensumRebalanseringer, pbEffektivtInvestertBelop, pbTotalLaan, pbAarligRentekostnad, pbAkkumulerRenter, pbPrognoseFinansiering]);
 
-  const pensumProduktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
+  const pensumProduktFarger = PORTEFOLJE_FARGER;
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
 
   // Render tilleggsmodul-innhold basert på id
@@ -6835,7 +6861,7 @@ export default function PensumPrognoseModell() {
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : 'Fondsportefølje'}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? 'Kontanter og pengemarked' : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               {pensumBelopModus ? (() => {
@@ -6917,13 +6943,26 @@ export default function PensumPrognoseModell() {
                               </button>
                             ))}
                           </div>
+                          <p className="text-xs font-semibold text-gray-500 mb-2 mt-4">KONTANTER OG PENGEMARKED</p>
+                          <div className="space-y-1">
+                            {(pensumProdukter.eksterneFond || []).filter(p => p.aktivatype === 'kontanter' && !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'kontanter')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 border border-gray-200 flex items-start justify-between gap-2" title="Forventet avkastning 4,5 % og volatilitet 1 % (CMA: kontanter/pengemarked)">
+                                <span>{produkt.navn}</span>
+                                <svg className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
                           {(() => {
-                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => !pensumAllokering.find(a => a.id === p.id));
+                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => p.aktivatype !== 'kontanter' && !pensumAllokering.find(a => a.id === p.id));
                             const sok = eksterneFondSok.trim().toLowerCase();
                             const filtrerte = sok ? tilgjengelige.filter(p => p.navn.toLowerCase().includes(sok)) : tilgjengelige;
+                            // Treff i hele Morningstar-universet (lastes ved første søk)
+                            const msTreff = sok.length >= 2 && eksterneFond
+                              ? sokEksterneFondFuzzy(eksterneFondSok, 8).filter(f => !pensumAllokering.some(a => a.id === `ms-${f.isin}`))
+                              : [];
                             return (
                               <>
                                 <div className="relative mb-2">
@@ -6931,8 +6970,8 @@ export default function PensumPrognoseModell() {
                                   <input
                                     type="text"
                                     value={eksterneFondSok}
-                                    onChange={(e) => setEksterneFondSok(e.target.value)}
-                                    placeholder="Søk i fondsfokuslisten…"
+                                    onChange={(e) => { setEksterneFondSok(e.target.value); if (e.target.value.trim().length >= 2) lastEksterneFond(); }}
+                                    placeholder="Søk på fondsnavn eller ISIN…"
                                     className="w-full border border-teal-200 rounded py-1.5 pl-8 pr-7 text-sm focus:ring-2 focus:ring-teal-100 focus:border-teal-300"
                                   />
                                   {eksterneFondSok && (
@@ -6951,7 +6990,28 @@ export default function PensumPrognoseModell() {
                                     </button>
                                   ))}
                                 </div>
-                                <p className="text-xs text-teal-700 mt-2 italic">{sok ? `${filtrerte.length} av ${tilgjengelige.length} fond` : 'Fond fra fondsfokuslisten'}</p>
+                                <p className="text-xs text-teal-700 mt-2 italic">{sok ? `${filtrerte.length} av ${tilgjengelige.length} på fondsfokuslisten` : 'Fond fra fondsfokuslisten – søk for å finne flere'}</p>
+                                {sok.length >= 2 && (
+                                  <div className="mt-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Fra Morningstar ({eksterneFond ? `${eksterneFond.length.toLocaleString('nb-NO')} fond` : 'laster…'})</p>
+                                    <div className="space-y-1 max-h-72 overflow-y-auto pr-0.5">
+                                      {eksterneFondLoading && !eksterneFond ? (
+                                        <p className="text-xs text-gray-400 italic px-1 py-2">Laster fondsdata…</p>
+                                      ) : msTreff.length === 0 ? (
+                                        <p className="text-xs text-gray-400 italic px-1 py-2">Ingen treff</p>
+                                      ) : msTreff.map(f => (
+                                        <button key={f.isin} onClick={() => leggTilMorningstarFond(f)} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-teal-50 border border-gray-200 flex items-start justify-between gap-2" title={`${f.isin} – forventet avkastning settes til CMA-anslag for ${CMA_KLASSER[cmaKlasseForMorningstarFond(f)].navn.toLowerCase()}`}>
+                                          <span className="min-w-0">
+                                            <span className="block">{f.n}</span>
+                                            <span className="block text-[11px] text-gray-400">{f.cat || 'Ukjent kategori'} · {lagProduktFraMorningstar(f).produkt.valuta || '–'}{erGyldigTall(f.r3y) ? ` · 3 år ${pst(f.r3y.toFixed(1))} % p.a.` : ''}</span>
+                                          </span>
+                                          <svg className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-1">Morningstar-data per {MORNINGSTAR_DATO}. Forventet avkastning og risiko settes til CMA-anslag for fondets aktivaklasse.</p>
+                                  </div>
+                                )}
                               </>
                             );
                           })()}
@@ -6985,19 +7045,21 @@ export default function PensumPrognoseModell() {
                             <PieChart>
                               <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
                                 {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
-                                  <Cell key={entry.id} fill={[PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7]} />
+                                  <Cell key={entry.id} fill={PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length]} />
                                 ))}
                               </Pie>
                               <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
-                        <div className="space-y-2 flex-1">
+                        {/* min-w-0 og fast bredde på prosentkolonnen gjør at prosentene alltid vises,
+                            også med mange produkter; lange navn kuttes i stedet. */}
+                        <div className={"flex-1 min-w-0 " + (pensumAllokering.filter(p => p.vekt > 0).length > 8 ? 'space-y-1' : 'space-y-2')}>
                           {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
-                            <div key={p.id} className="flex items-center gap-2.5 text-sm">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: [PENSUM_COLORS.navy, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green][idx % 7] }}></div>
-                              <span className="flex-1 truncate text-gray-700">{p.navn}</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(p.vekt)} %</span>
+                            <div key={p.id} className={"flex items-center gap-2.5 " + (pensumAllokering.filter(q => q.vekt > 0).length > 8 ? 'text-xs' : 'text-sm')}>
+                              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length] }}></div>
+                              <span className="flex-1 min-w-0 truncate text-gray-700" title={p.navn}>{p.navn}</span>
+                              <span className="font-semibold tabular-nums flex-shrink-0 w-14 text-right whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(p.vekt)} %</span>
                             </div>
                           ))}
                         </div>
@@ -7032,6 +7094,34 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
 
+                    {/* Valuta: hvilken valuta produktene/andelsklassene handles i */}
+                    {(() => {
+                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                      const sum = {}; let total = 0;
+                      pensumAllokering.forEach(a => {
+                        if (!(a.vekt > 0)) return;
+                        const v = alleProd.find(p => p.id === a.id)?.valuta || 'Ikke oppgitt';
+                        sum[v] = (sum[v] || 0) + a.vekt; total += a.vekt;
+                      });
+                      const rader = Object.entries(sum).map(([valuta, vekt]) => ({ valuta, vekt: total > 0 ? (vekt / total) * 100 : 0 })).sort((a, b) => b.vekt - a.vekt);
+                      if (!rader.length) return null;
+                      return (
+                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                          <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Valuta</h4>
+                          <div className="space-y-2">
+                            {rader.map(r => (
+                              <div key={r.valuta} className="flex items-center gap-3 text-sm">
+                                <span className="w-24 shrink-0 text-gray-700">{r.valuta}</span>
+                                <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(r.vekt, 100)}%`, backgroundColor: r.valuta === 'NOK' ? PENSUM_COLORS.darkBlue : PENSUM_COLORS.gold }}></div></div>
+                                <span className="w-14 shrink-0 text-right font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(Number(r.vekt.toFixed(1)))} %</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-gray-400 mt-3">Valutaen produktet handles i. Underliggende valutarisiko kan være en annen – f.eks. har globale aksjefond i NOK uten valutasikring eksponering mot utenlandsk valuta.</p>
+                        </div>
+                      );
+                    })()}
+
                     {/* Eksponeringsroller — byggesett som klassisk byggverk (tak/midt/grunnmur) */}
                     {(() => {
                       const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
@@ -7046,7 +7136,7 @@ export default function PensumPrognoseModell() {
                           stabSum += a.vekt * 0.5;
                           kjerneNavn.push(`${p.navn} (50% aksjedel)`);
                           stabNavn.push(`${p.navn} (50% rentedel)`);
-                        } else if (p.aktivatype === 'rente') {
+                        } else if (p.aktivatype === 'rente' || p.aktivatype === 'kontanter') {
                           stabSum += a.vekt;
                           stabNavn.push(p.navn);
                         } else if (p.rolle === 'spisset' || p.aktivatype === 'alternativ') {
@@ -7292,6 +7382,7 @@ export default function PensumPrognoseModell() {
                   const aggRegioner = aggreger('regioner');
                   const aggSektorer = aggreger('sektorer');
                   const aggStil = aggreger('stil');
+                  const aggVerdensdeler = aggregerVerdensdeler(aksjeProdukter, produktEksponering);
 
                   if (aksjeProdukter.length === 0) return null;
 
@@ -7302,6 +7393,36 @@ export default function PensumPrognoseModell() {
                         <p className="text-xs text-gray-500 mt-1">Vektet eksponering for den samlede porteføljen. <em>Gjelder aksjedelen ({aksjeProdukter.map(a => a.navn?.replace('Pensum ', '')).join(', ')}).</em></p>
                       </div>
                       <div className="p-5">
+                        {/* Verdensdeler: grov geografisk fordeling av aksjedelen */}
+                        {aggVerdensdeler.length > 0 && (
+                          <div className="rounded-xl border border-slate-200 bg-white p-4 mb-4">
+                            <p className="text-sm font-semibold mb-3" style={{ color: PENSUM_COLORS.darkBlue }}>Verdensdeler</p>
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                              <div className="shrink-0">
+                                <ResponsiveContainer width={170} height={170}>
+                                  <PieChart>
+                                    <Pie data={aggVerdensdeler} dataKey="vekt" nameKey="navn" cx="50%" cy="50%" innerRadius={45} outerRadius={78} paddingAngle={2} cornerRadius={4} isAnimationActive={false}>
+                                      {aggVerdensdeler.map((d) => <Cell key={d.navn} fill={VERDENSDEL_FARGER[d.navn]} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v, n) => [pst(v) + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 w-full">
+                                {aggVerdensdeler.map((d) => (
+                                  <div key={d.navn} className="flex items-center gap-2.5 text-sm">
+                                    <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: VERDENSDEL_FARGER[d.navn] }}></div>
+                                    <span className="flex-1 min-w-0 truncate text-gray-700">{d.navn}</span>
+                                    <span className="font-semibold tabular-nums flex-shrink-0 w-14 text-right whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(d.vekt)} %</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            {aggVerdensdeler.some(d => d.navn === 'Ikke fordelt') && (
+                              <p className="text-[11px] text-gray-400 mt-3">«Ikke fordelt» er land Morningstar ikke spesifiserer i fondenes rapportering.</p>
+                            )}
+                          </div>
+                        )}
                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                           {[
                             { title: 'Regioner', data: aggRegioner, color: PENSUM_COLORS.teal },
@@ -7392,7 +7513,7 @@ export default function PensumPrognoseModell() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Valgt produkt</p>
                                 <h4 className="text-2xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{aktivtEksponeringsProdukt.rapport?.slideTitle || aktivtEksponeringsProdukt.navn}</h4>
                                 <p className="text-sm text-slate-600 mt-1">{aktivtEksponeringsProdukt.rapport?.slideSubtitle || aktivtEksponeringsProdukt.navn}</p>
-                                <p className="text-sm text-slate-600 mt-3 max-w-3xl">{aktivtEksponeringsProdukt.rapport?.pitch || aktivtEksponeringsProdukt.rapport?.caseText || 'Ingen produktpitch registrert.'}</p>
+                                <p className="text-sm text-slate-600 mt-3 max-w-3xl">{aktivtEksponeringsProdukt.rapport?.pitch || aktivtEksponeringsProdukt.rapport?.caseText || (aktivtEksponeringsProdukt.kilde === 'morningstar' ? `Morningstar-kategori: ${aktivtEksponeringsProdukt.morningstarKategori || 'ukjent'} · valuta ${aktivtEksponeringsProdukt.valuta || 'ukjent'}. Forventet avkastning er CMA-anslag for ${String(aktivtEksponeringsProdukt.cmaKlasse || '').toLowerCase()}.` : null) || 'Ingen produktpitch registrert.'}</p>
                               </div>
                               <div className="xl:col-span-5 grid grid-cols-3 gap-3 shrink-0">
                                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
@@ -7401,11 +7522,11 @@ export default function PensumPrognoseModell() {
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. avkastning</p>
-                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedReturn) ? `${pst(aktivtEksponeringsProdukt.rapport.expectedReturn)} %` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall((aktivtEksponeringsProdukt.rapport?.expectedReturn ?? aktivtEksponeringsProdukt.forventetAvkastning)) ? `${pst((aktivtEksponeringsProdukt.rapport?.expectedReturn ?? aktivtEksponeringsProdukt.forventetAvkastning))} %` : '—'}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center">
                                   <p className="text-[11px] uppercase tracking-wide text-slate-500">Forv. yield</p>
-                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall(aktivtEksponeringsProdukt.rapport?.expectedYield) ? `${pst(aktivtEksponeringsProdukt.rapport.expectedYield)} %` : '—'}</p>
+                                  <p className="text-xl font-semibold mt-1" style={{ color: PENSUM_COLORS.darkBlue }}>{erGyldigTall((aktivtEksponeringsProdukt.rapport?.expectedYield ?? aktivtEksponeringsProdukt.forventetYield)) ? `${pst((aktivtEksponeringsProdukt.rapport?.expectedYield ?? aktivtEksponeringsProdukt.forventetYield))} %` : '—'}</p>
                                 </div>
                               </div>
                             </div>
@@ -9788,7 +9909,9 @@ export default function PensumPrognoseModell() {
 
           // Beregn vektet Pensum-portefølje sektor/region fra produkteksponering
           const beregnPensumVektetEksponering = (type) => {
-            const vektede = pensumAllokering.filter(a => a.vekt > 0);
+            // Vekt skaleres mot produktene som har data for typen (som i aggregert eksponering),
+            // så rentefond uten land-/sektordata ikke trekker andelene ned.
+            const vektede = pensumAllokering.filter(a => a.vekt > 0 && (type === 'sektor' ? produktEksponering?.[a.id]?.sektorer : produktEksponering?.[a.id]?.regioner));
             if (vektede.length === 0) return null;
             const totalVekt = vektede.reduce((s, a) => s + a.vekt, 0) || 1;
             const samlet = {};
@@ -9900,7 +10023,7 @@ export default function PensumPrognoseModell() {
               });
               return Object.keys(samlet).length > 0 ? samlet : null;
             })() : null;
-            return regioner.map(r => {
+            const rader = regioner.map(r => {
               const punkt = { region: r.label };
               if (pensumRegioner?.[r.key]) punkt['Pensum-forslaget'] = parseFloat(pensumRegioner[r.key].toFixed(1));
               if (eksRegioner?.[r.key]) punkt['Eksisterende portefølje'] = parseFloat(eksRegioner[r.key].toFixed(1));
@@ -9929,6 +10052,15 @@ export default function PensumPrognoseModell() {
               }
               return punkt;
             }).filter(p => Object.keys(p).length > 1);
+            // Land utenfor de ni som Morningstar-dataene har felt for (f.eks. Singapore og Hellas
+            // i Pensum Norge) samles i "Øvrige land", slik at hver serie summerer til 100 %.
+            const serier = [...new Set(rader.flatMap(r => Object.keys(r).filter(k => k !== 'region')))];
+            const ovrige = { region: 'Øvrige land' };
+            serier.forEach(serie => {
+              const sum = rader.reduce((a, r) => a + (Number(r[serie]) || 0), 0);
+              if (sum > 0 && sum < 99.5) ovrige[serie] = parseFloat((100 - sum).toFixed(1));
+            });
+            return Object.keys(ovrige).length > 1 ? [...rader, ovrige] : rader;
           };
 
           // Secondary tab data
@@ -11196,7 +11328,7 @@ export default function PensumPrognoseModell() {
           });
           const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
 
-          const produktFarger = [PENSUM_COLORS.darkBlue, PENSUM_COLORS.lightBlue, PENSUM_COLORS.salmon, PENSUM_COLORS.teal, PENSUM_COLORS.gold, PENSUM_COLORS.purple, PENSUM_COLORS.green, PENSUM_COLORS.midBlue, PENSUM_COLORS.gray];
+          const produktFarger = PORTEFOLJE_FARGER;
 
           const formatAvk = (v) => erGyldigTall(v) ? (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + ' %' : '—';
           const avkFarge = (v) => erGyldigTall(v) ? (v >= 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-400';
@@ -11438,7 +11570,7 @@ export default function PensumPrognoseModell() {
                             <div key={p.id} className="flex items-center gap-2 text-xs">
                               <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: produktFarger[idx % produktFarger.length] }}></div>
                               <span className="flex-1 text-gray-700 leading-tight">{p.navn}</span>
-                              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: PENSUM_COLORS.darkBlue }}>{p.vekt.toFixed(0).replace('.', ',')} %</span>
+                              <span className="font-semibold tabular-nums flex-shrink-0 w-12 text-right whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(Number(p.vekt.toFixed(1)))} %</span>
                             </div>
                           ))}
                         </div>
@@ -12005,6 +12137,12 @@ export default function PensumPrognoseModell() {
                     <div data-rapport-slide="eksponering">
                       <h2 className="text-xl font-bold mb-2 pb-3 border-b-2" style={{ color: PENSUM_COLORS.darkBlue, borderColor: PENSUM_COLORS.darkBlue }}>Porteføljens eksponering</h2>
                       <p className="text-xs text-gray-500 mb-5">Vektet eksponering for aksjedelen sammenlignet med {referanseEksponering.navn} (per {referanseEksponering.dato}). <em>Gjelder {aksjeProdRap.map(a => a.navn?.replace('Pensum ', '')).join(', ')}.</em></p>
+
+                      {/* Verdensdeler — Pensum vs referanseindeks */}
+                      <div className="mb-4">
+                        {renderComparisonBars('Verdensdeler', aggregerVerdensdeler(aksjeProdRap, produktEksponering), tilVerdensdeler(MSCI_WORLD_REGIONER), PENSUM_COLORS.navy, '#94A3B8')}
+                        <p className="text-[10px] text-gray-400 mt-1.5">Morningstar oppgir de største landene per fond; resten vises som «Ikke fordelt».</p>
+                      </div>
 
                       {/* Pensum vs MSCI World — side by side comparison */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
