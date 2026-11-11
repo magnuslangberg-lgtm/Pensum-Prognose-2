@@ -5,6 +5,7 @@ import { byggForslagModell, byggPortefoljeSerie, tilHeleProsent } from '../lib/f
 import { FORSLAG_SIDER, standardSider, lagForslagPptx } from '../lib/forslagPptx.js';
 import { defaultPensumProdukter as p, defaultProduktEksponering, defaultProduktRapportMeta, referanseEksponering } from '../data/pensumDefaults.js';
 import { DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK } from '../data/pensumDatafeedHistorikk.js';
+import { ForslagOpptak } from '../lib/forslagOpptak.js';
 import { oppdaterHistorikkTilRapportDato, periodeStartDato, fremskrivVerdi, beregnKostnader } from '../lib/pensumCore.js';
 
 const produkter = [...p.enkeltfond, ...p.fondsportefoljer, ...p.eksterneFond, ...p.alternative];
@@ -74,4 +75,16 @@ test('presentasjonen bygges med alle sider og med bare standardsidene', async ()
   // Tom portefølje skal ikke kaste.
   const tom = lagForslagPptx(PptxGenJS, lag({ allokering: [] }), { sider: FORSLAG_SIDER.map((s) => s.id) });
   assert.ok(tom.slides.length >= 5);
+});
+
+test('forhåndsvisningen tar opp de samme lysbildene som PowerPoint-filen', () => {
+  const PptxGenJS = createRequire(import.meta.url)('pptxgenjs');
+  const m = lag();
+  const sider = [...standardSider(), 'kostnader'];
+  const fil = lagForslagPptx(PptxGenJS, m, { sider });
+  const opptak = lagForslagPptx(ForslagOpptak, m, { sider });
+  assert.equal(opptak.slides.length, fil.slides.length);
+  opptak.slides.forEach((s) => assert.ok(s.elementer.length > 3));
+  const typer = new Set(opptak.slides.flatMap((s) => s.elementer.map((e) => e.type)));
+  assert.deepEqual([...typer].sort(), ['form', 'graf', 'tabell', 'tekst']);
 });
