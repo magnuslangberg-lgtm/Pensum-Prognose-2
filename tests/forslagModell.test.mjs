@@ -66,15 +66,18 @@ test('presentasjonen bygges med alle sider og med bare standardsidene', async ()
   const alle = lagForslagPptx(PptxGenJS, m, { sider: FORSLAG_SIDER.map((s) => s.id) });
   const standard = lagForslagPptx(PptxGenJS, m, { sider: standardSider() });
   const minst = lagForslagPptx(PptxGenJS, m, { sider: [] });
-  assert.equal(minst.slides.length, 5, 'faste sider: forside, korte trekk, mandat, neste steg, viktig informasjon');
+  assert.equal(minst.slides.length, 6, 'faste sider: forside, korte trekk, mandat, neste steg, viktig informasjon, kontakt');
   assert.ok(standard.slides.length > minst.slides.length);
   // Seks tilleggssider og ett skilleark.
   assert.equal(alle.slides.length, standard.slides.length + 7);
+  // Kapittelsidene: innholdsside og fire kapitler.
+  const utenKapitler = lagForslagPptx(PptxGenJS, m, { sider: standardSider().filter((x) => x !== 'kapitler') });
+  assert.equal(standard.slides.length, utenKapitler.slides.length + 5);
   const buf = await standard.write({ outputType: 'nodebuffer' });
   assert.ok(buf.length > 20000);
   // Tom portefølje skal ikke kaste.
   const tom = lagForslagPptx(PptxGenJS, lag({ allokering: [] }), { sider: FORSLAG_SIDER.map((s) => s.id) });
-  assert.ok(tom.slides.length >= 5);
+  assert.ok(tom.slides.length >= 6);
 });
 
 test('forhåndsvisningen tar opp de samme lysbildene som PowerPoint-filen', () => {
@@ -87,4 +90,27 @@ test('forhåndsvisningen tar opp de samme lysbildene som PowerPoint-filen', () =
   opptak.slides.forEach((s) => assert.ok(s.elementer.length > 3));
   const typer = new Set(opptak.slides.flatMap((s) => s.elementer.map((e) => e.type)));
   assert.deepEqual([...typer].sort(), ['form', 'graf', 'tabell', 'tekst']);
+});
+
+test('modellen: beløp 0 regnes per 1 mill. kr, og største fall og renters rente henger sammen', () => {
+  const m = lag({ belop: 0 });
+  assert.equal(m.belopKjent, false);
+  assert.equal(m.belop, 1000000);
+  assert.equal(lag().belopKjent, true);
+  const full = lag();
+  assert.equal(full.fall[0].egen, true);
+  assert.equal(full.fall[0].verdi, full.portefolje.maxDrawdown);
+  assert.ok(full.fall.length >= 3 && full.fall.every((f) => f.verdi < 0));
+  const siste = full.rentersRente[full.rentersRente.length - 1];
+  const hoved = full.scenarioer.find((s) => s.id === 'hoved');
+  assert.ok(Math.abs(siste.kapital + siste.enkel + siste.effekt - hoved.sluttverdi) < 1);
+  assert.equal(full.rentersRente[0].effekt, 0);
+});
+
+test('vekter vises eksakt', async () => {
+  const { vektTekst } = await import('../lib/forslagPptx.js');
+  assert.equal(vektTekst(11.25), '11,25\u00a0%');
+  assert.equal(vektTekst(25), '25\u00a0%');
+  assert.equal(vektTekst(27.5), '27,5\u00a0%');
+  assert.equal(vektTekst(null), '–');
 });
