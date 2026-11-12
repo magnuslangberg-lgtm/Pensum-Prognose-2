@@ -179,3 +179,14 @@ test('kostnader: honorartrinn, andelsklasse etter beløp og ingen dobbeltbelastn
   assert.deepEqual(k.mangler, ['Ukjent fond']);
   naer(k.pst, (k.kroner / 10_000_000) * 100, 1e-9, 'prosent');
 });
+
+test('parseBelop: norske beløp med mellomrom, punktum og øre', async () => {
+  const { parseBelop } = await import('../lib/pensumCore.js');
+  assert.equal(parseBelop('5 000 000'), 5000000);
+  assert.equal(parseBelop('5 000 000,00'), 5000000);
+  assert.equal(parseBelop('5.000.000,50 kr'), 5000000);
+  assert.equal(parseBelop('1 250 000,'), 1250000);
+  assert.equal(parseBelop('12,345'), 12345);
+  assert.ok(Number.isNaN(parseBelop('')));
+  assert.ok(Number.isNaN(parseBelop(null)));
+});

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
+import { parseBelop,
   ASSET_COLORS,
   ASSET_COLORS_LIGHT,
   CATEGORY_COLORS,
@@ -21,7 +21,7 @@ export function CurrencyInput({ label, value, onChange, indent }) {
           inputMode="numeric"
           value={local}
           onChange={(e) => setLocal(e.target.value)}
-          onBlur={() => { const v = parseInt(local.replace(/[^0-9]/g, ''), 10) || 0; onChange(v); setLocal(formatNumber(v)); }}
+          onBlur={() => { const v = parseBelop(local) || 0; onChange(v); setLocal(formatNumber(v)); }}
           onFocus={(e) => e.target.select()}
           className="w-full border border-gray-200 rounded-lg py-2 px-3 pr-10 text-sm"
         />
@@ -124,7 +124,7 @@ export function AllokeringRow({ item, index, isSubItem, effektivtInvestertBelop,
             inputMode="numeric"
             value={localBelop}
             onChange={(e) => setLocalBelop(e.target.value)}
-            onBlur={() => { const v = parseInt(String(localBelop).replace(/[^0-9]/g, ''), 10) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
+            onBlur={() => { const v = parseBelop(localBelop) || 0; updateAllokeringBelop(index, v); setLocalBelop(formatNumber(v)); }}
             className="w-full py-1.5 px-2 text-xs text-right font-medium border-none outline-none bg-transparent tabular-nums"
             style={{ color: PENSUM_COLORS.darkBlue }}
           />

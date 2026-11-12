@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { parseBelop, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -12,6 +12,8 @@ import { byggForslagModell } from '../lib/forslagModell';
 import { FORSLAG_SIDER, standardSider, lagForslagPptx } from '../lib/forslagPptx';
 import { ForslagOpptak } from '../lib/forslagOpptak';
 import ForslagForhandsvisning from './pensum/ForslagForhandsvisning';
+
+const TOM_EKSISTERENDE_PORTEFOLJE = { fond: [], aksjer: [], kontanter: 0, kilde: '' };
 
 const PENSUM_LOGO = 'data:image/webp;base64,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';
 
@@ -117,6 +119,8 @@ export default function PensumPrognoseModell() {
   const [forslagSider, setForslagSider] = useState(() => standardSider());
   const [forslagLaster, setForslagLaster] = useState(false);
   const [visGammelRapport, setVisGammelRapport] = useState(false);
+  const [forslagVurdering, setForslagVurdering] = useState('');
+  const ventLagringRef = useRef(false);
   const [start, setStart] = useState({ navn: '', belop: '', horisont: '10', profil: 'Moderat' });
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
@@ -619,7 +623,8 @@ export default function PensumPrognoseModell() {
 
   // Startsiden: tre spørsmål, så rett til porteføljebyggeren med standardporteføljen for profilen.
   const startNyKunde = () => {
-    const belop = parseInt(String(start.belop).replace(/[^0-9]/g, ''), 10);
+    if ((kundeNavn || aktivKundeId) && !confirm('Dette starter et nytt forslag og erstatter porteføljen som ligger inne nå. Vil du fortsette?')) return;
+    const belop = parseBelop(start.belop);
     const aar = Math.min(40, Math.max(1, parseInt(start.horisont, 10) || 10));
     if (start.navn.trim()) setKundeNavn(start.navn.trim());
     if (belop > 0) setInvestertBelop(belop);
@@ -798,7 +803,9 @@ export default function PensumPrognoseModell() {
             ? null
             : (erGyldigTall(produkt?.[aarFelt]) ? Number(produkt[aarFelt]) : null);
         }
-        if (!harRapportertYtd && !erGyldigTall(avkastning)) {
+        // Mangler det rapporterte tallet (f.eks. et fond som startet i år), brukes kursene –
+        // de samme som i grafen – slik at produktet ikke faller ut av årets tall alene.
+        if (!erGyldigTall(avkastning)) {
           avkastning = beregnFraHistorikk(produkt.id, aarMapping[aarFelt]);
         }
         // Produkter uten historikk (f.eks. PE og eiendom) holdes utenfor. Forventet
@@ -911,28 +918,36 @@ export default function PensumPrognoseModell() {
   
   const valgtLosning = null; // Fjernet gammel state
 
-  // Last lagrede kunder ved oppstart
-  useEffect(() => {
-    const lastKunder = async () => {
-      if (radgiver) {
-        const storageKey = 'pensum_kunder_' + radgiver.toLowerCase().replace(/\s+/g, '_');
-        let loaded = null;
-        try {
-          if (window.storage && window.storage.get) {
-            const result = await window.storage.get(storageKey);
-            if (result && result.value) loaded = result.value;
-          }
-        } catch (e) {
-          console.log('window.storage not available:', e);
-        }
-        if (!loaded && typeof localStorage !== 'undefined') {
-          try { loaded = localStorage.getItem(storageKey); } catch (e) { /* ignore */ }
-        }
-        setLagredeKunder(loaded ? JSON.parse(loaded) : []);
+  // Kundearkivet tilhører den innloggede brukeren. Fritekstfeltet «Rådgiver» brukes bare
+  // når ingen er logget inn, slik at et annet navn i feltet ikke bytter eller overskriver arkivet.
+  const arkivEier = (bruker?.navn || radgiver || '').trim();
+  const arkivNokkel = (eier) => 'pensum_kunder_' + eier.toLowerCase().replace(/\s+/g, '_');
+  const lesArkiv = async (eier) => {
+    if (!eier) return [];
+    let loaded = null;
+    try {
+      if (window.storage && window.storage.get) {
+        const result = await window.storage.get(arkivNokkel(eier));
+        if (result && result.value) loaded = result.value;
       }
-    };
-    lastKunder();
-  }, [radgiver]);
+    } catch (e) { /* window.storage finnes ikke overalt */ }
+    if (!loaded && typeof localStorage !== 'undefined') {
+      try { loaded = localStorage.getItem(arkivNokkel(eier)); } catch (e) { /* ignore */ }
+    }
+    if (!loaded) return [];
+    // Et skadet arkiv skal ikke ta ned siden. Kaster videre, slik at lagring ikke skriver over det.
+    const liste = JSON.parse(loaded);
+    return Array.isArray(liste) ? liste : [];
+  };
+  const [arkivFeil, setArkivFeil] = useState(false);
+  useEffect(() => {
+    let avbrutt = false;
+    lesArkiv(arkivEier)
+      .then((liste) => { if (!avbrutt) { setLagredeKunder(liste); setArkivFeil(false); } })
+      .catch(() => { if (!avbrutt) { setLagredeKunder([]); setArkivFeil(true); } });
+    return () => { avbrutt = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arkivEier]);
 
   // Hent alle data som objekt
   const getKundeData = useCallback(() => ({
@@ -970,10 +985,12 @@ export default function PensumPrognoseModell() {
     malAktiv, hovedmal, visDelmal, delmal,
     visSluttSammensetning, sluttSammensetningAar,
     rebalanseringAktiv, rebalanseringer,
+    // Kundens eksisterende portefølje, sammenligningsfond og sidevalg hører til kundekortet.
+    eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering,
     // Schema-versjon for fremtidige migreringer
     schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -981,8 +998,14 @@ export default function PensumPrognoseModell() {
     setKundeNavn(data.kundeNavn || '');
     setKundeSelskap(data.kundeSelskap || '');
     setDato(data.dato || new Date().toISOString().split('T')[0]);
-    const profil = data.risikoprofil || 'Moderat';
+    // Et importert eller gammelt kort kan ha en profil som ikke finnes lenger.
+    const profil = RISK_PROFILES[data.risikoprofil] ? data.risikoprofil : 'Moderat';
     setRisikoprofil(profil);
+    setEksisterendePortefolje(data.eksisterendePortefolje && Array.isArray(data.eksisterendePortefolje.fond) ? data.eksisterendePortefolje : TOM_EKSISTERENDE_PORTEFOLJE);
+    setValgteFond(Array.isArray(data.valgteFond) ? data.valgteFond : []);
+    setFondVekter(data.fondVekter && typeof data.fondVekter === 'object' ? data.fondVekter : {});
+    setForslagSider(Array.isArray(data.forslagSider) ? data.forslagSider : standardSider());
+    setForslagVurdering(typeof data.forslagVurdering === 'string' ? data.forslagVurdering : '');
 
     // Pensum-portefølje: bruk lagret hvis tilgjengelig, ellers fall tilbake til
     // standardprofil basert på risikoprofil (bakoverkompatibilitet med eldre kunder).
@@ -1146,7 +1169,7 @@ export default function PensumPrognoseModell() {
 
       if (ventPaaRegistrering) {
         setVentPaaRegistrering(false);
-        setTimeout(() => lagreKundeEtterAuth(), 100);
+        ventLagringRef.current = true;
       }
     } catch (e) {
       setAuthFeilmelding('Kunne ikke registrere bruker. Prøv igjen.');
@@ -1207,7 +1230,7 @@ export default function PensumPrognoseModell() {
       // Hvis vi ventet på innlogging for å lagre, gjør det nå
       if (ventPaaRegistrering) {
         setVentPaaRegistrering(false);
-        setTimeout(() => lagreKundeEtterAuth(), 100);
+        ventLagringRef.current = true;
       }
     } catch (e) {
       setAuthFeilmelding('Kunne ikke logge inn. Prøv igjen.');
@@ -1268,21 +1291,26 @@ export default function PensumPrognoseModell() {
       return;
     }
     
-    const brukerNavn = bruker?.navn || radgiver;
-    if (!brukerNavn) return;
-    
-    const storageKey = 'pensum_kunder_' + brukerNavn.toLowerCase().replace(/\s+/g, '_');
+    if (!arkivEier) return;
+    const storageKey = arkivNokkel(arkivEier);
     const kundeData = getKundeData();
-    
+
+    // Les arkivet på nytt rett før skriving, slik at en utdatert liste i minnet
+    // (f.eks. rett etter innlogging) aldri skriver over det som ligger lagret.
+    let arkiv;
+    try { arkiv = await lesArkiv(arkivEier); } catch (e) {
+      alert('Kundearkivet kunne ikke leses, så kunden ble ikke lagret. Bruk «Eksporter» for å lagre kunden som fil.');
+      return;
+    }
     let oppdatertListe;
-    const eksisterendeIndex = lagredeKunder.findIndex(k => k.id === kundeData.id);
+    const eksisterendeIndex = arkiv.findIndex(k => k.id === kundeData.id);
     if (eksisterendeIndex >= 0) {
-      oppdatertListe = [...lagredeKunder];
+      oppdatertListe = [...arkiv];
       oppdatertListe[eksisterendeIndex] = kundeData;
     } else {
-      oppdatertListe = [...lagredeKunder, kundeData];
+      oppdatertListe = [...arkiv, kundeData];
     }
-    
+
     const jsonStr = JSON.stringify(oppdatertListe);
     let saved = false;
     try {
@@ -1304,7 +1332,17 @@ export default function PensumPrognoseModell() {
     } else {
       alert('Automatisk lagring er ikke tilgjengelig. Bruk "Eksporter" for å lagre kunden som fil.');
     }
-  }, [bruker, radgiver, kundeNavn, kundeSelskap, getKundeData, lagredeKunder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arkivEier, kundeNavn, kundeSelskap, getKundeData]);
+
+  // «Lagre» uten å være innlogget: lagringen fullføres når innloggingen er på plass,
+  // med brukeren og arkivet slik de er da.
+  useEffect(() => {
+    if (bruker && ventLagringRef.current) {
+      ventLagringRef.current = false;
+      lagreKundeEtterAuth();
+    }
+  }, [bruker, lagreKundeEtterAuth]);
 
   // Lagre kunde (hovedfunksjon)
   const lagreKunde = useCallback(async () => {
@@ -1327,8 +1365,11 @@ export default function PensumPrognoseModell() {
   // Slett kunde
   const slettKunde = useCallback(async (id) => {
     if (!confirm('Er du sikker på at du vil slette denne kunden?')) return;
-    const storageKey = 'pensum_kunder_' + radgiver.toLowerCase().replace(/\s+/g, '_');
-    const oppdatertListe = lagredeKunder.filter(k => k.id !== id);
+    if (!arkivEier) return;
+    const storageKey = arkivNokkel(arkivEier);
+    let arkiv;
+    try { arkiv = await lesArkiv(arkivEier); } catch (e) { alert('Kundearkivet kunne ikke leses, så ingenting ble slettet.'); return; }
+    const oppdatertListe = arkiv.filter(k => k.id !== id);
     
     const jsonStr = JSON.stringify(oppdatertListe);
     try {
@@ -1375,6 +1416,12 @@ export default function PensumPrognoseModell() {
     setFormuesPlanleggerBelop(null);
     setInvesteringsFormaal('Utvikle finansiell formue');
     setLikviditetsbehov('Begrenset');
+    // Forrige kundes portefølje, sammenligningsfond og sidevalg skal ikke følge med.
+    setEksisterendePortefolje(TOM_EKSISTERENDE_PORTEFOLJE);
+    setValgteFond([]);
+    setFondVekter({});
+    setForslagSider(standardSider());
+    setForslagVurdering('');
     setVisKundeliste(false);
     setActiveTab('input');
   }, [avkastningsrater, pensumStandardPortefoljer]);
@@ -3898,7 +3945,7 @@ export default function PensumPrognoseModell() {
                     type="text"
                     value={formatNumber(laan.belop || 0)}
                     onChange={(e) => {
-                      const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                      const v = parseBelop(e.target.value) || 0;
                       setPrognoseFinansiering(prev => prev.map((l, i) => i === idx ? { ...l, belop: v } : l));
                     }}
                     className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm text-right"
@@ -4050,7 +4097,7 @@ export default function PensumPrognoseModell() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Målbeløp (kr)</label>
-                  <input type="text" placeholder="100 000 000" value={hovedmal.belop ? formatNumber(hovedmal.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setHovedmal(prev => ({ ...prev, belop: v })); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                  <input type="text" placeholder="100 000 000" value={hovedmal.belop ? formatNumber(hovedmal.belop) : ''} onChange={e => { const v = parseBelop(e.target.value) || 0; setHovedmal(prev => ({ ...prev, belop: v })); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Nå målet innen (år)</label>
@@ -4110,7 +4157,7 @@ export default function PensumPrognoseModell() {
                     return (
                       <div key={i} className="flex items-center gap-3 mb-2">
                         <input type="text" placeholder="Navn på delmål" value={m.navn} onChange={e => setDelmal(prev => prev.map((d, j) => j === i ? { ...d, navn: e.target.value } : d))} className="border border-gray-200 rounded-lg py-2 px-3 text-sm flex-1" />
-                        <input type="text" placeholder="Beløp" value={m.belop ? formatNumber(m.belop) : ''} onChange={e => { const v = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0; setDelmal(prev => prev.map((d, j) => j === i ? { ...d, belop: v } : d)); }} className="border border-gray-200 rounded-lg py-2 px-3 text-sm w-40 text-right" />
+                        <input type="text" placeholder="Beløp" value={m.belop ? formatNumber(m.belop) : ''} onChange={e => { const v = parseBelop(e.target.value) || 0; setDelmal(prev => prev.map((d, j) => j === i ? { ...d, belop: v } : d)); }} className="border border-gray-200 rounded-lg py-2 px-3 text-sm w-40 text-right" />
                         <span className="text-sm text-gray-400">kr</span>
                         {naarAar && <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Nås {naarAar.year}</span>}
                         {!naarAar && m.belop > 0 && <span className="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">Nås ikke i perioden</span>}
@@ -4230,18 +4277,32 @@ export default function PensumPrognoseModell() {
     forventetAvkastning: pensumForventetAvkastning,
     selskap: PENSUM_SELSKAPSNOEKKELTALL
   });
+  // Ting rådgiveren bør se før forslaget sendes ut. Stopper ikke eksporten, men vises
+  // ved forhåndsvisningen og må bekreftes ved nedlasting.
+  const forslagVarsler = useMemo(() => {
+    const varsler = [];
+    const sum = pensumAllokering.reduce((s, a) => s + (a.vekt > 0 ? a.vekt : 0), 0);
+    if (sum > 0 && Math.abs(sum - 100) > 0.05) varsler.push(`Porteføljen summerer til ${sum.toFixed(1).replace('.', ',')}\u00a0%, ikke 100. Presentasjonen skalerer vektene til 100\u00a0%.`);
+    if (!kundeNavn && !kundeSelskap) varsler.push('Kundenavn mangler. Forsiden viser «Kunde».');
+    if (!(bruker?.navn || radgiver)) varsler.push('Rådgiver mangler. Presentasjonen viser ingen kontaktperson.');
+    if (!((investertBelop !== null ? investertBelop : totalKapital) > 0)) varsler.push('Beløpet er 0 kr. Alle kronebeløp i presentasjonen blir 0.');
+    return varsler;
+  }, [pensumAllokering, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital]);
+  const forslagTekster = forslagVurdering.trim() ? { vurdering: forslagVurdering.trim() } : {};
+
   const forslagForhandsvisning = useMemo(() => {
     if (activeTab !== 'rapport' || visGammelRapport) return null;
     try {
       const modell = byggForslag();
       if (!modell.produkter.length) return { slides: [], tom: true };
-      return { slides: lagForslagPptx(ForslagOpptak, modell, { sider: forslagSider, assets: FORSLAG_ASSETS }).slides };
+      return { slides: lagForslagPptx(ForslagOpptak, modell, { sider: forslagSider, assets: FORSLAG_ASSETS, tekster: forslagTekster }).slides };
     } catch (e) {
       return { slides: [], feil: e?.message || String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, visGammelRapport, forslagSider, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  }, [activeTab, visGammelRapport, forslagSider, forslagVurdering, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
   const handleLastNedForslag = async () => {
+    if (forslagVarsler.length && !confirm(`Før du laster ned:\n\n• ${forslagVarsler.join('\n• ')}\n\nLast ned likevel?`)) return;
     setForslagLaster(true);
     try {
       const PptxGenJS = (await import('pptxgenjs')).default;
@@ -4249,7 +4310,7 @@ export default function PensumPrognoseModell() {
       if (!modell.produkter.length) throw new Error('Porteføljen er tom. Velg produkter i porteføljebyggeren først.');
       const pptx = lagForslagPptx(PptxGenJS, modell, {
         sider: forslagSider,
-        assets: FORSLAG_ASSETS
+        assets: FORSLAG_ASSETS, tekster: forslagTekster
       });
       const filnavn = `Investeringsforslag ${(modell.kunde || 'kunde').replace(/[\\/:*?"<>|]/g, '')} ${new Date().toISOString().slice(0, 10)}.pptx`;
       await pptx.writeFile({ fileName: filnavn });
@@ -5188,7 +5249,7 @@ export default function PensumPrognoseModell() {
               ) : lagredeKunder.length === 0 ? (
                 <div className="text-center py-8">
                   <svg className="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                  <p className="text-gray-500">Ingen lagrede kunder for {radgiver}</p>
+                  <p className="text-gray-500">{arkivFeil ? 'Kundearkivet kunne ikke leses' : `Ingen lagrede kunder for ${arkivEier}`}</p>
                   <p className="text-sm text-gray-400 mt-1">Fyll inn kundedata og trykk "Lagre"</p>
                 </div>
               ) : (
@@ -5250,7 +5311,7 @@ export default function PensumPrognoseModell() {
                     <span className="text-xs text-blue-200">Beløp som skal investeres</span>
                     <div className="mt-1 flex items-center bg-white rounded-lg px-3">
                       <input type="text" inputMode="numeric" placeholder="10 000 000" value={start.belop} aria-label="Beløp som skal investeres"
-                        onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); setStart((p) => ({ ...p, belop: v ? formatNumber(parseInt(v, 10)) : '' })); }}
+                        onChange={(e) => { const v = parseBelop(e.target.value); setStart((p) => ({ ...p, belop: v > 0 ? formatNumber(v) : '' })); }}
                         className="w-full py-2.5 text-base font-semibold outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
                       <span className="text-sm text-gray-400">kr</span>
                     </div>
@@ -5347,7 +5408,7 @@ export default function PensumPrognoseModell() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{pst(RISK_PROFILES[risikoprofil].aksjer)} % aksjer · {pst(RISK_PROFILES[risikoprofil].renter)} % renter</p>
+                  <p className="text-[10px] text-gray-400 mt-1.5 text-center">{pst((RISK_PROFILES[risikoprofil] || RISK_PROFILES.Moderat).aksjer)} % aksjer · {pst((RISK_PROFILES[risikoprofil] || RISK_PROFILES.Moderat).renter)} % renter</p>
                 </div>
 
                 {/* Horisont - som slider + tall */}
@@ -5377,7 +5438,7 @@ export default function PensumPrognoseModell() {
                     Investert beløp
                   </label>
                   <div className="relative">
-                    <input type="text" value={investertBelop !== null ? formatNumber(investertBelop) : ''} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) ? null : v); }} onFocus={(e) => { if (investertBelop !== null) e.target.value = investertBelop.toString(); }} onBlur={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10); setInvestertBelop(isNaN(v) || v === 0 ? null : v); }} placeholder={formatCurrency(totalKapital) + ' (fra kapitaloversikt)'} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
+                    <input type="text" value={investertBelop !== null ? formatNumber(investertBelop) : ''} onChange={(e) => { const v = parseBelop(e.target.value); setInvestertBelop(isNaN(v) ? null : v); }} onFocus={(e) => { if (investertBelop !== null) e.target.value = investertBelop.toString(); }} onBlur={(e) => { const v = parseBelop(e.target.value); setInvestertBelop(isNaN(v) || v === 0 ? null : v); }} placeholder={formatCurrency(totalKapital) + ' (fra kapitaloversikt)'} className="w-full border border-gray-200 rounded-lg py-2.5 px-4 pr-10 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-colors" />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">kr</span>
                   </div>
                 </div>
@@ -5852,7 +5913,7 @@ export default function PensumPrognoseModell() {
                         type="text"
                         value={formuesPlanleggerBelop !== null ? formatNumber(formuesPlanleggerBelop) : (investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital))}
                         onChange={(e) => {
-                          const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
+                          const value = parseBelop(e.target.value) || 0;
                           setFormuesPlanleggerBelop(value);
                         }}
                         className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-28 text-right text-sm"
@@ -6348,11 +6409,11 @@ export default function PensumPrognoseModell() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig innskudd (kr)</label>
-                      <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseBelop(e.target.value) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlige uttak (kr)</label>
-                      <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                      <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseBelop(e.target.value) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                     </div>
                     <div className="rounded-lg p-3" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
                       <div className="text-xs font-medium text-gray-500 mb-0.5">Netto kontantstrøm</div>
@@ -6760,7 +6821,7 @@ export default function PensumPrognoseModell() {
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(skattepliktigFormue)}
-                        onChange={(e) => setSkattepliktigFormue(parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                        onChange={(e) => setSkattepliktigFormue(parseBelop(e.target.value) || 0)}
                         onFocus={(e) => e.target.select()}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-right focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                       />
@@ -6771,7 +6832,7 @@ export default function PensumPrognoseModell() {
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(aarligForbruk)}
-                        onChange={(e) => setAarligForbruk(parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                        onChange={(e) => setAarligForbruk(parseBelop(e.target.value) || 0)}
                         onFocus={(e) => e.target.select()}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-right focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                       />
@@ -6932,7 +6993,7 @@ export default function PensumPrognoseModell() {
                             type="text"
                             value={investertBelop !== null ? formatNumber(investertBelop) : formatNumber(totalKapital)}
                             onChange={(e) => {
-                              const value = parseInt(e.target.value.replace(/\s/g, '').replace(/[^0-9]/g, '')) || 0;
+                              const value = parseBelop(e.target.value) || 0;
                               setInvestertBelop(value);
                             }}
                             className="border border-gray-200 rounded py-1 px-2 w-28 text-right text-xs"
@@ -7045,7 +7106,7 @@ export default function PensumPrognoseModell() {
                                         inputMode="numeric"
                                         key={radBelop}
                                         defaultValue={formatNumber(radBelop)}
-                                        onBlur={(e) => oppdaterPensumBelop(produkt.id, parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                                        onBlur={(e) => oppdaterPensumBelop(produkt.id, parseBelop(e.target.value) || 0)}
                                         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                                         className="w-full py-1 px-2 text-sm text-right outline-none tabular-nums"
                                       />
@@ -7918,11 +7979,11 @@ export default function PensumPrognoseModell() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlig innskudd (kr)</label>
-                        <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                        <input type="text" value={formatNumber(innskudd || 0)} onChange={(e) => { const v = parseBelop(e.target.value) || 0; setInnskudd(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Årlige uttak (kr)</label>
-                        <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
+                        <input type="text" value={formatNumber(uttak || 0)} onChange={(e) => { const v = parseBelop(e.target.value) || 0; setUttak(v); }} className="w-full border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-right" />
                       </div>
                       <div className="rounded-lg p-3" style={{ backgroundColor: nettoKontantstrom >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
                         <div className="text-xs font-medium text-gray-500 mb-0.5">Netto kontantstrøm</div>
@@ -11533,7 +11594,17 @@ export default function PensumPrognoseModell() {
                   className="mt-4 w-full py-3 px-4 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
                   {forslagLaster ? 'Lager presentasjonen …' : `Last ned PowerPoint (${forslagForhandsvisning?.slides?.length || 0} sider)`}
                 </button>
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-5 mb-1">Sider</div>
+                {forslagVarsler.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900" data-forslag-varsler>
+                    <div className="font-semibold mb-1">Sjekk før du sender</div>
+                    <ul className="list-disc ml-4 space-y-1">{forslagVarsler.map((v) => <li key={v}>{v}</li>)}</ul>
+                  </div>
+                )}
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-5 mb-1">Rådgivers vurdering</div>
+                <textarea value={forslagVurdering} onChange={(e) => setForslagVurdering(e.target.value.slice(0, 280))} rows={4} aria-label="Rådgivers vurdering"
+                  placeholder="Skriv din egen vurdering (valgfritt). Tomt felt gir standardteksten."
+                  className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-blue-300" />
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Sider</div>
                 <div>
                   {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
                     <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-0.5">
@@ -13575,7 +13646,7 @@ export default function PensumPrognoseModell() {
       <LunaAssistant
         onApply={brukLunaFelter}
         context={{
-          kundeNavn, kundeSelskap, risikoprofil, horisont, investeringsFormaal, likviditetsbehov,
+          risikoprofil, horisont, investeringsFormaal, likviditetsbehov,
           aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde,
           unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde,
         }}
