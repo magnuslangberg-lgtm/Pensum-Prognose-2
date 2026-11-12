@@ -924,16 +924,19 @@ export default function PensumPrognoseModell() {
   const arkivNokkel = (eier) => 'pensum_kunder_' + eier.toLowerCase().replace(/\s+/g, '_');
   const lesArkiv = async (eier) => {
     if (!eier) return [];
-    let loaded = null;
+    let loaded = null; let lesefeil = null;
     try {
       if (window.storage && window.storage.get) {
         const result = await window.storage.get(arkivNokkel(eier));
         if (result && result.value) loaded = result.value;
       }
-    } catch (e) { /* window.storage finnes ikke overalt */ }
+    } catch (e) { lesefeil = e; }
     if (!loaded && typeof localStorage !== 'undefined') {
-      try { loaded = localStorage.getItem(arkivNokkel(eier)); } catch (e) { /* ignore */ }
+      try { loaded = localStorage.getItem(arkivNokkel(eier)); } catch (e) { lesefeil = e; }
     }
+    // En lesefeil uten noe å falle tilbake på er ikke det samme som et tomt arkiv:
+    // kast, slik at lagring og sletting ikke skriver en tom liste over kundene.
+    if (!loaded && lesefeil) throw lesefeil;
     if (!loaded) return [];
     // Et skadet arkiv skal ikke ta ned siden. Kaster videre, slik at lagring ikke skriver over det.
     const liste = JSON.parse(loaded);
