@@ -7328,81 +7328,6 @@ export default function PensumPrognoseModell() {
                       </div>
                     </div>
 
-                    {/* Kostnader: honorar etter beløp og andelsklasse per fond (estimat for rådgiver) */}
-                    {(() => {
-                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
-                      // Samme beløp som prognosen fordeler på produktene (inkl. lånefinansiert kapital).
-                      const belop = pbEffektivtInvestertBelop;
-                      const k = beregnKostnader(pensumAllokering, alleProd, belop);
-                      if (!k.linjer.length) return null;
-                      const p2 = (v) => pst(Number(v.toFixed(2)));
-                      return (
-                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                          <div className="flex items-baseline justify-between gap-3 mb-1">
-                            <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Kostnader per år</h4>
-                            <span className="text-lg font-bold tabular-nums whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{belop > 0 ? formatCurrency(Math.round(k.kroner)) + ' · ' : ''}{p2(k.pst)} %</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mb-3">{belop > 0 ? `Honorartrinn ${k.trinn.navn}: ${p2(k.trinn.sats)} % på mandater og eksterne fond. Pensums egne fond har bare fondets kostnad.` : 'Legg inn beløp for å se kostnad i kroner og riktig andelsklasse.'}</p>
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-gray-400 border-b border-gray-200">
-                                <th className="py-1.5 text-left font-medium">Produkt</th>
-                                <th className="py-1.5 text-right font-medium">Honorar</th>
-                                <th className="py-1.5 text-right font-medium">Fond</th>
-                                <th className="py-1.5 text-right font-medium">Sum</th>
-                                {belop > 0 && <th className="py-1.5 text-right font-medium">Kr/år</th>}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {k.linjer.map(l => (
-                                <tr key={l.id} className="border-b border-gray-100 align-top">
-                                  <td className="py-1.5 pr-2">
-                                    <span className="text-gray-700">{l.navn.replace('Pensum ', '')}</span>
-                                    {l.andelsklasse && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">klasse {l.andelsklasse}</span>}
-                                    {l.nesteKlasse && belop > 0 && <span className="block text-[10px] text-teal-700">{formatCurrency(Math.round(l.nesteKlasse.mangler))} til klasse {l.nesteKlasse.klasse} ({p2(l.nesteKlasse.lopendeKostnad)} %)</span>}
-                                    {l.suksesshonorar && <span className="block text-[10px] text-gray-400">+ suksesshonorar: {l.suksesshonorar}</span>}
-                                  </td>
-                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.honorarPst > 0 ? p2(l.honorarPst) + ' %' : '–'}</td>
-                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.produktkostnadPst != null ? p2(l.produktkostnadPst) + ' %' : (l.honorarPst === 0 ? '–' : 'ukjent')}</td>
-                                  <td className="py-1.5 text-right tabular-nums font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p2(l.totalPst)} %</td>
-                                  {belop > 0 && <td className="py-1.5 text-right tabular-nums text-gray-700 whitespace-nowrap">{formatNumber(Math.round(l.kroner))}</td>}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Valuta: hvilken valuta produktene/andelsklassene handles i */}
-                    {(() => {
-                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
-                      const sum = {}; let total = 0;
-                      pensumAllokering.forEach(a => {
-                        if (!(a.vekt > 0)) return;
-                        const v = alleProd.find(p => p.id === a.id)?.valuta || 'Ikke oppgitt';
-                        sum[v] = (sum[v] || 0) + a.vekt; total += a.vekt;
-                      });
-                      const rader = Object.entries(sum).map(([valuta, vekt]) => ({ valuta, vekt: total > 0 ? (vekt / total) * 100 : 0 })).sort((a, b) => b.vekt - a.vekt);
-                      if (!rader.length) return null;
-                      return (
-                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                          <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Valuta</h4>
-                          <div className="space-y-2">
-                            {rader.map(r => (
-                              <div key={r.valuta} className="flex items-center gap-3 text-sm">
-                                <span className="w-24 shrink-0 text-gray-700">{r.valuta}</span>
-                                <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(r.vekt, 100)}%`, backgroundColor: r.valuta === 'NOK' ? PENSUM_COLORS.darkBlue : PENSUM_COLORS.gold }}></div></div>
-                                <span className="w-14 shrink-0 text-right font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(Number(r.vekt.toFixed(1)))} %</span>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-[11px] text-gray-400 mt-3">Valutaen produktet handles i. Underliggende valutarisiko kan være en annen – f.eks. har globale aksjefond i NOK uten valutasikring eksponering mot utenlandsk valuta.</p>
-                        </div>
-                      );
-                    })()}
-
                     {/* Eksponeringsroller — byggesett som klassisk byggverk (tak/midt/grunnmur) */}
                     {(() => {
                       const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
@@ -9441,6 +9366,92 @@ export default function PensumPrognoseModell() {
                 );
               })()}
             </div>
+
+            {/* Kostnader og handelsvaluta: for rådgiver, nederst og lukket som standard */}
+            <details className="bg-white rounded-xl shadow-sm border border-gray-100" data-radgiverdetaljer>
+              <summary className="px-6 py-4 cursor-pointer text-sm font-semibold select-none" style={{ color: PENSUM_COLORS.darkBlue }}>Kostnader og handelsvaluta <span className="font-normal text-gray-400">· for rådgiver</span></summary>
+              <div className="px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Kostnader: honorar etter beløp og andelsklasse per fond (estimat for rådgiver) */}
+              {(() => {
+                const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                // Samme beløp som prognosen fordeler på produktene (inkl. lånefinansiert kapital).
+                const belop = pbEffektivtInvestertBelop;
+                const k = beregnKostnader(pensumAllokering, alleProd, belop);
+                if (!k.linjer.length) return null;
+                const p2 = (v) => pst(Number(v.toFixed(2)));
+                return (
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <div className="flex items-baseline justify-between gap-3 mb-1">
+                      <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Kostnader per år</h4>
+                      <span className="text-lg font-bold tabular-nums whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{belop > 0 ? formatCurrency(Math.round(k.kroner)) + ' · ' : ''}{p2(k.pst)} %</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">{belop > 0 ? `Honorartrinn ${k.trinn.navn}: ${p2(k.trinn.sats)} % på mandater og eksterne fond. Pensums egne fond har bare fondets kostnad.` : 'Legg inn beløp for å se kostnad i kroner og riktig andelsklasse.'}</p>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-gray-400 border-b border-gray-200">
+                          <th className="py-1.5 text-left font-medium">Produkt</th>
+                          <th className="py-1.5 text-right font-medium">Honorar</th>
+                          <th className="py-1.5 text-right font-medium">Fond</th>
+                          <th className="py-1.5 text-right font-medium">Sum</th>
+                          {belop > 0 && <th className="py-1.5 text-right font-medium">Kr/år</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {k.linjer.map(l => (
+                          <tr key={l.id} className="border-b border-gray-100 align-top">
+                            <td className="py-1.5 pr-2">
+                              <span className="text-gray-700">{l.navn.replace('Pensum ', '')}</span>
+                              {l.andelsklasse && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">klasse {l.andelsklasse}</span>}
+                              {l.nesteKlasse && belop > 0 && <span className="block text-[10px] text-teal-700">{formatCurrency(Math.round(l.nesteKlasse.mangler))} til klasse {l.nesteKlasse.klasse} ({p2(l.nesteKlasse.lopendeKostnad)} %)</span>}
+                              {l.suksesshonorar && <span className="block text-[10px] text-gray-400">+ suksesshonorar: {l.suksesshonorar}</span>}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums text-gray-600">{l.honorarPst > 0 ? p2(l.honorarPst) + ' %' : '–'}</td>
+                            <td className="py-1.5 text-right tabular-nums text-gray-600">{l.produktkostnadPst != null ? p2(l.produktkostnadPst) + ' %' : (l.honorarPst === 0 ? '–' : 'ukjent')}</td>
+                            <td className="py-1.5 text-right tabular-nums font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p2(l.totalPst)} %</td>
+                            {belop > 0 && <td className="py-1.5 text-right tabular-nums text-gray-700 whitespace-nowrap">{formatNumber(Math.round(l.kroner))}</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
+                  </div>
+                );
+              })()}
+
+              {/* Handelsvaluta: vises bare når noe handles i annen valuta enn kroner */}
+              {(() => {
+                const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                const total = pensumAllokering.reduce((sum, a) => sum + (a.vekt > 0 ? a.vekt : 0), 0);
+                const utenlandsk = pensumAllokering
+                  .filter(a => a.vekt > 0)
+                  .map(a => ({ ...a, p: alleProd.find(x => x.id === a.id) }))
+                  .filter(a => a.p?.valuta && a.p.valuta !== 'NOK');
+                if (!utenlandsk.length || !(total > 0)) return null;
+                const andel = utenlandsk.reduce((sum, a) => sum + a.vekt, 0) / total * 100;
+                return (
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5" data-handelsvaluta>
+                    <div className="flex items-baseline justify-between gap-3 mb-1">
+                      <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Handles i annen valuta enn kroner</h4>
+                      <span className="text-lg font-bold tabular-nums whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(Number(andel.toFixed(1)))} %</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">Disse produktene kjøpes og selges i utenlandsk valuta, så kunden må veksle ved handel. Resten av porteføljen handles i kroner.</p>
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {utenlandsk.map(a => (
+                          <tr key={a.id} className="border-b border-gray-100">
+                            <td className="py-1.5 text-gray-700">{(a.p.navn || a.navn || a.id).replace('Pensum ', '')}</td>
+                            <td className="py-1.5 text-right font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{a.p.valuta}</td>
+                            <td className="py-1.5 text-right tabular-nums text-gray-600 w-20">{pst(Number((a.vekt / total * 100).toFixed(1)))} %</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[11px] text-gray-400 mt-3">Dette sier ikke noe om valutarisikoen i porteføljen. Et globalt aksjefond som handles i kroner, har fortsatt eksponering mot utenlandsk valuta.</p>
+                  </div>
+                );
+              })()}
+              </div>
+            </details>
 
           </div>
         )}
