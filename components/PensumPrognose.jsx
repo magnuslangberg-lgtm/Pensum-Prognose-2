@@ -4,10 +4,14 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
+import { byggForslagModell } from '../lib/forslagModell';
+import { FORSLAG_SIDER, standardSider, lagForslagPptx } from '../lib/forslagPptx';
+import { ForslagOpptak } from '../lib/forslagOpptak';
+import ForslagForhandsvisning from './pensum/ForslagForhandsvisning';
 
 const PENSUM_LOGO = 'data:image/webp;base64,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';
 
@@ -110,6 +114,10 @@ export default function PensumPrognoseModell() {
   const [rapportPptxLoading, setRapportPptxLoading] = useState(false);
   const [rapportPptxProgress, setRapportPptxProgress] = useState('');
   const [pdfModal, setPdfModal] = useState(false);
+  const [forslagSider, setForslagSider] = useState(() => standardSider());
+  const [forslagLaster, setForslagLaster] = useState(false);
+  const [visGammelRapport, setVisGammelRapport] = useState(false);
+  const [start, setStart] = useState({ navn: '', belop: '', horisont: '10', profil: 'Moderat' });
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
   const [valgtePensumScen, setValgtePensumScen] = useState([]);
   const [valgteIndekserScen, setValgteIndekserScen] = useState(['MSCI World', 'Oslo Børs', 'Norske Statsobl.']);
@@ -532,7 +540,23 @@ export default function PensumPrognoseModell() {
         const produktValue = await storageGet('pensum_admin_produkter');
         const produktDato = await storageGet('pensum_admin_produkter_rapportdato');
         if (produktValue && produktDato === RAPPORT_DATO) {
-          setPensumProdukter(JSON.parse(produktValue));
+          // Lagrede produkter kan være eldre enn feltene for kostnad og valuta, og mangle nye
+          // produkter. Disse feltene og manglende produkter hentes fra standarddataene;
+          // admins egne endringer (avkastning, risiko osv.) beholdes.
+          const lagret = JSON.parse(produktValue);
+          const METAFELT = ['honorar', 'andelsklasser', 'lopendeKostnad', 'suksesshonorar', 'valuta', 'gruppe'];
+          const flettet = {};
+          Object.keys(defaultPensumProdukter).forEach((kat) => {
+            const std = defaultPensumProdukter[kat] || [];
+            const liste = (lagret?.[kat] || []).map((p) => {
+              const d = std.find((x) => x.id === p.id);
+              if (!d) return p;
+              const meta = Object.fromEntries(METAFELT.filter((f) => p[f] === undefined && d[f] !== undefined).map((f) => [f, d[f]]));
+              return { ...p, ...meta };
+            });
+            flettet[kat] = [...liste, ...std.filter((d) => !liste.some((p) => p.id === d.id)).map((d) => JSON.parse(JSON.stringify(d)))];
+          });
+          setPensumProdukter({ ...lagret, ...flettet });
         }
 
         const laastValue = await storageGet('pensum_admin_avkastningsrater_laast');
@@ -591,6 +615,19 @@ export default function PensumPrognoseModell() {
     setValgtPensumProfil(profil);
     setValgtStandardLosning(null);
     setPensumAllokering(pensumStandardPortefoljer[profil]);
+  };
+
+  // Startsiden: tre spørsmål, så rett til porteføljebyggeren med standardporteføljen for profilen.
+  const startNyKunde = () => {
+    const belop = parseInt(String(start.belop).replace(/[^0-9]/g, ''), 10);
+    const aar = Math.min(40, Math.max(1, parseInt(start.horisont, 10) || 10));
+    if (start.navn.trim()) setKundeNavn(start.navn.trim());
+    if (belop > 0) setInvestertBelop(belop);
+    setHorisont(aar); setLocalHorisont(String(aar));
+    setRisikoprofil(start.profil);
+    velgPensumStandardPortefolje(start.profil);
+    setActiveTab('losninger');
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
   };
 
   const velgDefinertPortefolje = (losningNavn, allokNavn) => {
@@ -4176,6 +4213,54 @@ export default function PensumPrognoseModell() {
   const toggleCategory = (cat) => setExpandedCategories(p => ({ ...p, [cat]: !p[cat] }));
   const toggleKundeKategori = (cat) => setExpandedKundeKategorier(p => ({ ...p, [cat]: !p[cat] }));
 
+  // Investeringsforslaget som ekte, redigerbare PowerPoint-lysbilder (lib/forslagPptx.js).
+  // Forhåndsvisningen i fanen og den nedlastede filen bygges fra samme modell og samme tegnekode.
+  const FORSLAG_ASSETS = { forside: '/forslag/forside.jpg', logoLys: '/forslag/logo-lys-bakgrunn.png', logoMork: '/forslag/logo-mork-bakgrunn.png' };
+  const byggForslag = () => byggForslagModell({
+    kundeNavn, kundeSelskap,
+    radgiver: { navn: bruker?.navn || radgiver, tittel: bruker?.tittel, telefon: bruker?.telefon, epost: bruker?.epost },
+    dato: new Date(),
+    belop: investertBelop !== null ? investertBelop : totalKapital,
+    horisont, risikoprofil, formaal: investeringsFormaal, likviditetsbehov, nettoKontantstrom,
+    allokering: pensumAllokering,
+    produkter: [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative],
+    produktRapportMeta, produktEksponering, produktHistorikk,
+    indeksHistorikk: DATAFEED_INDEKS_HISTORIKK, referanseEksponering,
+    historiskAarsavkastning: beregnPensumHistorikk,
+    forventetAvkastning: pensumForventetAvkastning,
+    selskap: PENSUM_SELSKAPSNOEKKELTALL
+  });
+  const forslagForhandsvisning = useMemo(() => {
+    if (activeTab !== 'rapport' || visGammelRapport) return null;
+    try {
+      const modell = byggForslag();
+      if (!modell.produkter.length) return { slides: [], tom: true };
+      return { slides: lagForslagPptx(ForslagOpptak, modell, { sider: forslagSider, assets: FORSLAG_ASSETS }).slides };
+    } catch (e) {
+      return { slides: [], feil: e?.message || String(e) };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, visGammelRapport, forslagSider, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  const handleLastNedForslag = async () => {
+    setForslagLaster(true);
+    try {
+      const PptxGenJS = (await import('pptxgenjs')).default;
+      const modell = byggForslag();
+      if (!modell.produkter.length) throw new Error('Porteføljen er tom. Velg produkter i porteføljebyggeren først.');
+      const pptx = lagForslagPptx(PptxGenJS, modell, {
+        sider: forslagSider,
+        assets: FORSLAG_ASSETS
+      });
+      const filnavn = `Investeringsforslag ${(modell.kunde || 'kunde').replace(/[\\/:*?"<>|]/g, '')} ${new Date().toISOString().slice(0, 10)}.pptx`;
+      await pptx.writeFile({ fileName: filnavn });
+      setPdfModal(false);
+    } catch (e) {
+      alert('Kunne ikke lage presentasjonen: ' + (e?.message || e));
+    } finally {
+      setForslagLaster(false);
+    }
+  };
+
   const handleGenerateRapportPPTX = async () => {
     setRapportPptxLoading(true);
     setRapportPptxProgress('Laster biblioteker...');
@@ -4879,7 +4964,7 @@ export default function PensumPrognoseModell() {
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 <div>
                   <h2 className="text-lg font-bold text-white">Generer investeringsforslag</h2>
-                  <p className="text-blue-300 text-sm mt-0.5">Velg format og last ned som PowerPoint</p>
+                  <p className="text-blue-300 text-sm mt-0.5">Velg sider og last ned som PowerPoint</p>
                 </div>
               </div>
             </div>
@@ -4891,7 +4976,7 @@ export default function PensumPrognoseModell() {
                   ['Kunde', kundeNavn || '—'],
                   ['Investerbar kapital', formatCurrency(investertBelop !== null ? investertBelop : totalKapital)],
                   ['Risikoprofil', risikoprofil],
-                  ['Forv. avkastning', vektetAvkastning.toFixed(1).replace('.', ',') + ' % p.a.'],
+                  ['Forv. avkastning', (erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 0).toFixed(1).replace('.', ',') + ' % p.a.'],
                 ].map(([lbl, val]) => (
                   <div key={lbl}>
                     <div className="text-xs text-gray-400 uppercase tracking-wider">{lbl}</div>
@@ -4900,26 +4985,41 @@ export default function PensumPrognoseModell() {
                 ))}
               </div>
 
-              {/* Valg: Standard vs Utvidet */}
-              <div className="space-y-3">
-                {/* Standard — rapport-basert */}
-                <button
-                  onClick={async () => { setActiveTab('rapport'); await new Promise(r => setTimeout(r, 500)); await handleGenerateRapportPPTX(); setPdfModal(false); }}
-                  disabled={pdfLoading || rapportPptxLoading}
-                  className="w-full text-left rounded-xl border-2 p-4 transition-all hover:border-blue-300 hover:shadow-md group border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded text-white" style={{ backgroundColor: PENSUM_COLORS.salmon }}>Standard</span>
-                        <h3 className="text-sm font-bold" style={{ color: '#0D2240' }}>Investeringsforslag</h3>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">Kompakt presentasjon med forside, mandat, allokering, byggesteiner, historisk avkastning, eksponering, verdiutvikling og produktark.</p>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  </div>
-                </button>
-
+              {/* Sider i presentasjonen */}
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sider i presentasjonen</div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
+                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
+                      {side.navn}
+                    </label>
+                  ))}
+                </div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-2">Tillegg: slik jobber Pensum</div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {FORSLAG_SIDER.filter((side) => side.tillegg).map((side) => (
+                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
+                      {side.navn}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
               </div>
+
+              <button onClick={handleLastNedForslag} disabled={forslagLaster || rapportPptxLoading}
+                className="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+                {forslagLaster ? 'Lager presentasjonen …' : 'Last ned presentasjon (PowerPoint)'}
+              </button>
+              <p className="text-xs text-gray-400 text-center -mt-2">Ekte lysbilder i Pensum-malen. Tekst, tall og grafer kan redigeres i PowerPoint.</p>
+
+              <button
+                onClick={async () => { setVisGammelRapport(true); setActiveTab('rapport'); await new Promise(r => setTimeout(r, 800)); await handleGenerateRapportPPTX(); setPdfModal(false); }}
+                disabled={pdfLoading || rapportPptxLoading || forslagLaster}
+                className="w-full text-center text-xs text-gray-500 underline hover:text-gray-700">
+                Bruk den gamle eksporten (bilder av rapportsiden)
+              </button>
 
               {(pdfLoading || rapportPptxLoading) && (
                 <div className="flex items-center justify-center gap-2 py-2">
@@ -5138,6 +5238,76 @@ export default function PensumPrognoseModell() {
       )}
 
       <main className="max-w-7xl mx-auto px-6 py-6">
+        {activeTab === 'input' && (
+          <div className="mb-6 grid grid-cols-1 lg:grid-cols-5 gap-6 no-print" data-startside>
+            <div className="lg:col-span-3 rounded-xl overflow-hidden shadow-sm" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+              <div className="px-8 py-7">
+                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: PENSUM_COLORS.salmon }}>Nytt forslag</div>
+                <h2 className="text-2xl font-semibold text-white mt-1">Fra tre svar til ferdig presentasjon</h2>
+                <p className="text-sm text-blue-200 mt-1">Svar på tre spørsmål. Du får en standardportefølje du kan justere, og laster ned forslaget som PowerPoint.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <label className="block">
+                    <span className="text-xs text-blue-200">Beløp som skal investeres</span>
+                    <div className="mt-1 flex items-center bg-white rounded-lg px-3">
+                      <input type="text" inputMode="numeric" placeholder="10 000 000" value={start.belop} aria-label="Beløp som skal investeres"
+                        onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); setStart((p) => ({ ...p, belop: v ? formatNumber(parseInt(v, 10)) : '' })); }}
+                        className="w-full py-2.5 text-base font-semibold outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
+                      <span className="text-sm text-gray-400">kr</span>
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-blue-200">Tidshorisont</span>
+                    <div className="mt-1 flex items-center bg-white rounded-lg px-3">
+                      <input type="number" min="1" max="40" value={start.horisont} aria-label="Tidshorisont i år" onChange={(e) => setStart((p) => ({ ...p, horisont: e.target.value }))}
+                        className="w-full py-2.5 text-base font-semibold outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
+                      <span className="text-sm text-gray-400">år</span>
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-blue-200">Kundens navn (valgfritt)</span>
+                    <input type="text" value={start.navn} aria-label="Kundens navn" onChange={(e) => setStart((p) => ({ ...p, navn: e.target.value }))}
+                      className="mt-1 w-full bg-white rounded-lg px-3 py-2.5 text-base outline-none" style={{ color: PENSUM_COLORS.darkBlue }} />
+                  </label>
+                </div>
+                <div className="mt-4">
+                  <span className="text-xs text-blue-200">Risikoprofil</span>
+                  <div className="mt-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].map((profil) => (
+                      <button key={profil} type="button" onClick={() => setStart((p) => ({ ...p, profil }))} aria-pressed={start.profil === profil}
+                        className={"py-2.5 rounded-lg text-sm font-semibold border transition-colors " + (start.profil === profil ? "bg-white border-white" : "border-white/30 text-white hover:bg-white/10")}
+                        style={start.profil === profil ? { color: PENSUM_COLORS.darkBlue } : undefined}>
+                        {profil}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="button" onClick={startNyKunde} className="mt-6 px-6 py-3 rounded-lg text-sm font-semibold text-white hover:opacity-90" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+                  Bygg portefølje →
+                </button>
+              </div>
+            </div>
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-400">Fortsett med en kunde</div>
+              {lagredeKunder.length === 0 ? (
+                <p className="text-sm text-gray-500 mt-3">{radgiver ? 'Du har ingen lagrede kundekort ennå. Kundekort du lagrer, vises her.' : 'Logg inn eller fyll inn rådgivernavn for å se lagrede kundekort.'}</p>
+              ) : (
+                <div className="mt-3 space-y-2 max-h-72 overflow-y-auto">
+                  {lagredeKunder.slice().sort((a, b) => new Date(b.sistEndret || 0) - new Date(a.sistEndret || 0)).slice(0, 8).map((kunde) => (
+                    <button key={kunde.id} type="button" onClick={() => { lastKundeData(kunde); setActiveTab('losninger'); }}
+                      className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-gray-50 flex items-center justify-between">
+                      <span>
+                        <span className="block text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn || kunde.kundeSelskap || 'Uten navn'}</span>
+                        <span className="block text-xs text-gray-400">{kunde.risikoprofil || ''}{kunde.sistEndret ? ` · sist endret ${new Date(kunde.sistEndret).toLocaleDateString('nb-NO')}` : ''}</span>
+                      </span>
+                      <span className="text-gray-300">→</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-4">Trenger du hele formuesbildet? Fyll inn kundeinformasjonen under.</p>
+            </div>
+          </div>
+        )}
         {activeTab === 'input' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -6861,7 +7031,7 @@ export default function PensumPrognoseModell() {
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? 'Kontanter og pengemarked' : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? (produkt.id === 'gull' ? 'Gull' : 'Kontanter og pengemarked') : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               {pensumBelopModus ? (() => {
@@ -6943,10 +7113,10 @@ export default function PensumPrognoseModell() {
                               </button>
                             ))}
                           </div>
-                          <p className="text-xs font-semibold text-gray-500 mb-2 mt-4">KONTANTER OG PENGEMARKED</p>
+                          <p className="text-xs font-semibold text-gray-500 mb-2 mt-4">KONTANTER, PENGEMARKED OG GULL</p>
                           <div className="space-y-1">
-                            {(pensumProdukter.eksterneFond || []).filter(p => p.aktivatype === 'kontanter' && !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
-                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'kontanter')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 border border-gray-200 flex items-start justify-between gap-2" title="Forventet avkastning 4,5 % og volatilitet 1 % (CMA: kontanter/pengemarked)">
+                            {(pensumProdukter.eksterneFond || []).filter(p => p.gruppe === 'kontanter' && !pensumAllokering.find(a => a.id === p.id)).map(produkt => (
+                              <button key={produkt.id} onClick={() => leggTilPensumProdukt(produkt, 'kontanter')} className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 border border-gray-200 flex items-start justify-between gap-2" title={`Forventet avkastning ${pst(produkt.forventetAvkastning)} % og volatilitet ${pst(produkt.forventetRisiko)} %`}>
                                 <span>{produkt.navn}</span>
                                 <svg className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               </button>
@@ -6956,7 +7126,7 @@ export default function PensumPrognoseModell() {
                         <div>
                           <p className="text-xs font-semibold text-teal-700 mb-2">EKSTERNE FOND</p>
                           {(() => {
-                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => p.aktivatype !== 'kontanter' && !pensumAllokering.find(a => a.id === p.id));
+                            const tilgjengelige = (pensumProdukter.eksterneFond || []).filter(p => p.gruppe !== 'kontanter' && !pensumAllokering.find(a => a.id === p.id));
                             const sok = eksterneFondSok.trim().toLowerCase();
                             const filtrerte = sok ? tilgjengelige.filter(p => p.navn.toLowerCase().includes(sok)) : tilgjengelige;
                             // Treff i hele Morningstar-universet (lastes ved første søk)
@@ -7093,6 +7263,53 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Kostnader: honorar etter beløp og andelsklasse per fond (estimat for rådgiver) */}
+                    {(() => {
+                      const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                      // Samme beløp som prognosen fordeler på produktene (inkl. lånefinansiert kapital).
+                      const belop = pbEffektivtInvestertBelop;
+                      const k = beregnKostnader(pensumAllokering, alleProd, belop);
+                      if (!k.linjer.length) return null;
+                      const p2 = (v) => pst(Number(v.toFixed(2)));
+                      return (
+                        <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
+                          <div className="flex items-baseline justify-between gap-3 mb-1">
+                            <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Kostnader per år</h4>
+                            <span className="text-lg font-bold tabular-nums whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{belop > 0 ? formatCurrency(Math.round(k.kroner)) + ' · ' : ''}{p2(k.pst)} %</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">{belop > 0 ? `Honorartrinn ${k.trinn.navn}: ${p2(k.trinn.sats)} % på mandater og eksterne fond. Pensums egne fond har bare fondets kostnad.` : 'Legg inn beløp for å se kostnad i kroner og riktig andelsklasse.'}</p>
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-gray-400 border-b border-gray-200">
+                                <th className="py-1.5 text-left font-medium">Produkt</th>
+                                <th className="py-1.5 text-right font-medium">Honorar</th>
+                                <th className="py-1.5 text-right font-medium">Fond</th>
+                                <th className="py-1.5 text-right font-medium">Sum</th>
+                                {belop > 0 && <th className="py-1.5 text-right font-medium">Kr/år</th>}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {k.linjer.map(l => (
+                                <tr key={l.id} className="border-b border-gray-100 align-top">
+                                  <td className="py-1.5 pr-2">
+                                    <span className="text-gray-700">{l.navn.replace('Pensum ', '')}</span>
+                                    {l.andelsklasse && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">klasse {l.andelsklasse}</span>}
+                                    {l.nesteKlasse && belop > 0 && <span className="block text-[10px] text-teal-700">{formatCurrency(Math.round(l.nesteKlasse.mangler))} til klasse {l.nesteKlasse.klasse} ({p2(l.nesteKlasse.lopendeKostnad)} %)</span>}
+                                    {l.suksesshonorar && <span className="block text-[10px] text-gray-400">+ suksesshonorar: {l.suksesshonorar}</span>}
+                                  </td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.honorarPst > 0 ? p2(l.honorarPst) + ' %' : '–'}</td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-600">{l.produktkostnadPst != null ? p2(l.produktkostnadPst) + ' %' : (l.honorarPst === 0 ? '–' : 'ukjent')}</td>
+                                  <td className="py-1.5 text-right tabular-nums font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p2(l.totalPst)} %</td>
+                                  {belop > 0 && <td className="py-1.5 text-right tabular-nums text-gray-700 whitespace-nowrap">{formatNumber(Math.round(l.kroner))}</td>}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
+                        </div>
+                      );
+                    })()}
 
                     {/* Valuta: hvilken valuta produktene/andelsklassene handles i */}
                     {(() => {
@@ -11306,7 +11523,51 @@ export default function PensumPrognoseModell() {
           </div>
         )}
 
-        {activeTab === 'rapport' && (() => {
+        {activeTab === 'rapport' && !visGammelRapport && (
+          <div className="gap-6" style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 300px) minmax(0, 1fr)' }} data-forslag-fane>
+            <div className="no-print">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5" style={{ position: 'sticky', top: 16 }}>
+                <h3 className="text-base font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsforslag</h3>
+                <p className="text-xs text-gray-500 mt-1">Det du ser her, er lysbildene som lastes ned. Tekst, tall og grafer kan redigeres i PowerPoint.</p>
+                <button onClick={handleLastNedForslag} disabled={forslagLaster || !forslagForhandsvisning?.slides?.length}
+                  className="mt-4 w-full py-3 px-4 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+                  {forslagLaster ? 'Lager presentasjonen …' : `Last ned PowerPoint (${forslagForhandsvisning?.slides?.length || 0} sider)`}
+                </button>
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-5 mb-1">Sider</div>
+                <div>
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
+                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-0.5">
+                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
+                      {side.navn}
+                    </label>
+                  ))}
+                </div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Tillegg: slik jobber Pensum</div>
+                <div>
+                  {FORSLAG_SIDER.filter((side) => side.tillegg).map((side) => (
+                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-0.5">
+                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
+                      {side.navn}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-3">Forside, korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
+                <button onClick={() => setVisGammelRapport(true)} className="mt-4 text-xs text-gray-500 underline hover:text-gray-700">Vis den gamle rapportsiden</button>
+              </div>
+            </div>
+            <div>
+              {forslagForhandsvisning?.tom && <div className="bg-white rounded-xl border border-gray-100 p-8 text-sm text-gray-500">Porteføljen er tom. Velg produkter i porteføljebyggeren, så vises forslaget her.</div>}
+              {forslagForhandsvisning?.feil && <div className="bg-white rounded-xl border border-red-200 p-8 text-sm text-red-700">Kunne ikke lage forhåndsvisningen: {forslagForhandsvisning.feil}</div>}
+              <ForslagForhandsvisning slides={forslagForhandsvisning?.slides || []} />
+            </div>
+          </div>
+        )}
+        {activeTab === 'rapport' && visGammelRapport && (
+          <div className="max-w-4xl mx-auto mb-4 no-print">
+            <button onClick={() => setVisGammelRapport(false)} className="text-sm underline" style={{ color: PENSUM_COLORS.darkBlue }}>← Tilbake til det nye investeringsforslaget</button>
+          </div>
+        )}
+        {activeTab === 'rapport' && visGammelRapport && (() => {
           // Beregn alle data for rapporten
           const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
           const valgteProdukterRapport = pensumAllokering.filter(a => a.vekt > 0).map(a => {
@@ -12627,13 +12888,16 @@ export default function PensumPrognoseModell() {
 
             {/* === NEDLASTING === */}
             <div className="flex flex-col items-center gap-4 no-print">
-              <button onClick={handleGenerateRapportPPTX} disabled={rapportPptxLoading} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg flex items-center gap-3" style={{ backgroundColor: rapportPptxLoading ? '#6B7280' : PENSUM_COLORS.salmon }}>
+              <button onClick={() => setPdfModal(true)} className="px-8 py-4 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
+                Last ned presentasjon (PowerPoint)
+              </button>
+              <button onClick={handleGenerateRapportPPTX} disabled={rapportPptxLoading} data-gammel-eksport className="px-4 py-2 text-xs text-gray-500 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-2">
                 {rapportPptxLoading ? (
                   <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 ) : (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 )}
-                {rapportPptxLoading ? 'Genererer PowerPoint...' : 'Last ned PowerPoint'}
+                {rapportPptxLoading ? 'Genererer PowerPoint...' : 'Gammel eksport (bilder av denne siden)'}
               </button>
               {rapportPptxLoading && (
                 <div className="text-center space-y-2 max-w-sm">

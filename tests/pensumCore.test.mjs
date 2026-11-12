@@ -156,3 +156,26 @@ test('rentefond fra Morningstar klassifiseres etter navn (høyrente, stat, IG)',
   assert.equal(cmaKlasseForMorningstarFond({ n: 'Storm Nordic High Yield', cat: 'Europe Fixed Income' }), 'nordiskHy');
   assert.equal(cmaKlasseForMorningstarFond({ n: 'Arctic Nordic Investment Grade B', cat: 'Europe Fixed Income' }), 'ig');
 });
+
+test('kostnader: honorartrinn, andelsklasse etter beløp og ingen dobbeltbelastning på egne fond', async () => {
+  const { beregnKostnader, velgAndelsklasse, honorarTrinnForBelop } = await import('../lib/pensumCore.js');
+  assert.equal(honorarTrinnForBelop(4_999_999).sats, 1.25);
+  assert.equal(honorarTrinnForBelop(5_000_000).sats, 1.05);
+  assert.equal(honorarTrinnForBelop(150_000_000).sats, 0.75);
+  const klasser = [{ klasse: 'A', minBelop: 0, lopendeKostnad: 1.5 }, { klasse: 'B', minBelop: 5_000_000, lopendeKostnad: 1.0 }];
+  assert.equal(velgAndelsklasse(klasser, 4_000_000).klasse, 'A');
+  assert.equal(velgAndelsklasse(klasser, 5_000_000).klasse, 'B');
+  const produkter = [
+    { id: 'eget', navn: 'Eget fond', honorar: false, andelsklasser: klasser },
+    { id: 'mandat', navn: 'Mandat', lopendeKostnad: 0.5 },
+    { id: 'ukjent', navn: 'Ukjent fond' }
+  ];
+  const k = beregnKostnader([{ id: 'eget', vekt: 40 }, { id: 'mandat', vekt: 40 }, { id: 'ukjent', vekt: 20 }], produkter, 10_000_000);
+  const [eget, mandat, ukjent] = k.linjer;
+  assert.equal(eget.andelsklasse, 'A'); assert.equal(eget.honorarPst, 0); naer(eget.kroner, 60_000, 0.01, 'eget fond');
+  assert.equal(eget.nesteKlasse.klasse, 'B'); naer(eget.nesteKlasse.mangler, 1_000_000, 0.01, 'mangler til B');
+  naer(mandat.kroner, 4_000_000 * (1.05 + 0.5) / 100, 0.01, 'mandat');
+  naer(ukjent.kroner, 2_000_000 * 1.05 / 100, 0.01, 'ukjent fond: bare honorar');
+  assert.deepEqual(k.mangler, ['Ukjent fond']);
+  naer(k.pst, (k.kroner / 10_000_000) * 100, 1e-9, 'prosent');
+});
