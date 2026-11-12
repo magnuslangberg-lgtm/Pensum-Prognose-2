@@ -6,7 +6,8 @@ const B = 10; const H = 5.625;
 const tomme = (v) => `${(v || 0) * 10}cqw`;
 const punkt = (v) => `${(v || 0) * (10 / 72)}cqw`;
 const farge = (c) => (c ? `#${c}` : undefined);
-const SKRIFT = { Calibri: 'Calibri, Carlito, "Segoe UI", Arial, sans-serif', Cambria: 'Cambria, Georgia, "Times New Roman", serif' };
+// Skriften settes med klasser (se pages/_document.js), fordi appens globale skriftregel ellers vinner.
+const skriftklasse = (f) => (f === 'Georgia' ? 'forslag-serif' : f === 'Open Sans Light' ? 'forslag-lett' : 'forslag-sans');
 
 function Tekst({ el }) {
   const { tekst, o } = el;
@@ -16,8 +17,8 @@ function Tekst({ el }) {
     position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h),
     display: 'flex', flexDirection: 'column',
     justifyContent: o.valign === 'middle' ? 'center' : o.valign === 'bottom' ? 'flex-end' : 'flex-start',
-    fontFamily: SKRIFT[o.fontFace] || SKRIFT.Calibri, fontSize: punkt(o.fontSize || 9), color: farge(o.color),
-    fontWeight: o.bold ? 700 : 400, fontStyle: o.italic ? 'italic' : 'normal', textAlign: o.align || 'left',
+    fontSize: punkt(o.fontSize || 9), color: farge(o.color),
+    fontWeight: o.bold ? 700 : (o.fontFace === 'Open Sans Light' ? 300 : 400), fontStyle: o.italic ? 'italic' : 'normal', textAlign: o.align || 'left',
     letterSpacing: o.charSpacing ? punkt(o.charSpacing) : undefined, lineHeight: 1.2 * (o.lineSpacingMultiple || 1),
     whiteSpace: 'pre-line', overflow: 'visible'
   };
@@ -25,7 +26,7 @@ function Tekst({ el }) {
     <span key={i} style={{ fontWeight: d.options?.bold ? 700 : undefined, color: farge(d.options?.color) }}>{d.text}</span>
   );
   return (
-    <div style={stil}>
+    <div style={stil} className={skriftklasse(o.fontFace)}>
       {punktliste ? deler.map((d, i) => (
         <div key={i} style={{ display: 'flex', marginBottom: punkt(d.options?.paraSpaceAfter || 0) }}>
           <span style={{ flex: 'none', width: punkt(11) }}>•</span>
@@ -52,7 +53,7 @@ function Bilde({ el }) {
 function Tabell({ el }) {
   const { rader, o } = el;
   return (
-    <div style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), background: farge(o.fill?.color) }}>
+    <div className="forslag-sans" style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), background: farge(o.fill?.color) }}>
       {rader.map((rad, r) => (
         <div key={r} style={{ display: 'flex', height: tomme(o.rowH) }}>
           {rad.map((c, i) => {
@@ -61,7 +62,7 @@ function Tabell({ el }) {
               <div key={i} style={{
                 width: tomme(o.colW[i]), flex: 'none', display: 'flex', alignItems: 'center', boxSizing: 'border-box',
                 justifyContent: co.align === 'right' ? 'flex-end' : 'flex-start', padding: `0 ${tomme(0.07)}`,
-                fontFamily: SKRIFT.Calibri, fontSize: punkt(co.fontSize || 8), fontWeight: co.bold ? 700 : 400,
+                fontSize: punkt(co.fontSize || 8), fontWeight: co.bold ? 700 : 400,
                 color: farge(co.color), background: farge(co.fill?.color), borderBottom: `${punkt(0.5)} solid #D5D9DE`,
                 whiteSpace: 'nowrap', overflow: 'hidden'
               }}>{c.text}</div>
@@ -96,6 +97,42 @@ const pentSteg = (spenn) => {
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
 };
 
+function Soylegraf({ el }) {
+  const { data, o } = el;
+  const S = 100; const W = o.w * S; const Ht = o.h * S; const pt = (v) => v * S / 72;
+  const fs = pt(o.catAxisLabelFontSize || 7.5); const venstre = 52; const topp = 12; const hoyreMarg = 14; const bunn = 62;
+  const etiketter = data[0]?.labels || [];
+  const summer = etiketter.map((_, i) => data.reduce((s, d) => s + (d.values[i] || 0), 0));
+  const steg = pentSteg(Math.max(...summer, 1)); const maks = Math.ceil(Math.max(...summer, 1) / steg) * steg;
+  const bredde = (W - venstre - hoyreMarg) / Math.max(etiketter.length, 1); const soyle = bredde / (1 + (o.barGapWidthPct || 50) / 100);
+  const y = (v) => topp + (Ht - topp - bunn) * (1 - v / maks);
+  const ticks = []; for (let v = 0; v <= maks + steg / 1000; v += steg) ticks.push(Number(v.toFixed(6)));
+  const enhet = (o.valAxisLabelFormatCode || '').includes('mill') ? ' mill.' : '';
+  return (
+    <svg viewBox={`0 0 ${W} ${Ht}`} className="forslag-sans" style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h) }}>
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={venstre} x2={W - hoyreMarg} y1={y(v)} y2={y(v)} stroke="#E3E7EB" strokeWidth="0.7" />
+          <text x={venstre - 6} y={y(v) + fs * 0.35} textAnchor="end" fontSize={fs} fill="#6B7A89">{String(v).replace('.', ',')}{enhet}</text>
+        </g>
+      ))}
+      {etiketter.map((e, i) => {
+        let bunnV = 0; const x = venstre + i * bredde + (bredde - soyle) / 2;
+        return (
+          <g key={i}>
+            {data.map((d, si) => { const v = d.values[i] || 0; const r = <rect key={si} x={x} y={y(bunnV + v)} width={soyle} height={Math.max(0, y(bunnV) - y(bunnV + v))} fill={farge(o.chartColors[si % o.chartColors.length])} />; bunnV += v; return r; })}
+            <text x={x + soyle / 2} y={Ht - bunn + fs * 1.6} textAnchor="middle" fontSize={fs} fill="#6B7A89">{e}</text>
+          </g>
+        );
+      })}
+      {data.map((d, si) => {
+        const lf = pt(o.legendFontSize || 8); const lx = venstre + si * ((W - venstre - hoyreMarg) / data.length) + 10; const ly = Ht - 14;
+        return <g key={`l${si}`}><rect x={lx} y={ly - lf * 0.4} width={lf * 0.8} height={lf * 0.8} fill={farge(o.chartColors[si % o.chartColors.length])} /><text x={lx + lf * 1.3} y={ly + lf * 0.35} fontSize={lf} fill="#4D5F72">{d.name}</text></g>;
+      })}
+    </svg>
+  );
+}
+
 function Linjegraf({ el }) {
   const { data, o } = el;
   const S = 100; const W = o.w * S; const Ht = o.h * S; // 100 enheter per tomme
@@ -112,7 +149,7 @@ function Linjegraf({ el }) {
   const ticks = []; for (let v = min; v <= maks + steg / 1000; v += steg) ticks.push(Number(v.toFixed(6)));
   const frekvens = o.catAxisLabelFrequency || 1;
   return (
-    <svg viewBox={`0 0 ${W} ${Ht}`} style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h), fontFamily: SKRIFT.Calibri }}>
+    <svg viewBox={`0 0 ${W} ${Ht}`} className="forslag-sans" style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h) }}>
       {ticks.map((v) => (
         <g key={v}>
           <line x1={venstre} x2={W - hoyreMarg} y1={y(v)} y2={y(v)} stroke="#E3E7EB" strokeWidth="0.7" />
@@ -148,7 +185,7 @@ export function ForslagLysbilde({ slide, nr }) {
           if (el.type === 'form') return <Form key={i} el={el} />;
           if (el.type === 'bilde') return <Bilde key={i} el={el} />;
           if (el.type === 'tabell') return <Tabell key={i} el={el} />;
-          if (el.type === 'graf') return el.graf === 'doughnut' ? <Smultring key={i} el={el} /> : <Linjegraf key={i} el={el} />;
+          if (el.type === 'graf') return el.graf === 'doughnut' ? <Smultring key={i} el={el} /> : el.graf === 'bar' ? <Soylegraf key={i} el={el} /> : <Linjegraf key={i} el={el} />;
           return null;
         })}
       </div>

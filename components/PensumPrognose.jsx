@@ -4265,7 +4265,7 @@ export default function PensumPrognoseModell() {
 
   // Investeringsforslaget som ekte, redigerbare PowerPoint-lysbilder (lib/forslagPptx.js).
   // Forhåndsvisningen i fanen og den nedlastede filen bygges fra samme modell og samme tegnekode.
-  const FORSLAG_ASSETS = { forside: '/forslag/forside.jpg', logoLys: '/forslag/logo-lys-bakgrunn.png', logoMork: '/forslag/logo-mork-bakgrunn.png' };
+  const FORSLAG_ASSETS = { forside: '/forslag/forside.jpg', logoLys: '/forslag/logo-lys-bakgrunn.png', logoMork: '/forslag/logo-mork-bakgrunn.png', kontakt: '/forslag/kontakt.jpg' };
   const byggForslag = () => byggForslagModell({
     kundeNavn, kundeSelskap,
     radgiver: { navn: bruker?.navn || radgiver, tittel: bruker?.tittel, telefon: bruker?.telefon, epost: bruker?.epost },
@@ -4288,7 +4288,7 @@ export default function PensumPrognoseModell() {
     if (sum > 0 && Math.abs(sum - 100) > 0.05) varsler.push(`Porteføljen summerer til ${sum.toFixed(1).replace('.', ',')}\u00a0%, ikke 100. Presentasjonen skalerer vektene til 100\u00a0%.`);
     if (!kundeNavn && !kundeSelskap) varsler.push('Kundenavn mangler. Forsiden viser «Kunde».');
     if (!(bruker?.navn || radgiver)) varsler.push('Rådgiver mangler. Presentasjonen viser ingen kontaktperson.');
-    if (!((investertBelop !== null ? investertBelop : totalKapital) > 0)) varsler.push('Beløpet er 0 kr. Alle kronebeløp i presentasjonen blir 0.');
+    if (!((investertBelop !== null ? investertBelop : totalKapital) > 0)) varsler.push('Beløp mangler. Det vises som «Avklares», og fremskrivningene regnes per 1 mill. kr.');
     return varsler;
   }, [pensumAllokering, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital]);
   const forslagTekster = forslagVurdering.trim() ? { vurdering: forslagVurdering.trim() } : {};
