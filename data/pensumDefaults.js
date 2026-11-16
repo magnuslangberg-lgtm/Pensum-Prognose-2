@@ -1,6 +1,8 @@
 // Kostnader (andelsklasser, lopendeKostnad) er hentet fra offentlige kilder november 2026:
 // Pensums månedsrapporter og fondssider, FCG Fonders informasjonsbrosjyrer og fondenes faktaark.
 // Pensums egne fond: klasse A 1,25 %, klasse D 0,75 % fra 10 mill. Mandatene: kostnad i underliggende fond.
+// Mandatene: Global Core Active 0,8 %, Global Edge 0,8 %, Global Høyrente 0,5 %, Nordisk Høyrente 0,5 % (Edge og
+// Nordisk Høyrente bekreftet av forvalter 16.11.2026). Tallene er vektede snitt og endres når fondssammensetningen endres.
 // Tallene er estimater og bør bekreftes mot gjeldende prisliste. `honorar: false` = ingen tjenestekostnad i tillegg.
 // Forventet avkastning er basert på CMA-metodikk (BlackRock, Vanguard, J.P. Morgan + nordisk overlay).
 // Se uploads/CMA_metodikk_oppdatert 14.10.2026.docx for full metodikk.
@@ -23,10 +25,10 @@ export const defaultPensumProdukter = {
     ],
     fondsportefoljer: [
       { id: 'global-core-active', lopendeKostnad: 0.8, valuta: 'NOK', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -0.5, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.8, aarlig3ar: 21.4, risiko3ar: 10.1 },
-      { id: 'global-edge', lopendeKostnad: 0.4, valuta: 'NOK', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -3.0, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
+      { id: 'global-edge', lopendeKostnad: 0.8, valuta: 'NOK', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -3.0, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
       { id: 'basis', valuta: 'NOK', navn: 'Pensum Basis', aktivatype: 'dynamisk', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.3, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 7.5, forventetRisiko: 9.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.8 },
       { id: 'global-hoyrente', lopendeKostnad: 0.5, valuta: 'NOK', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.8, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.7, forventetRisiko: 10.0, forventetYield: 7.0, aarlig3ar: 6.8, risiko3ar: 0.8 },
-      { id: 'nordisk-hoyrente', valuta: 'NOK', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 3.7, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 8.0, forventetRisiko: 12.0, forventetYield: 7.2, aarlig3ar: 9.0, risiko3ar: 2.0 }
+      { id: 'nordisk-hoyrente', lopendeKostnad: 0.5, valuta: 'NOK', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 3.7, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 8.0, forventetRisiko: 12.0, forventetYield: 7.2, aarlig3ar: 9.0, risiko3ar: 2.0 }
     ],
     eksterneFond: [
       { id: 'acadian-global-equity', lopendeKostnad: 0.87, valuta: 'EUR', navn: 'Acadian Global Equity UCITS A EUR', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: 26.4, aar2025: 2.6, aar2024: 32.3, aar2023: 21.5, aar2022: -13.4, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.5, aarlig3ar: 18.1, risiko3ar: 12.3 },

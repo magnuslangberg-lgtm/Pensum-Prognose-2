@@ -126,3 +126,17 @@ test('tilleggsrådgiver tas bare med når navnet er fylt ut', () => {
   assert.ok(tekst.includes('Kari og Ola Nordmann'));
   assert.ok(tekst.includes('Dine rådgivere'.toUpperCase()));
 });
+
+test('kostnader: suksesshonorar og transaksjonshonorar oppgis ved siden av den løpende kostnaden', () => {
+  const m = lag();
+  assert.deepEqual(m.kostnader.suksesshonorar.map((s) => s.navn), ['Pensum Norge A']);
+  assert.equal(m.kostnader.transaksjonshonorarPst, 0.15);
+  assert.equal(m.kostnader.etablering, 20000000 * 0.0015);
+  const edge = p.fondsportefoljer.find((x) => x.id === 'global-edge');
+  const nordisk = p.fondsportefoljer.find((x) => x.id === 'nordisk-hoyrente');
+  assert.equal(edge.lopendeKostnad, 0.8);
+  assert.equal(nordisk.lopendeKostnad, 0.5);
+  const tekst = JSON.stringify(lagForslagPptx(ForslagOpptak, m, { sider: ['kostnader'] }).slides.map((s) => s.elementer));
+  assert.ok(tekst.includes('RESULTATBASERT HONORAR') && tekst.includes('TRANSAKSJONSKOSTNADER'));
+  assert.ok(tekst.includes('endres når fondssammensetningen endres'));
+});
