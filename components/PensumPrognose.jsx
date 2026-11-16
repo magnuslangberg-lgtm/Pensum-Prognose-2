@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { parseBelop, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { parseBelop, TRANSAKSJONSHONORAR_PST, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -120,6 +120,9 @@ export default function PensumPrognoseModell() {
   const [forslagLaster, setForslagLaster] = useState(false);
   const [visGammelRapport, setVisGammelRapport] = useState(false);
   const [forslagVurdering, setForslagVurdering] = useState('');
+  const TOM_RADGIVER2 = { navn: '', tittel: '', telefon: '', epost: '' };
+  const [radgiver2, setRadgiver2] = useState(TOM_RADGIVER2);
+  const [visRadgiver2, setVisRadgiver2] = useState(false);
   const ventLagringRef = useRef(false);
   const [start, setStart] = useState({ navn: '', belop: '', horisont: '10', profil: 'Moderat' });
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
@@ -990,10 +993,11 @@ export default function PensumPrognoseModell() {
     rebalanseringAktiv, rebalanseringer,
     // Kundens eksisterende portefølje, sammenligningsfond og sidevalg hører til kundekortet.
     eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering,
+    radgiver2: visRadgiver2 ? radgiver2 : null,
     // Schema-versjon for fremtidige migreringer
     schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -1009,6 +1013,8 @@ export default function PensumPrognoseModell() {
     setFondVekter(data.fondVekter && typeof data.fondVekter === 'object' ? data.fondVekter : {});
     setForslagSider(Array.isArray(data.forslagSider) ? data.forslagSider : standardSider());
     setForslagVurdering(typeof data.forslagVurdering === 'string' ? data.forslagVurdering : '');
+    setVisRadgiver2(!!data.radgiver2?.navn);
+    setRadgiver2(data.radgiver2?.navn ? { navn: '', tittel: '', telefon: '', epost: '', ...data.radgiver2 } : { navn: '', tittel: '', telefon: '', epost: '' });
 
     // Pensum-portefølje: bruk lagret hvis tilgjengelig, ellers fall tilbake til
     // standardprofil basert på risikoprofil (bakoverkompatibilitet med eldre kunder).
@@ -1425,6 +1431,8 @@ export default function PensumPrognoseModell() {
     setFondVekter({});
     setForslagSider(standardSider());
     setForslagVurdering('');
+    setVisRadgiver2(false);
+    setRadgiver2({ navn: '', tittel: '', telefon: '', epost: '' });
     setVisKundeliste(false);
     setActiveTab('input');
   }, [avkastningsrater, pensumStandardPortefoljer]);
@@ -4269,6 +4277,7 @@ export default function PensumPrognoseModell() {
   const byggForslag = () => byggForslagModell({
     kundeNavn, kundeSelskap,
     radgiver: { navn: bruker?.navn || radgiver, tittel: bruker?.tittel, telefon: bruker?.telefon, epost: bruker?.epost },
+    radgiver2: visRadgiver2 ? radgiver2 : null,
     dato: new Date(),
     belop: investertBelop !== null ? investertBelop : totalKapital,
     horisont, risikoprofil, formaal: investeringsFormaal, likviditetsbehov, nettoKontantstrom,
@@ -4303,7 +4312,7 @@ export default function PensumPrognoseModell() {
       return { slides: [], feil: e?.message || String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, visGammelRapport, forslagSider, forslagVurdering, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  }, [activeTab, visGammelRapport, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
   const handleLastNedForslag = async () => {
     if (forslagVarsler.length && !confirm(`Før du laster ned:\n\n• ${forslagVarsler.join('\n• ')}\n\nLast ned likevel?`)) return;
     setForslagLaster(true);
@@ -5069,7 +5078,7 @@ export default function PensumPrognoseModell() {
                     </label>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
+                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, neste steg, viktig informasjon og kontaktsiden er alltid med.</p>
               </div>
 
               <button onClick={handleLastNedForslag} disabled={forslagLaster || rapportPptxLoading}
@@ -9413,7 +9422,23 @@ export default function PensumPrognoseModell() {
                         ))}
                       </tbody>
                     </table>
-                    <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
+                    <div className="mt-4 grid grid-cols-1 gap-3 text-xs" data-kostnadsforklaring>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Resultatbasert honorar</div>
+                        {k.linjer.some(l => l.suksesshonorar)
+                          ? <p className="text-gray-600">{k.linjer.filter(l => l.suksesshonorar).map(l => `${l.navn.replace('Pensum ', '')}: ${l.suksesshonorar}`).join('. ')}. Påløper bare ved meravkastning, og er ikke med i tallene over.</p>
+                          : <p className="text-gray-600">Ingen av produktene har resultatbasert honorar.</p>}
+                      </div>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Transaksjonskostnader</div>
+                        <p className="text-gray-600">Transaksjonshonorar til Pensum: {pst(TRANSAKSJONSHONORAR_PST)} % av handelsbeløpet ved kjøp og salg av fond{belop > 0 ? `, om lag ${formatCurrency(Math.round(belop * TRANSAKSJONSHONORAR_PST / 100))} som engangskostnad ved etablering` : ''}. Fondenes egne transaksjonskostnader står i KID og er ikke med i tallene over.</p>
+                      </div>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Slik leser du tallene</div>
+                        <p className="text-gray-600">«Fond» er løpende kostnad i fondet, eller vektet snitt for de underliggende fondene i et mandat. Den endres når fondssammensetningen endres. Honoraret er ekskl. mva; depot og plattform inngår.</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-3">Estimat som må bekreftes mot gjeldende prisliste. Endelig kostnadsoversikt gis før avtale inngås.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
                   </div>
                 );
               })()}
@@ -11618,6 +11643,20 @@ export default function PensumPrognoseModell() {
                 <textarea value={forslagVurdering} onChange={(e) => setForslagVurdering(e.target.value.slice(0, 280))} rows={4} aria-label="Rådgivers vurdering"
                   placeholder="Skriv din egen vurdering (valgfritt). Tomt felt gir standardteksten."
                   className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-blue-300" />
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-4">
+                  <input type="checkbox" checked={visRadgiver2} onChange={(e) => setVisRadgiver2(e.target.checked)} />
+                  Tilleggsrådgiver
+                </label>
+                {visRadgiver2 && (
+                  <div className="mt-2 space-y-1.5" data-radgiver2>
+                    {[['navn', 'Navn'], ['tittel', 'Tittel (f.eks. Investeringsrådgiver)'], ['telefon', 'Telefon'], ['epost', 'E-post']].map(([felt, hjelp]) => (
+                      <input key={felt} type="text" value={radgiver2[felt]} placeholder={hjelp} aria-label={`Tilleggsrådgiver: ${hjelp}`}
+                        onChange={(e) => setRadgiver2((prev) => ({ ...prev, [felt]: e.target.value.slice(0, 80) }))}
+                        className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-300" />
+                    ))}
+                    <p className="text-[11px] text-gray-400">Vises på forsiden, under «Neste steg» og på kontaktsiden.</p>
+                  </div>
+                )}
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Sider</div>
                 <div>
                   {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
@@ -11636,7 +11675,7 @@ export default function PensumPrognoseModell() {
                     </label>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-3">Forside, korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
+                <p className="text-xs text-gray-400 mt-3">Forside, korte trekk, neste steg, viktig informasjon og kontaktsiden er alltid med.</p>
                 <button onClick={() => setVisGammelRapport(true)} className="mt-4 text-xs text-gray-500 underline hover:text-gray-700">Vis den gamle rapportsiden</button>
               </div>
             </div>

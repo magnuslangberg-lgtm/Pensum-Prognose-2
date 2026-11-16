@@ -41,6 +41,7 @@ function Form({ el }) {
   const { form, o } = el;
   const strek = o.line?.width ? `${punkt(o.line.width)} solid ${farge(o.line.color)}` : undefined;
   if (form === 'line') return <div style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), borderTop: `${punkt(o.line?.width || 0.5)} solid ${farge(o.line?.color)}` }} />;
+  if (form === 'triangle') return <div style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h), background: farge(o.fill?.color), clipPath: 'polygon(50% 0, 100% 100%, 0 100%)' }} />;
   return <div style={{ position: 'absolute', left: tomme(o.x), top: tomme(o.y), width: tomme(o.w), height: tomme(o.h), background: farge(o.fill?.color), border: strek, borderRadius: form === 'ellipse' ? '50%' : 0, boxSizing: 'border-box' }} />;
 }
 
