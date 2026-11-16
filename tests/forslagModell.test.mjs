@@ -70,8 +70,8 @@ test('presentasjonen bygges med alle sider og med bare standardsidene', async ()
   assert.ok(!standardSider().includes('mandat'), 'kundeprofil og mandat er et tilvalg');
   assert.equal(lagForslagPptx(PptxGenJS, m, { sider: ['mandat'] }).slides.length, 6);
   assert.ok(standard.slides.length > minst.slides.length);
-  // Seks tilleggssider, ett skilleark og tilvalget kundeprofil og mandat.
-  assert.equal(alle.slides.length, standard.slides.length + 8);
+  // Sju tilleggssider, ett skilleark og tilvalget kundeprofil og mandat.
+  assert.equal(alle.slides.length, standard.slides.length + 9);
   // Kapittelsidene: innholdsside og fire kapitler.
   const utenKapitler = lagForslagPptx(PptxGenJS, m, { sider: standardSider().filter((x) => x !== 'kapitler') });
   assert.equal(standard.slides.length, utenKapitler.slides.length + 5);
@@ -139,4 +139,12 @@ test('kostnader: suksesshonorar og transaksjonshonorar oppgis ved siden av den l
   const tekst = JSON.stringify(lagForslagPptx(ForslagOpptak, m, { sider: ['kostnader'] }).slides.map((s) => s.elementer));
   assert.ok(tekst.includes('RESULTATBASERT HONORAR') && tekst.includes('TRANSAKSJONSKOSTNADER'));
   assert.ok(tekst.includes('endres når fondssammensetningen endres'));
+});
+
+test('prissiden: honorar og fondskostnad summerer til samlet kostnad, og gjeldende trinn er merket', () => {
+  const m = lag();
+  assert.ok(Math.abs(m.kostnader.honorarPst + m.kostnader.produktkostnadPst - m.kostnader.pst) < 1e-9);
+  assert.deepEqual(m.kostnader.trinnListe.filter((t) => t.gjeldende).map((t) => t.sats), [0.9]);
+  assert.equal(lag({ belop: 0 }).kostnader.trinnListe.filter((t) => t.gjeldende).length, 0);
+  assert.equal(lagForslagPptx(ForslagOpptak, m, { sider: ['pris'] }).slides.length, 7, 'fem faste, skilleark og prissiden');
 });

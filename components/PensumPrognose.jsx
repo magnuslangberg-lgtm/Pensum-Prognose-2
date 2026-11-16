@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { parseBelop, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { parseBelop, TRANSAKSJONSHONORAR_PST, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, beregnPortefoljeVolatilitet, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, tilVerdensdeler, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -9422,7 +9422,23 @@ export default function PensumPrognoseModell() {
                         ))}
                       </tbody>
                     </table>
-                    <p className="text-[11px] text-gray-400 mt-3">Estimat for rådgiver, ikke kundedokumentasjon. Satser fra honorarstrukturen (ekskl. mva) og offentlige fondsdokumenter per november 2026 – bekreft mot gjeldende prisliste. Suksesshonorar og transaksjonskostnader er ikke med.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
+                    <div className="mt-4 grid grid-cols-1 gap-3 text-xs" data-kostnadsforklaring>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Resultatbasert honorar</div>
+                        {k.linjer.some(l => l.suksesshonorar)
+                          ? <p className="text-gray-600">{k.linjer.filter(l => l.suksesshonorar).map(l => `${l.navn.replace('Pensum ', '')}: ${l.suksesshonorar}`).join('. ')}. Påløper bare ved meravkastning, og er ikke med i tallene over.</p>
+                          : <p className="text-gray-600">Ingen av produktene har resultatbasert honorar.</p>}
+                      </div>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Transaksjonskostnader</div>
+                        <p className="text-gray-600">Transaksjonshonorar til Pensum: {pst(TRANSAKSJONSHONORAR_PST)} % av handelsbeløpet ved kjøp og salg av fond{belop > 0 ? `, om lag ${formatCurrency(Math.round(belop * TRANSAKSJONSHONORAR_PST / 100))} som engangskostnad ved etablering` : ''}. Fondenes egne transaksjonskostnader står i KID og er ikke med i tallene over.</p>
+                      </div>
+                      <div>
+                        <div className="font-semibold uppercase tracking-wide text-[10px] text-gray-500 mb-1">Slik leser du tallene</div>
+                        <p className="text-gray-600">«Fond» er løpende kostnad i fondet, eller vektet snitt for de underliggende fondene i et mandat. Den endres når fondssammensetningen endres. Honoraret er ekskl. mva; depot og plattform inngår.</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-3">Estimat som må bekreftes mot gjeldende prisliste. Endelig kostnadsoversikt gis før avtale inngås.{k.mangler.length > 0 ? ` Fondskostnad mangler for: ${k.mangler.join(', ')}.` : ''}</p>
                   </div>
                 );
               })()}
