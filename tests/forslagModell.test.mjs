@@ -66,10 +66,12 @@ test('presentasjonen bygges med alle sider og med bare standardsidene', async ()
   const alle = lagForslagPptx(PptxGenJS, m, { sider: FORSLAG_SIDER.map((s) => s.id) });
   const standard = lagForslagPptx(PptxGenJS, m, { sider: standardSider() });
   const minst = lagForslagPptx(PptxGenJS, m, { sider: [] });
-  assert.equal(minst.slides.length, 6, 'faste sider: forside, korte trekk, mandat, neste steg, viktig informasjon, kontakt');
+  assert.equal(minst.slides.length, 5, 'faste sider: forside, korte trekk, neste steg, viktig informasjon, kontakt');
+  assert.ok(!standardSider().includes('mandat'), 'kundeprofil og mandat er et tilvalg');
+  assert.equal(lagForslagPptx(PptxGenJS, m, { sider: ['mandat'] }).slides.length, 6);
   assert.ok(standard.slides.length > minst.slides.length);
-  // Seks tilleggssider og ett skilleark.
-  assert.equal(alle.slides.length, standard.slides.length + 7);
+  // Seks tilleggssider, ett skilleark og tilvalget kundeprofil og mandat.
+  assert.equal(alle.slides.length, standard.slides.length + 8);
   // Kapittelsidene: innholdsside og fire kapitler.
   const utenKapitler = lagForslagPptx(PptxGenJS, m, { sider: standardSider().filter((x) => x !== 'kapitler') });
   assert.equal(standard.slides.length, utenKapitler.slides.length + 5);
@@ -77,7 +79,7 @@ test('presentasjonen bygges med alle sider og med bare standardsidene', async ()
   assert.ok(buf.length > 20000);
   // Tom portefølje skal ikke kaste.
   const tom = lagForslagPptx(PptxGenJS, lag({ allokering: [] }), { sider: FORSLAG_SIDER.map((s) => s.id) });
-  assert.ok(tom.slides.length >= 6);
+  assert.ok(tom.slides.length >= 5);
 });
 
 test('forhåndsvisningen tar opp de samme lysbildene som PowerPoint-filen', () => {
@@ -113,4 +115,14 @@ test('vekter vises eksakt', async () => {
   assert.equal(vektTekst(25), '25\u00a0%');
   assert.equal(vektTekst(27.5), '27,5\u00a0%');
   assert.equal(vektTekst(null), '–');
+});
+
+test('tilleggsrådgiver tas bare med når navnet er fylt ut', () => {
+  assert.equal(lag().radgiver2, null);
+  assert.equal(lag({ radgiver2: { navn: '  ', telefon: '123' } }).radgiver2, null);
+  const m = lag({ radgiver: { navn: 'Kari' }, radgiver2: { navn: ' Ola Nordmann ', epost: 'ola@pensumgroup.no' } });
+  assert.deepEqual(m.radgiver2, { navn: 'Ola Nordmann', tittel: 'Investeringsrådgiver', telefon: '', epost: 'ola@pensumgroup.no' });
+  const tekst = JSON.stringify(lagForslagPptx(ForslagOpptak, m, { sider: [] }).slides.map((s) => s.elementer));
+  assert.ok(tekst.includes('Kari og Ola Nordmann'));
+  assert.ok(tekst.includes('Dine rådgivere'.toUpperCase()));
 });

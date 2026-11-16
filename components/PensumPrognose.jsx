@@ -120,6 +120,9 @@ export default function PensumPrognoseModell() {
   const [forslagLaster, setForslagLaster] = useState(false);
   const [visGammelRapport, setVisGammelRapport] = useState(false);
   const [forslagVurdering, setForslagVurdering] = useState('');
+  const TOM_RADGIVER2 = { navn: '', tittel: '', telefon: '', epost: '' };
+  const [radgiver2, setRadgiver2] = useState(TOM_RADGIVER2);
+  const [visRadgiver2, setVisRadgiver2] = useState(false);
   const ventLagringRef = useRef(false);
   const [start, setStart] = useState({ navn: '', belop: '', horisont: '10', profil: 'Moderat' });
   const [pdfProduktValg, setPdfProduktValg] = useState([]);
@@ -990,10 +993,11 @@ export default function PensumPrognoseModell() {
     rebalanseringAktiv, rebalanseringer,
     // Kundens eksisterende portefølje, sammenligningsfond og sidevalg hører til kundekortet.
     eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering,
+    radgiver2: visRadgiver2 ? radgiver2 : null,
     // Schema-versjon for fremtidige migreringer
     schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -1009,6 +1013,8 @@ export default function PensumPrognoseModell() {
     setFondVekter(data.fondVekter && typeof data.fondVekter === 'object' ? data.fondVekter : {});
     setForslagSider(Array.isArray(data.forslagSider) ? data.forslagSider : standardSider());
     setForslagVurdering(typeof data.forslagVurdering === 'string' ? data.forslagVurdering : '');
+    setVisRadgiver2(!!data.radgiver2?.navn);
+    setRadgiver2(data.radgiver2?.navn ? { navn: '', tittel: '', telefon: '', epost: '', ...data.radgiver2 } : { navn: '', tittel: '', telefon: '', epost: '' });
 
     // Pensum-portefølje: bruk lagret hvis tilgjengelig, ellers fall tilbake til
     // standardprofil basert på risikoprofil (bakoverkompatibilitet med eldre kunder).
@@ -1425,6 +1431,8 @@ export default function PensumPrognoseModell() {
     setFondVekter({});
     setForslagSider(standardSider());
     setForslagVurdering('');
+    setVisRadgiver2(false);
+    setRadgiver2({ navn: '', tittel: '', telefon: '', epost: '' });
     setVisKundeliste(false);
     setActiveTab('input');
   }, [avkastningsrater, pensumStandardPortefoljer]);
@@ -4269,6 +4277,7 @@ export default function PensumPrognoseModell() {
   const byggForslag = () => byggForslagModell({
     kundeNavn, kundeSelskap,
     radgiver: { navn: bruker?.navn || radgiver, tittel: bruker?.tittel, telefon: bruker?.telefon, epost: bruker?.epost },
+    radgiver2: visRadgiver2 ? radgiver2 : null,
     dato: new Date(),
     belop: investertBelop !== null ? investertBelop : totalKapital,
     horisont, risikoprofil, formaal: investeringsFormaal, likviditetsbehov, nettoKontantstrom,
@@ -4303,7 +4312,7 @@ export default function PensumPrognoseModell() {
       return { slides: [], feil: e?.message || String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, visGammelRapport, forslagSider, forslagVurdering, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  }, [activeTab, visGammelRapport, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
   const handleLastNedForslag = async () => {
     if (forslagVarsler.length && !confirm(`Før du laster ned:\n\n• ${forslagVarsler.join('\n• ')}\n\nLast ned likevel?`)) return;
     setForslagLaster(true);
@@ -5069,7 +5078,7 @@ export default function PensumPrognoseModell() {
                     </label>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
+                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, neste steg, viktig informasjon og kontaktsiden er alltid med.</p>
               </div>
 
               <button onClick={handleLastNedForslag} disabled={forslagLaster || rapportPptxLoading}
@@ -11618,6 +11627,20 @@ export default function PensumPrognoseModell() {
                 <textarea value={forslagVurdering} onChange={(e) => setForslagVurdering(e.target.value.slice(0, 280))} rows={4} aria-label="Rådgivers vurdering"
                   placeholder="Skriv din egen vurdering (valgfritt). Tomt felt gir standardteksten."
                   className="w-full text-sm border border-gray-200 rounded-lg p-2 outline-none focus:border-blue-300" />
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-4">
+                  <input type="checkbox" checked={visRadgiver2} onChange={(e) => setVisRadgiver2(e.target.checked)} />
+                  Tilleggsrådgiver
+                </label>
+                {visRadgiver2 && (
+                  <div className="mt-2 space-y-1.5" data-radgiver2>
+                    {[['navn', 'Navn'], ['tittel', 'Tittel (f.eks. Investeringsrådgiver)'], ['telefon', 'Telefon'], ['epost', 'E-post']].map(([felt, hjelp]) => (
+                      <input key={felt} type="text" value={radgiver2[felt]} placeholder={hjelp} aria-label={`Tilleggsrådgiver: ${hjelp}`}
+                        onChange={(e) => setRadgiver2((prev) => ({ ...prev, [felt]: e.target.value.slice(0, 80) }))}
+                        className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-blue-300" />
+                    ))}
+                    <p className="text-[11px] text-gray-400">Vises på forsiden, under «Neste steg» og på kontaktsiden.</p>
+                  </div>
+                )}
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Sider</div>
                 <div>
                   {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
@@ -11636,7 +11659,7 @@ export default function PensumPrognoseModell() {
                     </label>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-3">Forside, korte trekk, kundeprofil, neste steg og viktig informasjon er alltid med.</p>
+                <p className="text-xs text-gray-400 mt-3">Forside, korte trekk, neste steg, viktig informasjon og kontaktsiden er alltid med.</p>
                 <button onClick={() => setVisGammelRapport(true)} className="mt-4 text-xs text-gray-500 underline hover:text-gray-700">Vis den gamle rapportsiden</button>
               </div>
             </div>
