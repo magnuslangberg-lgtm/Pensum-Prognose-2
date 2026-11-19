@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Config ---
-const XLSX_FILENAME = 'Datafeed til rådgiververktøy_31.10.26.xlsx';
+const XLSX_FILENAME = 'Datafeed til rådgiververktøy 31.10-26.xlsx';
 const requestedFile = process.argv[2] || XLSX_FILENAME;
 const XLSX_PATH = path.isAbsolute(requestedFile)
   ? requestedFile
@@ -35,6 +35,8 @@ const PRODUKT_MAP = [
   { col: 15, key: 'nordisk-hoyrente' },
   { col: 17, key: 'norge-a' },
   { col: 19, key: 'kairos-a' },
+  { col: 21, key: 'norske-aksjer-utbytte' },
+  { col: 23, key: 'norske-aksjer-vekst' },
 ];
 
 // --- Index mapping (indekser) ---

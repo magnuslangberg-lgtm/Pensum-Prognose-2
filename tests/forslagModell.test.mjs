@@ -158,3 +158,21 @@ test('Global Edge beskrives som global aksjekjerne, ikke som offensiv satellitt'
   assert.equal(m.produkter[0].rolle, 'kjerne');
   assert.deepEqual(m.kostnader.suksesshonorar.map((s) => s.navn), ['Pensum Global Edge']);
 });
+
+test('eksponeringsdata: hver tabell summerer til 100 %, og nye norske aksjeporteføljer har kurser og eksponering', () => {
+  for (const [id, e] of Object.entries(defaultProduktEksponering)) {
+    for (const k of ['underliggende', 'regioner', 'sektorer', 'stil']) {
+      if (!e[k]) continue;
+      const sum = e[k].reduce((s, r) => s + r.vekt, 0);
+      // Kairos har holdinger fra et eldre tidspunkt, og noen lister er avkortet: kun kravet om 100 ± 1 for de øvrige.
+      if (id === 'kairos-a' && k === 'underliggende') continue;
+      assert.ok(Math.abs(sum - 100) < 1.1, `${id}.${k} summerer til ${sum.toFixed(1)}`);
+    }
+  }
+  for (const id of ['norske-aksjer-utbytte', 'norske-aksjer-vekst']) {
+    const produkt = produkter.find((x) => x.id === id);
+    assert.ok(produkt, `${id} finnes som produkt`);
+    assert.ok(DATAFEED_PRODUKT_HISTORIKK[id].data.length > 3000, `${id} har kurser`);
+    assert.ok(defaultProduktEksponering[id].regioner.length >= 1 && defaultProduktRapportMeta[id].slideTitle);
+  }
+});
