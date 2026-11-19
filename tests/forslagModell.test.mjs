@@ -148,3 +148,13 @@ test('prissiden: honorar og fondskostnad summerer til samlet kostnad, og gjelden
   assert.equal(lag({ belop: 0 }).kostnader.trinnListe.filter((t) => t.gjeldende).length, 0);
   assert.equal(lagForslagPptx(ForslagOpptak, m, { sider: ['pris'] }).slides.length, 7, 'fem faste, skilleark og prissiden');
 });
+
+test('Global Edge beskrives som global aksjekjerne, ikke som offensiv satellitt', () => {
+  const meta = defaultProduktRapportMeta['global-edge'];
+  assert.equal(meta.category, 'equity-core');
+  const tekst = JSON.stringify(meta).toLowerCase();
+  assert.ok(!tekst.includes('satellitt') && !tekst.includes('offensiv'));
+  const m = lag({ allokering: [{ id: 'global-edge', vekt: 100 }] });
+  assert.equal(m.produkter[0].rolle, 'kjerne');
+  assert.deepEqual(m.kostnader.suksesshonorar.map((s) => s.navn), ['Pensum Global Edge']);
+});

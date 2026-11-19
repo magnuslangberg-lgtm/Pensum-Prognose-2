@@ -25,7 +25,7 @@ export const defaultPensumProdukter = {
     ],
     fondsportefoljer: [
       { id: 'global-core-active', lopendeKostnad: 0.8, valuta: 'NOK', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -0.5, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.8, aarlig3ar: 21.4, risiko3ar: 10.1 },
-      { id: 'global-edge', lopendeKostnad: 0.8, valuta: 'NOK', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -3.0, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
+      { id: 'global-edge', lopendeKostnad: 0.8, suksesshonorar: '20 % av avkastning over MSCI ACWI All Cap NR, beregnet kvartalsvis', valuta: 'NOK', navn: 'Pensum Global Edge', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -3.0, aar2025: 14.1, aar2024: 26.8, aar2023: 23.6, aar2022: -6.3, forventetAvkastning: 9.0, forventetRisiko: 17.0, forventetYield: 1.2, aarlig3ar: 21.4, risiko3ar: 5.4 },
       { id: 'basis', valuta: 'NOK', navn: 'Pensum Basis', aktivatype: 'dynamisk', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.3, aar2025: 5.0, aar2024: 13.3, aar2023: 12.9, aar2022: -2.1, forventetAvkastning: 7.5, forventetRisiko: 9.0, forventetYield: 3.4, aarlig3ar: 10.3, risiko3ar: 3.8 },
       { id: 'global-hoyrente', lopendeKostnad: 0.5, valuta: 'NOK', navn: 'Pensum Global Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'kjerne', aar2026: 1.8, aar2025: 6.2, aar2024: 6.5, aar2023: 7.9, aar2022: -5.1, forventetAvkastning: 7.7, forventetRisiko: 10.0, forventetYield: 7.0, aarlig3ar: 6.8, risiko3ar: 0.8 },
       { id: 'nordisk-hoyrente', lopendeKostnad: 0.5, valuta: 'NOK', navn: 'Pensum Nordisk Høyrente', aktivatype: 'rente', likviditet: 'likvid', rolle: 'spisset', aar2026: 3.7, aar2025: 6.5, aar2024: 9.1, aar2023: 11.3, aar2022: 4.7, forventetAvkastning: 8.0, forventetRisiko: 12.0, forventetYield: 7.2, aarlig3ar: 9.0, risiko3ar: 2.0 }
@@ -287,7 +287,7 @@ export const defaultPensumStandardLosninger = {
 export const produktBeskrivelser = {
   'basis': { rolle: 'Kjerne', kategoriBeskrivelse: 'Helhetlig portefølje', beskrivelse: 'Grunnmur i en helhetlig forvaltet portefølje. Diversifisert eksponering mot ulike typer rentefond, aksjefond og i tillegg et knippe norske enkeltaksjer.' },
   'global-core-active': { rolle: 'Kjerne', kategoriBeskrivelse: 'Globale aksjer', beskrivelse: 'Kjerneeksponering mot globale aksjer. Bred eksponering mot det globale aksjemarkedet. Porteføljen består av aktivt forvaltede fond som i stor grad investerer i store kvalitetsselskaper. Sektor og regionseksponering ligner indekssammensetningen.' },
-  'global-edge': { rolle: 'Kjerne', kategoriBeskrivelse: 'Globale aksjer', beskrivelse: 'Kjerneeksponering mot globale aksjer. Porteføljen består av aktivt forvaltede fond, med en overvekt mot nisjesegmenter og smalere investeringsunivers, hvor forvalterne har spisskompetanse på dette feltet. Eksempler kan være sektorfond, fond med eksponering mot enkeltland, enkelttema eller kun små selskaper. Eksponeringen kan avvike til dels mye fra indeks.' },
+  'global-edge': { rolle: 'Kjerne', kategoriBeskrivelse: 'Globale aksjer', beskrivelse: 'Kjerneeksponering mot globale aksjer gjennom 8–12 aktivt forvaltede fond fra spesialiserte forvaltere. Porteføljen dekker alle regioner, sektorer og stilarter, med en tilt mot mindre selskaper og smalere investeringsunivers der forvalterne har spisskompetanse. Kan brukes som hele den globale aksjedelen eller som supplement til en bredere global kjerne. Eksponeringen kan avvike fra verdensindeksen.' },
   'global-hoyrente': { rolle: 'Kjerne', kategoriBeskrivelse: 'Globale renter', beskrivelse: 'Kjerneeksponering innen rentefond. Porteføljen består av bred eksponering mot det globale rentemarkedet. Brorparten av kapitalen er plassert i høyrenteobligasjoner, men det er også oftest innslag av investment grade.' },
   'norge-a': { rolle: 'Spisset', kategoriBeskrivelse: 'Norske aksjer', beskrivelse: 'Spisset eksponering. Fondet investerer i norske enkeltaksjer, med en tilt mot utbyttebetalende kvalitetsselskaper.' },
   'kairos-a': { rolle: 'Spisset', kategoriBeskrivelse: 'Globale, tematiske aksjer', beskrivelse: 'Spisset eksponering. Fondet investerer i enkeltaksjer innen utvalgte aktuelle tema, eksempler kan være energi, forsvar, AI osv.' },
@@ -625,20 +625,21 @@ export const defaultProduktRapportMeta = {
     slideCount: 2,
     category: 'equity-core'
   },
+  // Beskrivelsen følger forvalterens presentasjon «Pensum Global Edge» (tall per 31.10.2026).
   'global-edge': {
-    slideTitle: 'Global offensiv satellitt',
-    slideSubtitle: 'Mer aktiv og spisset global aksjeløsning',
-    role: 'Aktiv global byggestein for meravkastning i aksjedelen',
-    benchmark: 'Global aktiv aksjereferanse',
+    slideTitle: 'Global aksjeløsning med nisjeforvaltere',
+    slideSubtitle: 'Globale aksjer gjennom spesialiserte forvaltere med spisset kompetanse',
+    role: 'Global aksjekjerne gjennom spesialiserte forvaltere',
+    benchmark: 'MSCI ACWI All Cap NR (i NOK)',
     expectedReturn: 9.0,
     expectedYield: 1.2,
-    pitch: 'Supplerer kjerneporteføljen med mer konsentrerte og aktive globale idéer.',
-    caseText: 'Brukes når man ønsker høyere aktiv andel og flere tydelige forvalterbets.',
-    whyIncluded: 'Kan øke diversifiseringen på forvalterstil og gi mulighet for meravkastning (med tilhørende risiko for mindreavkastning).',
-    riskText: 'Høyere stil- og faktoravvik enn brede globale indekser.',
+    pitch: 'Et utvalg på 8–12 fond som til sammen dekker alle regioner, sektorer og stilarter, med en tilt mot mindre selskaper.',
+    caseText: 'Kan utgjøre hele den globale aksjedelen i en kundeportefølje, eller være et supplement til en bredere global kjerne.',
+    whyIncluded: 'Forvaltere med spisset kompetanse på avgrensede og mindre analyserte markeder har bedre forutsetninger for å skape merverdi over tid. Daglig likviditet.',
+    riskText: 'Tilt mot mindre selskaper og nisjer gir større svingninger og avvik fra verdensindeksen.',
     diagramType: 'region-sector',
     slideCount: 2,
-    category: 'equity-satellite'
+    category: 'equity-core'
   },
   basis: {
     slideTitle: 'Balansert totalportefølje',
