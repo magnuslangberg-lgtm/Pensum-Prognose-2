@@ -7104,7 +7104,7 @@ export default function PensumPrognoseModell() {
                                 )}
                                 {erIllikvid && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Illikvid</span>}
                               </p>
-                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? 'Enkeltfond' : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? (produkt.id === 'gull' ? 'Gull' : 'Kontanter og pengemarked') : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
+                              <p className="text-xs text-gray-500">{produkt.kategori === 'enkeltfond' ? (pensumProdukter.enkeltfond.find(p => p.id === produkt.id)?.mandat ? 'Aksjemandat' : 'Enkeltfond') : produkt.kategori === 'alternative' ? 'Alternativ investering' : produkt.kategori === 'eksterneFond' ? 'Eksternt fond' : produkt.kategori === 'kontanter' ? (produkt.id === 'gull' ? 'Gull' : 'Kontanter og pengemarked') : 'Fondsportefølje'}{(() => { const v = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative].find(p => p.id === produkt.id)?.valuta; return v && v !== 'NOK' ? ` · ${v}` : ''; })()}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               {pensumBelopModus ? (() => {

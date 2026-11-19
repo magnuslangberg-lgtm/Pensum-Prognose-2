@@ -25,8 +25,8 @@ export const defaultPensumProdukter = {
       // Diskresjonært forvaltede norske aksjeporteføljer (enkeltaksjer, ikke fond). Tall fra datafeed per 31.10.2026.
       // Forventet avkastning, risiko og yield er samme CMA-forutsetning som for Pensum Norge A, til de er bekreftet.
       // Kostnad i fond er ikke oppgitt (enkeltaksjer): Pensums honorar for mandater gjelder.
-      { id: 'norske-aksjer-utbytte', valuta: 'NOK', navn: 'Pensum Norske Aksjer Utbytte', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 16.9, aar2025: 25.0, aar2024: 13.6, aar2023: 7.5, aar2022: 6.0, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 18.5, risiko3ar: 11.4 },
-      { id: 'norske-aksjer-vekst', valuta: 'NOK', navn: 'Pensum Norske Aksjer Vekst', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 36.5, aar2025: 25.6, aar2024: 2.8, aar2023: 24.8, aar2022: 2.9, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 18.3, risiko3ar: 17.2 }
+      { id: 'norske-aksjer-utbytte', mandat: true, valuta: 'NOK', navn: 'Pensum Norske Aksjer Utbytte', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 16.9, aar2025: 25.0, aar2024: 13.6, aar2023: 7.5, aar2022: 6.0, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 18.5, risiko3ar: 11.4 },
+      { id: 'norske-aksjer-vekst', mandat: true, valuta: 'NOK', navn: 'Pensum Norske Aksjer Vekst', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'spisset', aar2026: 36.5, aar2025: 25.6, aar2024: 2.8, aar2023: 24.8, aar2022: 2.9, forventetAvkastning: 10.0, forventetRisiko: 19.0, forventetYield: 3.0, aarlig3ar: 18.3, risiko3ar: 17.2 }
     ],
     fondsportefoljer: [
       { id: 'global-core-active', lopendeKostnad: 0.8, valuta: 'NOK', navn: 'Pensum Global Core Active', aktivatype: 'aksje', likviditet: 'likvid', rolle: 'kjerne', aar2026: -0.5, aar2025: 8.0, aar2024: 31.8, aar2023: 25.6, aar2022: -7.2, forventetAvkastning: 8.5, forventetRisiko: 16.0, forventetYield: 1.8, aarlig3ar: 21.4, risiko3ar: 10.1 },
