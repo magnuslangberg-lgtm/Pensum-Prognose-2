@@ -213,3 +213,33 @@ test('fall fra topp: største fall, datoer og innhenting', async () => {
   naer(beregnFallFraTopp(port).storsteFall, stat.maxDrawdown, 0.05, 'samme metode som porteføljestatistikken');
   assert.deepEqual(byggPortefoljeSerie([{ id: 'finnes-ikke', vekt: 100 }], DATAFEED_PRODUKT_HISTORIKK, start), []);
 });
+
+test('øvrige investeringer: rensing, fremskrivning og totalbilde', async () => {
+  const { TILLEGG_TYPER, rensTillegg, tilleggAvkastning, fremskrivTillegg, beregnTotalbilde } = await import('../lib/pensumCore.js');
+  const liste = rensTillegg([
+    { id: 'a', navn: 'Hytte på Hvaler', type: 'eiendom', belop: 8000000 },
+    { id: 'b', navn: 'DNB-fond', type: 'aksjer', belop: '3000000', avkastning: 7 },
+    { id: 'c', navn: '', type: 'finnes-ikke', belop: 500000 },
+    { id: 'd', navn: 'Uten beløp', type: 'renter', belop: -5 },
+    null,
+  ]);
+  assert.equal(liste.length, 4);
+  assert.equal(liste[2].type, 'annet'); assert.equal(liste[2].navn, 'Annet'); assert.equal(liste[3].belop, 0);
+  assert.equal(tilleggAvkastning(liste[0]), TILLEGG_TYPER.eiendom.avk);
+  assert.equal(tilleggAvkastning(liste[1]), 7);
+  assert.equal(tilleggAvkastning(liste[2]), 0, '«Annet» uten oppgitt avkastning vokser ikke');
+  const f = fremskrivTillegg(liste, 10);
+  assert.equal(f.length, 11);
+  assert.equal(f[0].total, 11500000);
+  naer(f[10].verdier[1], 3000000 * Math.pow(1.07, 10), 1, 'renters rente');
+  assert.equal(f[10].verdier.length, 3, 'linjer uten beløp er ikke med');
+  const t = beregnTotalbilde({ pensumBelop: 10000000, pensumKlasser: [{ name: 'Aksjer', value: 50 }, { name: 'Renter', value: 50 }, { name: 'Kontanter', value: 0 }], pensumAvkastning: 8, tillegg: liste });
+  assert.equal(t.total, 21500000); assert.equal(t.ovrig, 11500000);
+  naer(t.pensumAndel + t.ovrigAndel, 100, 1e-9, 'andeler');
+  assert.deepEqual(t.klasser.map((k) => [k.navn, k.belop]), [['Aksjer', 8000000], ['Renter', 5000000], ['Alternativer', 8000000], ['Annet', 500000]]);
+  naer(t.klasser.reduce((s, k) => s + k.andel, 0), 100, 1e-9, 'klasser summerer til 100');
+  naer(t.totalAvkastning, (10000000 * 8 + 8000000 * TILLEGG_TYPER.eiendom.avk + 3000000 * 7 + 0) / 21500000, 1e-9, 'vektet avkastning');
+  assert.deepEqual(t.manglerAvkastning, ['Annet']);
+  assert.equal(beregnTotalbilde({ pensumBelop: 0, tillegg: [] }), null);
+  assert.equal(rensTillegg(Array.from({ length: 30 }, () => ({ type: 'aksjer', belop: 1 }))).length, 20);
+});

@@ -87,15 +87,19 @@ test('Luna: beholdning fra skjermbilde blir et porteføljeforslag', async () => 
       { navn: 'Pensum Global Core Active B', belop: 6000000, produktId: 'global-core-active' },
       { navn: 'Pensum Global Høyrente', belop: '3000000', produktId: 'global-hoyrente' },
       { navn: 'Pensum Global Core Active A', belop: 1000000, produktId: 'global-core-active' },
-      { navn: 'DNB Teknologi', belop: 500000, produktId: null },
+      { navn: 'DNB Teknologi', belop: 500000, produktId: null, type: 'aksjer' },
       { navn: 'Pensum Norge A', belop: null, produktId: 'norge-a' },
       { navn: 'Oppdiktet fond', belop: 100, produktId: 'finnes-ikke' },
     ],
     merknad: 'Én posisjon manglet verdi.',
   }));
   assert.deepEqual(svar.fields, { kundeNavn: 'Kari Nordmann', horisont: 10 });
-  assert.deepEqual(svar.actions, [{ type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'global-core-active', amount: 7000000 }, { productId: 'global-hoyrente', amount: 3000000 }] } }]);
-  assert.deepEqual(svar.ukjente, [{ navn: 'DNB Teknologi', belop: 500000 }, { navn: 'Pensum Norge A', belop: null }, { navn: 'Oppdiktet fond', belop: 100 }]);
+  assert.deepEqual(svar.actions, [
+    { type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'global-core-active', amount: 7000000 }, { productId: 'global-hoyrente', amount: 3000000 }] } },
+    // Posisjoner utenfor Pensum blir kundens øvrige investeringer, med typen modellen oppga (ellers «annet»).
+    { type: 'set_other_investments', payload: { mode: 'add', items: [{ navn: 'DNB Teknologi', type: 'aksjer', belop: 500000 }, { navn: 'Oppdiktet fond', type: 'annet', belop: 100 }] } },
+  ]);
+  assert.deepEqual(svar.ukjente, [{ navn: 'Pensum Norge A', belop: null }]);
   assert.equal(svar.merknad, 'Én posisjon manglet verdi.');
   assert.deepEqual(tolkSkjermbildeSvar('{"fields":{},"beholdning":[]}').actions, []);
   assert.throws(() => tolkSkjermbildeSvar('ingen json her'));
@@ -103,6 +107,9 @@ test('Luna: beholdning fra skjermbilde blir et porteføljeforslag', async () => 
   assert.equal(rensBeholdning([{ productId: 'norge-a', amount: 100 }, { productId: 'global-edge', weight: 50 }]), null);
   assert.equal(rensBeholdning([{ productId: 'norge-a', weight: 70 }, { productId: 'global-edge', weight: 70 }]), null);
   assert.deepEqual(rensBeholdning([{ productId: 'norge-a', weight: 40 }, { productId: 'global-edge', weight: 60 }]), [{ productId: 'norge-a', weight: 40 }, { productId: 'global-edge', weight: 60 }]);
+  // Chatten kan legge inn øvrige investeringer; ugyldig type blir «annet», og linjer uten beløp faller bort.
+  assert.deepEqual(tolkLunaSvar({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'set_other_investments', input: { mode: 'replace', items: [{ navn: 'Hytte', type: 'eiendom', belop: 8000000 }, { navn: 'DNB-fond', type: 'aksjer', belop: 3000000, avkastning: 7 }, { navn: 'Båt', type: 'fartøy', belop: 900000 }, { navn: 'Tomt', type: 'eiendom', belop: 0 }] } }] }).actions,
+    [{ type: 'set_other_investments', payload: { mode: 'replace', items: [{ navn: 'Hytte', type: 'eiendom', belop: 8000000 }, { navn: 'DNB-fond', type: 'aksjer', belop: 3000000, avkastning: 7 }, { navn: 'Båt', type: 'annet', belop: 900000 }] } }]);
   // Chatten kan foreslå det samme verktøyet.
   assert.deepEqual(tolkLunaSvar({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'set_exact_portfolio', input: { holdings: [{ productId: 'norge-a', amount: 2000000.4 }] } }] }).actions,
     [{ type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'norge-a', amount: 2000000 }] } }]);

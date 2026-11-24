@@ -176,3 +176,25 @@ test('eksponeringsdata: hver tabell summerer til 100 %, og nye norske aksjeporte
     assert.ok(defaultProduktEksponering[id].regioner.length >= 1 && defaultProduktRapportMeta[id].slideTitle);
   }
 });
+
+test('totalbildet: bare med når kundens øvrige investeringer er lagt inn', () => {
+  const naer = (a, b, toleranse, hva) => assert.ok(Math.abs(a - b) <= toleranse, `${hva}: ${a} mot ${b}`);
+  const PptxGenJS = createRequire(import.meta.url)('pptxgenjs');
+  const uten = lag();
+  assert.equal(uten.totalbilde, null);
+  const ovrige = [{ id: 'a', navn: 'Hytte', type: 'eiendom', belop: 8000000 }, { id: 'b', navn: 'DNB-fond', type: 'aksjer', belop: 2000000, avkastning: 7 }];
+  const m = lag({ ovrigeInvesteringer: ovrige });
+  const t = m.totalbilde;
+  assert.equal(t.total, 30000000); assert.equal(t.pensum, 20000000); assert.equal(t.ovrig, 10000000);
+  naer(t.klasser.reduce((s, k) => s + k.andel, 0), 100, 1e-6, 'aktivaklasser summerer til 100');
+  naer(t.sluttverdi.pensum, fremskrivVerdi(20000000, m.forventetAvkastning, 8, 0), 1, 'Pensum-delen fremskrives som ellers i forslaget');
+  naer(t.sluttverdi.ovrig, 8000000 * Math.pow(1.077, 8) + 2000000 * Math.pow(1.07, 8), 2, 'øvrige med renters rente');
+  naer(t.sluttverdi.total, t.sluttverdi.pensum + t.sluttverdi.ovrig, 1e-6, 'sum');
+  // Siden er et tilvalg: den kommer bare med når den er valgt og det finnes øvrige investeringer.
+  assert.ok(!standardSider().includes('totalbilde'));
+  const antall = (modell, sider) => lagForslagPptx(PptxGenJS, modell, { sider }).slides.length;
+  assert.equal(antall(m, ['totalbilde']), antall(m, []) + 1);
+  assert.equal(antall(uten, ['totalbilde']), antall(uten, []));
+  // Ukjent beløp i forslaget gir ikke noe totalbilde.
+  assert.equal(lag({ belop: 0, ovrigeInvesteringer: ovrige }).totalbilde, null);
+});
