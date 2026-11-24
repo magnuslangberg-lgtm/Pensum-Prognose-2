@@ -489,15 +489,15 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className={`btn-modus ${modus === 'reinvestering' ? 'active' : 'inactive'}`} onClick={() => setModus('reinvestering')}>
-              📈 Reinvestering
+              Reinvestering
             </button>
             <button className={`btn-modus ${modus === 'kontantuttak' ? 'active' : 'inactive'}`} onClick={() => setModus('kontantuttak')}>
-              💵 Kontantuttak
+              Kontantuttak
             </button>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: colors.textDark, padding: '6px 10px', background: visMaksBelaning ? colors.lightGray : 'transparent', borderRadius: '5px', border: `1px solid ${visMaksBelaning ? colors.accent : colors.mediumGray}` }}>
             <input type="checkbox" checked={visMaksBelaning} onChange={(e) => setVisMaksBelaning(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
-            <span style={{ fontWeight: 500 }}>🚀 Vis maks belåningstabell</span>
+            <span style={{ fontWeight: 500 }}>Vis maks belåningstabell</span>
           </label>
         </div>
 
@@ -679,8 +679,8 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
                 {[
-                  { id: 'aksjer', navn: 'Aksjer', farge: colors.primary, ikon: '📊', default: 9 },
-                  { id: 'renter', navn: 'Renter', farge: colors.primaryLight, ikon: '💰', default: 7 },
+                  { id: 'aksjer', navn: 'Aksjer', farge: colors.primary, default: 9 },
+                  { id: 'renter', navn: 'Renter', farge: colors.primaryLight, default: 7 },
                 ].map(a => (
                   <button
                     key={a.id}
@@ -696,7 +696,6 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                       transition: 'all 0.15s',
                     }}
                   >
-                    <div style={{ fontSize: '18px', marginBottom: '2px' }}>{a.ikon}</div>
                     <div style={{ fontSize: '12px', fontWeight: 700, color: reinvesteringAktiva === a.id ? a.farge : colors.textDark }}>{a.navn}</div>
                     <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: '2px' }}>
                       {reinvesteringAktiva === a.id ? `${reinvesteringAvkastning}% p.a.` : `~${a.default}% p.a.`}
@@ -777,7 +776,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                     )}
                     {overTrukket && (
                       <div style={{ marginTop: '6px', fontSize: '10px', color: colors.danger, fontWeight: 600 }}>
-                        ⚠ Benyttet overstiger rammen med {formatNOK(eksisterendeBenyttet - ramme)}
+                        Benyttet overstiger rammen med {formatNOK(eksisterendeBenyttet - ramme)}
                       </div>
                     )}
                   </div>
@@ -791,12 +790,12 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             {/* REINVESTERING */}
             {modus === 'reinvestering' && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
-                <h2 className="section-title">📈 Reinvesteringsanalyse</h2>
+                <h2 className="section-title">Reinvesteringsanalyse</h2>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px', lineHeight: 1.5 }}>
                   Tar opp <strong>{formatNOK(beregninger.initieltLan)}</strong> av tilgjengelig låneramme
                   {eksisterendeBenyttet > 0 && <> (etter {formatNOK(eksisterendeBenyttet)} allerede benyttet)</>} og reinvesterer i <strong>{reinvesteringAktiva === 'aksjer' ? 'aksjer' : 'renter'}</strong> ved {reinvesteringAvkastning}% p.a. Simulering over {tidshorisont} år.
                   {portefoljeBeregning.maksLanebelop > 0 && eksisterendeBenyttet >= portefoljeBeregning.maksLanebelop && (
-                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>⚠ Hele rammen er allerede benyttet — ingen kapasitet til nytt lån.</div>
+                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>Hele rammen er allerede benyttet — ingen kapasitet til nytt lån.</div>
                   )}
                 </div>
 
@@ -900,12 +899,12 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             {/* KONTANTUTTAK */}
             {modus === 'kontantuttak' && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
-                <h2 className="section-title">💵 Kontantuttaksanalyse</h2>
+                <h2 className="section-title">Kontantuttaksanalyse</h2>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '8px 12px', background: colors.lightGray, borderRadius: '5px', lineHeight: 1.5 }}>
                   Tar ut <strong>{formatNOK(beregninger.kontantUttak)}</strong> kontant av tilgjengelig låneramme
                   {eksisterendeBenyttet > 0 && <> (etter {formatNOK(eksisterendeBenyttet)} allerede benyttet)</>}. Pantet på {formatNOK(portefoljeBeregning.totalVerdi)} forblir investert i <strong>{reinvesteringAktiva === 'aksjer' ? 'aksjer' : 'renter'}</strong> ved {reinvesteringAvkastning}% p.a. Rentekostnader trekkes fra pantekontoen. Simulering over {tidshorisont} år.
                   {portefoljeBeregning.maksLanebelop > 0 && eksisterendeBenyttet >= portefoljeBeregning.maksLanebelop && (
-                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>⚠ Hele rammen er allerede benyttet — ingen kapasitet til kontantuttak.</div>
+                    <div style={{ marginTop: '6px', color: colors.danger, fontWeight: 600 }}>Hele rammen er allerede benyttet — ingen kapasitet til kontantuttak.</div>
                   )}
                 </div>
 
@@ -1031,7 +1030,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                         fontFamily: 'Open Sans', fontSize: '13px', fontWeight: '600', color: colors.primary
                       }}
                     >
-                      <span>🏠 Investeringsscenario: Hva om kontantuttaket investeres?</span>
+                      <span>Investeringsscenario: Hva om kontantuttaket investeres?</span>
                       <span style={{ fontSize: '18px' }}>{visInvesteringsscenario ? '−' : '+'}</span>
                     </button>
                     
@@ -1078,7 +1077,6 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                                   cursor: 'pointer', textAlign: 'center'
                                 }}
                               >
-                                <div style={{ fontSize: '16px', marginBottom: '2px' }}>🏠</div>
                                 <div style={{ fontSize: '11px', fontWeight: '600' }}>Eiendom</div>
                                 <div style={{ fontSize: '9px', color: colors.textMuted }}>Typisk 8-15% p.a.</div>
                               </button>
@@ -1090,7 +1088,6 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                                   cursor: 'pointer', textAlign: 'center'
                                 }}
                               >
-                                <div style={{ fontSize: '16px', marginBottom: '2px' }}>📈</div>
                                 <div style={{ fontSize: '11px', fontWeight: '600' }}>Private Equity</div>
                                 <div style={{ fontSize: '9px', color: colors.textMuted }}>Typisk 12-20% p.a.</div>
                               </button>
@@ -1176,7 +1173,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
                           </div>
                           
                           <div style={{ marginTop: '12px', padding: '10px', background: '#fef9e7', borderRadius: '6px', fontSize: '10px', color: colors.textMuted }}>
-                            <strong>⚠️ Merk:</strong> {investeringstype === 'eiendom' 
+                            <strong>Merk:</strong> {investeringstype === 'eiendom' 
                               ? 'Eiendomsavkastning inkluderer typisk leieinntekter og verdistigning. Tallene tar ikke hensyn til vedlikehold, skatt, eller illikviditet.' 
                               : 'PE-avkastning er ofte J-kurve-formet (negativ først, positiv senere). Tallene er forenklede og tar ikke hensyn til kapitalkall, distribusjoner, eller illikviditet.'}
                           </div>
@@ -1191,7 +1188,7 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
             {/* MAKS BELÅNING MED REINVESTERING */}
             {visMaksBelaning && (
               <div className="pensum-card" style={{ marginBottom: '16px' }}>
-                <h2 className="section-title">🚀 Maks belåning med reinvestering</h2>
+                <h2 className="section-title">Maks belåning med reinvestering</h2>
                 <div style={{ fontSize: '11px', color: colors.textMuted, marginBottom: '14px', padding: '10px 14px', background: colors.lightGray, borderRadius: '5px', lineHeight: '1.5' }}>
                   <strong>Konsept:</strong> Du låner maks LTV, kjøper samme type aktiva, legger det nye kjøpet inn i pant, og kan dermed låne enda mer. 
                   Dette gjentas til gjeld og pant balanserer seg ved maks LTV.<br/><br/>
@@ -1249,7 +1246,6 @@ const PensumBelaning = ({ defaultPortfolioValue = 10000000 }) => {
 
                 <div className="warning-box" style={{ marginTop: '16px' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                    <span>⚠️</span>
                     <div style={{ fontSize: '11px', color: colors.textMuted, lineHeight: '1.5' }}>
                       <strong>Viktig:</strong> Dette er teoretisk maksimum. I praksis begrenses belåning av kredittramme, interne limits, konsentrasjonsgrenser og risikokrav. 
                       Høy belåning medfører betydelig risiko ved markedsnedgang (margin call).
@@ -1361,7 +1357,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
       <div className="pensum-card" style={{ marginTop: '20px', borderTop: `4px solid ${colors.accent}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — analyse for rådgiver</h2>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>Valutahedge — analyse for rådgiver</h2>
             <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Vurder effekten av FX-hedge på lån i fremmed valuta</div>
           </div>
           <div style={{ fontSize: '10px', color: colors.accent, padding: '4px 10px', background: `${colors.accent}15`, borderRadius: '4px', fontWeight: 700 }}>
@@ -1420,7 +1416,7 @@ const ValutaHedgeSlide = ({ colors, valuta, baserenter, lanebelop = 0, totalRent
     <div id="valutahedge-slide" className="pensum-card" style={{ marginTop: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${colors.mediumGray}` }}>
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>🌍 Valutahedge — illustrativ analyse</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: '800', color: colors.primary, margin: 0, letterSpacing: '0.5px' }}>Valutahedge — illustrativ analyse</h2>
           <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>Lån i {valuta} ({baserenter[valuta]?.navn}) — illustrativ effekt av FX-hedge mot NOK. Tallene er beregningsgrunnlag, ikke anbefalinger.</div>
         </div>
         <label style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer', fontSize: '11px', color: colors.primary, padding: '6px 10px', background: inkluderISlide ? `${colors.accent}15` : colors.lightGray, border: `1px solid ${inkluderISlide ? colors.accent : colors.mediumGray}`, borderRadius: '6px' }}>
