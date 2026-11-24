@@ -190,3 +190,26 @@ test('parseBelop: norske beløp med mellomrom, punktum og øre', async () => {
   assert.ok(Number.isNaN(parseBelop('')));
   assert.ok(Number.isNaN(parseBelop(null)));
 });
+
+test('fall fra topp: største fall, datoer og innhenting', async () => {
+  const { beregnFallFraTopp, byggPortefoljeSerie, beregnPortefoljeStatistikk, periodeStartDato } = await import('../lib/pensumCore.js');
+  const serie = [100, 110, 99, 88, 104.5, 110, 121, 115].map((verdi, i) => ({ dato: `2025-01-${String(i + 1).padStart(2, '0')}`, verdi }));
+  const f = beregnFallFraTopp(serie);
+  naer(f.storsteFall, -20, 1e-9, 'største fall');
+  assert.equal(f.toppDato, '2025-01-02');
+  assert.equal(f.bunnDato, '2025-01-04');
+  assert.equal(f.hentetInnDato, '2025-01-06');
+  naer(f.fallNaa, (115 / 121 - 1) * 100, 1e-9, 'fall nå');
+  assert.equal(f.serie.length, 8);
+  assert.equal(beregnFallFraTopp(serie.slice(0, 4)).hentetInnDato, null);
+  assert.equal(beregnFallFraTopp(serie.slice(0, 1)), null);
+
+  // Porteføljeserien gir samme største fall som nøkkeltallene i tabellen.
+  const allokering = [{ id: 'global-core-active', vekt: 60 }, { id: 'global-hoyrente', vekt: 40 }];
+  const start = periodeStartDato(3);
+  const port = byggPortefoljeSerie(allokering, DATAFEED_PRODUKT_HISTORIKK, start);
+  assert.ok(port.length > 500);
+  const stat = beregnPortefoljeStatistikk(allokering, DATAFEED_PRODUKT_HISTORIKK, start);
+  naer(beregnFallFraTopp(port).storsteFall, stat.maxDrawdown, 0.05, 'samme metode som porteføljestatistikken');
+  assert.deepEqual(byggPortefoljeSerie([{ id: 'finnes-ikke', vekt: 100 }], DATAFEED_PRODUKT_HISTORIKK, start), []);
+});
