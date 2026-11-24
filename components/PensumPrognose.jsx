@@ -28,6 +28,12 @@ const VERKTOY_FANER = [
   { id: 'belaning', navn: 'Belåning', hjelp: 'Regn på belåning, reinvestering og kontantuttak.' },
 ];
 
+const PB_GRUPPER = [
+  { id: 'portefolje', tittel: 'Portefølje' },
+  { id: 'prognose', tittel: 'Prognose' },
+  { id: 'historikk', tittel: 'Historikk og risiko' },
+];
+
 const pst = (v) => (typeof v === 'number' || /^-?\d+(\.\d+)?$/.test(String(v ?? ''))) ? String(v).replace('.', ',') : v;
 
 export default function PensumPrognoseModell() {
@@ -93,6 +99,18 @@ export default function PensumPrognoseModell() {
   // Collapsible "Forutsetninger og mål"-panel på Porteføljebygger-fanen
   const [visForutsetninger, setVisForutsetninger] = useState(false);
   const [sisteVerktoy, setSisteVerktoy] = useState('formuesplanlegger');
+  // Gruppene i porteføljebyggeren kan foldes sammen hver for seg.
+  const [pbGrupper, setPbGrupper] = useState({ portefolje: true, prognose: true, historikk: true });
+  const pbGruppeHode = (id, tittel, undertittel) => (
+    <button id={'pb-gruppe-' + id} type="button" onClick={() => setPbGrupper(prev => ({ ...prev, [id]: !prev[id] }))} aria-expanded={pbGrupper[id]}
+      className="w-full flex items-center gap-3 pt-2 text-left group" style={{ scrollMarginTop: '1rem' }}>
+      <svg className={"w-4 h-4 flex-shrink-0 transition-transform " + (pbGrupper[id] ? "rotate-90" : "")} style={{ color: PENSUM_COLORS.salmon }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+      <span className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: PENSUM_COLORS.darkBlue }}>{tittel}</span>
+      <span className="text-xs text-gray-400 hidden sm:inline">{undertittel}</span>
+      <span className="flex-1 border-t border-gray-200"></span>
+      <span className="text-xs text-gray-400 group-hover:text-gray-600">{pbGrupper[id] ? 'Skjul' : 'Vis'}</span>
+    </button>
+  );
   // 'nytt' = lån legges oppå porteføljen (øker eksponering)
   // 'eksisterende' = lånet finansierer allerede porteføljen (eksponering = portefølje)
   const [laanModus, setLaanModus] = useState('nytt');
@@ -4614,6 +4632,19 @@ export default function PensumPrognoseModell() {
 
         {activeTab === 'losninger' && (
           <div className="space-y-6 no-print">
+            {/* Snarveier til de tre gruppene i byggeren */}
+            <div className="flex flex-wrap items-center gap-2" data-byggernav>
+              {PB_GRUPPER.map(g => (
+                <button key={g.id} onClick={() => { setPbGrupper(prev => ({ ...prev, [g.id]: true })); setTimeout(() => document.getElementById('pb-gruppe-' + g.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
+                  className="px-3.5 py-1.5 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">{g.tittel}</button>
+              ))}
+              <button onClick={() => { const alleAapne = PB_GRUPPER.every(g => pbGrupper[g.id]); setPbGrupper(Object.fromEntries(PB_GRUPPER.map(g => [g.id, !alleAapne]))); }}
+                className="ml-auto text-xs text-gray-500 underline hover:text-gray-700">{PB_GRUPPER.every(g => pbGrupper[g.id]) ? 'Fold sammen alle' : 'Åpne alle'}</button>
+            </div>
+
+            {pbGruppeHode('portefolje', 'Portefølje', 'Sammensetning, fordeling og eksponering')}
+            {pbGrupper.portefolje && (
+            <div className="space-y-6">
             {/* Header med standardporteføljer og innstillinger */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
@@ -5486,7 +5517,12 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
             </div>
+            </div>
+            )}
 
+            {pbGruppeHode('prognose', 'Prognose', 'Forventet utvikling, mål, scenarioer og renters rente')}
+            {pbGrupper.prognose && (
+            <div className="space-y-6">
             {/* Prognose */}
             {(() => {
               const alleProdukt = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
@@ -5832,379 +5868,6 @@ export default function PensumPrognoseModell() {
                 )}
               </div>
             </div>
-
-            {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
-            {(() => {
-              const PORT_COMP_INDEKS_CONFIG = {
-                'MSCI World': { farge: PENSUM_COLORS.lightBlue, feedKey: 'msci-world' },
-                // Oslo Børs får distinkt orange farge så den ikke smelter sammen med Pensum-forslaget (navy)
-                'Oslo Børs': { farge: '#D97706', feedKey: 'oslo-bors' },
-                'MSCI ACWI': { farge: PENSUM_COLORS.salmon, feedKey: 'msci-acwi' },
-                'S&P 500': { farge: PENSUM_COLORS.teal, feedKey: 'sp500' },
-                'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
-                'MSCI EM': { farge: PENSUM_COLORS.purple, feedKey: 'msci-em' },
-                'Norske Statsobl.': { farge: PENSUM_COLORS.gray, feedKey: 'norske-statsobl' },
-              };
-
-              const PORT_COMP_PROD_CONFIG = [
-                { label: 'Basis', id: 'basis', farge: PENSUM_COLORS.salmon },
-                { label: 'Fin. Opp.', id: 'financial-d', farge: PENSUM_COLORS.gray },
-                { label: 'Global Core Active', id: 'global-core-active', farge: PENSUM_COLORS.navy },
-                { label: 'Global Edge', id: 'global-edge', farge: PENSUM_COLORS.lightBlue },
-                { label: 'Global Energy', id: 'energy-a', farge: PENSUM_COLORS.gold },
-                { label: 'Global Høyrente', id: 'global-hoyrente', farge: PENSUM_COLORS.teal },
-                { label: 'Nordic Banking', id: 'banking-d', farge: PENSUM_COLORS.midBlue },
-                { label: 'Nordisk Høyrente', id: 'nordisk-hoyrente', farge: PENSUM_COLORS.purple },
-                { label: 'Norske Aksjer', id: 'norge-a', farge: PENSUM_COLORS.red }
-              ];
-
-              // Beregn startdato fra periodevalg
-              const compStartDato = (() => {
-                const now = RAPPORT_DATO_OBJEKT;
-                const p = portCompPeriode;
-                if (p === '1M') return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                if (p === '3M') return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-                if (p === '6M') return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-                if (p === 'YTD') return new Date(now.getFullYear(), 0, 1);
-                if (p === '1Å') return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                if (p === '3Å') return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
-                if (p === '5Å') return new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
-                return new Date(2015, 0, 1);
-              })();
-
-              // Bygg sammenligningsdata
-              const byggPortCompData = () => {
-                const serieMap = {};
-
-                // 1. Vektet portefølje fra pensumAllokering
-                const valgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
-                const totalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
-                if (valgteProdIds.length > 0) {
-                  const produktSerier = {};
-                  valgteProdIds.forEach(id => {
-                    const hist = produktHistorikk?.[id];
-                    if (!hist?.data?.length) return;
-                    const maanedlig = byggMaanedssluttSerie(hist.data);
-                    const filtrert = maanedlig.filter(d => {
-                      const dato = parseHistorikkDato(d.dato);
-                      return dato && dato >= compStartDato;
-                    });
-                    if (filtrert.length > 0) {
-                      const startVerdi = filtrert[0].verdi;
-                      produktSerier[id] = {};
-                      filtrert.forEach(d => {
-                        produktSerier[id][d.dato] = startVerdi > 0 ? ((d.verdi / startVerdi) - 1) * 100 : 0;
-                      });
-                    }
-                  });
-                  const portDatoer = new Set();
-                  Object.values(produktSerier).forEach(map => Object.keys(map).forEach(d => portDatoer.add(d)));
-                  const portSortert = Array.from(portDatoer).sort();
-                  const portSerie = [];
-                  portSortert.forEach(dato => {
-                    let vektetVerdi = 0; let totalProdVekt = 0;
-                    valgteProdIds.forEach(id => {
-                      if (produktSerier[id]?.[dato] !== undefined) {
-                        const allok = pensumAllokering.find(a => a.id === id);
-                        if (allok) {
-                          vektetVerdi += produktSerier[id][dato] * (allok.vekt / totalVekt);
-                          totalProdVekt += allok.vekt / totalVekt;
-                        }
-                      }
-                    });
-                    if (totalProdVekt > 0) {
-                      portSerie.push({ dato, indeksert: parseFloat((vektetVerdi / totalProdVekt).toFixed(2)) });
-                    }
-                  });
-                  if (portSerie.length > 0) serieMap['Pensum-forslaget'] = portSerie;
-                }
-
-                // 2. Referanseindekser
-                portCompIndekser.forEach(n => {
-                  const cfg = PORT_COMP_INDEKS_CONFIG[n];
-                  if (!cfg) return;
-                  const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
-                  if (!hist?.data?.length) return;
-                  const maanedlig = byggMaanedssluttSerie(hist.data);
-                  const filtrert = maanedlig.filter(d => {
-                    const dato = parseHistorikkDato(d.dato);
-                    return dato && dato >= compStartDato;
-                  });
-                  if (filtrert.length > 0) {
-                    const startVerdi = filtrert[0].verdi;
-                    serieMap[n] = filtrert.map(d => ({
-                      dato: d.dato,
-                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
-                    }));
-                  }
-                });
-
-                // 3. Valgfrie enkeltprodukter
-                portCompVisProdukter.forEach(label => {
-                  const cfg = PORT_COMP_PROD_CONFIG.find(c => c.label === label);
-                  if (!cfg) return;
-                  const hist = produktHistorikk?.[cfg.id];
-                  if (!hist?.data?.length) return;
-                  const maanedlig = byggMaanedssluttSerie(hist.data);
-                  const filtrert = maanedlig.filter(d => {
-                    const dato = parseHistorikkDato(d.dato);
-                    return dato && dato >= compStartDato;
-                  });
-                  if (filtrert.length > 0) {
-                    const startVerdi = filtrert[0].verdi;
-                    serieMap[label] = filtrert.map(d => ({
-                      dato: d.dato,
-                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
-                    }));
-                  }
-                });
-
-                // Samle alle datoer
-                const alleDatoer = new Set();
-                Object.values(serieMap).forEach(serie => serie.forEach(d => alleDatoer.add(d.dato)));
-                const sorterteDatoer = Array.from(alleDatoer).sort();
-                return sorterteDatoer.map(dato => {
-                  const punkt = { dato };
-                  Object.entries(serieMap).forEach(([n, serie]) => {
-                    const match = serie.find(d => d.dato === dato);
-                    if (match) punkt[n] = match.indeksert;
-                  });
-                  return punkt;
-                });
-              };
-
-              const compData = byggPortCompData();
-              const alleCompNavn = [
-                ...(pensumAllokering.some(a => a.vekt > 0) ? ['Pensum-forslaget'] : []),
-                ...portCompIndekser,
-                ...portCompVisProdukter
-              ];
-
-              const getFarge = (n) => {
-                if (n === 'Pensum-forslaget') return '#1B3A5F';
-                if (PORT_COMP_INDEKS_CONFIG[n]) return PORT_COMP_INDEKS_CONFIG[n].farge;
-                const prod = PORT_COMP_PROD_CONFIG.find(c => c.label === n);
-                return prod?.farge || '#999';
-              };
-
-              // Nedsiderisiko: fall fra forrige topp på daglige kurser, for samme periode og
-              // samme serier som sammenligningen over.
-              const nedside = (() => {
-                const startDato = portCompPeriode === 'max' ? null : compStartDato;
-                const serier = [];
-                if (pensumAllokering.some(a => a.vekt > 0)) {
-                  const f = beregnFallFraTopp(byggPortefoljeSerie(pensumAllokering, produktHistorikk, startDato));
-                  if (f) serier.push({ navn: 'Pensum-forslaget', ...f });
-                }
-                portCompIndekser.forEach(n => {
-                  const f = beregnFallFraTopp(DATAFEED_INDEKS_HISTORIKK?.[PORT_COMP_INDEKS_CONFIG[n]?.feedKey]?.data, startDato);
-                  if (f) serier.push({ navn: n, ...f });
-                });
-                portCompVisProdukter.forEach(label => {
-                  const f = beregnFallFraTopp(produktHistorikk?.[PORT_COMP_PROD_CONFIG.find(c => c.label === label)?.id]?.data, startDato);
-                  if (f) serier.push({ navn: label, ...f });
-                });
-                if (!serier.length) return null;
-                // Felles tidsakse. Hver bøtte viser det dypeste fallet i bøtta, så bunnene ikke forsvinner.
-                const perDato = new Map();
-                serier.forEach(x => x.serie.forEach(d => { if (!perDato.has(d.dato)) perDato.set(d.dato, {}); perDato.get(d.dato)[x.navn] = d.fall; }));
-                const datoer = [...perDato.keys()].sort((x, y) => parseHistorikkDato(x) - parseHistorikkDato(y));
-                const botte = Math.max(1, Math.ceil(datoer.length / 320));
-                const data = [];
-                for (let i = 0; i < datoer.length; i += botte) {
-                  const del = datoer.slice(i, i + botte);
-                  const punkt = { dato: del[del.length - 1] };
-                  del.forEach(d => Object.entries(perDato.get(d)).forEach(([n, v]) => { punkt[n] = punkt[n] === undefined ? v : Math.min(punkt[n], v); }));
-                  data.push(punkt);
-                }
-                // Y-aksen går til nærmeste hele trinn under det dypeste fallet.
-                const dypest = Math.min(...serier.map(x => x.storsteFall));
-                const trinn = dypest < -40 ? 10 : dypest < -8 ? 5 : dypest < -3 ? 2 : 1;
-                const bunn = Math.min(-trinn, Math.floor(dypest / trinn) * trinn);
-                const ticks = []; for (let v = 0; v >= bunn; v -= trinn) ticks.push(v);
-                return { serier, data, bunn, ticks };
-              })();
-              const MND_KORT = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
-              const mndAar = (dato) => { const d = parseHistorikkDato(dato); return d ? `${MND_KORT[d.getMonth()]} ${d.getFullYear()}` : ''; };
-              const pstFall = (v) => (Math.abs(v) < 0.05 ? '0,0' : '−' + Math.abs(v).toFixed(1).replace('.', ',')) + ' %';
-              const innhenting = (x) => {
-                if (!x.bunnDato) return 'Ingen fall i perioden';
-                if (!x.hentetInnDato) return 'Ikke hentet inn ennå';
-                const mnd = Math.max(1, Math.round((parseHistorikkDato(x.hentetInnDato) - parseHistorikkDato(x.bunnDato)) / (86400000 * 30.44)));
-                return `Hentet inn på ${mnd} md.`;
-              };
-              const periodeTekst = { '1M': 'Siste måned', '3M': 'Siste 3 måneder', '6M': 'Siste 6 måneder', 'YTD': 'Hittil i år', '1Å': 'Siste år', '3Å': 'Siste 3 år', '5Å': 'Siste 5 år', 'max': 'Hele historikken' }[portCompPeriode];
-
-              return (
-                <>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-5">
-                    <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sammenlign portefølje mot benchmarks</h3>
-                    <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt — Pensum-forslaget vs. referanseindekser</p>
-
-                    {/* Periodeknapper */}
-                    <div className="flex items-center gap-2 mb-4">
-                      {['1M','3M','6M','YTD','1Å','3Å','5Å','Maks'].map(p => {
-                        const key = p === 'Maks' ? 'max' : p;
-                        return (
-                          <button key={p} onClick={() => setPortCompPeriode(key)}
-                            className={"px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors " + (portCompPeriode === key ? "text-white border-transparent" : "border-gray-200 text-gray-600 hover:bg-gray-50")}
-                            style={portCompPeriode === key ? { backgroundColor: PENSUM_COLORS.darkBlue } : {}}>
-                            {p}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Pensum-forslaget indikator */}
-                    <div className="mb-3">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensum-forslaget</div>
-                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 text-white w-fit"
-                        style={{ backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' }}>
-                        <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
-                        Pensum-forslaget (vektet)
-                      </div>
-                    </div>
-
-                    {/* Referanseindekser */}
-                    <div className="mb-2">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Referanseindekser</div>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(PORT_COMP_INDEKS_CONFIG).map(([n, cfg]) => {
-                          const aktiv = portCompIndekser.includes(n);
-                          return (
-                            <button key={n}
-                              onClick={() => setPortCompIndekser(prev => aktiv ? prev.filter(x => x !== n) : [...prev, n])}
-                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
-                              style={aktiv ? { backgroundColor: cfg.farge, borderColor: cfg.farge } : {}}>
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : cfg.farge }}></span>
-                              {n}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Pensums enkeltløsninger */}
-                    <div className="mb-5">
-                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums enkeltløsninger</div>
-                      <div className="flex flex-wrap gap-2">
-                        {PORT_COMP_PROD_CONFIG.map(({ label, farge }) => {
-                          const aktiv = portCompVisProdukter.includes(label);
-                          return (
-                            <button key={label}
-                              onClick={() => setPortCompVisProdukter(prev => aktiv ? prev.filter(x => x !== label) : [...prev, label])}
-                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
-                              style={aktiv ? { backgroundColor: farge, borderColor: farge } : {}}>
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : farge }}></span>
-                              {label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Linjegraf */}
-                    {alleCompNavn.length > 0 && compData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={380}>
-                        <LineChart data={compData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
-                            tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
-                            interval={Math.max(1, Math.floor(compData.length / 12))} />
-                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
-                          <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                            labelFormatter={(d) => formatHistorikkEtikett(d)}
-                            formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + ' %', n]} />
-                          <Legend verticalAlign="bottom" height={36} />
-                          <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
-                          {alleCompNavn.map(n => {
-                            const erPortefolje = n === 'Pensum-forslaget' || n === 'Pensum-forslaget';
-                            const erIndeks = !!PORT_COMP_INDEKS_CONFIG[n];
-                            return (
-                              <Line key={n} type="monotone" dataKey={n} stroke={getFarge(n)}
-                                strokeWidth={erPortefolje ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje ? 5 : 4 }}
-                                strokeDasharray={erIndeks ? '4 3' : undefined} connectNulls />
-                            );
-                          })}
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
-                        {pensumAllokering.some(a => a.vekt > 0) ? 'Velg indekser eller fond for å se sammenligning' : 'Legg til produkter med vekt i porteføljen for å se sammenligning'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {nedside && (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-nedsiderisiko>
-                    <div className="px-6 py-5">
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko</h3>
-                          <p className="text-sm text-gray-500">Hvor mye verdien har falt fra forrige topp. Følger perioden og seriene som er valgt over.</p>
-                        </div>
-                        <span className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: '#F1F5F9', color: PENSUM_COLORS.darkBlue }}>{periodeTekst}</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                        {nedside.serier.map(x => {
-                          const erPort = x.navn === 'Pensum-forslaget';
-                          return (
-                            <div key={x.navn} className="rounded-lg px-4 py-3" style={erPort ? { backgroundColor: PENSUM_COLORS.darkBlue } : { backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                              <div className={"flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider " + (erPort ? "text-blue-200" : "text-gray-500")}>
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: erPort ? '#FFFFFF' : getFarge(x.navn) }}></span>
-                                <span className="truncate">{x.navn}</span>
-                              </div>
-                              <div className={"text-2xl font-bold tabular-nums mt-1 " + (erPort ? "text-white" : "")} style={erPort ? {} : { color: PENSUM_COLORS.darkBlue }}>{pstFall(x.storsteFall)}</div>
-                              <div className={"text-[11px] mt-0.5 " + (erPort ? "text-blue-100" : "text-gray-500")}>
-                                {x.bunnDato ? <>Største fall · {mndAar(x.toppDato)}{mndAar(x.toppDato) !== mndAar(x.bunnDato) ? ` – ${mndAar(x.bunnDato)}` : ''}</> : 'Største fall'}
-                              </div>
-                              <div className={"text-[11px] " + (erPort ? "text-blue-200" : "text-gray-400")}>
-                                {innhenting(x)}{x.bunnDato && Math.abs(x.fallNaa) >= 0.05 ? ` · nå ${pstFall(x.fallNaa)}` : ''}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <ResponsiveContainer width="100%" height={300}>
-                        <ComposedChart data={nedside.data} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
-                          <defs>
-                            <linearGradient id="nedsideFyll" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#1B3A5F" stopOpacity={0.05} />
-                              <stop offset="100%" stopColor="#1B3A5F" stopOpacity={0.3} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid stroke="#EEF2F6" vertical={false} />
-                          <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }} tickLine={false} axisLine={{ stroke: '#E5E7EB' }}
-                            tickFormatter={mndAar} interval={Math.max(1, Math.floor(nedside.data.length / 9))} />
-                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickLine={false} axisLine={false} width={48}
-                            tickFormatter={v => Math.round(v) + ' %'} domain={[nedside.bunn, 0]} ticks={nedside.ticks} />
-                          <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
-                            labelFormatter={(d) => formatHistorikkEtikett(d)}
-                            formatter={(v, n) => [pstFall(v), n]} />
-                          <Legend verticalAlign="bottom" height={36} iconType="plainline" wrapperStyle={{ fontSize: '12px' }} />
-                          <ReferenceLine y={0} stroke="#9CA3AF" />
-                          {nedside.serier.map(x => x.navn === 'Pensum-forslaget' ? (
-                            <Area key={x.navn} type="monotone" dataKey={x.navn} stroke="#1B3A5F" strokeWidth={2.5} fill="url(#nedsideFyll)" baseValue={0} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
-                          ) : (
-                            <Line key={x.navn} type="monotone" dataKey={x.navn} stroke={getFarge(x.navn)} strokeWidth={1.5} strokeDasharray={PORT_COMP_INDEKS_CONFIG[x.navn] ? '4 3' : undefined} dot={false} activeDot={{ r: 3 }} connectNulls isAnimationActive={false} />
-                          ))}
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                      <p className="text-xs text-gray-400 mt-2">
-                        Beregnet på daglige kurser. 0 % betyr at verdien er på topp i perioden.
-                        {(() => { const port = nedside.serier.find(x => x.navn === 'Pensum-forslaget'); const forste = port?.serie[0]?.dato; return forste && (!compStartDato || portCompPeriode === 'max' || parseHistorikkDato(forste) - compStartDato > 10 * 86400000) ? ` Pensum-forslaget har felles historikk fra ${formatHistorikkEtikett(forste)}.` : ''; })()}
-                        {' '}Historisk utvikling er ingen garanti for fremtidig utvikling. Kilde: {DATAFEED_KILDE}.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                </>
-              );
-            })()}
 
             {/* Scenarioanalyse */}
             {(() => {
@@ -6636,6 +6299,384 @@ export default function PensumPrognoseModell() {
                 </div>
               );
             })()}
+            </div>
+            )}
+
+            {pbGruppeHode('historikk', 'Historikk og risiko', 'Sammenligning mot indekser, nedsiderisiko og avkastning mot risiko')}
+            {pbGrupper.historikk && (
+            <div className="space-y-6">
+            {/* ====== SAMMENLIGN PORTEFØLJE MOT BENCHMARKS ====== */}
+            {(() => {
+              const PORT_COMP_INDEKS_CONFIG = {
+                'MSCI World': { farge: PENSUM_COLORS.lightBlue, feedKey: 'msci-world' },
+                // Oslo Børs får distinkt orange farge så den ikke smelter sammen med Pensum-forslaget (navy)
+                'Oslo Børs': { farge: '#D97706', feedKey: 'oslo-bors' },
+                'MSCI ACWI': { farge: PENSUM_COLORS.salmon, feedKey: 'msci-acwi' },
+                'S&P 500': { farge: PENSUM_COLORS.teal, feedKey: 'sp500' },
+                'MSCI Europe': { farge: PENSUM_COLORS.gold, feedKey: 'msci-europe' },
+                'MSCI EM': { farge: PENSUM_COLORS.purple, feedKey: 'msci-em' },
+                'Norske Statsobl.': { farge: PENSUM_COLORS.gray, feedKey: 'norske-statsobl' },
+              };
+
+              const PORT_COMP_PROD_CONFIG = [
+                { label: 'Basis', id: 'basis', farge: PENSUM_COLORS.salmon },
+                { label: 'Fin. Opp.', id: 'financial-d', farge: PENSUM_COLORS.gray },
+                { label: 'Global Core Active', id: 'global-core-active', farge: PENSUM_COLORS.navy },
+                { label: 'Global Edge', id: 'global-edge', farge: PENSUM_COLORS.lightBlue },
+                { label: 'Global Energy', id: 'energy-a', farge: PENSUM_COLORS.gold },
+                { label: 'Global Høyrente', id: 'global-hoyrente', farge: PENSUM_COLORS.teal },
+                { label: 'Nordic Banking', id: 'banking-d', farge: PENSUM_COLORS.midBlue },
+                { label: 'Nordisk Høyrente', id: 'nordisk-hoyrente', farge: PENSUM_COLORS.purple },
+                { label: 'Norske Aksjer', id: 'norge-a', farge: PENSUM_COLORS.red }
+              ];
+
+              // Beregn startdato fra periodevalg
+              const compStartDato = (() => {
+                const now = RAPPORT_DATO_OBJEKT;
+                const p = portCompPeriode;
+                if (p === '1M') return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                if (p === '3M') return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                if (p === '6M') return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+                if (p === 'YTD') return new Date(now.getFullYear(), 0, 1);
+                if (p === '1Å') return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                if (p === '3Å') return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+                if (p === '5Å') return new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+                return new Date(2015, 0, 1);
+              })();
+
+              // Bygg sammenligningsdata
+              const byggPortCompData = () => {
+                const serieMap = {};
+
+                // 1. Vektet portefølje fra pensumAllokering
+                const valgteProdIds = pensumAllokering.filter(a => a.vekt > 0).map(a => a.id);
+                const totalVekt = pensumAllokering.filter(a => a.vekt > 0).reduce((s, a) => s + a.vekt, 0) || 1;
+                if (valgteProdIds.length > 0) {
+                  const produktSerier = {};
+                  valgteProdIds.forEach(id => {
+                    const hist = produktHistorikk?.[id];
+                    if (!hist?.data?.length) return;
+                    const maanedlig = byggMaanedssluttSerie(hist.data);
+                    const filtrert = maanedlig.filter(d => {
+                      const dato = parseHistorikkDato(d.dato);
+                      return dato && dato >= compStartDato;
+                    });
+                    if (filtrert.length > 0) {
+                      const startVerdi = filtrert[0].verdi;
+                      produktSerier[id] = {};
+                      filtrert.forEach(d => {
+                        produktSerier[id][d.dato] = startVerdi > 0 ? ((d.verdi / startVerdi) - 1) * 100 : 0;
+                      });
+                    }
+                  });
+                  const portDatoer = new Set();
+                  Object.values(produktSerier).forEach(map => Object.keys(map).forEach(d => portDatoer.add(d)));
+                  const portSortert = Array.from(portDatoer).sort();
+                  const portSerie = [];
+                  portSortert.forEach(dato => {
+                    let vektetVerdi = 0; let totalProdVekt = 0;
+                    valgteProdIds.forEach(id => {
+                      if (produktSerier[id]?.[dato] !== undefined) {
+                        const allok = pensumAllokering.find(a => a.id === id);
+                        if (allok) {
+                          vektetVerdi += produktSerier[id][dato] * (allok.vekt / totalVekt);
+                          totalProdVekt += allok.vekt / totalVekt;
+                        }
+                      }
+                    });
+                    if (totalProdVekt > 0) {
+                      portSerie.push({ dato, indeksert: parseFloat((vektetVerdi / totalProdVekt).toFixed(2)) });
+                    }
+                  });
+                  if (portSerie.length > 0) serieMap['Pensum-forslaget'] = portSerie;
+                }
+
+                // 2. Referanseindekser
+                portCompIndekser.forEach(n => {
+                  const cfg = PORT_COMP_INDEKS_CONFIG[n];
+                  if (!cfg) return;
+                  const hist = DATAFEED_INDEKS_HISTORIKK?.[cfg.feedKey];
+                  if (!hist?.data?.length) return;
+                  const maanedlig = byggMaanedssluttSerie(hist.data);
+                  const filtrert = maanedlig.filter(d => {
+                    const dato = parseHistorikkDato(d.dato);
+                    return dato && dato >= compStartDato;
+                  });
+                  if (filtrert.length > 0) {
+                    const startVerdi = filtrert[0].verdi;
+                    serieMap[n] = filtrert.map(d => ({
+                      dato: d.dato,
+                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
+                    }));
+                  }
+                });
+
+                // 3. Valgfrie enkeltprodukter
+                portCompVisProdukter.forEach(label => {
+                  const cfg = PORT_COMP_PROD_CONFIG.find(c => c.label === label);
+                  if (!cfg) return;
+                  const hist = produktHistorikk?.[cfg.id];
+                  if (!hist?.data?.length) return;
+                  const maanedlig = byggMaanedssluttSerie(hist.data);
+                  const filtrert = maanedlig.filter(d => {
+                    const dato = parseHistorikkDato(d.dato);
+                    return dato && dato >= compStartDato;
+                  });
+                  if (filtrert.length > 0) {
+                    const startVerdi = filtrert[0].verdi;
+                    serieMap[label] = filtrert.map(d => ({
+                      dato: d.dato,
+                      indeksert: startVerdi > 0 ? parseFloat((((d.verdi / startVerdi) - 1) * 100).toFixed(2)) : 0
+                    }));
+                  }
+                });
+
+                // Samle alle datoer
+                const alleDatoer = new Set();
+                Object.values(serieMap).forEach(serie => serie.forEach(d => alleDatoer.add(d.dato)));
+                const sorterteDatoer = Array.from(alleDatoer).sort();
+                return sorterteDatoer.map(dato => {
+                  const punkt = { dato };
+                  Object.entries(serieMap).forEach(([n, serie]) => {
+                    const match = serie.find(d => d.dato === dato);
+                    if (match) punkt[n] = match.indeksert;
+                  });
+                  return punkt;
+                });
+              };
+
+              const compData = byggPortCompData();
+              const alleCompNavn = [
+                ...(pensumAllokering.some(a => a.vekt > 0) ? ['Pensum-forslaget'] : []),
+                ...portCompIndekser,
+                ...portCompVisProdukter
+              ];
+
+              const getFarge = (n) => {
+                if (n === 'Pensum-forslaget') return '#1B3A5F';
+                if (PORT_COMP_INDEKS_CONFIG[n]) return PORT_COMP_INDEKS_CONFIG[n].farge;
+                const prod = PORT_COMP_PROD_CONFIG.find(c => c.label === n);
+                return prod?.farge || '#999';
+              };
+
+              // Nedsiderisiko: fall fra forrige topp på daglige kurser, for samme periode og
+              // samme serier som sammenligningen over.
+              const nedside = (() => {
+                const startDato = portCompPeriode === 'max' ? null : compStartDato;
+                const serier = [];
+                if (pensumAllokering.some(a => a.vekt > 0)) {
+                  const f = beregnFallFraTopp(byggPortefoljeSerie(pensumAllokering, produktHistorikk, startDato));
+                  if (f) serier.push({ navn: 'Pensum-forslaget', ...f });
+                }
+                portCompIndekser.forEach(n => {
+                  const f = beregnFallFraTopp(DATAFEED_INDEKS_HISTORIKK?.[PORT_COMP_INDEKS_CONFIG[n]?.feedKey]?.data, startDato);
+                  if (f) serier.push({ navn: n, ...f });
+                });
+                portCompVisProdukter.forEach(label => {
+                  const f = beregnFallFraTopp(produktHistorikk?.[PORT_COMP_PROD_CONFIG.find(c => c.label === label)?.id]?.data, startDato);
+                  if (f) serier.push({ navn: label, ...f });
+                });
+                if (!serier.length) return null;
+                // Felles tidsakse. Hver bøtte viser det dypeste fallet i bøtta, så bunnene ikke forsvinner.
+                const perDato = new Map();
+                serier.forEach(x => x.serie.forEach(d => { if (!perDato.has(d.dato)) perDato.set(d.dato, {}); perDato.get(d.dato)[x.navn] = d.fall; }));
+                const datoer = [...perDato.keys()].sort((x, y) => parseHistorikkDato(x) - parseHistorikkDato(y));
+                const botte = Math.max(1, Math.ceil(datoer.length / 320));
+                const data = [];
+                for (let i = 0; i < datoer.length; i += botte) {
+                  const del = datoer.slice(i, i + botte);
+                  const punkt = { dato: del[del.length - 1] };
+                  del.forEach(d => Object.entries(perDato.get(d)).forEach(([n, v]) => { punkt[n] = punkt[n] === undefined ? v : Math.min(punkt[n], v); }));
+                  data.push(punkt);
+                }
+                // Y-aksen går til nærmeste hele trinn under det dypeste fallet.
+                const dypest = Math.min(...serier.map(x => x.storsteFall));
+                const trinn = dypest < -40 ? 10 : dypest < -8 ? 5 : dypest < -3 ? 2 : 1;
+                const bunn = Math.min(-trinn, Math.floor(dypest / trinn) * trinn);
+                const ticks = []; for (let v = 0; v >= bunn; v -= trinn) ticks.push(v);
+                return { serier, data, bunn, ticks };
+              })();
+              const MND_KORT = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+              const mndAar = (dato) => { const d = parseHistorikkDato(dato); return d ? `${MND_KORT[d.getMonth()]} ${d.getFullYear()}` : ''; };
+              const pstFall = (v) => (Math.abs(v) < 0.05 ? '0,0' : '−' + Math.abs(v).toFixed(1).replace('.', ',')) + ' %';
+              const innhenting = (x) => {
+                if (!x.bunnDato) return 'Ingen fall i perioden';
+                if (!x.hentetInnDato) return 'Ikke hentet inn ennå';
+                const mnd = Math.max(1, Math.round((parseHistorikkDato(x.hentetInnDato) - parseHistorikkDato(x.bunnDato)) / (86400000 * 30.44)));
+                return `Hentet inn på ${mnd} md.`;
+              };
+              const periodeTekst = { '1M': 'Siste måned', '3M': 'Siste 3 måneder', '6M': 'Siste 6 måneder', 'YTD': 'Hittil i år', '1Å': 'Siste år', '3Å': 'Siste 3 år', '5Å': 'Siste 5 år', 'max': 'Hele historikken' }[portCompPeriode];
+
+              return (
+                <>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-5">
+                    <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Sammenlign portefølje mot benchmarks</h3>
+                    <p className="text-sm text-gray-500 mb-4">Historisk prosentvis avkastning fra startpunkt — Pensum-forslaget vs. referanseindekser</p>
+
+                    {/* Periodeknapper */}
+                    <div className="flex items-center gap-2 mb-4">
+                      {['1M','3M','6M','YTD','1Å','3Å','5Å','Maks'].map(p => {
+                        const key = p === 'Maks' ? 'max' : p;
+                        return (
+                          <button key={p} onClick={() => setPortCompPeriode(key)}
+                            className={"px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors " + (portCompPeriode === key ? "text-white border-transparent" : "border-gray-200 text-gray-600 hover:bg-gray-50")}
+                            style={portCompPeriode === key ? { backgroundColor: PENSUM_COLORS.darkBlue } : {}}>
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pensum-forslaget indikator */}
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensum-forslaget</div>
+                      <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border-2 text-white w-fit"
+                        style={{ backgroundColor: '#1B3A5F', borderColor: '#1B3A5F' }}>
+                        <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
+                        Pensum-forslaget (vektet)
+                      </div>
+                    </div>
+
+                    {/* Referanseindekser */}
+                    <div className="mb-2">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Referanseindekser</div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(PORT_COMP_INDEKS_CONFIG).map(([n, cfg]) => {
+                          const aktiv = portCompIndekser.includes(n);
+                          return (
+                            <button key={n}
+                              onClick={() => setPortCompIndekser(prev => aktiv ? prev.filter(x => x !== n) : [...prev, n])}
+                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
+                              style={aktiv ? { backgroundColor: cfg.farge, borderColor: cfg.farge } : {}}>
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : cfg.farge }}></span>
+                              {n}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Pensums enkeltløsninger */}
+                    <div className="mb-5">
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pensums enkeltløsninger</div>
+                      <div className="flex flex-wrap gap-2">
+                        {PORT_COMP_PROD_CONFIG.map(({ label, farge }) => {
+                          const aktiv = portCompVisProdukter.includes(label);
+                          return (
+                            <button key={label}
+                              onClick={() => setPortCompVisProdukter(prev => aktiv ? prev.filter(x => x !== label) : [...prev, label])}
+                              className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all " + (aktiv ? "text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400")}
+                              style={aktiv ? { backgroundColor: farge, borderColor: farge } : {}}>
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: aktiv ? 'white' : farge }}></span>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Linjegraf */}
+                    {alleCompNavn.length > 0 && compData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={380}>
+                        <LineChart data={compData} margin={{ top: 10, right: 30, left: 0, bottom: 30 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }}
+                            tickFormatter={(d) => { const p = parseHistorikkDato(d); if (!p) return ''; return `${String(p.getMonth()+1).padStart(2,'0')}/${String(p.getFullYear()).slice(2)}`; }}
+                            interval={Math.max(1, Math.floor(compData.length / 12))} />
+                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickFormatter={v => v.toFixed(1).replace('.', ',') + ' %'} domain={([dataMin, dataMax]) => { const step = dataMax - dataMin <= 30 ? 10 : dataMax - dataMin <= 100 ? 20 : 50; return [Math.floor(dataMin / step) * step, Math.ceil(dataMax / step) * step]; }} />
+                          <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                            labelFormatter={(d) => formatHistorikkEtikett(d)}
+                            formatter={(v, n) => [v?.toFixed(1).replace('.', ',') + ' %', n]} />
+                          <Legend verticalAlign="bottom" height={36} />
+                          <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="5 5" />
+                          {alleCompNavn.map(n => {
+                            const erPortefolje = n === 'Pensum-forslaget' || n === 'Pensum-forslaget';
+                            const erIndeks = !!PORT_COMP_INDEKS_CONFIG[n];
+                            return (
+                              <Line key={n} type="monotone" dataKey={n} stroke={getFarge(n)}
+                                strokeWidth={erPortefolje ? 3 : erIndeks ? 1.5 : 2} dot={false} activeDot={{ r: erPortefolje ? 5 : 4 }}
+                                strokeDasharray={erIndeks ? '4 3' : undefined} connectNulls />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-xl">
+                        {pensumAllokering.some(a => a.vekt > 0) ? 'Velg indekser eller fond for å se sammenligning' : 'Legg til produkter med vekt i porteføljen for å se sammenligning'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {nedside && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-nedsiderisiko>
+                    <div className="px-6 py-5">
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold mb-1" style={{ color: PENSUM_COLORS.darkBlue }}>Nedsiderisiko</h3>
+                          <p className="text-sm text-gray-500">Hvor mye verdien har falt fra forrige topp. Følger perioden og seriene som er valgt over.</p>
+                        </div>
+                        <span className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: '#F1F5F9', color: PENSUM_COLORS.darkBlue }}>{periodeTekst}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                        {nedside.serier.map(x => {
+                          const erPort = x.navn === 'Pensum-forslaget';
+                          return (
+                            <div key={x.navn} className="rounded-lg px-4 py-3" style={erPort ? { backgroundColor: PENSUM_COLORS.darkBlue } : { backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                              <div className={"flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider " + (erPort ? "text-blue-200" : "text-gray-500")}>
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: erPort ? '#FFFFFF' : getFarge(x.navn) }}></span>
+                                <span className="truncate">{x.navn}</span>
+                              </div>
+                              <div className={"text-2xl font-bold tabular-nums mt-1 " + (erPort ? "text-white" : "")} style={erPort ? {} : { color: PENSUM_COLORS.darkBlue }}>{pstFall(x.storsteFall)}</div>
+                              <div className={"text-[11px] mt-0.5 " + (erPort ? "text-blue-100" : "text-gray-500")}>
+                                {x.bunnDato ? <>Største fall · {mndAar(x.toppDato)}{mndAar(x.toppDato) !== mndAar(x.bunnDato) ? ` – ${mndAar(x.bunnDato)}` : ''}</> : 'Største fall'}
+                              </div>
+                              <div className={"text-[11px] " + (erPort ? "text-blue-200" : "text-gray-400")}>
+                                {innhenting(x)}{x.bunnDato && Math.abs(x.fallNaa) >= 0.05 ? ` · nå ${pstFall(x.fallNaa)}` : ''}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <ResponsiveContainer width="100%" height={300}>
+                        <ComposedChart data={nedside.data} margin={{ top: 5, right: 30, left: 0, bottom: 10 }}>
+                          <defs>
+                            <linearGradient id="nedsideFyll" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#1B3A5F" stopOpacity={0.05} />
+                              <stop offset="100%" stopColor="#1B3A5F" stopOpacity={0.3} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid stroke="#EEF2F6" vertical={false} />
+                          <XAxis dataKey="dato" tick={{ fontSize: 10, fill: '#6B7280' }} tickLine={false} axisLine={{ stroke: '#E5E7EB' }}
+                            tickFormatter={mndAar} interval={Math.max(1, Math.floor(nedside.data.length / 9))} />
+                          <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} tickLine={false} axisLine={false} width={48}
+                            tickFormatter={v => Math.round(v) + ' %'} domain={[nedside.bunn, 0]} ticks={nedside.ticks} />
+                          <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '12px' }}
+                            labelFormatter={(d) => formatHistorikkEtikett(d)}
+                            formatter={(v, n) => [pstFall(v), n]} />
+                          <Legend verticalAlign="bottom" height={36} iconType="plainline" wrapperStyle={{ fontSize: '12px' }} />
+                          <ReferenceLine y={0} stroke="#9CA3AF" />
+                          {nedside.serier.map(x => x.navn === 'Pensum-forslaget' ? (
+                            <Area key={x.navn} type="monotone" dataKey={x.navn} stroke="#1B3A5F" strokeWidth={2.5} fill="url(#nedsideFyll)" baseValue={0} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+                          ) : (
+                            <Line key={x.navn} type="monotone" dataKey={x.navn} stroke={getFarge(x.navn)} strokeWidth={1.5} strokeDasharray={PORT_COMP_INDEKS_CONFIG[x.navn] ? '4 3' : undefined} dot={false} activeDot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                          ))}
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Beregnet på daglige kurser. 0 % betyr at verdien er på topp i perioden.
+                        {(() => { const port = nedside.serier.find(x => x.navn === 'Pensum-forslaget'); const forste = port?.serie[0]?.dato; return forste && (!compStartDato || portCompPeriode === 'max' || parseHistorikkDato(forste) - compStartDato > 10 * 86400000) ? ` Pensum-forslaget har felles historikk fra ${formatHistorikkEtikett(forste)}.` : ''; })()}
+                        {' '}Historisk utvikling er ingen garanti for fremtidig utvikling. Kilde: {DATAFEED_KILDE}.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                </>
+              );
+            })()}
 
             {/* Scatter plot: avkastning vs risiko (3 og 5 år) */}
             {(() => {
@@ -6920,6 +6961,8 @@ export default function PensumPrognoseModell() {
                 </div>
               );
             })()}
+            </div>
+            )}
 
             {/* Kostnader og handelsvaluta: for rådgiver, nederst og lukket som standard */}
             <details className="bg-white rounded-xl shadow-sm border border-gray-100" data-radgiverdetaljer>
@@ -8847,7 +8890,6 @@ export default function PensumPrognoseModell() {
                 const sortedBySharpe = [...allStatistikk].sort((a, b) => b.sharpe - a.sharpe);
                 const sortedByAvk = [...allStatistikk].sort((a, b) => b.aarligAvkastning - a.aarligAvkastning);
                 const sortedByVol = [...allStatistikk].sort((a, b) => a.standardavvik - b.standardavvik);
-                const sortedByDD = [...allStatistikk].sort((a, b) => a.maxDrawdown - b.maxDrawdown);
 
                 // Korrelasjonsmatrise
                 const korrHistorikk = {};
@@ -9064,69 +9106,6 @@ export default function PensumPrognoseModell() {
                         </div>
                       </div>
                     )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                          <h3 className="text-base font-semibold text-white">Sharpe Ratio (høyere er bedre)</h3>
-                        </div>
-                        <div className="p-4">
-                          <ResponsiveContainer width="100%" height={Math.max(200, allStatistikk.length * 38)}>
-                            <BarChart data={sortedBySharpe} layout="vertical" margin={{ left: 120, right: 50, top: 5, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(1)} />
-                              <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                              <Tooltip formatter={(v) => [v.toFixed(2).replace('.', ','), "Sharpe"]} labelFormatter={id => produktNavn2[id] || id} />
-                              <ReferenceLine x={1} stroke={PENSUM_COLORS.teal} strokeDasharray="4 4" />
-                              <ReferenceLine x={0.5} stroke={PENSUM_COLORS.gold} strokeDasharray="4 4" />
-                              <Bar dataKey="sharpe" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(2).replace('.', ',') }}>
-                                {sortedBySharpe.map(s => (
-                                  <Cell key={s.id} fill={s.sharpe >= 1 ? PENSUM_COLORS.teal : s.sharpe >= 0.5 ? PENSUM_COLORS.gold : PENSUM_COLORS.salmon} />
-                                ))}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                          <h3 className="text-base font-semibold text-white">Volatilitet — annualisert standardavvik</h3>
-                        </div>
-                        <div className="p-4">
-                          <ResponsiveContainer width="100%" height={Math.max(200, allStatistikk.length * 38)}>
-                            <BarChart data={sortedByVol} layout="vertical" margin={{ left: 120, right: 50, top: 5, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0).replace('.', ',') + " %"} />
-                              <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                              <Tooltip formatter={(v) => [v.toFixed(1).replace('.', ',') + " %", "Volatilitet"]} labelFormatter={id => produktNavn2[id] || id} />
-                              <Bar dataKey="standardavvik" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 10, formatter: v => v.toFixed(1).replace('.', ',') + " %" }}>
-                                {sortedByVol.map(s => (
-                                  <Cell key={s.id} fill={produktFarger2[s.id] || PENSUM_COLORS.darkBlue} fillOpacity={0.85} />
-                                ))}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div className="px-6 py-4" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                        <h3 className="text-base font-semibold text-white">Maksimalt kursfall (Max Drawdown) — lavere er bedre</h3>
-                      </div>
-                      <div className="p-4">
-                        <ResponsiveContainer width="100%" height={Math.max(180, allStatistikk.length * 38)}>
-                          <BarChart data={sortedByDD} layout="vertical" margin={{ left: 120, right: 70, top: 5, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => v.toFixed(0).replace('.', ',') + " %"} />
-                            <YAxis type="category" dataKey="id" tick={{ fontSize: 11 }} tickFormatter={id => produktNavn2[id] || id} width={120} />
-                            <Tooltip formatter={(v) => [v.toFixed(1).replace('.', ',') + " %", "Maks drawdown"]} labelFormatter={id => produktNavn2[id] || id} />
-                            <Bar dataKey="maxDrawdown" radius={[0, 4, 4, 0]} fill={PENSUM_COLORS.salmon} fillOpacity={0.85}
-                              label={{ position: "right", fontSize: 10, fill: PENSUM_COLORS.salmon, formatter: v => v.toFixed(1).replace('.', ',') + " %" }} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
 
                     {allStatistikk.length > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
