@@ -107,6 +107,7 @@ export default function PensumPrognoseModell() {
   const [tillegg, setTillegg] = useState([]);
   const [visTilleggIPrognose, setVisTilleggIPrognose] = useState(true);
   // Dagens portefølje: kundens nåværende posisjoner, ofte hos andre banker.
+  const [visDagens, setVisDagens] = useState(false);
   const [dagensPosisjoner, setDagensPosisjoner] = useState([]);
   const [dagensPlattformAvk, setDagensPlattformAvk] = useState([]);
   // Gruppene i porteføljebyggeren kan foldes sammen hver for seg.
@@ -148,7 +149,6 @@ export default function PensumPrognoseModell() {
   const [portCompPeriode, setPortCompPeriode] = useState('3Å');
   const [portCompIndekser, setPortCompIndekser] = useState(['MSCI World', 'Oslo Børs']);
   const [portCompVisProdukter, setPortCompVisProdukter] = useState([]);
-  const [pdfModal, setPdfModal] = useState(false);
   const [forslagSider, setForslagSider] = useState(() => standardSider());
   const [forslagLaster, setForslagLaster] = useState(false);
   const [forslagVurdering, setForslagVurdering] = useState('');
@@ -1821,12 +1821,17 @@ export default function PensumPrognoseModell() {
       setPensumAllokering(nyPortefolje);
     }
 
-    if (nesteFane) {
+    if (nesteFane === 'dagens') {
+      // Dagens portefølje er en seksjon på kundeinformasjonssiden, ikke en egen fane.
+      setActiveTab('input');
+      setVisDagens(true);
+      setTimeout(() => document.getElementById('dagens-portefolje')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    } else if (nesteFane) {
       setActiveTab(nesteFane);
       if (VERKTOY_FANER.some((v) => v.id === nesteFane)) setSisteVerktoy(nesteFane);
     }
     if (aapneForslag) {
-      setPdfModal(true);
+      setActiveTab('rapport');
     }
     // Lagring kjøres alene, slik at vi aldri lagrer en eldre React-state rett
     // etter en serie med nye feltendringer.
@@ -2606,7 +2611,6 @@ export default function PensumPrognoseModell() {
       });
       const filnavn = `Investeringsforslag ${(modell.kunde || 'kunde').replace(/[\\/:*?"<>|]/g, '')} ${new Date().toISOString().slice(0, 10)}.pptx`;
       await pptx.writeFile({ fileName: filnavn });
-      setPdfModal(false);
     } catch (e) {
       alert('Kunne ikke lage presentasjonen: ' + (e?.message || e));
     } finally {
@@ -2853,77 +2857,6 @@ export default function PensumPrognoseModell() {
         </div>
       )}
       
-      {/* ====== PDF INVESTERINGSFORSLAG MODAL ====== */}
-      {pdfModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !forslagLaster && setPdfModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="px-6 py-5 rounded-t-2xl" style={{ backgroundColor: '#0D2240' }}>
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Generer investeringsforslag</h2>
-                  <p className="text-blue-300 text-sm mt-0.5">Velg sider og last ned som PowerPoint</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Kundeinfo oppsummering */}
-              <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-3">
-                {[
-                  ['Kunde', kundeNavn || '—'],
-                  ['Investerbar kapital', formatCurrency(investertBelop !== null ? investertBelop : totalKapital)],
-                  ['Risikoprofil', risikoprofil],
-                  ['Forv. avkastning', (erGyldigTall(pensumForventetAvkastning) ? pensumForventetAvkastning : 0).toFixed(1).replace('.', ',') + ' % p.a.'],
-                ].map(([lbl, val]) => (
-                  <div key={lbl}>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider">{lbl}</div>
-                    <div className="font-semibold text-sm mt-0.5" style={{ color: '#0D2240' }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Sider i presentasjonen */}
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sider i presentasjonen</div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0) && (!['dagens', 'dagensmotny'].includes(side.id) || Boolean(dagensAnalyse))).map((side) => (
-                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
-                      {side.navn}
-                    </label>
-                  ))}
-                </div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-2">Tillegg: slik jobber Pensum</div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {FORSLAG_SIDER.filter((side) => side.tillegg).map((side) => (
-                    <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                      <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
-                      {side.navn}
-                    </label>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400 mt-3">Forside, forslaget i korte trekk, neste steg, viktig informasjon og kontaktsiden er alltid med.</p>
-              </div>
-
-              <button onClick={handleLastNedForslag} disabled={forslagLaster}
-                className="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60" style={{ backgroundColor: PENSUM_COLORS.salmon }}>
-                {forslagLaster ? 'Lager presentasjonen …' : 'Last ned presentasjon (PowerPoint)'}
-              </button>
-              <p className="text-xs text-gray-400 text-center -mt-2">Ekte lysbilder i Pensum-malen. Tekst, tall og grafer kan redigeres i PowerPoint.</p>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setPdfModal(false)} disabled={forslagLaster}
-                className="w-full py-2.5 px-4 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
-                Lukk
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <header className="bg-white shadow-sm no-print">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -3011,10 +2944,6 @@ export default function PensumPrognoseModell() {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 <span className="truncate">{(kundeNavn || kundeSelskap) ? `Kundekort: ${kundeNavn || kundeSelskap}` : 'Velg kundekort'}</span>
               </button>
-              <button onClick={() => setPdfModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: '#D4886B' }}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                Investeringsforslag
-              </button>
               <div className="flex flex-col items-stretch">
                 <button onClick={lagreKunde} title={(kundeNavn || kundeSelskap) ? `Lagre endringene på kundekortet til ${kundeNavn || kundeSelskap}` : 'Oppgi kundenavn før du lagrer'} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
                   {lagringsStatus ? (
@@ -3037,11 +2966,11 @@ export default function PensumPrognoseModell() {
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {/* Formuesplanlegger, fondssammenligning og belåning ligger samlet under Verktøy */}
-              {['input', 'dagens', 'losninger', 'rapport', 'verktoy'].map(tab => {
+              {['input', 'losninger', 'rapport', 'verktoy'].map(tab => {
                 const aktiv = tab === 'verktoy' ? VERKTOY_FANER.some(v => v.id === activeTab) || activeTab === 'allokering' : activeTab === tab;
                 return (
                   <button key={tab} onClick={() => setActiveTab(tab === 'verktoy' ? sisteVerktoy : tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (aktiv ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                    {tab === 'input' ? 'Kundeinformasjon' : tab === 'dagens' ? 'Dagens portefølje' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'rapport' ? 'Investeringsforslag' : 'Verktøy'}
+                    {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'rapport' ? 'Investeringsforslag' : 'Verktøy'}
                   </button>
                 );
               })}
@@ -3416,13 +3345,22 @@ export default function PensumPrognoseModell() {
                   </button>
                 </div>
               </div>
-              {/* Kundens nåværende portefølje hos andre banker legges inn under fanen «Dagens portefølje». */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens portefølje i dag</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{dagensAnalyse ? `${dagensAnalyse.antallPosisjoner} posisjoner · ${formatCurrency(dagensAnalyse.total)}` : 'Legg inn det kunden har i dag, for eksempel hos andre banker, og få en analyse og egne sider i forslaget.'}</p>
-                </div>
-                <button onClick={() => setActiveTab('dagens')} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>{dagensAnalyse ? 'Åpne dagens portefølje' : 'Legg inn dagens portefølje'}</button>
+              {/* Kundens nåværende portefølje hos andre banker. Lukket til rådgiver åpner den eller det ligger posisjoner der. */}
+              <div className="lg:col-span-2" id="dagens-portefolje" data-dagens-seksjon>
+                {(visDagens || dagensPosisjoner.length > 0) ? (
+                  <DagensPortefolje posisjoner={dagensPosisjoner} setPosisjoner={setDagensPosisjoner}
+                    plattformAvkastning={dagensPlattformAvk} setPlattformAvkastning={setDagensPlattformAvk}
+                    analyse={dagensAnalyse} sammenligning={dagensMotNy}
+                    onBrukIForslaget={brukDagensIForslaget} bruktIForslaget={dagensBruktIForslaget} />
+                ) : (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens portefølje i dag</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">Legg inn det kunden har i dag, for eksempel hos andre banker, og få en analyse og egne sider i forslaget.</p>
+                    </div>
+                    <button onClick={() => setVisDagens(true)} data-dagens-aapne className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>Legg inn dagens portefølje</button>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -4449,12 +4387,6 @@ export default function PensumPrognoseModell() {
           </>
         )}
 
-        {activeTab === 'dagens' && (
-          <DagensPortefolje posisjoner={dagensPosisjoner} setPosisjoner={setDagensPosisjoner}
-            plattformAvkastning={dagensPlattformAvk} setPlattformAvkastning={setDagensPlattformAvk}
-            analyse={dagensAnalyse} sammenligning={dagensMotNy}
-            onBrukIForslaget={brukDagensIForslaget} bruktIForslaget={dagensBruktIForslaget} />
-        )}
 
         {activeTab === 'losninger' && (
           <div className="space-y-6 no-print">
