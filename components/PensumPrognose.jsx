@@ -1583,6 +1583,61 @@ export default function PensumPrognoseModell() {
       eiendomSyndikatKunde,
       eiendomFondKunde,
     };
+    // Regner ut porteføljen fra et forslag. Kaster feil uten å endre noe hvis forslaget ikke går opp.
+    const byggPortefoljeFraForslag = (pensumPortefoljeForslag) => {
+      const produktMap = new Map([
+        ...(pensumProdukter.enkeltfond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'enkeltfond' }]),
+        ...(pensumProdukter.fondsportefoljer || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'fondsportefoljer' }]),
+        ...(pensumProdukter.eksterneFond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'eksterneFond' }]),
+        ...(pensumProdukter.alternative || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'alternative' }]),
+      ]);
+      const standard = (pensumStandardPortefoljer[pensumPortefoljeForslag.profile] || []).map((item) => ({ ...item }));
+      const standardMap = new Map(standard.map((item) => [item.id, item]));
+      const laaste = new Map();
+
+      pensumPortefoljeForslag.weights.forEach((item) => {
+        if (!item || !produktMap.has(item.productId) || typeof item.weight !== 'number') return;
+        const produkt = produktMap.get(item.productId);
+        const standardVekt = Number(standardMap.get(item.productId)?.vekt) || 0;
+        const oppgittVekt = Math.max(0, Math.min(100, Number(item.weight)));
+        const vekt = item.constraint === 'minimum' ? Math.max(standardVekt, oppgittVekt) : oppgittVekt;
+        laaste.set(item.productId, {
+          id: item.productId,
+          navn: produkt.navn,
+          kategori: produkt.kategori,
+          vekt,
+        });
+      });
+
+      if (laaste.size === 0) throw new Error('Luna foreslo ingen gyldige Pensum-produkter.');
+      const laastTotal = Array.from(laaste.values()).reduce((sum, item) => sum + item.vekt, 0);
+      if (laastTotal > 100.001) throw new Error('De ønskede produktvektene overstiger 100%.');
+
+      const ulaste = standard.filter((item) => !laaste.has(item.id));
+      const ulasteStandardTotal = ulaste.reduce((sum, item) => sum + (Number(item.vekt) || 0), 0);
+      const rest = Math.max(0, 100 - laastTotal);
+      const nyPortefolje = [
+        ...ulaste.map((item) => ({
+          ...item,
+          vekt: ulasteStandardTotal > 0 ? (Number(item.vekt) || 0) * rest / ulasteStandardTotal : 0,
+        })),
+        ...Array.from(laaste.values()),
+      ].filter((item) => item.vekt > 0.0001);
+
+      if (rest > 0 && ulasteStandardTotal <= 0) throw new Error('Porteføljen kan ikke balanseres til 100%.');
+      nyPortefolje.forEach((item) => { item.vekt = parseFloat(item.vekt.toFixed(2)); });
+      const avrundetTotal = nyPortefolje.reduce((sum, item) => sum + item.vekt, 0);
+      const justeringsrad = nyPortefolje.find((item) => !laaste.has(item.id)) || nyPortefolje[0];
+      if (justeringsrad && Math.abs(100 - avrundetTotal) >= 0.001) {
+        justeringsrad.vekt = parseFloat((justeringsrad.vekt + (100 - avrundetTotal)).toFixed(2));
+      }
+
+      return nyPortefolje;
+    };
+    // Valider porteføljeforslaget før noe endres, slik at et ugyldig forslag ikke rører kundekortet.
+    const portefoljeHandling = [...actions].reverse().find((action) => action?.type === 'set_pensum_portfolio' && profiler.includes(action?.payload?.profile) && Array.isArray(action?.payload?.weights));
+    const planlagtPortefolje = portefoljeHandling ? byggPortefoljeFraForslag(portefoljeHandling.payload) : null;
+
     let beregnPaaNytt = false;
     let nesteFane = null;
     let aapneForslag = false;
@@ -1659,53 +1714,7 @@ export default function PensumPrognoseModell() {
     }
 
     if (pensumPortefoljeForslag) {
-      const produktMap = new Map([
-        ...(pensumProdukter.enkeltfond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'enkeltfond' }]),
-        ...(pensumProdukter.fondsportefoljer || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'fondsportefoljer' }]),
-        ...(pensumProdukter.eksterneFond || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'eksterneFond' }]),
-        ...(pensumProdukter.alternative || []).map((produkt) => [produkt.id, { ...produkt, kategori: 'alternative' }]),
-      ]);
-      const standard = (pensumStandardPortefoljer[pensumPortefoljeForslag.profile] || []).map((item) => ({ ...item }));
-      const standardMap = new Map(standard.map((item) => [item.id, item]));
-      const laaste = new Map();
-
-      pensumPortefoljeForslag.weights.forEach((item) => {
-        if (!item || !produktMap.has(item.productId) || typeof item.weight !== 'number') return;
-        const produkt = produktMap.get(item.productId);
-        const standardVekt = Number(standardMap.get(item.productId)?.vekt) || 0;
-        const oppgittVekt = Math.max(0, Math.min(100, Number(item.weight)));
-        const vekt = item.constraint === 'minimum' ? Math.max(standardVekt, oppgittVekt) : oppgittVekt;
-        laaste.set(item.productId, {
-          id: item.productId,
-          navn: produkt.navn,
-          kategori: produkt.kategori,
-          vekt,
-        });
-      });
-
-      if (laaste.size === 0) throw new Error('Luna foreslo ingen gyldige Pensum-produkter.');
-      const laastTotal = Array.from(laaste.values()).reduce((sum, item) => sum + item.vekt, 0);
-      if (laastTotal > 100.001) throw new Error('De ønskede produktvektene overstiger 100%.');
-
-      const ulaste = standard.filter((item) => !laaste.has(item.id));
-      const ulasteStandardTotal = ulaste.reduce((sum, item) => sum + (Number(item.vekt) || 0), 0);
-      const rest = Math.max(0, 100 - laastTotal);
-      const nyPortefolje = [
-        ...ulaste.map((item) => ({
-          ...item,
-          vekt: ulasteStandardTotal > 0 ? (Number(item.vekt) || 0) * rest / ulasteStandardTotal : 0,
-        })),
-        ...Array.from(laaste.values()),
-      ].filter((item) => item.vekt > 0.0001);
-
-      if (rest > 0 && ulasteStandardTotal <= 0) throw new Error('Porteføljen kan ikke balanseres til 100%.');
-      nyPortefolje.forEach((item) => { item.vekt = parseFloat(item.vekt.toFixed(2)); });
-      const avrundetTotal = nyPortefolje.reduce((sum, item) => sum + item.vekt, 0);
-      const justeringsrad = nyPortefolje.find((item) => !laaste.has(item.id)) || nyPortefolje[0];
-      if (justeringsrad && Math.abs(100 - avrundetTotal) >= 0.001) {
-        justeringsrad.vekt = parseFloat((justeringsrad.vekt + (100 - avrundetTotal)).toFixed(2));
-      }
-
+      const nyPortefolje = planlagtPortefolje;
       setValgtPensumProfil(pensumPortefoljeForslag.profile);
       setValgtStandardLosning(null);
       setPensumAllokering(nyPortefolje);

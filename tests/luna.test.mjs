@@ -59,6 +59,7 @@ test('Luna: svaret gjøres om til tekst og rensede forslag', () => {
     { type: 'set_customer_fields', payload: { kundeNavn: 'Kari', horisont: 50 } },
   ]);
   assert.deepEqual(tolkLunaSvar({ stop_reason: 'end_turn', content: [{ type: 'tool_use', name: 'save_customer', input: {} }] }).actions, [{ type: 'save_customer', payload: {} }]);
+  assert.deepEqual(tolkLunaSvar({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'set_pensum_portfolio', input: { profile: 'Moderat', weights: [{ productId: 'global-edge', weight: 70 }, { productId: 'norge-a', weight: 70 }] } }] }).actions, [], 'vekter over 100 % vises ikke som forslag');
   assert.deepEqual(tolkLunaSvar({ stop_reason: 'refusal', content: [] }).actions, []);
   assert.ok(tolkLunaSvar({ stop_reason: 'max_tokens', content: [{ type: 'text', text: 'Halvt svar' }] }).message.includes('kuttet'));
 });
