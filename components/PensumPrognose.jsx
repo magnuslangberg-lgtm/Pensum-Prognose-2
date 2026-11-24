@@ -27,7 +27,8 @@ export default function PensumPrognoseModell() {
   const [activeTab, setActiveTab] = useState('input');
   const [showPessimistic, setShowPessimistic] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
-  const [visLikviditetPensum, setVisLikviditetPensum] = useState(false);
+  // Kakestykket pekeren står over i porteføljebyggeren: { kake: 'produkt' | 'aktiva', id }
+  const [kakeHover, setKakeHover] = useState(null);
   const [visLikviditetAllokering, setVisLikviditetAllokering] = useState(false);
   const [delmal, setDelmal] = useState([]);  // Delmål / milepæler i chartet
   const [visDelmal, setVisDelmal] = useState(false);  // Vis delmål-seksjon
@@ -7285,9 +7286,11 @@ export default function PensumPrognoseModell() {
                         <div className="shrink-0">
                           <ResponsiveContainer width={200} height={200}>
                             <PieChart>
-                              <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}>
+                              <Pie data={pensumAllokering.filter(p => p.vekt > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="vekt" paddingAngle={2} cornerRadius={4}
+                                onMouseEnter={(d) => setKakeHover({ kake: 'produkt', id: d?.id ?? d?.payload?.id })} onMouseLeave={() => setKakeHover(null)}>
                                 {pensumAllokering.filter(p => p.vekt > 0).map((entry, idx) => (
-                                  <Cell key={entry.id} fill={PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length]} />
+                                  <Cell key={entry.id} fill={PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length]}
+                                    opacity={kakeHover?.kake === 'produkt' && kakeHover.id !== entry.id ? 0.25 : 1} style={{ transition: 'opacity 150ms' }} />
                                 ))}
                               </Pie>
                               <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
@@ -7298,7 +7301,8 @@ export default function PensumPrognoseModell() {
                             også med mange produkter; lange navn kuttes i stedet. */}
                         <div className={"flex-1 min-w-0 " + (pensumAllokering.filter(p => p.vekt > 0).length > 8 ? 'space-y-1' : 'space-y-2')}>
                           {pensumAllokering.filter(p => p.vekt > 0).map((p, idx) => (
-                            <div key={p.id} className={"flex items-center gap-2.5 " + (pensumAllokering.filter(q => q.vekt > 0).length > 8 ? 'text-xs' : 'text-sm')}>
+                            <div key={p.id} onMouseEnter={() => setKakeHover({ kake: 'produkt', id: p.id })} onMouseLeave={() => setKakeHover(null)}
+                              className={"flex items-center gap-2.5 cursor-default transition-opacity " + (kakeHover?.kake === 'produkt' && kakeHover.id !== p.id ? 'opacity-40 ' : '') + (pensumAllokering.filter(q => q.vekt > 0).length > 8 ? 'text-xs' : 'text-sm')}>
                               <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length] }}></div>
                               <span className="flex-1 min-w-0 truncate text-gray-700" title={p.navn}>{p.navn}</span>
                               <span className="font-semibold tabular-nums flex-shrink-0 w-14 text-right whitespace-nowrap" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(p.vekt)} %</span>
@@ -7315,9 +7319,11 @@ export default function PensumPrognoseModell() {
                         <div className="shrink-0">
                           <ResponsiveContainer width={160} height={160}>
                             <PieChart>
-                              <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
+                              <Pie data={pensumAktivafordeling.filter(p => p.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}
+                                onMouseEnter={(d) => setKakeHover({ kake: 'aktiva', id: d?.name ?? d?.payload?.name })} onMouseLeave={() => setKakeHover(null)}>
                                 {pensumAktivafordeling.filter(p => p.value > 0).map((entry) => (
-                                  <Cell key={entry.name} fill={entry.color} />
+                                  <Cell key={entry.name} fill={entry.color}
+                                    opacity={kakeHover?.kake === 'aktiva' && kakeHover.id !== entry.name ? 0.25 : 1} style={{ transition: 'opacity 150ms' }} />
                                 ))}
                               </Pie>
                               <Tooltip formatter={(v) => pst(v) + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
@@ -7326,7 +7332,8 @@ export default function PensumPrognoseModell() {
                         </div>
                         <div className="space-y-2.5 flex-1">
                           {pensumAktivafordeling.filter(a => a.value > 0).map(a => (
-                            <div key={a.name} className="flex items-center gap-2.5 text-sm">
+                            <div key={a.name} onMouseEnter={() => setKakeHover({ kake: 'aktiva', id: a.name })} onMouseLeave={() => setKakeHover(null)}
+                              className={"flex items-center gap-2.5 text-sm cursor-default transition-opacity " + (kakeHover?.kake === 'aktiva' && kakeHover.id !== a.name ? 'opacity-40' : '')}>
                               <div className="w-3 h-3 rounded" style={{ backgroundColor: a.color }}></div>
                               <span className="flex-1 text-gray-700">{a.name}</span>
                               <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pst(a.value)} %</span>
@@ -7334,6 +7341,25 @@ export default function PensumPrognoseModell() {
                           ))}
                         </div>
                       </div>
+                      {/* Likviditet: én linje nederst i kortet, med stolpe bare når noe er illikvid */}
+                      {(pensumLikviditet.likvid + pensumLikviditet.illikvid) > 0 && (
+                        <div className="mt-4 pt-3 border-t border-gray-100" data-likviditet>
+                          <div className="flex items-center justify-between gap-3 text-xs">
+                            <span className="font-semibold uppercase tracking-wider text-gray-400">Likviditet</span>
+                            <span className="text-gray-600 tabular-nums">
+                              {pensumLikviditet.illikvid > 0
+                                ? <>{pst(Number((pensumLikviditet.likvid / (pensumLikviditet.likvid + pensumLikviditet.illikvid) * 100).toFixed(1)))} % daglig likvid · <span style={{ color: PENSUM_COLORS.gold }} className="font-semibold">{pst(Number((pensumLikviditet.illikvid / (pensumLikviditet.likvid + pensumLikviditet.illikvid) * 100).toFixed(1)))} % illikvid</span></>
+                                : 'Hele porteføljen er daglig likvid'}
+                            </span>
+                          </div>
+                          {pensumLikviditet.illikvid > 0 && (
+                            <div className="mt-2 h-1.5 rounded-full overflow-hidden flex" style={{ backgroundColor: '#E2E8F0' }}>
+                              <div style={{ width: (pensumLikviditet.likvid / (pensumLikviditet.likvid + pensumLikviditet.illikvid)) * 100 + '%', backgroundColor: PENSUM_COLORS.darkBlue }}></div>
+                              <div className="flex-1" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Eksponeringsroller — byggesett som klassisk byggverk (tak/midt/grunnmur) */}
@@ -7535,46 +7561,6 @@ export default function PensumPrognoseModell() {
                         </div>
                       );
                     })()}
-
-                    {/* Vis likviditet toggle */}
-                    <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer px-1">
-                      <input type="checkbox" checked={visLikviditetPensum} onChange={e => setVisLikviditetPensum(e.target.checked)} className="w-3.5 h-3.5 rounded" style={{ accentColor: PENSUM_COLORS.teal }} />
-                      <span>Vis likviditetsfordeling</span>
-                    </label>
-
-                    {/* Likviditet donut */}
-                    {visLikviditetPensum && (
-                      <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5">
-                        <h4 className="font-semibold mb-4 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Likviditet</h4>
-                        <div className="flex items-center gap-6">
-                          <div className="shrink-0">
-                            <ResponsiveContainer width={160} height={160}>
-                              <PieChart>
-                                <Pie data={[{ name: 'Likvid', value: pensumLikviditet.likvid }, { name: 'Illikvid', value: pensumLikviditet.illikvid }].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="value" paddingAngle={2} cornerRadius={4}>
-                                  <Cell fill={PENSUM_COLORS.darkBlue} />
-                                  {pensumLikviditet.illikvid > 0 && <Cell fill={PENSUM_COLORS.gold} />}
-                                </Pie>
-                                <Tooltip formatter={(v) => v.toFixed(1).replace('.', ',') + ' %'} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-2.5 flex-1">
-                            <div className="flex items-center gap-2.5 text-sm">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}></div>
-                              <span className="flex-1 text-gray-700">Likvid (daglig)</span>
-                              <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.likvid.toFixed(1).replace('.', ',')} %</span>
-                            </div>
-                            {pensumLikviditet.illikvid > 0 && (
-                              <div className="flex items-center gap-2.5 text-sm">
-                                <div className="w-3 h-3 rounded" style={{ backgroundColor: PENSUM_COLORS.gold }}></div>
-                                <span className="flex-1 text-gray-700">Illikvid</span>
-                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{pensumLikviditet.illikvid.toFixed(1).replace('.', ',')} %</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                   </div>
                 </div>
