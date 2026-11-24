@@ -12,7 +12,7 @@ const FELTNAVN = {
 
 const FELTNAVN_HANDLING = { ...FELTNAVN, radgiver: 'Rådgiver', dato: 'Dato', investertBelop: 'Beløp som skal investeres', fjernInvestertBelop: 'Bruk total kapital' };
 const FANENAVN = {
-  input: 'Kundeinformasjon', losninger: 'Porteføljebygging', rapport: 'Investeringsforslag',
+  input: 'Kundeinformasjon', dagens: 'Dagens portefølje', losninger: 'Porteføljebygging', rapport: 'Investeringsforslag',
   formuesplanlegger: 'Formuesplanlegger', scenario: 'Fondssammenligning', belaning: 'Belåning',
 };
 const PRODUKTNAVN = Object.fromEntries(

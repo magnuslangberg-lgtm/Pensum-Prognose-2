@@ -8,6 +8,8 @@ import { parseBelop, TRANSAKSJONSHONORAR_PST, ASSET_COLORS, ASSET_COLORS_LIGHT, 
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
+import DagensPortefolje from './pensum/DagensPortefolje';
+import { analyserDagens, sammenlignDagensMotNy, beholdteSomTillegg, erTilleggFraDagens, rensPosisjoner, rensPlattformAvkastning } from '../lib/dagensPortefolje';
 import { byggForslagModell } from '../lib/forslagModell';
 import { FORSLAG_SIDER, standardSider, lagForslagPptx } from '../lib/forslagPptx';
 import { ForslagOpptak } from '../lib/forslagOpptak';
@@ -104,6 +106,9 @@ export default function PensumPrognoseModell() {
   const [tilleggAktiv, setTilleggAktiv] = useState(false);
   const [tillegg, setTillegg] = useState([]);
   const [visTilleggIPrognose, setVisTilleggIPrognose] = useState(true);
+  // Dagens portefølje: kundens nåværende posisjoner, ofte hos andre banker.
+  const [dagensPosisjoner, setDagensPosisjoner] = useState([]);
+  const [dagensPlattformAvk, setDagensPlattformAvk] = useState([]);
   // Gruppene i porteføljebyggeren kan foldes sammen hver for seg.
   const [pbGrupper, setPbGrupper] = useState({ portefolje: true, prognose: true, historikk: true });
   const pbGruppeHode = (id, tittel, undertittel) => (
@@ -184,11 +189,6 @@ export default function PensumPrognoseModell() {
     kontanter: 0,
     kilde: '',       // f.eks. 'Nordea', 'DNB', 'Manuelt'
   });
-  const [visEksisterendePortefolje, setVisEksisterendePortefolje] = useState(false);
-  const [eksPortFondSok, setEksPortFondSok] = useState('');
-  const [eksPortFondResultater, setEksPortFondResultater] = useState([]);
-  const [eksPortPasteModal, setEksPortPasteModal] = useState(false);
-  const [eksPortPasteText, setEksPortPasteText] = useState('');
 
 
 
@@ -910,6 +910,7 @@ export default function PensumPrognoseModell() {
     pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal,
     pbVisSluttSammensetning, pbSluttSammensetningAar,
     tilleggAktiv, tillegg,
+    dagensPosisjoner, dagensPlattformAvk,
     // Forutsetninger og mål — Formuesplanlegger
     laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter,
     malAktiv, hovedmal, visDelmal, delmal,
@@ -921,7 +922,7 @@ export default function PensumPrognoseModell() {
     // Schema-versjon for fremtidige migreringer
     schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, tilleggAktiv, tillegg, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, tilleggAktiv, tillegg, dagensPosisjoner, dagensPlattformAvk, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -991,6 +992,8 @@ export default function PensumPrognoseModell() {
     if (typeof data.pbVisSluttSammensetning === 'boolean') setPbVisSluttSammensetning(data.pbVisSluttSammensetning);
     setTilleggAktiv(data.tilleggAktiv === true);
     setTillegg(rensTillegg(data.tillegg));
+    setDagensPosisjoner(rensPosisjoner(data.dagensPosisjoner));
+    setDagensPlattformAvk(rensPlattformAvkastning(data.dagensPlattformAvk));
     if (typeof data.pbSluttSammensetningAar === 'number') setPbSluttSammensetningAar(data.pbSluttSammensetningAar);
 
     // Forutsetninger og mål — Formuesplanlegger
@@ -1327,6 +1330,8 @@ export default function PensumPrognoseModell() {
     setAktivKundeId(null);
     setTilleggAktiv(false);
     setTillegg([]);
+    setDagensPosisjoner([]);
+    setDagensPlattformAvk([]);
     setKundeNavn('');
     setKundeSelskap('');
     setDato(new Date().toISOString().split('T')[0]);
@@ -1516,6 +1521,24 @@ export default function PensumPrognoseModell() {
   const prognoseMedTillegg = useMemo(() => (tilleggLinjer.length && visTilleggIPrognose
     ? pensumPrognose.map((rad, i) => ({ ...rad, [TILLEGG_NAVN]: tilleggFrem[i]?.total || 0 }))
     : pensumPrognose), [pensumPrognose, tilleggFrem, tilleggLinjer, visTilleggIPrognose]);
+  // Analysen av dagens portefølje, og sammenligningen mot Pensum-forslaget pluss det som beholdes.
+  const dagensAnalyse = useMemo(() => analyserDagens(dagensPosisjoner, dagensPlattformAvk), [dagensPosisjoner, dagensPlattformAvk]);
+  const dagensMotNy = useMemo(() => sammenlignDagensMotNy(dagensAnalyse, {
+    pensumBelop: pbEffektivtInvestertBelop, pensumKlasser: pensumAktivafordeling, pensumAvkastning: pensumForventetAvkastning,
+    pensumProdukter: pensumAllokering.filter((a) => a.vekt > 0).length, beholdt: dagensAnalyse?.beholdtePosisjoner || [],
+  }), [dagensAnalyse, pbEffektivtInvestertBelop, pensumAktivafordeling, pensumForventetAvkastning, pensumAllokering]);
+  // Forslaget «bruker» dagens portefølje når beløpet hos Pensum er det som flyttes, og det som
+  // beholdes ligger under kundens øvrige investeringer.
+  const dagensBruktIForslaget = Boolean(dagensAnalyse) && investertBelop === dagensAnalyse.flyttes
+    && Math.round(tillegg.filter(erTilleggFraDagens).reduce((sum, x) => sum + (x.belop || 0), 0)) === Math.round(dagensAnalyse.beholdes)
+    && (dagensAnalyse.beholdes === 0 || tilleggAktiv);
+  const brukDagensIForslaget = () => {
+    if (!dagensAnalyse) return;
+    if (dagensAnalyse.flyttes > 0) setInvestertBelop(dagensAnalyse.flyttes);
+    const beholdt = beholdteSomTillegg(dagensPosisjoner);
+    setTillegg((prev) => [...prev.filter((x) => !erTilleggFraDagens(x)), ...beholdt].slice(0, TILLEGG_MAKS));
+    if (beholdt.length) setTilleggAktiv(true);
+  };
   const oppdaterTillegg = (id, endring) => setTillegg((prev) => prev.map((x) => (x.id === id ? { ...x, ...endring } : x)));
   const leggTilTillegg = (type = 'aksjer', navn = '') => setTillegg((prev) => (prev.length >= TILLEGG_MAKS ? prev : [...prev, { id: `t-${Date.now()}-${prev.length}`, navn, type, belop: 0, avkastning: null }]));
   // Lager linjer av formuespostene på kundekortet, så tallene ikke må skrives to ganger.
@@ -1605,7 +1628,7 @@ export default function PensumPrognoseModell() {
     const penger = (value) => Math.min(1000000000000, Math.max(0, Math.round(Number(value) || 0)));
     const profiler = ['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'];
     const likviditetsnivaaer = ['Begrenset', 'Moderat', 'Høyt'];
-    const faner = ['input', 'losninger', 'formuesplanlegger', 'scenario', 'belaning', 'rapport'];
+    const faner = ['input', 'dagens', 'losninger', 'formuesplanlegger', 'scenario', 'belaning', 'rapport'];
 
     let nesteProfil = risikoprofil;
     let nesteKapital = {
@@ -2543,6 +2566,7 @@ export default function PensumPrognoseModell() {
     historiskAarsavkastning: beregnPensumHistorikk,
     forventetAvkastning: pensumForventetAvkastning,
     ovrigeInvesteringer: tilleggLinjer,
+    dagens: dagensAnalyse ? { posisjoner: dagensPosisjoner, plattformAvkastning: dagensPlattformAvk } : null,
     selskap: PENSUM_SELSKAPSNOEKKELTALL
   });
   // Ting rådgiveren bør se før forslaget sendes ut. Stopper ikke eksporten, men vises
@@ -2568,7 +2592,7 @@ export default function PensumPrognoseModell() {
       return { slides: [], feil: e?.message || String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tilleggLinjer, activeTab, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  }, [dagensPosisjoner, dagensPlattformAvk, tilleggLinjer, activeTab, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
   const handleLastNedForslag = async () => {
     if (forslagVarsler.length && !confirm(`Før du laster ned:\n\n• ${forslagVarsler.join('\n• ')}\n\nLast ned likevel?`)) return;
     setForslagLaster(true);
@@ -2864,7 +2888,7 @@ export default function PensumPrognoseModell() {
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sider i presentasjonen</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0)).map((side) => (
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0) && (!['dagens', 'dagensmotny'].includes(side.id) || Boolean(dagensAnalyse))).map((side) => (
                     <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                       <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
                       {side.navn}
@@ -3013,11 +3037,11 @@ export default function PensumPrognoseModell() {
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex space-x-1 overflow-x-auto -mb-px">
               {/* Formuesplanlegger, fondssammenligning og belåning ligger samlet under Verktøy */}
-              {['input', 'losninger', 'rapport', 'verktoy'].map(tab => {
+              {['input', 'dagens', 'losninger', 'rapport', 'verktoy'].map(tab => {
                 const aktiv = tab === 'verktoy' ? VERKTOY_FANER.some(v => v.id === activeTab) || activeTab === 'allokering' : activeTab === tab;
                 return (
                   <button key={tab} onClick={() => setActiveTab(tab === 'verktoy' ? sisteVerktoy : tab)} className={"px-5 py-3 font-medium whitespace-nowrap text-sm " + (aktiv ? "text-white border-b-2 border-white" : "text-blue-200 hover:text-white")}>
-                    {tab === 'input' ? 'Kundeinformasjon' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'rapport' ? 'Investeringsforslag' : 'Verktøy'}
+                    {tab === 'input' ? 'Kundeinformasjon' : tab === 'dagens' ? 'Dagens portefølje' : tab === 'losninger' ? 'Porteføljebygging' : tab === 'rapport' ? 'Investeringsforslag' : 'Verktøy'}
                   </button>
                 );
               })}
@@ -3392,362 +3416,14 @@ export default function PensumPrognoseModell() {
                   </button>
                 </div>
               </div>
-              {/* ── Eksisterende portefølje ── */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
-                <button
-                  onClick={() => { setVisEksisterendePortefolje(v => !v); if (!eksterneFond && !eksterneFondLoading) lastEksterneFond(); }}
-                  className="w-full px-6 py-4 flex items-center justify-between"
-                  style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-white">Kundens eksisterende portefølje</h3>
-                    {eksisterendePortefolje.fond.length > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">
-                        {eksisterendePortefolje.fond.length} fond · {formatCurrency(eksisterendePortefolje.fond.reduce((s, f) => s + f.belop, 0) + eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0) + eksisterendePortefolje.kontanter)}
-                      </span>
-                    )}
-                  </div>
-                  <svg className={`w-5 h-5 text-white transition-transform ${visEksisterendePortefolje ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                {visEksisterendePortefolje && (
-                  <div className="p-6 space-y-5">
-                    <p className="text-xs text-gray-500">Registrer kundens nåværende portefølje fra annen forvalter for å lage en sammenligning med Pensum-forslaget.</p>
-
-                    {/* Kilde */}
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Forvalter / kilde:</label>
-                      <input type="text" value={eksisterendePortefolje.kilde} onChange={(e) => setEksisterendePortefolje(prev => ({ ...prev, kilde: e.target.value }))}
-                        placeholder="f.eks. Nordea, DNB, Handelsbanken" className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5" />
-                    </div>
-
-                    {/* Importer-knapper */}
-                    <div className="flex gap-2">
-                      <button onClick={() => setEksPortPasteModal(true)} className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-1.5" style={{ color: PENSUM_COLORS.darkBlue }}>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                        Lim inn porteføljeoversikt
-                      </button>
-                    </div>
-
-                    {/* ── FOND ── */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Fond</h4>
-                        <span className="text-xs text-gray-400">{eksisterendePortefolje.fond.length} fond</span>
-                      </div>
-
-                      {/* Fondssøk — bruker Morningstar-datasettet (eksterneFond) */}
-                      <div className="relative mb-3">
-                        <input
-                          type="text" value={eksPortFondSok}
-                          onFocus={() => { if (!eksterneFond && !eksterneFondLoading) lastEksterneFond(); }}
-                          onChange={(e) => {
-                            setEksPortFondSok(e.target.value);
-                            setEksPortFondResultater(sokEksterneFondFuzzy(e.target.value, 20));
-                          }}
-                          placeholder={eksterneFondLoading ? 'Laster fondsdatabase...' : 'Søk fond (navn, ISIN eller forvalter) — 4 974 fond fra Morningstar'}
-                          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pl-8"
-                        />
-                        <svg className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        {eksterneFondLoading && <svg className="w-4 h-4 absolute right-3 top-2.5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>}
-                        {eksPortFondResultater.length > 0 && eksPortFondSok.length >= 2 && (
-                          <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                            {eksPortFondResultater.map(f => {
-                              const erLagtTil = eksisterendePortefolje.fond.some(ef => ef.isin === f.isin);
-                              const fondKat = f.cat?.toLowerCase().includes('fixed income') || f.cat?.toLowerCase().includes('bond') || f.cat?.toLowerCase().includes('money market') ? 'rente'
-                                : f.cat?.toLowerCase().includes('allocation') || f.cat?.toLowerCase().includes('mixed') ? 'blandet' : 'aksje';
-                              return (
-                                <button key={f.isin} disabled={erLagtTil}
-                                  onClick={() => {
-                                    setEksisterendePortefolje(prev => ({
-                                      ...prev,
-                                      fond: [...prev.fond, {
-                                        id: f.isin, navn: f.n, isin: f.isin, belop: 0,
-                                        forvalter: f.mgr || '', kategori: fondKat, cat: f.cat || '',
-                                        avk1y: f.r1y, avk3y: f.r3y, avk5y: f.r5y,
-                                        volatilitet: f.sd3y, geografi: f.cat || '',
-                                        matchet: true
-                                      }]
-                                    }));
-                                    setEksPortFondSok('');
-                                    setEksPortFondResultater([]);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-50 flex items-center justify-between ${erLagtTil ? 'opacity-40' : ''}`}>
-                                  <div>
-                                    <span className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{f.n}</span>
-                                    <span className="text-gray-400 ml-2">{f.isin}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-gray-400">
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100">{f.cat || '—'}</span>
-                                    {erLagtTil && <span className="text-green-500">✓</span>}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Legge til fond manuelt (ikke i database) */}
-                      <button
-                        onClick={() => {
-                          const navn = prompt('Fondsnavn:');
-                          if (!navn) return;
-                          setEksisterendePortefolje(prev => ({
-                            ...prev,
-                            fond: [...prev.fond, { id: `manuell-${Date.now()}`, navn, isin: '', belop: 0, forvalter: '', kategori: 'ukjent', cat: '', avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false }]
-                          }));
-                        }}
-                        className="text-xs text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        Legg til fond manuelt
-                      </button>
-
-                      {/* Fondsliste */}
-                      {eksisterendePortefolje.fond.length > 0 && (
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr style={{ backgroundColor: '#F8FAFB' }}>
-                                <th className="py-2 px-3 text-left font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Fond</th>
-                                <th className="py-2 px-2 text-right font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>Beløp</th>
-                                <th className="py-2 px-2 text-left font-medium text-gray-400">Kategori</th>
-                                <th className="py-2 px-2 text-right font-medium text-gray-400">1 år</th>
-                                <th className="py-2 px-2 text-right font-medium text-gray-400">3 år p.a.</th>
-                                <th className="py-2 px-2 text-right font-medium text-gray-400">5 år p.a.</th>
-                                <th className="py-2 px-2 text-right font-medium text-gray-400">Vol.</th>
-                                <th className="py-2 px-1 text-center font-medium text-gray-400">Slett</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {eksisterendePortefolje.fond.map((f, idx) => (
-                                <tr key={f.id} className={idx % 2 === 0 ? '' : 'bg-gray-50/50'}>
-                                  <td className="py-1.5 px-3">
-                                    <div className="flex items-center gap-1.5">
-                                      {f.matchet ? <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span> : <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>}
-                                      <span className="font-medium truncate max-w-[200px]" style={{ color: PENSUM_COLORS.darkBlue }}>{f.navn}</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right">
-                                    <input type="text" className="w-24 text-right text-xs border border-gray-200 rounded px-1.5 py-0.5"
-                                      value={f.belop > 0 ? formatNumber(f.belop) : ''}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-                                        setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, belop: val } : ff)
-                                        }));
-                                      }} />
-                                  </td>
-                                  <td className="py-1.5 px-2 text-left">
-                                    {f.matchet ? (
-                                      <span className={`px-1 py-0.5 rounded text-[9px] ${f.kategori === 'aksje' ? 'bg-blue-50 text-blue-600' : f.kategori === 'rente' ? 'bg-green-50 text-green-600' : f.kategori === 'blandet' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'}`} title={f.cat || ''}>
-                                        {f.kategori === 'aksje' ? 'Aksje' : f.kategori === 'rente' ? 'Rente' : f.kategori === 'blandet' ? 'Blandet' : '—'}
-                                      </span>
-                                    ) : (
-                                      <select className="text-[9px] border border-gray-200 rounded px-1 py-0.5 bg-white"
-                                        value={f.kategori}
-                                        onChange={(e) => setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, kategori: e.target.value } : ff)
-                                        }))}>
-                                        <option value="ukjent">—</option>
-                                        <option value="aksje">Aksje</option>
-                                        <option value="rente">Rente</option>
-                                        <option value="blandet">Blandet</option>
-                                      </select>
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right">
-                                    {f.matchet ? (
-                                      f.avk1y != null ? <span className={f.avk1y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk1y >= 0 ? '+' : ''}{f.avk1y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
-                                    ) : (
-                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
-                                        value={f.avk1y ?? ''} placeholder="—"
-                                        onChange={(e) => setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk1y: e.target.value ? parseFloat(e.target.value) : null } : ff)
-                                        }))} />
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right">
-                                    {f.matchet ? (
-                                      f.avk3y != null ? <span className={f.avk3y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk3y >= 0 ? '+' : ''}{f.avk3y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
-                                    ) : (
-                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
-                                        value={f.avk3y ?? ''} placeholder="—"
-                                        onChange={(e) => setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk3y: e.target.value ? parseFloat(e.target.value) : null } : ff)
-                                        }))} />
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right">
-                                    {f.matchet ? (
-                                      f.avk5y != null ? <span className={f.avk5y >= 0 ? 'text-green-600' : 'text-red-600'}>{f.avk5y >= 0 ? '+' : ''}{f.avk5y.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
-                                    ) : (
-                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
-                                        value={f.avk5y ?? ''} placeholder="—"
-                                        onChange={(e) => setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, avk5y: e.target.value ? parseFloat(e.target.value) : null } : ff)
-                                        }))} />
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-right">
-                                    {f.matchet ? (
-                                      f.volatilitet != null ? <span className="text-gray-500">{f.volatilitet.toFixed(1).replace('.', ',')} %</span> : <span className="text-gray-400">—</span>
-                                    ) : (
-                                      <input type="number" step="0.1" className="w-14 text-right text-[10px] border border-gray-200 rounded px-1 py-0.5"
-                                        value={f.volatilitet ?? ''} placeholder="—"
-                                        onChange={(e) => setEksisterendePortefolje(prev => ({
-                                          ...prev,
-                                          fond: prev.fond.map((ff, i) => i === idx ? { ...ff, volatilitet: e.target.value ? parseFloat(e.target.value) : null } : ff)
-                                        }))} />
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 px-1 text-center">
-                                    <button onClick={() => setEksisterendePortefolje(prev => ({ ...prev, fond: prev.fond.filter((_, i) => i !== idx) }))}
-                                      className="text-red-400 hover:text-red-600">×</button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                            <tfoot>
-                              <tr className="border-t border-gray-200 font-semibold" style={{ backgroundColor: '#F8FAFB' }}>
-                                <td className="py-2 px-3" style={{ color: PENSUM_COLORS.darkBlue }}>Sum fond</td>
-                                <td className="py-2 px-2 text-right" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(eksisterendePortefolje.fond.reduce((s, f) => s + f.belop, 0))}</td>
-                                <td colSpan={4}></td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── ENKELTAKSJER ── */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Enkeltaksjer</h4>
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <button onClick={() => setEksisterendePortefolje(prev => ({ ...prev, aksjer: [...prev.aksjer, { navn: '', belop: 0 }] }))}
-                          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center gap-1" style={{ color: PENSUM_COLORS.darkBlue }}>
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                          Legg til aksjepost
-                        </button>
-                      </div>
-                      {eksisterendePortefolje.aksjer.length > 0 && (
-                        <div className="space-y-1.5">
-                          {eksisterendePortefolje.aksjer.map((a, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <input type="text" value={a.navn} onChange={(e) => setEksisterendePortefolje(prev => ({ ...prev, aksjer: prev.aksjer.map((aa, i) => i === idx ? { ...aa, navn: e.target.value } : aa) }))}
-                                placeholder="Aksjenavn eller samlebetegnelse" className="flex-1 text-xs border border-gray-200 rounded px-2 py-1.5" />
-                              <input type="text" className="w-28 text-right text-xs border border-gray-200 rounded px-2 py-1.5"
-                                value={a.belop > 0 ? formatNumber(a.belop) : ''} placeholder="Beløp"
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-                                  setEksisterendePortefolje(prev => ({ ...prev, aksjer: prev.aksjer.map((aa, i) => i === idx ? { ...aa, belop: val } : aa) }));
-                                }} />
-                              <button onClick={() => setEksisterendePortefolje(prev => ({ ...prev, aksjer: prev.aksjer.filter((_, i) => i !== idx) }))}
-                                className="text-red-400 hover:text-red-600 text-sm">×</button>
-                            </div>
-                          ))}
-                          <div className="text-xs font-semibold text-right pr-12" style={{ color: PENSUM_COLORS.darkBlue }}>
-                            Sum aksjer: {formatCurrency(eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── KONTANTER ── */}
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2" style={{ color: PENSUM_COLORS.darkBlue }}>Kontanter</h4>
-                      <CurrencyInput label="Kontantbeholdning" value={eksisterendePortefolje.kontanter}
-                        onChange={(v) => setEksisterendePortefolje(prev => ({ ...prev, kontanter: v }))} />
-                    </div>
-
-                    {/* ── TOTAL ── */}
-                    {(eksisterendePortefolje.fond.length > 0 || eksisterendePortefolje.aksjer.length > 0 || eksisterendePortefolje.kontanter > 0) && (
-                      <div className="border-t-2 pt-4 mt-4" style={{ borderColor: PENSUM_COLORS.darkBlue }}>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Total eksisterende portefølje</span>
-                          <span className="text-xl font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>
-                            {formatCurrency(eksisterendePortefolje.fond.reduce((s, f) => s + f.belop, 0) + eksisterendePortefolje.aksjer.reduce((s, a) => s + a.belop, 0) + eksisterendePortefolje.kontanter)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Paste-modal for eksisterende portefølje */}
-              {eksPortPasteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                  <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl mx-4">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                      <h3 className="text-lg font-bold" style={{ color: PENSUM_COLORS.darkBlue }}>Lim inn porteføljeoversikt</h3>
-                      <p className="text-xs text-gray-500 mt-1">Lim inn tekst fra bankutskrift, e-post eller PDF. Systemet forsøker å gjenkjenne fond, aksjer og beløp automatisk.</p>
-                    </div>
-                    <div className="p-6">
-                      <textarea
-                        value={eksPortPasteText}
-                        onChange={(e) => setEksPortPasteText(e.target.value)}
-                        placeholder={"Eksempel:\nGambak NOK 1.400.000\nNordea FRN Kredit NOK 1.550.000\nKontanter: NOK 8.300.000\nFrontline\nMowi\nStorebrand"}
-                        className="w-full h-48 text-sm border border-gray-200 rounded-lg p-3 font-mono"
-                      />
-                    </div>
-                    <div className="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end">
-                      <button onClick={() => { setEksPortPasteModal(false); setEksPortPasteText(''); }}
-                        className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Avbryt</button>
-                      <button onClick={() => {
-                        // Parse innlimt tekst
-                        const linjer = eksPortPasteText.split('\n').map(l => l.trim()).filter(Boolean);
-                        const nyeFond = [];
-                        const nyeAksjer = [];
-                        let kontanter = eksisterendePortefolje.kontanter;
-                        for (const linje of linjer) {
-                          // Forsøk å finne beløp i linjen
-                          const belopMatch = linje.match(/(?:NOK|kr\.?|:)\s*([\d\s.,]+)/i);
-                          const belop = belopMatch ? parseInt(belopMatch[1].replace(/[\s.,]/g, '')) || 0 : 0;
-                          const navnDel = belopMatch ? linje.substring(0, belopMatch.index).trim() : linje.trim();
-                          // Sjekk om det er kontanter
-                          if (/kontant/i.test(navnDel) && belop > 0) {
-                            kontanter = belop;
-                            continue;
-                          }
-                          // Forsøk å matche mot Morningstar-datasettet via fuzzy-søk
-                          const fondMatchResultat = sokEksterneFondFuzzy(navnDel, 1);
-                          const fondMatch = fondMatchResultat.length > 0 ? fondMatchResultat[0] : null;
-                          if (fondMatch) {
-                            if (!nyeFond.some(f => f.isin === fondMatch.isin)) {
-                              const fKat = fondMatch.cat?.toLowerCase().includes('fixed income') || fondMatch.cat?.toLowerCase().includes('bond') || fondMatch.cat?.toLowerCase().includes('money market') ? 'rente'
-                                : fondMatch.cat?.toLowerCase().includes('allocation') || fondMatch.cat?.toLowerCase().includes('mixed') ? 'blandet' : 'aksje';
-                              nyeFond.push({ id: fondMatch.isin, navn: fondMatch.n, isin: fondMatch.isin, belop, forvalter: fondMatch.mgr || '', kategori: fKat, cat: fondMatch.cat || '', avk1y: fondMatch.r1y, avk3y: fondMatch.r3y, avk5y: fondMatch.r5y, volatilitet: fondMatch.sd3y, geografi: fondMatch.cat || '', matchet: true });
-                            }
-                          } else if (belop > 0 && navnDel.length > 1) {
-                            // Ukjent fond med beløp
-                            nyeFond.push({ id: `paste-${Date.now()}-${Math.random()}`, navn: navnDel, isin: '', belop, forvalter: '', kategori: 'ukjent', cat: '', avk1y: null, avk3y: null, avk5y: null, volatilitet: null, geografi: '', matchet: false });
-                          } else if (navnDel.length > 1 && belop === 0) {
-                            // Sannsynligvis en aksje (bare navn, ingen beløp)
-                            nyeAksjer.push({ navn: navnDel, belop: 0 });
-                          }
-                        }
-                        setEksisterendePortefolje(prev => ({
-                          ...prev,
-                          fond: [...prev.fond, ...nyeFond.filter(nf => !prev.fond.some(ef => ef.isin && ef.isin === nf.isin))],
-                          aksjer: [...prev.aksjer, ...nyeAksjer],
-                          kontanter,
-                        }));
-                        setEksPortPasteModal(false);
-                        setEksPortPasteText('');
-                      }} className="px-4 py-2 text-sm text-white rounded-lg" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-                        Analyser og importer
-                      </button>
-                    </div>
-                  </div>
+              {/* Kundens nåværende portefølje hos andre banker legges inn under fanen «Dagens portefølje». */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens portefølje i dag</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{dagensAnalyse ? `${dagensAnalyse.antallPosisjoner} posisjoner · ${formatCurrency(dagensAnalyse.total)}` : 'Legg inn det kunden har i dag, for eksempel hos andre banker, og få en analyse og egne sider i forslaget.'}</p>
                 </div>
-              )}
+                <button onClick={() => setActiveTab('dagens')} className="px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>{dagensAnalyse ? 'Åpne dagens portefølje' : 'Legg inn dagens portefølje'}</button>
+              </div>
 
             </div>
           </div>
@@ -4771,6 +4447,13 @@ export default function PensumPrognoseModell() {
             </div>
           </div>
           </>
+        )}
+
+        {activeTab === 'dagens' && (
+          <DagensPortefolje posisjoner={dagensPosisjoner} setPosisjoner={setDagensPosisjoner}
+            plattformAvkastning={dagensPlattformAvk} setPlattformAvkastning={setDagensPlattformAvk}
+            analyse={dagensAnalyse} sammenligning={dagensMotNy}
+            onBrukIForslaget={brukDagensIForslaget} bruktIForslaget={dagensBruktIForslaget} />
         )}
 
         {activeTab === 'losninger' && (
@@ -9470,7 +9153,7 @@ export default function PensumPrognoseModell() {
                 )}
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Sider</div>
                 <div>
-                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0)).map((side) => (
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0) && (!['dagens', 'dagensmotny'].includes(side.id) || Boolean(dagensAnalyse))).map((side) => (
                     <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-0.5">
                       <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
                       {side.navn}

@@ -198,3 +198,33 @@ test('totalbildet: bare med når kundens øvrige investeringer er lagt inn', () 
   // Ukjent beløp i forslaget gir ikke noe totalbilde.
   assert.equal(lag({ belop: 0, ovrigeInvesteringer: ovrige }).totalbilde, null);
 });
+
+test('dagens portefølje i forslaget: sidene kommer bare med når posisjonene er lagt inn', () => {
+  const PptxGenJS = createRequire(import.meta.url)('pptxgenjs');
+  const naer = (a, b, toleranse, hva) => assert.ok(Math.abs(a - b) <= toleranse, `${hva}: ${a} mot ${b}`);
+  const dagens = { posisjoner: [
+    { navn: 'Kongsberg Gruppen', plattform: 'Nordnet', type: 'aksje', verdi: 5000000, urealisert: 900000, behandling: 'beholdes' },
+    { navn: 'Globalt fond', plattform: 'SP WM', type: 'aksjefond', verdi: 12000000, urealisert: -200000 },
+    { navn: 'Rentefond', plattform: 'SP WM', type: 'rentefond', verdi: 6000000 },
+    { navn: 'Kontanter', plattform: 'Nordnet', type: 'kontanter', verdi: 2000000 },
+  ], plattformAvkastning: [{ navn: 'Nordnet', avkastningIaar: 12.5 }] };
+  const uten = lag();
+  assert.equal(uten.dagens, null);
+  const m = lag({ dagens });
+  assert.equal(m.dagens.total, 25000000);
+  assert.equal(m.dagens.motNy.pensumBelop, 20000000, 'Pensum-delen er beløpet i forslaget');
+  assert.equal(m.dagens.motNy.nyTotal, 25000000, 'ny = forslaget pluss det som beholdes');
+  naer(m.dagens.motNy.klasser.reduce((s, k) => s + k.ny, 0), 100, 1e-6, 'ny aktivafordeling summerer til 100');
+  assert.equal(m.dagens.motNy.posisjoner.nyProdukter, m.produkter.length);
+  const antall = (modell, sider) => lagForslagPptx(PptxGenJS, modell, { sider }).slides.length;
+  assert.ok(!standardSider().includes('dagens') && !standardSider().includes('dagensmotny'));
+  assert.equal(antall(m, ['dagens', 'dagensmotny']), antall(m, []) + 2);
+  assert.equal(antall(uten, ['dagens', 'dagensmotny']), antall(uten, []));
+  // Uten kjent beløp i forslaget finnes ingen sammenligning, men dagens portefølje kan vises.
+  const ukjent = lag({ dagens, belop: 0 });
+  assert.equal(ukjent.dagens.motNy, null);
+  assert.equal(antall(ukjent, ['dagens', 'dagensmotny']), antall(ukjent, []) + 1);
+  // Mange plattformer og ingen gevinsttall skal ikke kaste.
+  const mange = lag({ dagens: { posisjoner: ['A', 'B', 'C', 'D', 'E'].map((pl, i) => ({ navn: `Fond ${i}`, plattform: pl, type: 'aksjefond', verdi: 1000000 * (i + 1) })) } });
+  assert.equal(antall(mange, ['dagens', 'dagensmotny']), antall(mange, []) + 2);
+});
