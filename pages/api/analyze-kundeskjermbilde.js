@@ -1,15 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { avvisUvedkommende } from '../../lib/apiVern';
-import { LUNA_MODELL } from '../../lib/luna';
+import { LUNA_MODELL, byggSkjermbildeInstruks, tolkSkjermbildeSvar } from '../../lib/luna';
+
+const INSTRUKS = byggSkjermbildeInstruks();
 
 export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
-
-const ALLOWED_FIELDS = new Set([
-  'kundeNavn', 'kundeSelskap', 'risikoprofil', 'horisont', 'aksjerKunde', 'aksjefondKunde', 'renterKunde',
-  'kontanterKunde', 'peFondKunde', 'unoterteAksjerKunde', 'shippingKunde', 'egenEiendomKunde',
-  'eiendomSyndikatKunde', 'eiendomFondKunde', 'investeringsFormaal', 'likviditetsbehov',
-]);
-const NUMBER_FIELDS = new Set(['horisont', 'aksjerKunde', 'aksjefondKunde', 'renterKunde', 'kontanterKunde', 'peFondKunde', 'unoterteAksjerKunde', 'shippingKunde', 'egenEiendomKunde', 'eiendomSyndikatKunde', 'eiendomFondKunde']);
 
 export default async function handler(req, res) {
   if (avvisUvedkommende(req, res, 'luna-skjermbilde', 10)) return;
@@ -25,26 +20,15 @@ export default async function handler(req, res) {
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'low' },
+      system: [{ type: 'text', text: INSTRUKS, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [
         ...images.map((img) => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
-        { type: 'text', text: `Du er Luna, dataassistent for et norsk finansrådgiververktøy. Les skjermbildene og trekk KUN ut kundedata som er tydelig synlige. Ikke gjett. Beløp skal være hele NOK uten skilletegn. Horisont er antall år. Risikoprofil må være Defensiv, Moderat, Dynamisk eller Offensiv. Returner bare JSON:
-{"fields":{"kundeNavn":null,"kundeSelskap":null,"risikoprofil":null,"horisont":null,"aksjerKunde":null,"aksjefondKunde":null,"renterKunde":null,"kontanterKunde":null,"peFondKunde":null,"unoterteAksjerKunde":null,"shippingKunde":null,"egenEiendomKunde":null,"eiendomSyndikatKunde":null,"eiendomFondKunde":null,"investeringsFormaal":null,"likviditetsbehov":null},"merknad":"kort forklaring om usikre eller utelatte data"}` },
+        { type: 'text', text: 'Les skjermbildene og svar med JSON som beskrevet.' },
       ] }],
     });
-    const text = response.content.find((part) => part.type === 'text')?.text || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('Kunne ikke tolke AI-responsen.');
-    const parsed = JSON.parse(match[0]);
-    const fields = {};
-    for (const [key, raw] of Object.entries(parsed.fields || {})) {
-      if (!ALLOWED_FIELDS.has(key) || raw === null || raw === '') continue;
-      if (NUMBER_FIELDS.has(key)) {
-        const value = Number(raw);
-        if (Number.isFinite(value) && value >= 0) fields[key] = Math.round(value);
-      } else fields[key] = String(raw).slice(0, 300);
-    }
-    if (fields.risikoprofil && !['Defensiv', 'Moderat', 'Dynamisk', 'Offensiv'].includes(fields.risikoprofil)) delete fields.risikoprofil;
-    return res.status(200).json({ fields, merknad: String(parsed.merknad || '').slice(0, 500) });
+    if (response.stop_reason === 'refusal') return res.status(200).json({ fields: {}, actions: [], ukjente: [], merknad: 'Luna kunne ikke lese dette skjermbildet.' });
+    const text = response.content.filter((part) => part.type === 'text').map((part) => part.text).join('\n');
+    return res.status(200).json(tolkSkjermbildeSvar(text));
   } catch (error) {
     console.error('Luna-analyse feilet:', error);
     console.error(error);

@@ -1638,6 +1638,24 @@ export default function PensumPrognoseModell() {
     const portefoljeHandling = [...actions].reverse().find((action) => action?.type === 'set_pensum_portfolio' && profiler.includes(action?.payload?.profile) && Array.isArray(action?.payload?.weights));
     const planlagtPortefolje = portefoljeHandling ? byggPortefoljeFraForslag(portefoljeHandling.payload) : null;
 
+    // Eksakt portefølje (f.eks. kundens beholdning): vekter fra beløp eller oppgitte vekter.
+    const eksaktHandling = [...actions].reverse().find((action) => action?.type === 'set_exact_portfolio' && Array.isArray(action?.payload?.holdings));
+    const eksaktPlan = (() => {
+      if (!eksaktHandling) return null;
+      const grupper = [['enkeltfond', pensumProdukter.enkeltfond], ['fondsportefoljer', pensumProdukter.fondsportefoljer], ['alternative', pensumProdukter.alternative], ['eksterneFond', pensumProdukter.eksterneFond]];
+      const finn = (id) => { for (const [kategori, liste] of grupper) { const p = (liste || []).find((x) => x.id === id); if (p) return { p, kategori: p.gruppe === 'kontanter' ? 'kontanter' : kategori }; } return null; };
+      const rader = eksaktHandling.payload.holdings.map((h) => ({ ...h, funn: finn(h?.productId) })).filter((h) => h.funn);
+      const medBelop = rader.length > 0 && rader.every((h) => typeof h.amount === 'number' && h.amount > 0);
+      const verdi = (h) => (medBelop ? h.amount : (typeof h.weight === 'number' && h.weight > 0 ? h.weight : 0));
+      const sum = rader.reduce((acc, h) => acc + verdi(h), 0);
+      if (!rader.length || !(sum > 0) || rader.some((h) => !(verdi(h) > 0))) throw new Error('Porteføljen kunne ikke legges inn: fant ingen gyldige produkter med beløp eller vekt.');
+      const portefolje = rader.map((h) => ({ id: h.funn.p.id, navn: h.funn.p.navn, kategori: h.funn.kategori, vekt: parseFloat(((verdi(h) / sum) * 100).toFixed(2)) }));
+      // Avrundingsrest legges på den største posten, slik at summen blir nøyaktig 100.
+      const storst = portefolje.reduce((a, b) => (b.vekt > a.vekt ? b : a));
+      storst.vekt = parseFloat((storst.vekt + 100 - portefolje.reduce((acc, x) => acc + x.vekt, 0)).toFixed(2));
+      return { portefolje, belop: medBelop ? penger(sum) : null, harAlternative: portefolje.some((x) => x.kategori === 'alternative') };
+    })();
+
     let beregnPaaNytt = false;
     let nesteFane = null;
     let aapneForslag = false;
@@ -1711,6 +1729,14 @@ export default function PensumPrognoseModell() {
         setValgtPensumProfil(nesteProfil);
         setPensumAllokering(pensumStandardPortefoljer[nesteProfil]);
       }
+    }
+
+    if (eksaktPlan) {
+      setValgtStandardLosning(null);
+      setPensumAllokering(eksaktPlan.portefolje);
+      if (eksaktPlan.belop) setInvestertBelop(eksaktPlan.belop);
+      if (eksaktPlan.harAlternative) setVisAlternative(true);
+      if (!nesteFane) nesteFane = 'losninger';
     }
 
     if (pensumPortefoljeForslag) {

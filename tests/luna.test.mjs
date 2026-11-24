@@ -75,3 +75,35 @@ test('AI-tjenestene: bare samme opphav, og begrenset antall kall', () => {
   assert.equal(erOverGrensen(r, 'test', 3), true);
   assert.equal(erOverGrensen(req('https://a.no', 'a.no', '8.8.8.8'), 'test', 3), false);
 });
+
+test('Luna: beholdning fra skjermbilde blir et porteføljeforslag', async () => {
+  const { tolkSkjermbildeSvar, byggSkjermbildeInstruks, rensBeholdning } = await import('../lib/luna.js');
+  const instruks = byggSkjermbildeInstruks();
+  assert.ok(instruks.includes('Pensum Global Core Active (id: global-core-active)'));
+  assert.ok(instruks.includes('"beholdning"'));
+  const svar = tolkSkjermbildeSvar('Her er svaret: ' + JSON.stringify({
+    fields: { kundeNavn: 'Kari Nordmann', horisont: '10', risikoprofil: 'Vill', ukjent: 1 },
+    beholdning: [
+      { navn: 'Pensum Global Core Active B', belop: 6000000, produktId: 'global-core-active' },
+      { navn: 'Pensum Global Høyrente', belop: '3000000', produktId: 'global-hoyrente' },
+      { navn: 'Pensum Global Core Active A', belop: 1000000, produktId: 'global-core-active' },
+      { navn: 'DNB Teknologi', belop: 500000, produktId: null },
+      { navn: 'Pensum Norge A', belop: null, produktId: 'norge-a' },
+      { navn: 'Oppdiktet fond', belop: 100, produktId: 'finnes-ikke' },
+    ],
+    merknad: 'Én posisjon manglet verdi.',
+  }));
+  assert.deepEqual(svar.fields, { kundeNavn: 'Kari Nordmann', horisont: 10 });
+  assert.deepEqual(svar.actions, [{ type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'global-core-active', amount: 7000000 }, { productId: 'global-hoyrente', amount: 3000000 }] } }]);
+  assert.deepEqual(svar.ukjente, [{ navn: 'DNB Teknologi', belop: 500000 }, { navn: 'Pensum Norge A', belop: null }, { navn: 'Oppdiktet fond', belop: 100 }]);
+  assert.equal(svar.merknad, 'Én posisjon manglet verdi.');
+  assert.deepEqual(tolkSkjermbildeSvar('{"fields":{},"beholdning":[]}').actions, []);
+  assert.throws(() => tolkSkjermbildeSvar('ingen json her'));
+  // Beløp og vekter kan ikke blandes, og vekter over 100 % avvises.
+  assert.equal(rensBeholdning([{ productId: 'norge-a', amount: 100 }, { productId: 'global-edge', weight: 50 }]), null);
+  assert.equal(rensBeholdning([{ productId: 'norge-a', weight: 70 }, { productId: 'global-edge', weight: 70 }]), null);
+  assert.deepEqual(rensBeholdning([{ productId: 'norge-a', weight: 40 }, { productId: 'global-edge', weight: 60 }]), [{ productId: 'norge-a', weight: 40 }, { productId: 'global-edge', weight: 60 }]);
+  // Chatten kan foreslå det samme verktøyet.
+  assert.deepEqual(tolkLunaSvar({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'set_exact_portfolio', input: { holdings: [{ productId: 'norge-a', amount: 2000000.4 }] } }] }).actions,
+    [{ type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'norge-a', amount: 2000000 }] } }]);
+});

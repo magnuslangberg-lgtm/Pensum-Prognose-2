@@ -35,6 +35,16 @@ const beskrivHandling = (handling) => {
     case 'recalculate_allocation': return ['Sett porteføljen på nytt fra risikoprofilen'];
     case 'set_pensum_portfolio':
       return [`Bygg portefølje fra profilen ${p.profile}`, ...(p.weights || []).map((w) => `${PRODUKTNAVN[w.productId] || w.productId}: ${w.constraint === 'minimum' ? 'minst ' : ''}${String(w.weight).replace('.', ',')} %`)];
+    case 'set_exact_portfolio': {
+      const rader = p.holdings || [];
+      const sum = rader.reduce((acc, h) => acc + (h.amount || h.weight || 0), 0) || 1;
+      const medBelop = rader.every((h) => h.amount > 0);
+      return [
+        medBelop ? `Legg inn porteføljen i byggeren, ${Math.round(sum).toLocaleString('nb-NO')} kr totalt` : 'Legg inn porteføljen i byggeren',
+        ...rader.map((h) => `${PRODUKTNAVN[h.productId] || h.productId}: ${medBelop ? `${h.amount.toLocaleString('nb-NO')} kr (${((h.amount / sum) * 100).toFixed(1).replace('.', ',')} %)` : `${String(h.weight).replace('.', ',')} %`}`),
+        'Erstatter porteføljen som ligger i byggeren nå',
+      ];
+    }
     case 'navigate': return [`Gå til ${FANENAVN[p.tab] || p.tab}`];
     case 'open_investment_proposal': return ['Åpne nedlasting av investeringsforslaget'];
     case 'save_customer': return ['Lagre kundekortet'];
@@ -121,6 +131,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     setLoading(true);
     setError('');
     setResultat(null);
+    setHandlinger(null);
     try {
       const images = await Promise.all(files.map(async (file) => ({ mediaType: file.type, data: await tilBase64(file) })));
       const response = await fetch('/api/analyze-kundeskjermbilde', {
@@ -129,7 +140,15 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Luna kunne ikke analysere skjermbildet.');
       const antall = Object.keys(data.fields || {}).length;
-      leggTilLunaSvar(antall ? `Jeg fant ${antall} relevante felt. Kontroller forslaget under før du fyller inn.` : 'Jeg fant ingen sikre kundedata i skjermbildet.', data.fields, data.merknad);
+      const forslag = Array.isArray(data.actions) ? data.actions : [];
+      const ukjente = Array.isArray(data.ukjente) ? data.ukjente : [];
+      const deler = [];
+      if (forslag.length) deler.push('Jeg fant en beholdning i Pensum-produkter. Se over forslaget under før du godkjenner.');
+      if (antall) deler.push(`Jeg fant ${antall} felt til kundekortet. Kontroller dem før du fyller inn.`);
+      if (ukjente.length) deler.push(`Disse fant jeg ikke blant Pensums produkter, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
+      if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i skjermbildet.');
+      leggTilLunaSvar(deler.join('\n\n'), data.fields, data.merknad);
+      if (forslag.length) setHandlinger(forslag);
     } catch (err) {
       setError(err.message || 'Luna kunne ikke analysere skjermbildet.');
     } finally {
