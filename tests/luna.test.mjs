@@ -114,3 +114,46 @@ test('Luna: beholdning fra skjermbilde blir et porteføljeforslag', async () => 
   assert.deepEqual(tolkLunaSvar({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'set_exact_portfolio', input: { holdings: [{ productId: 'norge-a', amount: 2000000.4 }] } }] }).actions,
     [{ type: 'set_exact_portfolio', payload: { holdings: [{ productId: 'norge-a', amount: 2000000 }] } }]);
 });
+
+test('Luna-vedlegg: regneark, innlimte celler og kontroll på serveren', async () => {
+  const { createRequire } = await import('node:module');
+  const XLSX = createRequire(import.meta.url)('xlsx');
+  const { vedleggstype, regnearkTilTekst, tabellFraUtklipp, byggVedleggInnhold, MAKS_TABELLTEGN } = await import('../lib/lunaVedlegg.js');
+  assert.equal(vedleggstype({ type: 'image/png', name: 'a.png' }), 'bilde');
+  assert.equal(vedleggstype({ type: '', name: 'Portefølje.PDF' }), 'pdf');
+  assert.equal(vedleggstype({ type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name: 'x.xlsx' }), 'tabell');
+  assert.equal(vedleggstype({ type: '', name: 'beholdning.csv' }), 'tabell');
+  assert.equal(vedleggstype({ type: 'application/msword', name: 'brev.docx' }), null);
+
+  // Et ekte regneark med to ark, tomme rader og et tall med desimaler.
+  const bok = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(bok, XLSX.utils.aoa_to_sheet([['Verdipapir', 'Antall', 'Markedsverdi'], ['Pensum Norge A', 42002.63, 7000889], [], ['Pensum Global Energy A', 3933.26, 594271]]), 'Beholdning');
+  XLSX.utils.book_append_sheet(bok, XLSX.utils.aoa_to_sheet([['Lån', -8900000]]), 'Gjeld');
+  const xlsx = XLSX.write(bok, { type: 'array', bookType: 'xlsx' });
+  const t = regnearkTilTekst(XLSX, xlsx, 'kunde.xlsx');
+  assert.equal(t.tekst, 'Ark «Beholdning»:\nVerdipapir\tAntall\tMarkedsverdi\nPensum Norge A\t42002.63\t7000889\nPensum Global Energy A\t3933.26\t594271\n\nArk «Gjeld»:\nLån\t-8900000');
+  assert.equal(t.kuttet, false);
+  // CSV leses som tekst, og ett ark får ingen arkoverskrift.
+  const csv = regnearkTilTekst(XLSX, 'Navn,Verdi\nPensum Basis,1000000\n', 'liste.csv');
+  assert.equal(csv.tekst, 'Navn\tVerdi\nPensum Basis\t1000000');
+  // Veldig store ark kuttes ved en hel linje.
+  const stor = regnearkTilTekst(XLSX, Array.from({ length: 9000 }, (_, i) => `Fond ${i},${i * 1000}`).join('\n'), 'stor.csv');
+  assert.ok(stor.kuttet && stor.tekst.length <= MAKS_TABELLTEGN && !stor.tekst.endsWith(','));
+
+  // Celler kopiert fra Excel: tabulator mellom kolonnene. Vanlig tekst er ikke en tabell.
+  assert.equal(tabellFraUtklipp('Pensum Norge A\t7 000 889\r\nPensum Global Energy A\t594 271\r\n').rader, 2);
+  assert.equal(tabellFraUtklipp('Hei, kan du se på denne?'), null);
+  assert.equal(tabellFraUtklipp('én\tlinje'), null);
+
+  // Serveren: riktig innhold til modellen, og avvisning av det som ikke skal med.
+  const { innhold } = byggVedleggInnhold({ images: [{ mediaType: 'image/png', data: 'QUJD' }], dokumenter: [{ mediaType: 'application/pdf', data: 'JVBERg==', navn: 'rapport.pdf' }], tabeller: [{ navn: 'kunde.xlsx', tekst: t.tekst }], melding: 'Se på beholdningen' });
+  assert.deepEqual(innhold.map((b) => b.type), ['image', 'document', 'text', 'text']);
+  assert.equal(innhold[1].source.media_type, 'application/pdf'); assert.equal(innhold[1].title, 'rapport.pdf');
+  assert.ok(innhold[2].text.startsWith('Tabell fra kunde.xlsx') && innhold[2].text.includes('7000889'));
+  assert.ok(innhold[3].text.startsWith('Rådgiveren skriver om vedleggene:\nSe på beholdningen'));
+  assert.equal(byggVedleggInnhold({}).feil, 'Ingen vedlegg mottatt.');
+  assert.equal(byggVedleggInnhold({ dokumenter: [{ mediaType: 'text/html', data: 'QUJD' }] }).feil, 'Ugyldig PDF.');
+  assert.equal(byggVedleggInnhold({ images: [{ mediaType: 'image/png', data: 'ikke base64!' }] }).feil, 'Ugyldig bildeformat.');
+  assert.equal(byggVedleggInnhold({ tabeller: [{ navn: 'x', tekst: '   ' }] }).feil, 'Regnearket var tomt eller kunne ikke leses.');
+  assert.ok(byggVedleggInnhold({ images: Array.from({ length: 3 }, () => ({ mediaType: 'image/png', data: 'QUJD' })), tabeller: [{ tekst: 'a\tb' }, { tekst: 'c\td' }] }).feil.includes('4 vedlegg'));
+});
