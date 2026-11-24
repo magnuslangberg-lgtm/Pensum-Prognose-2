@@ -7995,6 +7995,94 @@ export default function PensumPrognoseModell() {
                     egenkapitalBelop: pbEgenkapitalBelop, effektivtInvestertBelop: pbEffektivtInvestertBelop, portefoljeBelop: pbPortefoljeBelop,
                     verdiutvikling: pensumPrognose, vektetAvkastning: pensumForventetAvkastning, nettoKontantstrom, horisont,
                   })}
+
+                  {/* Sammensetning ved valgt år: produktfordeling og aktivaklasser etter vekst, kontantstrøm og rebalansering */}
+                  {pbMalAktiv && pbVisSluttSammensetning && (() => {
+                    const aar = Math.max(1, Math.min(horisont, pbSluttSammensetningAar));
+                    const rad = pensumPrognose[aar];
+                    const valgte = pensumAllokering.filter(a => a.vekt > 0);
+                    if (!rad || !valgte.length || !(rad.verdi > 0)) return null;
+                    const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+                    const sumVekt = valgte.reduce((sum, a) => sum + a.vekt, 0) || 1;
+                    const linjer = valgte.map((a, idx) => ({
+                      id: a.id, navn: a.navn, farge: PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length],
+                      type: alleProd.find(pp => pp.id === a.id)?.aktivatype,
+                      naa: (a.vekt / sumVekt) * 100, da: ((rad[a.navn] || 0) / rad.verdi) * 100, belop: rad[a.navn] || 0,
+                    }));
+                    const KLASSER = [['Aksjer', PENSUM_COLORS.darkBlue], ['Renter', PENSUM_COLORS.salmon], ['Alternativer', PENSUM_COLORS.teal], ['Kontanter', PENSUM_COLORS.gray]];
+                    const klasseSum = (felt) => {
+                      const sum = { Aksjer: 0, Renter: 0, Alternativer: 0, Kontanter: 0 };
+                      linjer.forEach(l => {
+                        if (l.type === 'aksje') sum.Aksjer += l[felt];
+                        else if (l.type === 'rente') sum.Renter += l[felt];
+                        else if (l.type === 'alternativ') sum.Alternativer += l[felt];
+                        else if (l.type === 'kontanter') sum.Kontanter += l[felt];
+                        else if (l.type === 'blandet' || l.type === 'dynamisk') { sum.Aksjer += l[felt] * 0.5; sum.Renter += l[felt] * 0.5; }
+                      });
+                      return sum;
+                    };
+                    const klasserNaa = klasseSum('naa'); const klasserDa = klasseSum('da');
+                    const p1 = (v) => v.toFixed(1).replace('.', ',');
+                    const endring = (d) => Math.abs(d) < 0.05 ? <span className="text-gray-300">–</span> : <span style={{ color: d > 0 ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>{d > 0 ? '+' : '−'}{p1(Math.abs(d))}</span>;
+                    const stolpe = (sum) => (
+                      <div className="h-2.5 rounded-full overflow-hidden flex" style={{ backgroundColor: '#E2E8F0' }}>
+                        {KLASSER.filter(([n]) => sum[n] > 0.05).map(([n, farge]) => <div key={n} title={`${n} ${p1(sum[n])} %`} style={{ width: sum[n] + '%', backgroundColor: farge }}></div>)}
+                      </div>
+                    );
+                    return (
+                      <div className="mt-5 rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5" data-sluttsammensetning>
+                        <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+                          <h4 className="font-semibold text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Sammensetning i {rad.year}</h4>
+                          <span className="text-xs text-gray-500">etter {aar} år · {formatCurrency(Math.round(rad.verdi))}</span>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-6 items-center">
+                          <div className="mx-auto">
+                            <ResponsiveContainer width={180} height={180}>
+                              <PieChart>
+                                <Pie data={linjer.filter(l => l.da > 0.05)} cx="50%" cy="50%" innerRadius={48} outerRadius={78} dataKey="da" nameKey="navn" paddingAngle={2} cornerRadius={4}>
+                                  {linjer.filter(l => l.da > 0.05).map(l => <Cell key={l.id} fill={l.farge} />)}
+                                </Pie>
+                                <Tooltip formatter={(v, n) => [p1(v) + ' %', n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-200">
+                                <th className="py-1.5 text-left font-semibold">Produkt</th>
+                                <th className="py-1.5 text-right font-semibold">I dag</th>
+                                <th className="py-1.5 text-right font-semibold">{rad.year}</th>
+                                <th className="py-1.5 text-right font-semibold">Endring</th>
+                                <th className="py-1.5 text-right font-semibold">Verdi</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {linjer.map(l => (
+                                <tr key={l.id} className="border-b border-gray-100">
+                                  <td className="py-1.5 pr-2"><span className="inline-block w-2.5 h-2.5 rounded mr-2 align-middle" style={{ backgroundColor: l.farge }}></span><span className="text-gray-700">{l.navn}</span></td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-500">{p1(l.naa)} %</td>
+                                  <td className="py-1.5 text-right tabular-nums font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{p1(l.da)} %</td>
+                                  <td className="py-1.5 text-right tabular-nums text-xs">{endring(l.da - l.naa)}</td>
+                                  <td className="py-1.5 text-right tabular-nums text-gray-600 whitespace-nowrap">{formatCurrency(Math.round(l.belop))}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-5 pt-4 border-t border-gray-100 grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-2 items-center text-xs">
+                          <span className="text-gray-500">I dag</span>{stolpe(klasserNaa)}
+                          <span className="font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>{rad.year}</span>{stolpe(klasserDa)}
+                          <span></span>
+                          <div className="flex flex-wrap gap-x-5 gap-y-1 text-gray-600">
+                            {KLASSER.filter(([n]) => klasserNaa[n] > 0.05 || klasserDa[n] > 0.05).map(([n, farge]) => (
+                              <span key={n} className="flex items-center gap-1.5 tabular-nums"><span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: farge }}></span>{n} {p1(klasserNaa[n])} % → <strong style={{ color: PENSUM_COLORS.darkBlue }}>{p1(klasserDa[n])} %</strong></span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-3">Fordelingen endrer seg fordi produktene har ulik forventet avkastning{pensumRebalanseringAktiv && pensumRebalanseringer.length > 0 ? ', og fordi rebalanseringsreglene flytter midler mellom dem' : ''}. Tallene er en fremskrivning, ikke en garanti.</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
