@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { defaultPensumProdukter } from '../../data/pensumDefaults';
 
 const FELTNAVN = {
   kundeNavn: 'Kundenavn', kundeSelskap: 'Selskap', risikoprofil: 'Risikoprofil', horisont: 'Tidshorisont',
@@ -8,6 +9,39 @@ const FELTNAVN = {
   investeringsFormaal: 'Investeringsformål', likviditetsbehov: 'Likviditetsbehov',
 };
 
+const FELTNAVN_HANDLING = { ...FELTNAVN, radgiver: 'Rådgiver', dato: 'Dato', investertBelop: 'Beløp som skal investeres', fjernInvestertBelop: 'Bruk total kapital' };
+const FANENAVN = {
+  input: 'Kundeinformasjon', losninger: 'Porteføljebygging', rapport: 'Investeringsforslag',
+  formuesplanlegger: 'Formuesplanlegger', scenario: 'Fondssammenligning', belaning: 'Belåning',
+};
+const PRODUKTNAVN = Object.fromEntries(
+  [...defaultPensumProdukter.enkeltfond, ...defaultPensumProdukter.fondsportefoljer, ...(defaultPensumProdukter.eksterneFond || []), ...defaultPensumProdukter.alternative].map((p) => [p.id, p.navn]),
+);
+
+const visVerdi = (key, value) => {
+  if (typeof value === 'boolean') return value ? 'Ja' : 'Nei';
+  if (typeof value === 'number') return key === 'horisont' ? `${value} år` : `${value.toLocaleString('nb-NO')} kr`;
+  return String(value);
+};
+
+// Én linje per ting som skjer hvis rådgiveren godkjenner forslaget.
+const beskrivHandling = (handling) => {
+  const p = handling?.payload || {};
+  switch (handling?.type) {
+    case 'set_customer_fields':
+    case 'set_capital_fields':
+      return Object.entries(p).map(([key, value]) => `${FELTNAVN_HANDLING[key] || key}: ${visVerdi(key, value)}`);
+    case 'reset_capital_fields': return ['Nullstill alle formuespostene'];
+    case 'recalculate_allocation': return ['Sett porteføljen på nytt fra risikoprofilen'];
+    case 'set_pensum_portfolio':
+      return [`Bygg portefølje fra profilen ${p.profile}`, ...(p.weights || []).map((w) => `${PRODUKTNAVN[w.productId] || w.productId}: ${w.constraint === 'minimum' ? 'minst ' : ''}${String(w.weight).replace('.', ',')} %`)];
+    case 'navigate': return [`Gå til ${FANENAVN[p.tab] || p.tab}`];
+    case 'open_investment_proposal': return ['Åpne nedlasting av investeringsforslaget'];
+    case 'save_customer': return ['Lagre kundekortet'];
+    default: return [];
+  }
+};
+
 const tilBase64 = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = () => resolve(String(reader.result).split(',')[1]);
@@ -15,8 +49,9 @@ const tilBase64 = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function LunaAssistant({ onApply, context = {} }) {
+export default function LunaAssistant({ onApply, onApplyActions, context = {} }) {
   const inputRef = useRef(null);
+  const bunnRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,8 +59,11 @@ export default function LunaAssistant({ onApply, context = {} }) {
   const [tekst, setTekst] = useState('');
   const [lytter, setLytter] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hei! Jeg er Luna. Du kan spørre meg om kundekortet og verktøyet, diktere med mikrofonen eller laste opp skjermbilder.' },
+    { role: 'assistant', content: 'Hei! Jeg er Luna. Spør meg om kunden, porteføljen eller produktene, eller be meg fylle ut kundekortet og bygge en portefølje. Jeg gjør ingen endringer før du har godkjent dem.' },
   ]);
+  const [handlinger, setHandlinger] = useState(null);
+
+  useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
 
   const leggTilLunaSvar = (content, fields = null, merknad = '') => {
     setMessages((prev) => [...prev, { role: 'assistant', content }]);
@@ -40,6 +78,7 @@ export default function LunaAssistant({ onApply, context = {} }) {
     setTekst('');
     setLoading(true);
     setError('');
+    setHandlinger(null);
     try {
       const response = await fetch('/api/luna-chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -47,7 +86,8 @@ export default function LunaAssistant({ onApply, context = {} }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Luna kunne ikke svare.');
-      leggTilLunaSvar(data.message, data.fields, data.merknad);
+      leggTilLunaSvar(data.message);
+      if (Array.isArray(data.actions) && data.actions.length) setHandlinger(data.actions);
     } catch (err) {
       setError(err.message || 'Luna kunne ikke svare.');
     } finally {
@@ -110,13 +150,30 @@ export default function LunaAssistant({ onApply, context = {} }) {
           <div className="h-64 overflow-y-auto bg-slate-50 px-4 py-3 space-y-3" aria-live="polite">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${message.role === 'user' ? 'bg-sky-700 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm'}`}>{message.content}</div>
+                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${message.role === 'user' ? 'bg-sky-700 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm'} whitespace-pre-wrap`}>{message.content}</div>
               </div>
             ))}
             {loading && <div className="text-xs text-slate-400">Luna arbeider …</div>}
+            <div ref={bunnRef}></div>
           </div>
           <div className="p-3 space-y-2 border-t border-slate-100">
             {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
+            {handlinger && (
+              <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 space-y-2" data-luna-forslag>
+                <p className="text-xs font-bold text-slate-700">Luna foreslår</p>
+                <ul className="max-h-36 overflow-y-auto space-y-1 text-[11px] text-slate-700">
+                  {handlinger.flatMap(beskrivHandling).map((linje, i) => <li key={i} className="flex gap-1.5"><span className="text-sky-600">•</span><span>{linje}</span></li>)}
+                </ul>
+                <div className="flex gap-2">
+                  <button disabled={loading} onClick={async () => {
+                    const valgte = handlinger; setHandlinger(null); setError('');
+                    try { await onApplyActions(valgte); leggTilLunaSvar('Gjort. Se over endringene i verktøyet.'); }
+                    catch (err) { setError(err?.message || 'Kunne ikke utføre forslaget.'); }
+                  }} className="flex-1 rounded-lg px-3 py-2 text-xs font-bold text-white disabled:opacity-40" style={{ backgroundColor: '#2D6A6A' }}>Godkjenn</button>
+                  <button onClick={() => { setHandlinger(null); leggTilLunaSvar('Greit, jeg gjør ingen endringer.'); }} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">Avvis</button>
+                </div>
+              </div>
+            )}
             {resultat && (
               <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 space-y-2">
                 <p className="text-xs font-bold text-slate-700">Foreslåtte endringer ({felter.length})</p>
@@ -137,7 +194,7 @@ export default function LunaAssistant({ onApply, context = {} }) {
               <button onClick={startDiktering} title="Dikter melding" className={`h-10 w-10 rounded-xl border ${lytter ? 'border-red-300 bg-red-50' : 'border-slate-200'} text-slate-600`}>{lytter ? '●' : '🎙'}</button>
               <button onClick={sendMelding} disabled={!tekst.trim() || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
             </div>
-            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller forslag før lagring. Bilder og meldinger sendes til Pensums AI-tjeneste.</p>
+            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller forslag før du godkjenner. Meldinger, bilder og porteføljen i verktøyet sendes til Pensums AI-tjeneste, uten kundens navn.</p>
           </div>
         </div>
       )}

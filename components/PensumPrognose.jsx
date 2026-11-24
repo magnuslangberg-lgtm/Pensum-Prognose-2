@@ -1533,48 +1533,34 @@ export default function PensumPrognoseModell() {
   // Luna får et begrenset arbeidsbilde uten navn, e-post eller andre direkte
   // personopplysninger. Opplysninger rådgiveren selv skriver i chatten sendes
   // naturlig nok med den aktuelle forespørselen.
-  const lunaContext = useMemo(() => ({
-    activeTab,
-    customer: {
-      hasInvestorName: Boolean(kundeNavn),
-      hasCompanyName: Boolean(kundeSelskap),
-      hasAdvisor: Boolean(radgiver),
-      risikoprofil,
-      horisont,
-      dato,
-      investertBelop,
-      investeringsFormaal,
-      likviditetsbehov,
-    },
-    capital: {
-      aksjerKunde,
-      aksjefondKunde,
-      renterKunde,
-      kontanterKunde,
-      peFondKunde,
-      unoterteAksjerKunde,
-      shippingKunde,
-      egenEiendomKunde,
-      eiendomSyndikatKunde,
-      eiendomFondKunde,
-      likvideTotal,
-      illikvideTotal,
-      totalKapital,
-    },
-    allocation: allokering.map((item) => ({
-      navn: item.navn,
-      kategori: item.kategori,
-      vekt: item.vekt,
-      avkastning: item.avkastning,
-    })),
-    pensumPortfolio: pensumAllokering.map((item) => ({ id: item.id, navn: item.navn, vekt: item.vekt })),
-    pensumProducts: [
-      ...(pensumProdukter.enkeltfond || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'enkeltfond' })),
-      ...(pensumProdukter.fondsportefoljer || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'fondsportefoljer' })),
-      ...(pensumProdukter.eksterneFond || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'eksterneFond' })),
-      ...(pensumProdukter.alternative || []).map((item) => ({ id: item.id, navn: item.navn, kategori: 'alternative' })),
-    ],
-  }), [activeTab, kundeNavn, kundeSelskap, radgiver, risikoprofil, horisont, dato, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, allokering, pensumAllokering, pensumProdukter]);
+  const lunaContext = useMemo(() => {
+    const alleProd = [...pensumProdukter.enkeltfond, ...pensumProdukter.fondsportefoljer, ...(pensumProdukter.eksterneFond || []), ...pensumProdukter.alternative];
+    const stat3 = beregnPortefoljeStatistikk(pensumAllokering, produktHistorikk, periodeStartDato(3));
+    const kostnad = beregnKostnader(pensumAllokering, alleProd, pbEffektivtInvestertBelop);
+    const avrund = (v, d = 1) => (erGyldigTall(v) ? Number(v.toFixed(d)) : undefined);
+    return {
+      activeTab: activeTab === 'allokering' ? 'formuesplanlegger' : activeTab,
+      customer: {
+        hasInvestorName: Boolean(kundeNavn),
+        hasCompanyName: Boolean(kundeSelskap),
+        risikoprofil, horisont, investertBelop, investeringsFormaal, likviditetsbehov,
+      },
+      capital: {
+        aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde,
+        egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital,
+      },
+      portfolio: {
+        products: pensumAllokering.filter((a) => a.vekt > 0).map((a) => ({ id: a.id, navn: a.navn, vekt: a.vekt })),
+        totalWeight: avrund(pensumAllokering.reduce((sum, a) => sum + (a.vekt || 0), 0)),
+        assetClasses: pensumAktivafordeling.filter((a) => a.value > 0).map((a) => ({ name: a.name, value: a.value })),
+        expectedReturn: avrund(pensumForventetAvkastning),
+        risk3y: avrund(stat3?.risiko),
+        maxDrawdown3y: avrund(stat3?.maxDrawdown),
+        endValue: pensumPrognose.length ? pensumPrognose[pensumPrognose.length - 1].verdi : undefined,
+        costPct: kostnad.linjer.length ? avrund(kostnad.pst, 2) : undefined,
+      },
+    };
+  }, [activeTab, kundeNavn, kundeSelskap, risikoprofil, horisont, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, pensumAllokering, pensumProdukter, produktHistorikk, pensumAktivafordeling, pensumForventetAvkastning, pensumPrognose, pbEffektivtInvestertBelop]);
 
   const utforLunaHandlinger = useCallback(async (actions) => {
     if (!Array.isArray(actions) || actions.length === 0) return;
@@ -1725,7 +1711,10 @@ export default function PensumPrognoseModell() {
       setPensumAllokering(nyPortefolje);
     }
 
-    if (nesteFane) setActiveTab(nesteFane);
+    if (nesteFane) {
+      setActiveTab(nesteFane);
+      if (VERKTOY_FANER.some((v) => v.id === nesteFane)) setSisteVerktoy(nesteFane);
+    }
     if (aapneForslag) {
       setPdfModal(true);
     }
@@ -9867,14 +9856,7 @@ export default function PensumPrognoseModell() {
 
       </main>
 
-      <LunaAssistant
-        onApply={brukLunaFelter}
-        context={{
-          risikoprofil, horisont, investeringsFormaal, likviditetsbehov,
-          aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde,
-          unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde,
-        }}
-      />
+      <LunaAssistant onApply={brukLunaFelter} onApplyActions={utforLunaHandlinger} context={lunaContext} />
 
       <footer className="mt-12 py-6 text-center border-t border-gray-200 bg-white no-print">
         <img src={PENSUM_LOGO} alt="Pensum" className="h-14 mx-auto mb-3" />

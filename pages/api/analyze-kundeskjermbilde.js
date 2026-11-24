@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { avvisUvedkommende } from '../../lib/apiVern';
+import { LUNA_MODELL } from '../../lib/luna';
 
 export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
 
@@ -10,7 +12,7 @@ const ALLOWED_FIELDS = new Set([
 const NUMBER_FIELDS = new Set(['horisont', 'aksjerKunde', 'aksjefondKunde', 'renterKunde', 'kontanterKunde', 'peFondKunde', 'unoterteAksjerKunde', 'shippingKunde', 'egenEiendomKunde', 'eiendomSyndikatKunde', 'eiendomFondKunde']);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (avvisUvedkommende(req, res, 'luna-skjermbilde', 10)) return;
   const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 4) : [];
   if (!images.length) return res.status(400).json({ error: 'Ingen skjermbilder mottatt.' });
   if (images.some((img) => !/^image\/(png|jpeg|webp|gif)$/.test(img?.mediaType || '') || !img?.data)) return res.status(400).json({ error: 'Ugyldig bildeformat.' });
@@ -18,8 +20,11 @@ export default async function handler(req, res) {
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514', max_tokens: 1800,
+    const response = await client.beta.messages.create({
+      model: process.env.ANTHROPIC_LUNA_MODEL || LUNA_MODELL, max_tokens: 16000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'low' },
       messages: [{ role: 'user', content: [
         ...images.map((img) => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
         { type: 'text', text: `Du er Luna, dataassistent for et norsk finansrådgiververktøy. Les skjermbildene og trekk KUN ut kundedata som er tydelig synlige. Ikke gjett. Beløp skal være hele NOK uten skilletegn. Horisont er antall år. Risikoprofil må være Defensiv, Moderat, Dynamisk eller Offensiv. Returner bare JSON:
