@@ -133,6 +133,15 @@ test('Luna-vedlegg: regneark, innlimte celler og kontroll på serveren', async (
   const t = regnearkTilTekst(XLSX, xlsx, 'kunde.xlsx');
   assert.equal(t.tekst, 'Ark «Beholdning»:\nVerdipapir\tAntall\tMarkedsverdi\nPensum Norge A\t42002.63\t7000889\nPensum Global Energy A\t3933.26\t594271\n\nArk «Gjeld»:\nLån\t-8900000');
   assert.equal(t.kuttet, false);
+  // Beløp formatert i millioner («0,,») og med tusenskille skal komme frem med full verdi, og datoer som dato.
+  const formatert = XLSX.utils.book_new();
+  const ark = XLSX.utils.aoa_to_sheet([['Fond', 'Verdi', 'Dato'], ['Pensum Norge A', 7000889, 46326], ['Pensum Basis', 1234567.891, 46326]]);
+  ark.B2.z = '0,,'; ark.B3.z = '#,##0'; ark.C2.z = 'dd.mm.yyyy'; ark.C3.z = 'dd.mm.yyyy';
+  XLSX.utils.book_append_sheet(formatert, ark, 'A');
+  const lest = regnearkTilTekst(XLSX, XLSX.write(formatert, { type: 'array', bookType: 'xlsx' }), 'formatert.xlsx').tekst.split('\n');
+  assert.equal(lest[1].split('\t')[1], '7000889');
+  assert.equal(lest[2].split('\t')[1], '1234567.891');
+  assert.match(lest[1].split('\t')[2], /^\d{2}\.\d{2}\.\d{4}$/);
   // CSV leses som tekst, og ett ark får ingen arkoverskrift.
   const csv = regnearkTilTekst(XLSX, 'Navn,Verdi\nPensum Basis,1000000\n', 'liste.csv');
   assert.equal(csv.tekst, 'Navn\tVerdi\nPensum Basis\t1000000');
@@ -155,5 +164,8 @@ test('Luna-vedlegg: regneark, innlimte celler og kontroll på serveren', async (
   assert.equal(byggVedleggInnhold({ dokumenter: [{ mediaType: 'text/html', data: 'QUJD' }] }).feil, 'Ugyldig PDF.');
   assert.equal(byggVedleggInnhold({ images: [{ mediaType: 'image/png', data: 'ikke base64!' }] }).feil, 'Ugyldig bildeformat.');
   assert.equal(byggVedleggInnhold({ tabeller: [{ navn: 'x', tekst: '   ' }] }).feil, 'Regnearket var tomt eller kunne ikke leses.');
+  // Fem i samme kategori skal avvises, ikke kuttes stille til fire.
+  assert.ok(byggVedleggInnhold({ tabeller: Array.from({ length: 5 }, (_, i) => ({ navn: `t${i}`, tekst: 'a\tb' })) }).feil.includes('4 vedlegg'));
+  assert.ok(byggVedleggInnhold({ dokumenter: Array.from({ length: 5 }, () => ({ mediaType: 'application/pdf', data: 'JVBERg==' })) }).feil.includes('4 vedlegg'));
   assert.ok(byggVedleggInnhold({ images: Array.from({ length: 3 }, () => ({ mediaType: 'image/png', data: 'QUJD' })), tabeller: [{ tekst: 'a\tb' }, { tekst: 'c\td' }] }).feil.includes('4 vedlegg'));
 });

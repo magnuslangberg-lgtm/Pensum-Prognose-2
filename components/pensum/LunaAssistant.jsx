@@ -87,6 +87,7 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   const [handlinger, setHandlinger] = useState(null);
   const [drar, setDrar] = useState(false);
   const [vedlegg, setVedlegg] = useState([]);
+  const vedleggRef = useRef([]);
   const [utfort, setUtfort] = useState(null);
 
   useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
@@ -161,18 +162,23 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   // rådgiveren trykker Enter eller send, slik at flere vedlegg og en forklaring kan sendes samlet.
   // Hvert vedlegg er { type: 'bilde' | 'pdf' | 'tabell', navn, file?, url?, tabell? }.
   const byteFor = (v) => (v.file ? v.file.size : (v.tabell?.tekst.length || 0));
+  // Listen holdes også i en ref, slik at kontrollen av antall og størrelse alltid gjelder det
+  // som faktisk ligger ved nå, også når et regneark blir ferdig lest etter at mer er lagt til.
+  const settVedlegg = (liste) => { vedleggRef.current = liste; setVedlegg(liste); };
   const leggTilVedlegg = (nye, melding = '') => {
     if (!nye.length) { if (melding) setError(melding); return; }
-    const plass = Math.max(0, MAKS_VEDLEGG - vedlegg.length);
+    const gjeldende = vedleggRef.current;
+    const plass = Math.max(0, MAKS_VEDLEGG - gjeldende.length);
     const tatt = nye.slice(0, plass);
-    const samlet = [...vedlegg, ...tatt].reduce((sum, v) => sum + byteFor(v), 0);
+    nye.slice(plass).forEach((v) => v.url && URL.revokeObjectURL(v.url));
+    const samlet = [...gjeldende, ...tatt].reduce((sum, v) => sum + byteFor(v), 0);
     if (samlet > MAKS_SAMLET_BYTES) {
       tatt.forEach((v) => v.url && URL.revokeObjectURL(v.url));
       setError(`Vedleggene er for store til sammen (grensen er ${Math.round(MAKS_SAMLET_BYTES / 1024 / 1024)} MB). Send færre om gangen, eller ta et skjermbilde av den delen som gjelder.`);
       return;
     }
     setError(nye.length > plass ? `Du kan sende ${MAKS_VEDLEGG} vedlegg om gangen.` : melding);
-    if (tatt.length) setVedlegg((prev) => [...prev, ...tatt]);
+    if (tatt.length) settVedlegg([...gjeldende, ...tatt]);
   };
   const leggVed = async (alle) => {
     if (!alle.length) return;
@@ -191,7 +197,7 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
     }
     leggTilVedlegg(nye, avvist.length ? `Kunne ikke legge ved ${avvist.join(', ')}. Luna leser bilder, PDF og Excel/CSV.` : '');
   };
-  const fjernVedlegg = (index) => setVedlegg((prev) => { if (prev[index]?.url) URL.revokeObjectURL(prev[index].url); return prev.filter((_, i) => i !== index); });
+  const fjernVedlegg = (index) => { const gjeldende = vedleggRef.current; if (gjeldende[index]?.url) URL.revokeObjectURL(gjeldende[index].url); settVedlegg(gjeldende.filter((_, i) => i !== index)); };
   const analyser = (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
@@ -217,11 +223,11 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   };
   const sendBilder = async () => {
     if (loading || !vedlegg.length) return;
-    const sendes = vedlegg;
+    const sendes = vedleggRef.current;
     const melding = tekst.trim();
     setMessages((prev) => [...prev, { role: 'user', content: `${melding ? melding + '\n' : ''}(${sendes.length} vedlegg: ${sendes.map((v) => v.navn).join(', ')})` }]);
     sendes.forEach((v) => v.url && URL.revokeObjectURL(v.url));
-    setVedlegg([]);
+    settVedlegg([]);
     setTekst('');
     setLoading(true);
     setError('');
