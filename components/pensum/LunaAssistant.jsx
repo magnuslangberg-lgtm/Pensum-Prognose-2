@@ -72,6 +72,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     { role: 'assistant', content: 'Hei! Jeg er Luna. Spør meg om kunden, porteføljen eller produktene, eller be meg fylle ut kundekortet og bygge en portefølje. Jeg gjør ingen endringer før du har godkjent dem.' },
   ]);
   const [handlinger, setHandlinger] = useState(null);
+  const [drar, setDrar] = useState(false);
 
   useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
 
@@ -121,12 +122,31 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     recognition.start();
   };
 
-  const analyser = async (event) => {
-    const files = Array.from(event.target.files || []).slice(0, 4);
+  // Bilder kan velges med bindersen, limes inn (Ctrl+V) eller dras inn i chatten.
+  const BILDETYPER = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const analyser = (event) => {
+    const files = Array.from(event.target.files || []);
     event.target.value = '';
+    analyserFiler(files);
+  };
+  const limInn = (event) => {
+    const bilder = Array.from(event.clipboardData?.files || []).filter((f) => f.type.startsWith('image/'));
+    if (!bilder.length) return; // vanlig tekst limes inn som før
+    event.preventDefault();
+    analyserFiler(bilder);
+  };
+  const slipp = (event) => {
+    event.preventDefault();
+    setDrar(false);
+    analyserFiler(Array.from(event.dataTransfer?.files || []));
+  };
+  const analyserFiler = async (alle) => {
+    if (loading) return;
+    if (alle.length && !alle.some((f) => BILDETYPER.includes(f.type))) { setError('Luna kan lese bilder i formatene PNG, JPG, WEBP og GIF.'); return; }
+    const files = alle.filter((f) => BILDETYPER.includes(f.type)).slice(0, 4);
     if (!files.length) return;
     const forStor = files.find((file) => file.size > 4 * 1024 * 1024);
-    if (forStor) { setError(`${forStor.name} er større enn 4 MB.`); return; }
+    if (forStor) { setError(`${forStor.name || 'Bildet'} er større enn 4 MB.`); return; }
     setMessages((prev) => [...prev, { role: 'user', content: `Lastet opp ${files.length} skjermbilde${files.length > 1 ? 'r' : ''} for analyse.` }]);
     setLoading(true);
     setError('');
@@ -161,7 +181,12 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
   return (
     <div className="fixed bottom-5 right-5 z-[70] no-print">
       {open && (
-        <div className="mb-3 w-[390px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+        <div className={"relative mb-3 w-[390px] max-w-[calc(100vw-2rem)] rounded-2xl border bg-white shadow-2xl overflow-hidden " + (drar ? "border-sky-400 ring-2 ring-sky-200" : "border-slate-200")}
+          onPaste={limInn}
+          onDragOver={(e) => { if (Array.from(e.dataTransfer?.types || []).includes('Files')) { e.preventDefault(); setDrar(true); } }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDrar(false); }}
+          onDrop={slipp} data-luna-panel>
+          {drar && <div className="absolute inset-0 z-10 flex items-center justify-center bg-sky-50/90 text-sm font-semibold text-sky-800 pointer-events-none">Slipp bildet her</div>}
           <div className="px-4 py-3 text-white flex items-center justify-between" style={{ backgroundColor: '#0D2841' }}>
             <div><p className="font-bold">Luna</p><p className="text-[11px] text-blue-200">Din assistent i rådgiververktøyet</p></div>
             <button onClick={() => setOpen(false)} aria-label="Lukk Luna" className="text-blue-100 hover:text-white text-xl">×</button>
@@ -207,9 +232,9 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
               </div>
             )}
             <div className="flex items-end gap-2">
-              <button onClick={() => inputRef.current?.click()} disabled={loading} title="Legg ved skjermbilder" className="h-10 w-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50">📎</button>
+              <button onClick={() => inputRef.current?.click()} disabled={loading} title="Legg ved skjermbilder (du kan også lime inn eller dra dem hit)" className="h-10 w-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50">📎</button>
               <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={analyser} className="hidden" />
-              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder="Skriv til Luna …" className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
+              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder="Skriv til Luna, eller lim inn et skjermbilde …" className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
               <button onClick={startDiktering} title="Dikter melding" className={`h-10 w-10 rounded-xl border ${lytter ? 'border-red-300 bg-red-50' : 'border-slate-200'} text-slate-600`}>{lytter ? '●' : '🎙'}</button>
               <button onClick={sendMelding} disabled={!tekst.trim() || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
             </div>
