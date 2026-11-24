@@ -4,7 +4,7 @@ import { DATAFEED_KILDE, DATAFEED_PRODUKT_HISTORIKK, DATAFEED_INDEKS_HISTORIKK }
 import { PENSUM_SELSKAPSNOEKKELTALL, referanseEksponering, defaultPensumProdukter, defaultProduktEksponering, defaultProduktRapportMeta, defaultPensumStandardLosninger, produktBeskrivelser } from '../data/pensumDefaults';
 import PensumBelaning from './PensumBelaning';
 // FormuesplanleggerTab removed — stolpediagram-visningen er nå hovedsiden
-import { parseBelop, TRANSAKSJONSHONORAR_PST, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, byggPortefoljeSerie, beregnFallFraTopp, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
+import { parseBelop, TRANSAKSJONSHONORAR_PST, ASSET_COLORS, ASSET_COLORS_LIGHT, PORTEFOLJE_FARGER, CATEGORY_COLORS, DEFAULT_EIENDOM, DEFAULT_KUNDEKAPITAL, DEFAULT_LIKVID, DEFAULT_PE, DEFAULT_TEMPLATE_FILENAME, HISTORIKK_ARFELT, HISTORIKK_2026_YTD, PENSUM_COLORS, RAPPORT_DATO, RAPPORT_DATO_ISO, RAPPORT_DATO_OBJEKT, RAPPORT_MAANED, RAPPORT_AAR_TALL, RISIKOFRI_RENTE, periodeStartDato, beregnPortefoljeStatistikk, beregnScenarioAvkastning, fremskrivVerdi, fremskrivMedKontantstrom, beregnSisteAarNokkeltall, RISK_PROFILES, beregnAllokering, beregnProduktNokkeltall, beregnProduktStatistikk, beregnKorrelasjonsmatrise, byggMaanedssluttSerie, erGyldigTall, erPptTemplateFilnavn, finnStartVerdiVedPeriode, TILLEGG_TYPER, TILLEGG_MAKS, rensTillegg, tilleggAvkastning, fremskrivTillegg, beregnTotalbilde, byggPortefoljeSerie, beregnFallFraTopp, formatCurrency, formatDateEuro, formatHistorikkEtikett, formatNumber, formatPercent, aggregerEksponering, aggregerVerdensdeler, beregnKostnader, lagProduktFraMorningstar, cmaKlasseForMorningstarFond, CMA_KLASSER, MORNINGSTAR_DATO, oversettEksponering, beregnAarsavkastningFraData, inferPerioderPerAarFraHistorikk, oppdaterHistorikkTilRapportDato, parseHistorikkDato, skalerVekterTilHundreListe, fordelRestVektListe, validerSiderFormat } from '../lib/pensumCore';
 import { AllokeringRow, CollapsibleSection, CurrencyInput, KategoriHeaderRow, SammenligningRow, StatCard } from './pensum/PensumFieldComponents';
 import { LoginModal, RegisterModal } from './pensum/AuthModals';
 import LunaAssistant from './pensum/LunaAssistant';
@@ -100,6 +100,10 @@ export default function PensumPrognoseModell() {
   const [visForutsetninger, setVisForutsetninger] = useState(false);
   const [sisteVerktoy, setSisteVerktoy] = useState('formuesplanlegger');
   const [kundeSok, setKundeSok] = useState('');
+  // Kundens øvrige investeringer: lagt inn for hånd, i kroner, utenfor Pensum-forslaget.
+  const [tilleggAktiv, setTilleggAktiv] = useState(false);
+  const [tillegg, setTillegg] = useState([]);
+  const [visTilleggIPrognose, setVisTilleggIPrognose] = useState(true);
   // Gruppene i porteføljebyggeren kan foldes sammen hver for seg.
   const [pbGrupper, setPbGrupper] = useState({ portefolje: true, prognose: true, historikk: true });
   const pbGruppeHode = (id, tittel, undertittel) => (
@@ -905,6 +909,7 @@ export default function PensumPrognoseModell() {
     pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter,
     pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal,
     pbVisSluttSammensetning, pbSluttSammensetningAar,
+    tilleggAktiv, tillegg,
     // Forutsetninger og mål — Formuesplanlegger
     laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter,
     malAktiv, hovedmal, visDelmal, delmal,
@@ -916,7 +921,7 @@ export default function PensumPrognoseModell() {
     // Schema-versjon for fremtidige migreringer
     schemaVersion: 2,
     sistEndret: new Date().toISOString()
-  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
+  }), [aktivKundeId, kundeNavn, kundeSelskap, radgiver, eksisterendePortefolje, valgteFond, fondVekter, forslagSider, forslagVurdering, radgiver2, visRadgiver2, dato, risikoprofil, horisont, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, innskudd, uttak, allokering, scenarioParams, investeringsFormaal, likviditetsbehov, pensumAllokering, valgtPensumProfil, valgtStandardLosning, valgtAllokering, pensumRebalanseringAktiv, pensumRebalanseringer, investertBelop, formuesPlanleggerBelop, pbLaanAktiv, pbPrognoseFinansiering, pbLaanModus, pbAkkumulerRenter, pbMalAktiv, pbHovedmal, pbVisDelmal, pbDelmal, pbVisSluttSammensetning, pbSluttSammensetningAar, tilleggAktiv, tillegg, laanAktiv, prognoseFinansiering, laanModus, akkumulerRenter, malAktiv, hovedmal, visDelmal, delmal, visSluttSammensetning, sluttSammensetningAar, rebalanseringAktiv, rebalanseringer]);
 
   // Last inn kundedata
   const lastKundeData = useCallback((data) => {
@@ -984,6 +989,8 @@ export default function PensumPrognoseModell() {
     if (typeof data.pbVisDelmal === 'boolean') setPbVisDelmal(data.pbVisDelmal);
     if (Array.isArray(data.pbDelmal)) setPbDelmal(data.pbDelmal);
     if (typeof data.pbVisSluttSammensetning === 'boolean') setPbVisSluttSammensetning(data.pbVisSluttSammensetning);
+    setTilleggAktiv(data.tilleggAktiv === true);
+    setTillegg(rensTillegg(data.tillegg));
     if (typeof data.pbSluttSammensetningAar === 'number') setPbSluttSammensetningAar(data.pbSluttSammensetningAar);
 
     // Forutsetninger og mål — Formuesplanlegger
@@ -1318,6 +1325,8 @@ export default function PensumPrognoseModell() {
   // Ny kunde
   const nyKunde = useCallback(() => {
     setAktivKundeId(null);
+    setTilleggAktiv(false);
+    setTillegg([]);
     setKundeNavn('');
     setKundeSelskap('');
     setDato(new Date().toISOString().split('T')[0]);
@@ -1496,6 +1505,32 @@ export default function PensumPrognoseModell() {
   }, [pensumAllokering, pensumProdukter, produktRapportMeta, totalKapital, investertBelop, horisont, nettoKontantstrom, pensumRebalanseringAktiv, pensumRebalanseringer, pbEffektivtInvestertBelop, pbTotalLaan, pbAarligRentekostnad, pbAkkumulerRenter, pbPrognoseFinansiering]);
 
   const pensumProduktFarger = PORTEFOLJE_FARGER;
+  // Øvrige investeringer: fremskrivning og totalbilde, bare når funksjonen er slått på.
+  const tilleggLinjer = useMemo(() => (tilleggAktiv ? rensTillegg(tillegg).filter((x) => x.belop > 0) : []), [tilleggAktiv, tillegg]);
+  const tilleggFrem = useMemo(() => fremskrivTillegg(tilleggLinjer, horisont), [tilleggLinjer, horisont]);
+  const totalbilde = useMemo(() => (tilleggLinjer.length ? beregnTotalbilde({
+    pensumBelop: pbEffektivtInvestertBelop, pensumKlasser: pensumAktivafordeling, pensumAvkastning: pensumForventetAvkastning, tillegg: tilleggLinjer,
+  }) : null), [tilleggLinjer, pbEffektivtInvestertBelop, pensumAktivafordeling, pensumForventetAvkastning]);
+  const TILLEGG_NAVN = 'Øvrige investeringer';
+  // Prognosegrafen får et ekstra lag for øvrige investeringer når de skal vises.
+  const prognoseMedTillegg = useMemo(() => (tilleggLinjer.length && visTilleggIPrognose
+    ? pensumPrognose.map((rad, i) => ({ ...rad, [TILLEGG_NAVN]: tilleggFrem[i]?.total || 0 }))
+    : pensumPrognose), [pensumPrognose, tilleggFrem, tilleggLinjer, visTilleggIPrognose]);
+  const oppdaterTillegg = (id, endring) => setTillegg((prev) => prev.map((x) => (x.id === id ? { ...x, ...endring } : x)));
+  const leggTilTillegg = (type = 'aksjer', navn = '') => setTillegg((prev) => (prev.length >= TILLEGG_MAKS ? prev : [...prev, { id: `t-${Date.now()}-${prev.length}`, navn, type, belop: 0, avkastning: null }]));
+  // Lager linjer av formuespostene på kundekortet, så tallene ikke må skrives to ganger.
+  const hentTilleggFraKundekort = () => {
+    const poster = [
+      ['Aksjer', 'aksjer', aksjerKunde], ['Aksjefond', 'aksjer', aksjefondKunde], ['Renter', 'renter', renterKunde], ['Kontanter', 'kontanter', kontanterKunde],
+      ['PE-fond', 'pe', peFondKunde], ['Unoterte aksjer', 'pe', unoterteAksjerKunde], ['Shipping', 'annet', shippingKunde],
+      ['Egen eiendom', 'eiendom', egenEiendomKunde], ['Eiendomssyndikat', 'eiendom', eiendomSyndikatKunde], ['Eiendomsfond', 'eiendom', eiendomFondKunde],
+    ].filter(([, , belop]) => belop > 0);
+    setTillegg((prev) => {
+      const finnes = new Set(prev.map((x) => x.navn.toLowerCase()));
+      const nye = poster.filter(([navn]) => !finnes.has(navn.toLowerCase())).map(([navn, type, belop], i) => ({ id: `t-kort-${Date.now()}-${i}`, navn, type, belop, avkastning: null }));
+      return [...prev, ...nye].slice(0, TILLEGG_MAKS);
+    });
+  };
   const valgteProdukterForChart = pensumAllokering.filter(a => a.vekt > 0);
 
 
@@ -1560,8 +1595,9 @@ export default function PensumPrognoseModell() {
         endValue: pensumPrognose.length ? pensumPrognose[pensumPrognose.length - 1].verdi : undefined,
         costPct: kostnad.linjer.length ? avrund(kostnad.pst, 2) : undefined,
       },
+      otherInvestments: tilleggAktiv ? rensTillegg(tillegg).filter((x) => x.belop > 0).map((x) => ({ navn: x.navn, type: x.type, belop: x.belop, avkastning: tilleggAvkastning(x) })) : [],
     };
-  }, [activeTab, kundeNavn, kundeSelskap, risikoprofil, horisont, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, pensumAllokering, pensumProdukter, produktHistorikk, pensumAktivafordeling, pensumForventetAvkastning, pensumPrognose, pbEffektivtInvestertBelop]);
+  }, [activeTab, kundeNavn, kundeSelskap, risikoprofil, horisont, investertBelop, investeringsFormaal, likviditetsbehov, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, likvideTotal, illikvideTotal, totalKapital, pensumAllokering, pensumProdukter, produktHistorikk, pensumAktivafordeling, pensumForventetAvkastning, pensumPrognose, pbEffektivtInvestertBelop, tilleggAktiv, tillegg]);
 
   const utforLunaHandlinger = useCallback(async (actions) => {
     if (!Array.isArray(actions) || actions.length === 0) return;
@@ -1730,6 +1766,21 @@ export default function PensumPrognoseModell() {
         setValgtPensumProfil(nesteProfil);
         setPensumAllokering(pensumStandardPortefoljer[nesteProfil]);
       }
+    }
+
+    // Kundens øvrige investeringer: slå på funksjonen og legg til eller erstatt linjene.
+    const ovrigHandlinger = actions.filter((action) => action?.type === 'set_other_investments' && Array.isArray(action?.payload?.items));
+    if (ovrigHandlinger.length) {
+      setTilleggAktiv(true);
+      setTillegg((prev) => {
+        let liste = prev;
+        ovrigHandlinger.forEach((action, n) => {
+          const nye = rensTillegg(action.payload.items).filter((x) => x.belop > 0).map((x, i) => ({ ...x, id: `t-luna-${Date.now()}-${n}-${i}` }));
+          liste = action.payload.mode === 'replace' ? nye : [...liste, ...nye];
+        });
+        return liste.slice(0, TILLEGG_MAKS);
+      });
+      if (!nesteFane) nesteFane = 'losninger';
     }
 
     if (eksaktPlan) {
@@ -2491,6 +2542,7 @@ export default function PensumPrognoseModell() {
     indeksHistorikk: DATAFEED_INDEKS_HISTORIKK, referanseEksponering,
     historiskAarsavkastning: beregnPensumHistorikk,
     forventetAvkastning: pensumForventetAvkastning,
+    ovrigeInvesteringer: tilleggLinjer,
     selskap: PENSUM_SELSKAPSNOEKKELTALL
   });
   // Ting rådgiveren bør se før forslaget sendes ut. Stopper ikke eksporten, men vises
@@ -2516,7 +2568,7 @@ export default function PensumPrognoseModell() {
       return { slides: [], feil: e?.message || String(e) };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
+  }, [tilleggLinjer, activeTab, forslagSider, forslagVurdering, radgiver2, visRadgiver2, kundeNavn, kundeSelskap, bruker, radgiver, investertBelop, totalKapital, horisont, risikoprofil, investeringsFormaal, likviditetsbehov, nettoKontantstrom, pensumAllokering, pensumProdukter, produktRapportMeta, produktEksponering, produktHistorikk, beregnPensumHistorikk, pensumForventetAvkastning]);
   const handleLastNedForslag = async () => {
     if (forslagVarsler.length && !confirm(`Før du laster ned:\n\n• ${forslagVarsler.join('\n• ')}\n\nLast ned likevel?`)) return;
     setForslagLaster(true);
@@ -2812,7 +2864,7 @@ export default function PensumPrognoseModell() {
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Sider i presentasjonen</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0)).map((side) => (
                     <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                       <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
                       {side.navn}
@@ -4748,6 +4800,10 @@ export default function PensumPrognoseModell() {
                         <input type="checkbox" checked={visAlternative} onChange={(e) => setVisAlternative(e.target.checked)} className="w-4 h-4 rounded" />
                         <span>Alternative investeringer</span>
                       </label>
+                      <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer" title="Legg inn investeringer kunden har utenfor Pensum, så de kommer med i prognosen og totaloversikten">
+                        <input type="checkbox" checked={tilleggAktiv} onChange={(e) => setTilleggAktiv(e.target.checked)} className="w-4 h-4 rounded" data-tillegg-bryter />
+                        <span>Kundens øvrige investeringer</span>
+                      </label>
                     </div>
                     {/* Standardporteføljer */}
                     <div className="flex items-center gap-2">
@@ -5608,6 +5664,119 @@ export default function PensumPrognoseModell() {
                 </div>
               </div>
             </div>
+
+            {/* Kundens øvrige investeringer: frihåndslinjer i kroner, og totalbildet med Pensum-delen */}
+            {tilleggAktiv && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-tilleggspanel>
+                <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
+                  <div>
+                    <h3 className="text-lg font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens øvrige investeringer</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Investeringer utenfor Pensum. De tas med i prognosen og totaloversikten, men ikke i Pensum-forslagets vekter, historikk eller kostnader.</p>
+                  </div>
+                  <button onClick={hentTilleggFraKundekort} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 hover:bg-gray-50" style={{ color: PENSUM_COLORS.darkBlue }}>Hent fra kundekortet</button>
+                </div>
+                <div className="p-6 grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-8">
+                  <div>
+                    {tillegg.length > 0 && (
+                      <div className="grid grid-cols-[1fr_9.5rem_8.5rem_5.5rem_1.75rem] gap-x-2 gap-y-2 items-center text-sm">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Navn</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Type</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 text-right">Beløp (kr)</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 text-right" title="Forventet årlig avkastning. Tomt felt bruker anslaget for typen.">Avk. %</span>
+                        <span></span>
+                        {tillegg.map((x) => (
+                          <React.Fragment key={x.id}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded flex-shrink-0" style={{ backgroundColor: TILLEGG_TYPER[x.type]?.farge }}></span>
+                              <input type="text" value={x.navn} onChange={(e) => oppdaterTillegg(x.id, { navn: e.target.value.slice(0, 80) })} placeholder="F.eks. Hytte, DNB-fond" aria-label="Navn på investeringen"
+                                className="w-full min-w-0 border border-gray-200 rounded-lg py-1.5 px-2.5 text-sm focus:border-blue-400 focus:outline-none" />
+                            </div>
+                            <select value={x.type} onChange={(e) => oppdaterTillegg(x.id, { type: e.target.value })} aria-label="Type investering" className="border border-gray-200 rounded-lg py-1.5 px-2 text-sm bg-white">
+                              {Object.entries(TILLEGG_TYPER).map(([id, t]) => <option key={id} value={id}>{t.navn}</option>)}
+                            </select>
+                            <input type="text" inputMode="numeric" value={x.belop ? formatNumber(x.belop) : ''} onChange={(e) => { const v = parseBelop(e.target.value); oppdaterTillegg(x.id, { belop: Number.isFinite(v) && v > 0 ? Math.min(1e12, v) : 0 }); }} placeholder="0" aria-label="Beløp i kroner"
+                              className="border border-gray-200 rounded-lg py-1.5 px-2.5 text-sm text-right tabular-nums focus:border-blue-400 focus:outline-none" />
+                            <input type="text" inputMode="decimal" value={x.avkastning === null || x.avkastning === undefined ? '' : String(x.avkastning).replace('.', ',')}
+                              onChange={(e) => { const t = e.target.value.replace(',', '.').trim(); const v = Number(t); oppdaterTillegg(x.id, { avkastning: t === '' || !Number.isFinite(v) ? null : Math.max(-20, Math.min(30, v)) }); }}
+                              placeholder={TILLEGG_TYPER[x.type]?.avk != null ? String(TILLEGG_TYPER[x.type].avk).replace('.', ',') : 'oppgi'} aria-label="Forventet årlig avkastning i prosent"
+                              className={"border rounded-lg py-1.5 px-2.5 text-sm text-right tabular-nums focus:border-blue-400 focus:outline-none " + (x.type === 'annet' && x.avkastning === null && x.belop > 0 ? "border-amber-300 bg-amber-50" : "border-gray-200")} />
+                            <button onClick={() => setTillegg((prev) => prev.filter((y) => y.id !== x.id))} aria-label={`Fjern ${x.navn || 'investeringen'}`} className="text-gray-300 hover:text-red-600 text-lg leading-none">×</button>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                    {tillegg.length === 0 && <p className="text-sm text-gray-500">Legg til det kunden har andre steder, for eksempel bolig, bankinnskudd eller fond i en annen bank. Du kan også be Luna om det, eller lime inn et skjermbilde.</p>}
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                      <span className="text-xs text-gray-400">Legg til:</span>
+                      {[['Eiendom', 'eiendom', 'Eiendom'], ['Bankinnskudd', 'kontanter', 'Bankinnskudd'], ['Aksjefond i annen bank', 'aksjer', 'Aksjefond'], ['Rentefond', 'renter', 'Rentefond'], ['Unoterte aksjer', 'pe', 'Unoterte aksjer'], ['Annet', 'annet', '']].map(([etikett, type, navn]) => (
+                        <button key={etikett} onClick={() => leggTilTillegg(type, navn)} disabled={tillegg.length >= TILLEGG_MAKS}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TILLEGG_TYPER[type].farge }}></span>+ {etikett}
+                        </button>
+                      ))}
+                    </div>
+                    {totalbilde?.manglerAvkastning.length > 0 && <p className="text-xs mt-3" style={{ color: '#92400E' }}>Oppgi forventet avkastning for {totalbilde.manglerAvkastning.join(', ')}. Uten den regnes verdien som uendret i prognosen.</p>}
+                    <p className="text-[11px] text-gray-400 mt-3">Tomt felt for avkastning bruker verktøyets anslag for typen. Verdiene fremskrives med renters rente, uten innskudd og uttak.</p>
+                  </div>
+
+                  {/* Totalbildet: ytre ring viser Pensum mot øvrig, indre ring aktivaklassene samlet */}
+                  <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-slate-50 to-white p-5" data-totalbilde>
+                    <h4 className="font-semibold mb-3 text-sm tracking-wide uppercase" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens totalportefølje</h4>
+                    {!totalbilde ? <p className="text-sm text-gray-500">Legg inn minst én investering med beløp for å se totalbildet.</p> : (() => {
+                      const KLASSEFARGE = { Aksjer: PENSUM_COLORS.darkBlue, Renter: PENSUM_COLORS.salmon, Alternativer: PENSUM_COLORS.teal, Kontanter: PENSUM_COLORS.gray, Annet: '#B8A9C9' };
+                      const ytre = [{ name: 'Hos Pensum', value: totalbilde.pensum, farge: PENSUM_COLORS.darkBlue }, { name: 'Øvrige investeringer', value: totalbilde.ovrig, farge: '#CBD5E1' }].filter((d) => d.value > 0);
+                      const p1 = (v) => v.toFixed(1).replace('.', ',');
+                      return (
+                        <>
+                          <div className="flex items-center gap-5">
+                            <div className="shrink-0 relative">
+                              <ResponsiveContainer width={170} height={170}>
+                                <PieChart>
+                                  <Pie data={totalbilde.klasser} dataKey="belop" nameKey="navn" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={2} cornerRadius={3} isAnimationActive={false}>
+                                    {totalbilde.klasser.map((k) => <Cell key={k.navn} fill={KLASSEFARGE[k.navn] || '#94A3B8'} />)}
+                                  </Pie>
+                                  <Pie data={ytre} dataKey="value" cx="50%" cy="50%" innerRadius={68} outerRadius={80} paddingAngle={2} cornerRadius={3} isAnimationActive={false}>
+                                    {ytre.map((d) => <Cell key={d.name} fill={d.farge} />)}
+                                  </Pie>
+                                  <Tooltip formatter={(v, n) => [formatCurrency(v), n]} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-3">
+                              <div>
+                                <div className="text-[11px] uppercase tracking-wider text-gray-400">Totalt</div>
+                                <div className="text-xl font-bold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(totalbilde.total)}</div>
+                              </div>
+                              <div className="space-y-1 text-sm">
+                                {ytre.map((d) => (
+                                  <div key={d.name} className="flex items-center gap-2">
+                                    <span className="w-3 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.farge }}></span>
+                                    <span className="flex-1 text-gray-700">{d.name}</span>
+                                    <span className="tabular-nums text-gray-500 text-xs">{formatCurrency(d.value)}</span>
+                                    <span className="font-semibold tabular-nums w-14 text-right" style={{ color: PENSUM_COLORS.darkBlue }}>{p1((d.value / totalbilde.total) * 100)} %</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-gray-100 space-y-1 text-sm">
+                            <div className="text-[11px] uppercase tracking-wider text-gray-400 mb-1">Aktivaklasser samlet</div>
+                            {totalbilde.klasser.map((k) => (
+                              <div key={k.navn} className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: KLASSEFARGE[k.navn] || '#94A3B8' }}></span>
+                                <span className="flex-1 text-gray-700">{k.navn}</span>
+                                <span className="font-semibold tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{p1(k.andel)} %</span>
+                              </div>
+                            ))}
+                          </div>
+                          {erGyldigTall(totalbilde.totalAvkastning) && <p className="text-xs text-gray-500 mt-3">Forventet avkastning samlet: <strong style={{ color: PENSUM_COLORS.darkBlue }}>{p1(totalbilde.totalAvkastning)} % per år</strong> (Pensum {formatPercent(pensumForventetAvkastning)}, øvrig {formatPercent(totalbilde.ovrigAvkastning)}).</p>}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
             )}
 
@@ -5625,6 +5794,7 @@ export default function PensumPrognoseModell() {
               });
               const vektetYield = yieldTotal > 0 ? yieldSum / yieldTotal : 0;
               return (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <StatCard label="Startkapital" value={formatCurrency(effektivtInvestertBelop)} />
                   <StatCard label="Forventet avkastning" value={formatPercent(pensumForventetAvkastning)} subtext="årlig" color={PENSUM_COLORS.green} />
@@ -5632,6 +5802,15 @@ export default function PensumPrognoseModell() {
                   <StatCard label="Sluttverdi" value={formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)} subtext={"etter " + horisont + " år"} />
                   <StatCard label="Total avkastning" value={formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) - effektivtInvestertBelop)} color={PENSUM_COLORS.green} />
                 </div>
+                {totalbilde && (
+                  <div className="mt-4 rounded-xl border border-gray-100 bg-white px-5 py-3 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm" data-totalprognose>
+                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: PENSUM_COLORS.darkBlue }}>Med kundens øvrige investeringer</span>
+                    <span className="text-gray-600">I dag: <strong className="tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency(totalbilde.total)}</strong></span>
+                    <span className="text-gray-600">Om {horisont} år: <strong className="tabular-nums" style={{ color: PENSUM_COLORS.darkBlue }}>{formatCurrency((pensumPrognose[pensumPrognose.length - 1]?.verdi || 0) + (tilleggFrem[tilleggFrem.length - 1]?.total || 0))}</strong></span>
+                    <span className="text-gray-500 text-xs">Hos Pensum {formatCurrency(pensumPrognose[pensumPrognose.length - 1]?.verdi || 0)} · øvrig {formatCurrency(tilleggFrem[tilleggFrem.length - 1]?.total || 0)}</span>
+                  </div>
+                )}
+                </>
               );
             })()}
 
@@ -5651,12 +5830,22 @@ export default function PensumPrognoseModell() {
                     onChange={(e) => { const v = Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1)); setHorisont(v); setLocalHorisont(String(v)); }}
                     className="border border-blue-400 bg-blue-800/50 text-white rounded py-1 px-2 w-16 text-right text-sm" />
                   <span className="text-blue-300 text-sm">år</span>
+                  {tilleggLinjer.length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-blue-100 cursor-pointer ml-3 pl-3 border-l border-blue-400">
+                      <input type="checkbox" checked={visTilleggIPrognose} onChange={(e) => setVisTilleggIPrognose(e.target.checked)} className="w-4 h-4 rounded" />
+                      <span>Vis øvrige investeringer</span>
+                    </label>
+                  )}
                 </div>
               </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={380}>
-                  <ComposedChart data={pensumPrognose} barCategoryGap="30%">
+                  <ComposedChart data={prognoseMedTillegg} barCategoryGap="30%">
                     <defs>
+                      <pattern id="pbTilleggPattern" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                        <rect width="7" height="7" fill="#E2E8F0" />
+                        <line x1="0" y1="0" x2="0" y2="7" stroke="#64748B" strokeWidth="2" opacity="0.5" />
+                      </pattern>
                       <pattern id="pbLaanPattern" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
                         <rect width="8" height="8" fill="#FEE2E2" />
                         <line x1="0" y1="0" x2="0" y2="8" stroke="#B91C1C" strokeWidth="2" opacity="0.55" />
@@ -5669,6 +5858,7 @@ export default function PensumPrognoseModell() {
                     <Legend iconType="circle" iconSize={8} />
                     {pbTotalLaan > 0 && !pbAkkumulerRenter && <ReferenceArea y1={0} y2={pbTotalLaan} fill="url(#pbLaanPattern)" fillOpacity={1} ifOverflow="visible" />}
                     {valgteProdukterForChart.map((p, idx) => <Bar key={p.id} dataKey={p.navn} stackId="a" fill={pensumProduktFarger[idx % pensumProduktFarger.length]} />)}
+                    {tilleggLinjer.length > 0 && visTilleggIPrognose && <Bar dataKey={TILLEGG_NAVN} stackId="a" fill="url(#pbTilleggPattern)" stroke="#94A3B8" strokeWidth={0.5} />}
                     {pbTotalLaan > 0 && pbAkkumulerRenter && (
                       <Area type="monotone" dataKey="laanBalanse" fill="url(#pbLaanPattern)" fillOpacity={1} stroke="#B91C1C" strokeWidth={2} dot={false} activeDot={false} isAnimationActive={false} name="Lånebalanse">
                         <LabelList dataKey="laanBalanse" content={(props) => {
@@ -9274,7 +9464,7 @@ export default function PensumPrognoseModell() {
                 )}
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-4 mb-1">Sider</div>
                 <div>
-                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg).map((side) => (
+                  {FORSLAG_SIDER.filter((side) => !side.fast && !side.tillegg && (side.id !== 'totalbilde' || tilleggLinjer.length > 0)).map((side) => (
                     <label key={side.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer py-0.5">
                       <input type="checkbox" checked={forslagSider.includes(side.id)} onChange={(e) => setForslagSider((prev) => e.target.checked ? [...prev, side.id] : prev.filter((id) => id !== side.id))} />
                       {side.navn}

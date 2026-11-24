@@ -18,6 +18,8 @@ const PRODUKTNAVN = Object.fromEntries(
   [...defaultPensumProdukter.enkeltfond, ...defaultPensumProdukter.fondsportefoljer, ...(defaultPensumProdukter.eksterneFond || []), ...defaultPensumProdukter.alternative].map((p) => [p.id, p.navn]),
 );
 
+const TYPENAVN = { aksjer: 'aksjer', renter: 'renter', eiendom: 'eiendom', pe: 'private equity/unotert', kontanter: 'kontanter', annet: 'annet' };
+
 const visVerdi = (key, value) => {
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nei';
   if (typeof value === 'number') return key === 'horisont' ? `${value} år` : `${value.toLocaleString('nb-NO')} kr`;
@@ -45,6 +47,11 @@ const beskrivHandling = (handling) => {
         'Erstatter porteføljen som ligger i byggeren nå',
       ];
     }
+    case 'set_other_investments':
+      return [
+        p.mode === 'replace' ? 'Erstatt kundens øvrige investeringer' : 'Legg til under kundens øvrige investeringer',
+        ...(p.items || []).map((x) => `${x.navn} (${TYPENAVN[x.type] || x.type}): ${Number(x.belop).toLocaleString('nb-NO')} kr${x.avkastning != null ? `, ${String(x.avkastning).replace('.', ',')} % per år` : ''}`),
+      ];
     case 'navigate': return [`Gå til ${FANENAVN[p.tab] || p.tab}`];
     case 'open_investment_proposal': return ['Åpne nedlasting av investeringsforslaget'];
     case 'save_customer': return ['Lagre kundekortet'];
@@ -205,9 +212,10 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
       const forslag = Array.isArray(data.actions) ? data.actions : [];
       const ukjente = Array.isArray(data.ukjente) ? data.ukjente : [];
       const deler = [];
-      if (forslag.length) deler.push('Jeg fant en beholdning i Pensum-produkter og har lagt den inn i porteføljebyggeren.');
+      if (forslag.some((a) => a.type === 'set_exact_portfolio')) deler.push('Jeg fant en beholdning i Pensum-produkter og har lagt den inn i porteføljebyggeren.');
+      if (forslag.some((a) => a.type === 'set_other_investments')) deler.push('Posisjoner utenfor Pensum har jeg lagt inn som kundens øvrige investeringer. Se over type og forventet avkastning.');
       if (antall) deler.push(`Jeg fylte inn ${antall} felt på kundekortet.`);
-      if (ukjente.length) deler.push(`Disse fant jeg ikke blant Pensums produkter, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
+      if (ukjente.length) deler.push(`Disse fant jeg ikke beløp for, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
       if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i skjermbildet.');
       if (data.merknad) deler.push(data.merknad);
       leggTilLunaSvar(deler.join('\n\n'));
