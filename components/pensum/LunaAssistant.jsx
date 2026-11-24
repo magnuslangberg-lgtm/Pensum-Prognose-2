@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { defaultPensumProdukter } from '../../data/pensumDefaults';
+import { MAKS_VEDLEGG, MAKS_SAMLET_BYTES, vedleggstype, regnearkTilTekst, tabellFraUtklipp } from '../../lib/lunaVedlegg';
 
 const FELTNAVN = {
   kundeNavn: 'Kundenavn', kundeSelskap: 'Selskap', risikoprofil: 'Risikoprofil', horisont: 'Tidshorisont',
@@ -86,6 +87,7 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   const [handlinger, setHandlinger] = useState(null);
   const [drar, setDrar] = useState(false);
   const [vedlegg, setVedlegg] = useState([]);
+  const vedleggRef = useRef([]);
   const [utfort, setUtfort] = useState(null);
 
   useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
@@ -156,32 +158,63 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   };
 
   // Bilder kan velges med bindersen, limes inn (Ctrl+V) eller dras inn i chatten.
-  const BILDETYPER = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-  const MAKS_BILDER = 4;
-  // Bildene legges ved meldingen og sendes først når rådgiveren trykker Enter eller send,
-  // slik at flere skjermbilder og en forklaring kan sendes samlet.
-  const leggVed = (alle) => {
-    if (!alle.length) return;
-    const bilder = alle.filter((f) => BILDETYPER.includes(f.type));
-    if (!bilder.length) { setError('Luna kan lese bilder i formatene PNG, JPG, WEBP og GIF.'); return; }
-    const forStor = bilder.find((file) => file.size > 4 * 1024 * 1024);
-    if (forStor) { setError(`${forStor.name || 'Bildet'} er større enn 4 MB.`); return; }
-    const plass = Math.max(0, MAKS_BILDER - vedlegg.length);
-    setError(bilder.length > plass ? `Du kan sende ${MAKS_BILDER} bilder om gangen.` : '');
-    const nye = bilder.slice(0, plass).map((file) => ({ file, url: URL.createObjectURL(file) }));
-    if (nye.length) setVedlegg((prev) => [...prev, ...nye]);
+  // Vedlegg kan være bilder, PDF-er og regneark. De legges ved meldingen og sendes først når
+  // rådgiveren trykker Enter eller send, slik at flere vedlegg og en forklaring kan sendes samlet.
+  // Hvert vedlegg er { type: 'bilde' | 'pdf' | 'tabell', navn, file?, url?, tabell? }.
+  const byteFor = (v) => (v.file ? v.file.size : (v.tabell?.tekst.length || 0));
+  // Listen holdes også i en ref, slik at kontrollen av antall og størrelse alltid gjelder det
+  // som faktisk ligger ved nå, også når et regneark blir ferdig lest etter at mer er lagt til.
+  const settVedlegg = (liste) => { vedleggRef.current = liste; setVedlegg(liste); };
+  const leggTilVedlegg = (nye, melding = '') => {
+    if (!nye.length) { if (melding) setError(melding); return; }
+    const gjeldende = vedleggRef.current;
+    const plass = Math.max(0, MAKS_VEDLEGG - gjeldende.length);
+    const tatt = nye.slice(0, plass);
+    nye.slice(plass).forEach((v) => v.url && URL.revokeObjectURL(v.url));
+    const samlet = [...gjeldende, ...tatt].reduce((sum, v) => sum + byteFor(v), 0);
+    if (samlet > MAKS_SAMLET_BYTES) {
+      tatt.forEach((v) => v.url && URL.revokeObjectURL(v.url));
+      setError(`Vedleggene er for store til sammen (grensen er ${Math.round(MAKS_SAMLET_BYTES / 1024 / 1024)} MB). Send færre om gangen, eller ta et skjermbilde av den delen som gjelder.`);
+      return;
+    }
+    setError(nye.length > plass ? `Du kan sende ${MAKS_VEDLEGG} vedlegg om gangen.` : melding);
+    if (tatt.length) settVedlegg([...gjeldende, ...tatt]);
   };
-  const fjernVedlegg = (index) => setVedlegg((prev) => { URL.revokeObjectURL(prev[index]?.url); return prev.filter((_, i) => i !== index); });
+  const leggVed = async (alle) => {
+    if (!alle.length) return;
+    const nye = []; const avvist = [];
+    for (const file of alle) {
+      const type = vedleggstype(file);
+      if (type === 'bilde') nye.push({ type, navn: file.name || 'Skjermbilde', file, url: URL.createObjectURL(file) });
+      else if (type === 'pdf') nye.push({ type, navn: file.name || 'dokument.pdf', file });
+      else if (type === 'tabell') {
+        try {
+          const XLSX = await import('xlsx');
+          const tabell = regnearkTilTekst(XLSX, await file.arrayBuffer(), file.name || 'regneark');
+          if (tabell.tekst) nye.push({ type, navn: tabell.navn, tabell }); else avvist.push(`${file.name} (tomt)`);
+        } catch { avvist.push(`${file.name} (kunne ikke leses)`); }
+      } else avvist.push(file.name || 'fil');
+    }
+    leggTilVedlegg(nye, avvist.length ? `Kunne ikke legge ved ${avvist.join(', ')}. Luna leser bilder, PDF og Excel/CSV.` : '');
+  };
+  const fjernVedlegg = (index) => { const gjeldende = vedleggRef.current; if (gjeldende[index]?.url) URL.revokeObjectURL(gjeldende[index].url); settVedlegg(gjeldende.filter((_, i) => i !== index)); };
   const analyser = (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     leggVed(files);
   };
   const limInn = (event) => {
-    const bilder = Array.from(event.clipboardData?.files || []).filter((f) => f.type.startsWith('image/'));
-    if (!bilder.length) return; // vanlig tekst limes inn som før
+    const filer = Array.from(event.clipboardData?.files || []);
+    // Celler kopiert fra Excel kommer som både bilde og tekst. Teksten er mest nøyaktig.
+    const tabell = tabellFraUtklipp(event.clipboardData?.getData('text/plain'));
+    if (tabell && (filer.length === 0 || filer.every((f) => f.type.startsWith('image/')))) {
+      event.preventDefault();
+      leggTilVedlegg([{ type: 'tabell', navn: tabell.navn, tabell }]);
+      return;
+    }
+    if (!filer.length) return; // vanlig tekst limes inn som før
     event.preventDefault();
-    leggVed(bilder);
+    leggVed(filer);
   };
   const slipp = (event) => {
     event.preventDefault();
@@ -190,11 +223,11 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
   };
   const sendBilder = async () => {
     if (loading || !vedlegg.length) return;
-    const files = vedlegg.map((v) => v.file);
+    const sendes = vedleggRef.current;
     const melding = tekst.trim();
-    setMessages((prev) => [...prev, { role: 'user', content: `${melding ? melding + '\n' : ''}(${files.length} skjermbilde${files.length > 1 ? 'r' : ''} lagt ved)` }]);
-    vedlegg.forEach((v) => URL.revokeObjectURL(v.url));
-    setVedlegg([]);
+    setMessages((prev) => [...prev, { role: 'user', content: `${melding ? melding + '\n' : ''}(${sendes.length} vedlegg: ${sendes.map((v) => v.navn).join(', ')})` }]);
+    sendes.forEach((v) => v.url && URL.revokeObjectURL(v.url));
+    settVedlegg([]);
     setTekst('');
     setLoading(true);
     setError('');
@@ -202,12 +235,14 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
     setHandlinger(null);
     setUtfort(null);
     try {
-      const images = await Promise.all(files.map(async (file) => ({ mediaType: file.type, data: await tilBase64(file) })));
+      const images = await Promise.all(sendes.filter((v) => v.type === 'bilde').map(async (v) => ({ mediaType: v.file.type, data: await tilBase64(v.file) })));
+      const dokumenter = await Promise.all(sendes.filter((v) => v.type === 'pdf').map(async (v) => ({ mediaType: 'application/pdf', navn: v.navn, data: await tilBase64(v.file) })));
+      const tabeller = sendes.filter((v) => v.type === 'tabell').map((v) => ({ navn: v.navn, tekst: v.tabell.tekst }));
       const response = await fetch('/api/analyze-kundeskjermbilde', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, melding }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, dokumenter, tabeller, melding }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Luna kunne ikke analysere skjermbildet.');
+      if (!response.ok) throw new Error(data.error || 'Luna kunne ikke lese vedlegget.');
       const antall = Object.keys(data.fields || {}).length;
       const forslag = Array.isArray(data.actions) ? data.actions : [];
       const ukjente = Array.isArray(data.ukjente) ? data.ukjente : [];
@@ -216,12 +251,12 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
       if (forslag.some((a) => a.type === 'set_other_investments')) deler.push('Posisjoner utenfor Pensum har jeg lagt inn som kundens øvrige investeringer. Se over type og forventet avkastning.');
       if (antall) deler.push(`Jeg fylte inn ${antall} felt på kundekortet.`);
       if (ukjente.length) deler.push(`Disse fant jeg ikke beløp for, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
-      if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i skjermbildet.');
+      if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i vedleggene.');
       if (data.merknad) deler.push(data.merknad);
       leggTilLunaSvar(deler.join('\n\n'));
       await behandleForslag(forslag, data.fields);
     } catch (err) {
-      setError(err.message || 'Luna kunne ikke analysere skjermbildet.');
+      setError(err.message || 'Luna kunne ikke lese vedlegget.');
     } finally {
       setLoading(false);
     }
@@ -237,7 +272,7 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
           onDragOver={(e) => { if (Array.from(e.dataTransfer?.types || []).includes('Files')) { e.preventDefault(); setDrar(true); } }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDrar(false); }}
           onDrop={slipp} data-luna-panel>
-          {drar && <div className="absolute inset-0 z-10 flex items-center justify-center bg-sky-50/90 text-sm font-semibold text-sky-800 pointer-events-none">Slipp bildet her</div>}
+          {drar && <div className="absolute inset-0 z-10 flex items-center justify-center bg-sky-50/90 text-sm font-semibold text-sky-800 pointer-events-none">Slipp filen her</div>}
           <div className="px-4 py-3 text-white flex items-center justify-between" style={{ backgroundColor: '#0D2841' }}>
             <div><p className="font-bold">Luna</p><p className="text-[11px] text-blue-200">Din assistent i rådgiververktøyet</p></div>
             <button onClick={() => setOpen(false)} aria-label="Lukk Luna" className="text-blue-100 hover:text-white text-xl">×</button>
@@ -297,22 +332,30 @@ export default function LunaAssistant({ onUtfor, context = {} }) {
             {vedlegg.length > 0 && (
               <div className="flex flex-wrap items-center gap-2" data-luna-vedlegg>
                 {vedlegg.map((v, i) => (
-                  <div key={v.url} className="relative">
-                    <img src={v.url} alt={`Skjermbilde ${i + 1}`} className="h-14 w-20 rounded-lg border border-slate-200 object-cover" />
-                    <button onClick={() => fjernVedlegg(i)} aria-label={`Fjern skjermbilde ${i + 1}`} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-700 text-white text-xs leading-none">×</button>
+                  <div key={`${v.navn}-${i}`} className="relative" data-vedleggstype={v.type}>
+                    {v.type === 'bilde' ? (
+                      <img src={v.url} alt={`Skjermbilde ${i + 1}`} className="h-14 w-20 rounded-lg border border-slate-200 object-cover" />
+                    ) : (
+                      <div className="h-14 max-w-[9.5rem] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 flex flex-col justify-center" title={v.navn}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: v.type === 'pdf' ? '#B91C1C' : '#2D6A6A' }}>{v.type === 'pdf' ? 'PDF' : 'Tabell'}</span>
+                        <span className="text-[11px] text-slate-700 truncate">{v.navn}</span>
+                        <span className="text-[10px] text-slate-400">{v.type === 'pdf' ? `${(v.file.size / 1024 / 1024).toFixed(1).replace('.', ',')} MB` : `${v.tabell.rader} rader${v.tabell.kuttet ? ' (kuttet)' : ''}`}</span>
+                      </div>
+                    )}
+                    <button onClick={() => fjernVedlegg(i)} aria-label={`Fjern ${v.navn}`} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-700 text-white text-xs leading-none">×</button>
                   </div>
                 ))}
-                <span className="text-[11px] text-slate-500">Trykk Enter for å sende{vedlegg.length < MAKS_BILDER ? ', eller legg ved flere' : ''}.</span>
+                <span className="text-[11px] text-slate-500">Trykk Enter for å sende{vedlegg.length < MAKS_VEDLEGG ? ', eller legg ved flere' : ''}.</span>
               </div>
             )}
             <div className="flex items-end gap-2">
-              <button onClick={() => inputRef.current?.click()} disabled={loading} title="Legg ved skjermbilder (du kan også lime inn eller dra dem hit)" className="h-10 w-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50">📎</button>
-              <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={analyser} className="hidden" />
-              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder={vedlegg.length ? "Skriv en forklaring (valgfritt) …" : "Skriv til Luna, eller lim inn et skjermbilde …"} className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
+              <button onClick={() => inputRef.current?.click()} disabled={loading} title="Legg ved skjermbilde, PDF eller Excel (du kan også lime inn eller dra dem hit)" className="h-10 w-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50">📎</button>
+              <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.pdf,.xlsx,.xlsm,.xls,.csv,.tsv" multiple onChange={analyser} className="hidden" />
+              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder={vedlegg.length ? "Skriv en forklaring (valgfritt) …" : "Skriv til Luna, eller lim inn skjermbilde, PDF eller Excel …"} className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
               <button onClick={startDiktering} title="Dikter melding" className={`h-10 w-10 rounded-xl border ${lytter ? 'border-red-300 bg-red-50' : 'border-slate-200'} text-slate-600`}>{lytter ? '●' : '🎙'}</button>
               <button onClick={sendMelding} disabled={(!tekst.trim() && !vedlegg.length) || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
             </div>
-            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller det Luna legger inn. Meldinger, bilder og porteføljen i verktøyet sendes til Pensums AI-tjeneste, uten kundens navn.</p>
+            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller det Luna legger inn. Meldinger, vedlegg og porteføljen i verktøyet sendes til Pensums AI-tjeneste. Vedlegg sendes slik de er, også med navn som står i dem.</p>
           </div>
         </div>
       )}
