@@ -5673,7 +5673,10 @@ export default function PensumPrognoseModell() {
                     <h3 className="text-lg font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Kundens øvrige investeringer</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Investeringer utenfor Pensum. De tas med i prognosen og totaloversikten, men ikke i Pensum-forslagets vekter, historikk eller kostnader.</p>
                   </div>
-                  <button onClick={hentTilleggFraKundekort} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 hover:bg-gray-50" style={{ color: PENSUM_COLORS.darkBlue }}>Hent fra kundekortet</button>
+                  {/* Uten eget beløp bruker Pensum-forslaget hele formuen på kundekortet. Da ville postene blitt talt to ganger. */}
+                  <button onClick={hentTilleggFraKundekort} disabled={investertBelop === null}
+                    title={investertBelop === null ? 'Sett først beløpet som skal investeres hos Pensum. Uten det bruker forslaget hele formuen på kundekortet, og postene ville blitt talt to ganger.' : 'Lager linjer av formuespostene på kundekortet'}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: PENSUM_COLORS.darkBlue }}>Hent fra kundekortet</button>
                 </div>
                 <div className="p-6 grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-8">
                   <div>
@@ -5696,8 +5699,10 @@ export default function PensumPrognoseModell() {
                             </select>
                             <input type="text" inputMode="numeric" value={x.belop ? formatNumber(x.belop) : ''} onChange={(e) => { const v = parseBelop(e.target.value); oppdaterTillegg(x.id, { belop: Number.isFinite(v) && v > 0 ? Math.min(1e12, v) : 0 }); }} placeholder="0" aria-label="Beløp i kroner"
                               className="border border-gray-200 rounded-lg py-1.5 px-2.5 text-sm text-right tabular-nums focus:border-blue-400 focus:outline-none" />
-                            <input type="text" inputMode="decimal" value={x.avkastning === null || x.avkastning === undefined ? '' : String(x.avkastning).replace('.', ',')}
-                              onChange={(e) => { const t = e.target.value.replace(',', '.').trim(); const v = Number(t); oppdaterTillegg(x.id, { avkastning: t === '' || !Number.isFinite(v) ? null : Math.max(-20, Math.min(30, v)) }); }}
+                            {/* Teksten får stå urørt mens rådgiveren skriver («7,» og «-»), og tolkes når feltet forlates. */}
+                            <input type="text" inputMode="decimal" key={`${x.id}:${x.avkastning}`} defaultValue={x.avkastning === null || x.avkastning === undefined ? '' : String(x.avkastning).replace('.', ',')}
+                              onBlur={(e) => { const t = e.target.value.replace(',', '.').replace('−', '-').replace(/[%\s]/g, ''); const v = Number(t); const ny = t === '' || !Number.isFinite(v) ? null : Math.max(-20, Math.min(30, v)); if (ny === null) e.target.value = ''; oppdaterTillegg(x.id, { avkastning: ny }); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                               placeholder={TILLEGG_TYPER[x.type]?.avk != null ? String(TILLEGG_TYPER[x.type].avk).replace('.', ',') : 'oppgi'} aria-label="Forventet årlig avkastning i prosent"
                               className={"border rounded-lg py-1.5 px-2.5 text-sm text-right tabular-nums focus:border-blue-400 focus:outline-none " + (x.type === 'annet' && x.avkastning === null && x.belop > 0 ? "border-amber-300 bg-amber-50" : "border-gray-200")} />
                             <button onClick={() => setTillegg((prev) => prev.filter((y) => y.id !== x.id))} aria-label={`Fjern ${x.navn || 'investeringen'}`} className="text-gray-300 hover:text-red-600 text-lg leading-none">×</button>
@@ -5715,6 +5720,7 @@ export default function PensumPrognoseModell() {
                         </button>
                       ))}
                     </div>
+                    {investertBelop === null && totalKapital > 0 && <p className="text-xs mt-3" style={{ color: '#92400E' }}>Pensum-forslaget bruker nå hele formuen på kundekortet ({formatCurrency(totalKapital)}). Sett beløpet som skal investeres hos Pensum, så det samme ikke telles to ganger her.</p>}
                     {totalbilde?.manglerAvkastning.length > 0 && <p className="text-xs mt-3" style={{ color: '#92400E' }}>Oppgi forventet avkastning for {totalbilde.manglerAvkastning.join(', ')}. Uten den regnes verdien som uendret i prognosen.</p>}
                     <p className="text-[11px] text-gray-400 mt-3">Tomt felt for avkastning bruker verktøyets anslag for typen. Verdiene fremskrives med renters rente, uten innskudd og uttak.</p>
                   </div>
