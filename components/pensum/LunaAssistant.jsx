@@ -59,7 +59,12 @@ const tilBase64 = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function LunaAssistant({ onApply, onApplyActions, context = {} }) {
+// Lagring og nullstilling er varige eller ødeleggende, og krever fortsatt godkjenning.
+const KREVER_GODKJENNING = new Set(['save_customer', 'reset_capital_fields']);
+// Fanebytte og åpning av dialoger trenger verken oppsummering eller angreknapp.
+const UFARLIGE = new Set(['navigate', 'open_investment_proposal']);
+
+export default function LunaAssistant({ onUtfor, context = {} }) {
   const inputRef = useRef(null);
   const bunnRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -69,17 +74,35 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
   const [tekst, setTekst] = useState('');
   const [lytter, setLytter] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hei! Jeg er Luna. Spør meg om kunden, porteføljen eller produktene, eller be meg fylle ut kundekortet og bygge en portefølje. Jeg gjør ingen endringer før du har godkjent dem.' },
+    { role: 'assistant', content: 'Hei! Jeg er Luna. Spør meg om kunden, porteføljen eller produktene, eller be meg fylle ut kundekortet og bygge en portefølje. Endringer jeg gjør kan du angre med ett klikk.' },
   ]);
   const [handlinger, setHandlinger] = useState(null);
   const [drar, setDrar] = useState(false);
   const [vedlegg, setVedlegg] = useState([]);
+  const [utfort, setUtfort] = useState(null);
 
   useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
 
   const leggTilLunaSvar = (content, fields = null, merknad = '') => {
     setMessages((prev) => [...prev, { role: 'assistant', content }]);
     if (fields && Object.keys(fields).length) setResultat({ fields, merknad });
+  };
+
+  // Utfører forslag med en gang og tilbyr «Angre». Forslag som krever godkjenning vises i stedet som før.
+  const behandleForslag = async (actions = [], fields = null) => {
+    const harFelt = fields && Object.keys(fields).length > 0;
+    if (!actions.length && !harFelt) return;
+    if (actions.some((a) => KREVER_GODKJENNING.has(a.type))) { setHandlinger(actions); if (harFelt) setResultat({ fields, merknad: '' }); return; }
+    try {
+      const angreFn = await onUtfor({ actions, fields: harFelt ? fields : null });
+      const linjer = [
+        ...actions.filter((a) => !UFARLIGE.has(a.type)).flatMap(beskrivHandling).filter((l) => !l.startsWith('Erstatter porteføljen')),
+        ...(harFelt ? Object.entries(fields).map(([key, value]) => `${FELTNAVN[key] || key}: ${visVerdi(key, value)}`) : []),
+      ];
+      if (linjer.length) setUtfort({ linjer, angre: angreFn });
+    } catch (err) {
+      setError(err?.message || 'Kunne ikke utføre forslaget.');
+    }
   };
 
   const sendMelding = async () => {
@@ -92,6 +115,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     setLoading(true);
     setError('');
     setHandlinger(null);
+    setUtfort(null);
     try {
       const response = await fetch('/api/luna-chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -100,7 +124,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Luna kunne ikke svare.');
       leggTilLunaSvar(data.message);
-      if (Array.isArray(data.actions) && data.actions.length) setHandlinger(data.actions);
+      await behandleForslag(Array.isArray(data.actions) ? data.actions : []);
     } catch (err) {
       setError(err.message || 'Luna kunne ikke svare.');
     } finally {
@@ -169,6 +193,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     setError('');
     setResultat(null);
     setHandlinger(null);
+    setUtfort(null);
     try {
       const images = await Promise.all(files.map(async (file) => ({ mediaType: file.type, data: await tilBase64(file) })));
       const response = await fetch('/api/analyze-kundeskjermbilde', {
@@ -180,13 +205,13 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
       const forslag = Array.isArray(data.actions) ? data.actions : [];
       const ukjente = Array.isArray(data.ukjente) ? data.ukjente : [];
       const deler = [];
-      if (forslag.length) deler.push('Jeg fant en beholdning i Pensum-produkter. Se over forslaget under før du godkjenner.');
-      if (antall) deler.push(`Jeg fant ${antall} felt til kundekortet. Kontroller dem før du fyller inn.`);
+      if (forslag.length) deler.push('Jeg fant en beholdning i Pensum-produkter og har lagt den inn i porteføljebyggeren.');
+      if (antall) deler.push(`Jeg fylte inn ${antall} felt på kundekortet.`);
       if (ukjente.length) deler.push(`Disse fant jeg ikke blant Pensums produkter, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
       if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i skjermbildet.');
       if (data.merknad) deler.push(data.merknad);
-      leggTilLunaSvar(deler.join('\n\n'), data.fields, '');
-      if (forslag.length) setHandlinger(forslag);
+      leggTilLunaSvar(deler.join('\n\n'));
+      await behandleForslag(forslag, data.fields);
     } catch (err) {
       setError(err.message || 'Luna kunne ikke analysere skjermbildet.');
     } finally {
@@ -220,6 +245,18 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
           </div>
           <div className="p-3 space-y-2 border-t border-slate-100">
             {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
+            {utfort && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 space-y-2" data-luna-utfort>
+                <p className="text-xs font-bold text-slate-700">Lagt inn</p>
+                <ul className="max-h-36 overflow-y-auto space-y-1 text-[11px] text-slate-700">
+                  {utfort.linjer.map((linje, i) => <li key={i} className="flex gap-1.5"><span className="text-emerald-600">•</span><span>{linje}</span></li>)}
+                </ul>
+                <div className="flex gap-2">
+                  <button onClick={() => { utfort.angre(); setUtfort(null); leggTilLunaSvar('Angret. Verktøyet er satt tilbake til slik det var.'); }} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Angre</button>
+                  <button onClick={() => setUtfort(null)} className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700">Skjul</button>
+                </div>
+              </div>
+            )}
             {handlinger && (
               <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 space-y-2" data-luna-forslag>
                 <p className="text-xs font-bold text-slate-700">Luna foreslår</p>
@@ -229,7 +266,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
                 <div className="flex gap-2">
                   <button disabled={loading} onClick={async () => {
                     const valgte = handlinger; setHandlinger(null); setError('');
-                    try { await onApplyActions(valgte); leggTilLunaSvar('Gjort. Se over endringene i verktøyet.'); }
+                    try { await onUtfor({ actions: valgte }); leggTilLunaSvar('Gjort.'); }
                     catch (err) { setError(err?.message || 'Kunne ikke utføre forslaget.'); }
                   }} className="flex-1 rounded-lg px-3 py-2 text-xs font-bold text-white disabled:opacity-40" style={{ backgroundColor: '#2D6A6A' }}>Godkjenn</button>
                   <button onClick={() => { setHandlinger(null); leggTilLunaSvar('Greit, jeg gjør ingen endringer.'); }} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">Avvis</button>
@@ -244,7 +281,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
                 </div>
                 {resultat.merknad && <p className="text-[10px] text-slate-500">{resultat.merknad}</p>}
                 <div className="flex gap-2">
-                  <button disabled={!felter.length} onClick={() => { onApply(resultat.fields); setResultat(null); leggTilLunaSvar('Feltene er fylt inn. Kontroller kundekortet og trykk «Lagre kundekort» når alt stemmer.'); }} className="flex-1 rounded-lg px-3 py-2 text-xs font-bold text-white disabled:opacity-40" style={{ backgroundColor: '#2D6A6A' }}>Fyll inn</button>
+                  <button disabled={!felter.length} onClick={async () => { const f = resultat.fields; setResultat(null); await onUtfor({ fields: f }); leggTilLunaSvar('Feltene er fylt inn.'); }} className="flex-1 rounded-lg px-3 py-2 text-xs font-bold text-white disabled:opacity-40" style={{ backgroundColor: '#2D6A6A' }}>Fyll inn</button>
                   <button onClick={() => setResultat(null)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600">Avvis</button>
                 </div>
               </div>
@@ -267,7 +304,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
               <button onClick={startDiktering} title="Dikter melding" className={`h-10 w-10 rounded-xl border ${lytter ? 'border-red-300 bg-red-50' : 'border-slate-200'} text-slate-600`}>{lytter ? '●' : '🎙'}</button>
               <button onClick={sendMelding} disabled={(!tekst.trim() && !vedlegg.length) || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
             </div>
-            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller forslag før du godkjenner. Meldinger, bilder og porteføljen i verktøyet sendes til Pensums AI-tjeneste, uten kundens navn.</p>
+            <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller det Luna legger inn. Meldinger, bilder og porteføljen i verktøyet sendes til Pensums AI-tjeneste, uten kundens navn.</p>
           </div>
         </div>
       )}

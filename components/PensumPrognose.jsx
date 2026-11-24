@@ -99,6 +99,7 @@ export default function PensumPrognoseModell() {
   // Collapsible "Forutsetninger og mål"-panel på Porteføljebygger-fanen
   const [visForutsetninger, setVisForutsetninger] = useState(false);
   const [sisteVerktoy, setSisteVerktoy] = useState('formuesplanlegger');
+  const [kundeSok, setKundeSok] = useState('');
   // Gruppene i porteføljebyggeren kan foldes sammen hver for seg.
   const [pbGrupper, setPbGrupper] = useState({ portefolje: true, prognose: true, historikk: true });
   const pbGruppeHode = (id, tittel, undertittel) => (
@@ -1355,7 +1356,7 @@ export default function PensumPrognoseModell() {
     setActiveTab('input');
   }, [avkastningsrater, pensumStandardPortefoljer]);
 
-  const brukLunaFelter = useCallback((fields = {}) => {
+  const brukLunaFelter = useCallback((fields = {}, { byttFane = true } = {}) => {
     const brukTekst = (key, setter) => { if (typeof fields[key] === 'string' && fields[key].trim()) setter(fields[key].trim()); };
     const brukTall = (key, setter) => { if (typeof fields[key] === 'number' && Number.isFinite(fields[key]) && fields[key] >= 0) setter(fields[key]); };
     brukTekst('kundeNavn', setKundeNavn);
@@ -1376,7 +1377,7 @@ export default function PensumPrognoseModell() {
     const eiendom = ['egenEiendomKunde', 'eiendomSyndikatKunde', 'eiendomFondKunde']
       .reduce((sum, key) => sum + (typeof fields[key] === 'number' ? fields[key] : ({ egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde })[key]), 0);
     setAllokering(beregnAllokering(likvid, pe, eiendom, fields.risikoprofil || risikoprofil, avkastningsrater));
-    setActiveTab('input');
+    if (byttFane) setActiveTab('input');
   }, [aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, risikoprofil, avkastningsrater]);
 
   // Eksporter til fil
@@ -1757,6 +1758,22 @@ export default function PensumPrognoseModell() {
     // etter en serie med nye feltendringer.
     if (lagre && actions.length === 1) await lagreKunde();
   }, [risikoprofil, aksjerKunde, aksjefondKunde, renterKunde, kontanterKunde, peFondKunde, unoterteAksjerKunde, shippingKunde, egenEiendomKunde, eiendomSyndikatKunde, eiendomFondKunde, visAlternativeAllokering, avkastningsrater, pensumStandardPortefoljer, pensumProdukter, lagreKunde]);
+
+  // Luna utfører endringer med en gang. Tilstanden rett før tas vare på, og funksjonen
+  // som returneres setter verktøyet tilbake dit uten å bytte fane.
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const utforLunaMedAngre = useCallback(async ({ actions = [], fields = null } = {}) => {
+    const forrige = { ...getKundeData(), id: aktivKundeId };
+    if (actions.length) await utforLunaHandlinger(actions);
+    // Rådgiveren blir stående der hen er; fanebytte skjer bare når Luna ber om det.
+    if (fields && Object.keys(fields).length) brukLunaFelter(fields, { byttFane: false });
+    return () => {
+      const fane = activeTabRef.current;
+      lastKundeData(forrige);
+      setActiveTab(fane);
+    };
+  }, [getKundeData, aktivKundeId, utforLunaHandlinger, brukLunaFelter, lastKundeData]);
 
   // Når brukeren toggler "Alternative investeringer" vil vi bevare eventuelle
   // beløp/vekt som er fylt inn på aksjer- og renter-radene. Vi modifiserer derfor
@@ -2980,16 +2997,33 @@ export default function PensumPrognoseModell() {
       </header>
 
       {/* Kundeliste panel */}
-      {visKundeliste && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="px-6 py-4 flex items-center justify-between border-b" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
-              <h2 className="text-lg font-semibold text-white">Mine kunder</h2>
-              <button onClick={() => setVisKundeliste(false)} className="text-white hover:text-gray-200">
+      {visKundeliste && (() => {
+        // Hvert kundekort får initialer og en fast farge, slik at kundene er lette å skille.
+        const KORTFARGER = ['#0D2841', '#2D6A6A', '#A67B3D', '#5B4FA0', '#1E5F74', '#8B5E3C', '#BE6A8A', '#2D6A4F'];
+        const PROFILFARGER = { Defensiv: ['#E8F0F4', '#1E5F74'], Moderat: ['#E8F0F0', '#2D6A6A'], Dynamisk: ['#FBF3E4', '#8A6420'], Offensiv: ['#FDF0EB', '#A6553A'] };
+        const navnFor = (k) => k.kundeNavn || k.kundeSelskap || 'Uten navn';
+        const initialer = (navn) => navn.split(/\s+/).filter(Boolean).slice(0, 2).map((d) => d[0]).join('').toUpperCase() || '?';
+        const fargeFor = (navn) => KORTFARGER[[...navn].reduce((sum, c) => sum + c.charCodeAt(0), 0) % KORTFARGER.length];
+        const formueFor = (k) => ['aksjerKunde', 'aksjefondKunde', 'renterKunde', 'kontanterKunde', 'peFondKunde', 'unoterteAksjerKunde', 'shippingKunde', 'egenEiendomKunde', 'eiendomSyndikatKunde', 'eiendomFondKunde'].reduce((sum, f) => sum + (Number(k[f]) || 0), 0);
+        const belopFor = (k) => (Number(k.investertBelop) > 0 ? Number(k.investertBelop) : formueFor(k));
+        const kortBelop = (v) => (v >= 1e6 ? (v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 1).replace('.', ',') + ' mill. kr' : formatCurrency(v));
+        const datoTekst = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' }); };
+        const sok = kundeSok.trim().toLowerCase();
+        const sortert = lagredeKunder.slice().sort((a, b) => (a.id === aktivKundeId ? -1 : b.id === aktivKundeId ? 1 : new Date(b.sistEndret || 0) - new Date(a.sistEndret || 0)));
+        const synlige = sok ? sortert.filter((k) => `${k.kundeNavn || ''} ${k.kundeSelskap || ''}`.toLowerCase().includes(sok)) : sortert;
+        return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-16" onClick={() => setVisKundeliste(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()} data-kundeliste>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: PENSUM_COLORS.darkBlue }}>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Mine kunder</h2>
+                {radgiver && <p className="text-xs text-blue-200 mt-0.5">{lagredeKunder.length} kundekort lagret for {arkivEier}</p>}
+              </div>
+              <button onClick={() => setVisKundeliste(false)} aria-label="Lukk" className="text-white hover:text-gray-200">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               {!radgiver ? (
                 <div className="text-center py-8">
                   <svg className="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -3000,29 +3034,61 @@ export default function PensumPrognoseModell() {
                 <div className="text-center py-8">
                   <svg className="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
                   <p className="text-gray-500">{arkivFeil ? 'Kundearkivet kunne ikke leses' : `Ingen lagrede kunder for ${arkivEier}`}</p>
-                  <p className="text-sm text-gray-400 mt-1">Fyll inn kundedata og trykk "Lagre"</p>
+                  <p className="text-sm text-gray-400 mt-1">Fyll inn kundedata og trykk «Lagre kundekort»</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {lagredeKunder.map(kunde => (
-                    <div key={kunde.id} className={"flex items-center justify-between p-4 rounded-lg border cursor-pointer hover:bg-gray-50 " + (aktivKundeId === kunde.id ? "border-blue-500 bg-blue-50" : "border-gray-200")} onClick={() => lastKundeData(kunde)}>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div className="font-medium" style={{ color: PENSUM_COLORS.darkBlue }}>{kunde.kundeNavn || kunde.kundeSelskap || 'Uten navn'}</div>
-                          {aktivKundeId === kunde.id && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">Aktivt kundekort</span>}
-                        </div>
-                        {kunde.kundeNavn && kunde.kundeSelskap && <div className="text-xs text-gray-500">{kunde.kundeSelskap}</div>}
-                        <div className="text-xs text-gray-500">
-                          {formatCurrency((kunde.aksjerKunde || 0) + (kunde.aksjefondKunde || 0) + (kunde.renterKunde || 0) + (kunde.kontanterKunde || 0) + (kunde.peFondKunde || 0) + (kunde.unoterteAksjerKunde || 0) + (kunde.shippingKunde || 0) + (kunde.egenEiendomKunde || 0) + (kunde.eiendomSyndikatKunde || 0) + (kunde.eiendomFondKunde || 0))} • {kunde.risikoprofil}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">Sist endret: {new Date(kunde.sistEndret).toLocaleDateString('nb-NO')}</div>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); slettKunde(kunde.id); }} className="text-red-500 hover:text-red-700 p-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                <>
+                  {lagredeKunder.length > 4 && (
+                    <div className="relative mb-4">
+                      <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                      <input type="text" value={kundeSok} onChange={(e) => setKundeSok(e.target.value)} placeholder="Søk på kunde eller selskap" aria-label="Søk i kundekort"
+                        className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-blue-400 focus:outline-none" />
                     </div>
-                  ))}
-                </div>
+                  )}
+                  {synlige.length === 0 && <p className="text-sm text-gray-500 py-6 text-center">Ingen kundekort passer med «{kundeSok}».</p>}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {synlige.map((kunde) => {
+                      const navn = navnFor(kunde);
+                      const aktiv = aktivKundeId === kunde.id;
+                      const belop = belopFor(kunde);
+                      const produkter = (Array.isArray(kunde.pensumAllokering) ? kunde.pensumAllokering : []).filter((a) => a?.vekt > 0);
+                      const sumVekt = produkter.reduce((sum, a) => sum + a.vekt, 0) || 1;
+                      const [profilBg, profilFg] = PROFILFARGER[kunde.risikoprofil] || ['#F1F5F9', '#475569'];
+                      return (
+                        <div key={kunde.id} role="button" tabIndex={0} onClick={() => lastKundeData(kunde)} onKeyDown={(e) => { if (e.key === 'Enter') lastKundeData(kunde); }}
+                          className={"group relative rounded-xl border p-4 cursor-pointer transition-shadow hover:shadow-md " + (aktiv ? "border-transparent ring-2" : "border-gray-200 bg-white")}
+                          style={aktiv ? { '--tw-ring-color': PENSUM_COLORS.salmon, backgroundColor: '#FDF8F5' } : {}} data-kundekort>
+                          <div className="flex items-start gap-3">
+                            <div className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: fargeFor(navn) }}>{initialer(navn)}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold truncate" style={{ color: PENSUM_COLORS.darkBlue }} title={navn}>{navn}</div>
+                              <div className="text-xs text-gray-500 truncate">{kunde.kundeNavn && kunde.kundeSelskap ? kunde.kundeSelskap : (datoTekst(kunde.sistEndret) ? `Sist endret ${datoTekst(kunde.sistEndret)}` : '')}</div>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); slettKunde(kunde.id); }} aria-label={`Slett kundekortet for ${navn}`} title="Slett kundekort"
+                              className="p-1.5 rounded-md text-gray-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                            {aktiv && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: PENSUM_COLORS.salmon }}>Åpent nå</span>}
+                            {kunde.risikoprofil && <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: profilBg, color: profilFg }}>{kunde.risikoprofil}</span>}
+                            {belop > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 tabular-nums">{kortBelop(belop)}</span>}
+                            {Number(kunde.horisont) > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{kunde.horisont} år</span>}
+                          </div>
+                          {produkter.length > 0 && (
+                            <div className="mt-3">
+                              <div className="h-1.5 rounded-full overflow-hidden flex" style={{ backgroundColor: '#E2E8F0' }} title={produkter.map((a) => `${a.navn} ${pst(Number(((a.vekt / sumVekt) * 100).toFixed(1)))} %`).join(' · ')}>
+                                {produkter.map((a, idx) => <div key={a.id} style={{ width: (a.vekt / sumVekt) * 100 + '%', backgroundColor: PORTEFOLJE_FARGER[idx % PORTEFOLJE_FARGER.length] }}></div>)}
+                              </div>
+                              <div className="text-[11px] text-gray-400 mt-1.5 truncate">{produkter.length} {produkter.length === 1 ? 'produkt' : 'produkter'} · {produkter.slice().sort((a, b) => b.vekt - a.vekt).slice(0, 2).map((a) => String(a.navn || '').replace('Pensum ', '')).join(', ')}{produkter.length > 2 ? ' m.fl.' : ''}</div>
+                            </div>
+                          )}
+                          {kunde.kundeNavn && kunde.kundeSelskap && datoTekst(kunde.sistEndret) && <div className="text-[11px] text-gray-400 mt-2">Sist endret {datoTekst(kunde.sistEndret)}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                 <div className="flex gap-2">
@@ -3046,7 +3112,8 @@ export default function PensumPrognoseModell() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <main className="max-w-7xl mx-auto px-6 py-6">
         {activeTab === 'input' && (
@@ -9891,7 +9958,7 @@ export default function PensumPrognoseModell() {
 
       </main>
 
-      <LunaAssistant onApply={brukLunaFelter} onApplyActions={utforLunaHandlinger} context={lunaContext} />
+      <LunaAssistant onUtfor={utforLunaMedAngre} context={lunaContext} />
 
       <footer className="mt-12 py-6 text-center border-t border-gray-200 bg-white no-print">
         <img src={PENSUM_LOGO} alt="Pensum" className="h-14 mx-auto mb-3" />
