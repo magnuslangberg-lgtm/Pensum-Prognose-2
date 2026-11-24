@@ -2861,11 +2861,11 @@ export default function PensumPrognoseModell() {
       <header className="bg-white shadow-sm no-print">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <img src={PENSUM_LOGO} alt="Pensum Asset Management" className="h-20 md:h-24" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Bruker-info */}
             {bruker ? (
               <div className="relative flex items-center gap-2 text-sm">
-                <button onClick={() => setVisProfilPanel(!visProfilPanel)} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                <button onClick={() => setVisProfilPanel(!visProfilPanel)} className="flex items-center gap-2 px-4 py-2 font-medium bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                   {bruker.bilde ? (
                     <img src={bruker.bilde} alt="" className="w-5 h-5 rounded-full object-cover" />
                   ) : (
@@ -2932,7 +2932,7 @@ export default function PensumPrognoseModell() {
             ) : (
               <button 
                 onClick={() => setVisLoginModal(true)} 
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50"
                 style={{ color: PENSUM_COLORS.darkBlue }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -2944,7 +2944,7 @@ export default function PensumPrognoseModell() {
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 <span className="truncate">{(kundeNavn || kundeSelskap) ? `Kundekort: ${kundeNavn || kundeSelskap}` : 'Velg kundekort'}</span>
               </button>
-              <div className="flex flex-col items-stretch">
+              <div className="relative">
                 <button onClick={lagreKunde} title={(kundeNavn || kundeSelskap) ? `Lagre endringene på kundekortet til ${kundeNavn || kundeSelskap}` : 'Oppgi kundenavn før du lagrer'} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
                   {lagringsStatus ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -2953,11 +2953,11 @@ export default function PensumPrognoseModell() {
                   )}
                   {lagringsStatus || 'Lagre kundekort'}
                 </button>
-                {(kundeNavn || kundeSelskap) && !lagringsStatus && <span className="mt-1 max-w-[180px] truncate text-center text-[10px] font-medium text-gray-500">Lagrer på: {kundeNavn || kundeSelskap}</span>}
+                {(kundeNavn || kundeSelskap) && !lagringsStatus && <span className="absolute left-0 right-0 top-full mt-0.5 truncate text-center text-[10px] font-medium text-gray-500">Lagrer på: {kundeNavn || kundeSelskap}</span>}
               </div>
             </div>
-            <div className="text-right hidden sm:block">
-              <div className="text-base font-semibold" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsprognose</div>
+            <div className="text-right hidden sm:block border-l border-gray-200 pl-5 ml-1">
+              <div className="text-sm font-semibold leading-tight" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsprognose</div>
               <div className="text-xs text-gray-500">{formatDateEuro(dato)}</div>
             </div>
           </div>
