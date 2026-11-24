@@ -73,6 +73,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
   ]);
   const [handlinger, setHandlinger] = useState(null);
   const [drar, setDrar] = useState(false);
+  const [vedlegg, setVedlegg] = useState([]);
 
   useEffect(() => { bunnRef.current?.scrollIntoView({ block: 'end' }); }, [messages, loading, handlinger, resultat, open]);
 
@@ -82,6 +83,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
   };
 
   const sendMelding = async () => {
+    if (vedlegg.length) return sendBilder();
     const content = tekst.trim();
     if (!content || loading) return;
     const neste = [...messages, { role: 'user', content }];
@@ -124,30 +126,45 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
 
   // Bilder kan velges med bindersen, limes inn (Ctrl+V) eller dras inn i chatten.
   const BILDETYPER = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const MAKS_BILDER = 4;
+  // Bildene legges ved meldingen og sendes først når rådgiveren trykker Enter eller send,
+  // slik at flere skjermbilder og en forklaring kan sendes samlet.
+  const leggVed = (alle) => {
+    if (!alle.length) return;
+    const bilder = alle.filter((f) => BILDETYPER.includes(f.type));
+    if (!bilder.length) { setError('Luna kan lese bilder i formatene PNG, JPG, WEBP og GIF.'); return; }
+    const forStor = bilder.find((file) => file.size > 4 * 1024 * 1024);
+    if (forStor) { setError(`${forStor.name || 'Bildet'} er større enn 4 MB.`); return; }
+    const plass = Math.max(0, MAKS_BILDER - vedlegg.length);
+    setError(bilder.length > plass ? `Du kan sende ${MAKS_BILDER} bilder om gangen.` : '');
+    const nye = bilder.slice(0, plass).map((file) => ({ file, url: URL.createObjectURL(file) }));
+    if (nye.length) setVedlegg((prev) => [...prev, ...nye]);
+  };
+  const fjernVedlegg = (index) => setVedlegg((prev) => { URL.revokeObjectURL(prev[index]?.url); return prev.filter((_, i) => i !== index); });
   const analyser = (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
-    analyserFiler(files);
+    leggVed(files);
   };
   const limInn = (event) => {
     const bilder = Array.from(event.clipboardData?.files || []).filter((f) => f.type.startsWith('image/'));
     if (!bilder.length) return; // vanlig tekst limes inn som før
     event.preventDefault();
-    analyserFiler(bilder);
+    leggVed(bilder);
   };
   const slipp = (event) => {
     event.preventDefault();
     setDrar(false);
-    analyserFiler(Array.from(event.dataTransfer?.files || []));
+    leggVed(Array.from(event.dataTransfer?.files || []));
   };
-  const analyserFiler = async (alle) => {
-    if (loading) return;
-    if (alle.length && !alle.some((f) => BILDETYPER.includes(f.type))) { setError('Luna kan lese bilder i formatene PNG, JPG, WEBP og GIF.'); return; }
-    const files = alle.filter((f) => BILDETYPER.includes(f.type)).slice(0, 4);
-    if (!files.length) return;
-    const forStor = files.find((file) => file.size > 4 * 1024 * 1024);
-    if (forStor) { setError(`${forStor.name || 'Bildet'} er større enn 4 MB.`); return; }
-    setMessages((prev) => [...prev, { role: 'user', content: `Lastet opp ${files.length} skjermbilde${files.length > 1 ? 'r' : ''} for analyse.` }]);
+  const sendBilder = async () => {
+    if (loading || !vedlegg.length) return;
+    const files = vedlegg.map((v) => v.file);
+    const melding = tekst.trim();
+    setMessages((prev) => [...prev, { role: 'user', content: `${melding ? melding + '\n' : ''}(${files.length} skjermbilde${files.length > 1 ? 'r' : ''} lagt ved)` }]);
+    vedlegg.forEach((v) => URL.revokeObjectURL(v.url));
+    setVedlegg([]);
+    setTekst('');
     setLoading(true);
     setError('');
     setResultat(null);
@@ -155,7 +172,7 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
     try {
       const images = await Promise.all(files.map(async (file) => ({ mediaType: file.type, data: await tilBase64(file) })));
       const response = await fetch('/api/analyze-kundeskjermbilde', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, melding }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Luna kunne ikke analysere skjermbildet.');
@@ -167,7 +184,8 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
       if (antall) deler.push(`Jeg fant ${antall} felt til kundekortet. Kontroller dem før du fyller inn.`);
       if (ukjente.length) deler.push(`Disse fant jeg ikke blant Pensums produkter, så de er ikke tatt med:\n${ukjente.map((u) => `• ${u.navn}${u.belop ? ` (${u.belop.toLocaleString('nb-NO')} kr)` : ''}`).join('\n')}`);
       if (!deler.length) deler.push('Jeg fant ingen sikre kundedata eller posisjoner i skjermbildet.');
-      leggTilLunaSvar(deler.join('\n\n'), data.fields, data.merknad);
+      if (data.merknad) deler.push(data.merknad);
+      leggTilLunaSvar(deler.join('\n\n'), data.fields, '');
       if (forslag.length) setHandlinger(forslag);
     } catch (err) {
       setError(err.message || 'Luna kunne ikke analysere skjermbildet.');
@@ -231,12 +249,23 @@ export default function LunaAssistant({ onApply, onApplyActions, context = {} })
                 </div>
               </div>
             )}
+            {vedlegg.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2" data-luna-vedlegg>
+                {vedlegg.map((v, i) => (
+                  <div key={v.url} className="relative">
+                    <img src={v.url} alt={`Skjermbilde ${i + 1}`} className="h-14 w-20 rounded-lg border border-slate-200 object-cover" />
+                    <button onClick={() => fjernVedlegg(i)} aria-label={`Fjern skjermbilde ${i + 1}`} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-700 text-white text-xs leading-none">×</button>
+                  </div>
+                ))}
+                <span className="text-[11px] text-slate-500">Trykk Enter for å sende{vedlegg.length < MAKS_BILDER ? ', eller legg ved flere' : ''}.</span>
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <button onClick={() => inputRef.current?.click()} disabled={loading} title="Legg ved skjermbilder (du kan også lime inn eller dra dem hit)" className="h-10 w-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50">📎</button>
               <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={analyser} className="hidden" />
-              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder="Skriv til Luna, eller lim inn et skjermbilde …" className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
+              <textarea value={tekst} onChange={(e) => setTekst(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMelding(); } }} rows={1} placeholder={vedlegg.length ? "Skriv en forklaring (valgfritt) …" : "Skriv til Luna, eller lim inn et skjermbilde …"} className="min-h-10 max-h-24 flex-1 resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none" />
               <button onClick={startDiktering} title="Dikter melding" className={`h-10 w-10 rounded-xl border ${lytter ? 'border-red-300 bg-red-50' : 'border-slate-200'} text-slate-600`}>{lytter ? '●' : '🎙'}</button>
-              <button onClick={sendMelding} disabled={!tekst.trim() || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
+              <button onClick={sendMelding} disabled={(!tekst.trim() && !vedlegg.length) || loading} title="Send melding" className="h-10 w-10 rounded-xl text-white disabled:opacity-40" style={{ backgroundColor: '#0D2841' }}>➤</button>
             </div>
             <p className="text-[9px] text-slate-400">AI kan gjøre feil. Kontroller forslag før du godkjenner. Meldinger, bilder og porteføljen i verktøyet sendes til Pensums AI-tjeneste, uten kundens navn.</p>
           </div>

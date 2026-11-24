@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 4) : [];
   if (!images.length) return res.status(400).json({ error: 'Ingen skjermbilder mottatt.' });
   if (images.some((img) => !/^image\/(png|jpeg|webp|gif)$/.test(img?.mediaType || '') || !img?.data)) return res.status(400).json({ error: 'Ugyldig bildeformat.' });
+  const melding = typeof req.body?.melding === 'string' ? req.body.melding.trim().slice(0, 2000) : '';
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'AI-tjenesten er ikke konfigurert.' });
 
   try {
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
       system: [{ type: 'text', text: INSTRUKS, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [
         ...images.map((img) => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
-        { type: 'text', text: 'Les skjermbildene og svar med JSON som beskrevet.' },
+        { type: 'text', text: `${melding ? `Rådgiveren skriver om bildene:\n${melding}\n\n` : ''}Les skjermbildene og svar med JSON som beskrevet.` },
       ] }],
     });
     if (response.stop_reason === 'refusal') return res.status(200).json({ fields: {}, actions: [], ukjente: [], merknad: 'Luna kunne ikke lese dette skjermbildet.' });
