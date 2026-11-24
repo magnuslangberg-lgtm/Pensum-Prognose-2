@@ -2940,12 +2940,12 @@ export default function PensumPrognoseModell() {
               </button>
             )}
             <div className="flex items-center gap-2">
-              <button onClick={() => setVisKundeliste(!visKundeliste)} title="Åpne eller bytt aktivt kundekort" className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border max-w-xs " + (aktivKundeId ? "bg-blue-50 border-blue-300" : visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-200 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
+              <button onClick={() => setVisKundeliste(!visKundeliste)} title="Åpne eller bytt aktivt kundekort" className={"px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 border max-w-xs " + (aktivKundeId ? "bg-blue-50 border-blue-300" : visKundeliste ? "bg-blue-100 border-blue-300 text-blue-700" : "border-gray-300 hover:bg-gray-50")} style={{ color: visKundeliste ? undefined : PENSUM_COLORS.darkBlue }}>
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 <span className="truncate">{(kundeNavn || kundeSelskap) ? `Kundekort: ${kundeNavn || kundeSelskap}` : 'Velg kundekort'}</span>
               </button>
               <div className="relative">
-                <button onClick={lagreKunde} title={(kundeNavn || kundeSelskap) ? `Lagre endringene på kundekortet til ${kundeNavn || kundeSelskap}` : 'Oppgi kundenavn før du lagrer'} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.darkBlue }}>
+                <button onClick={lagreKunde} title={(kundeNavn || kundeSelskap) ? `Lagre endringene på kundekortet til ${kundeNavn || kundeSelskap}` : 'Oppgi kundenavn før du lagrer'} className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 hover:opacity-90" style={{ backgroundColor: lagringsStatus ? PENSUM_COLORS.teal : PENSUM_COLORS.salmon }}>
                   {lagringsStatus ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                   ) : (
@@ -2955,10 +2955,6 @@ export default function PensumPrognoseModell() {
                 </button>
                 {(kundeNavn || kundeSelskap) && !lagringsStatus && <span className="absolute left-0 right-0 top-full mt-0.5 truncate text-center text-[10px] font-medium text-gray-500">Lagrer på: {kundeNavn || kundeSelskap}</span>}
               </div>
-            </div>
-            <div className="text-right hidden sm:block border-l border-gray-200 pl-5 ml-1">
-              <div className="text-sm font-semibold leading-tight" style={{ color: PENSUM_COLORS.darkBlue }}>Investeringsprognose</div>
-              <div className="text-xs text-gray-500">{formatDateEuro(dato)}</div>
             </div>
           </div>
         </div>
